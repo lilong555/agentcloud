@@ -4,7 +4,7 @@ AgentCloud 的核心是执行层与推理准入层的协同：Agent 等待模型
 
 ## 可核验的项目经历
 
-- 实现 Go／PostgreSQL 协调器与 Substrate、Dynamo 原生扩展，串联模型请求持久化、工具准入、MEMORY 快照恢复和执行状态反馈；完整文件与标准 format-patch 交付覆盖 46 个上游文件。
+- 实现 Go／PostgreSQL 协调器与 Substrate、Dynamo 原生扩展，串联模型请求持久化、工具准入、MEMORY 快照恢复和执行状态反馈；完整文件与标准 format-patch 交付覆盖 47 个上游文件。
 - 接入 Azure CPA 的真实 `gpt-6-luna`，Coding Agent 经过 8 轮推理、11 次工具调用修复两个源码文件，原有 4 项测试通过，8 次 MEMORY 恢复保持 AST、上下文与内存身份连续；DeerFlow 验证两个并发子任务、上传、70 个 PostgreSQL 检查点和新进程恢复。
 - 建立具有配对种子、失败分母、原始事件及资源积分的实验链路；已归档的五组真实混合负载完成 120 个业务请求与 45 次响应丢失恢复，并提供 p50／p95 时延、Goodput 和恢复开销。
 

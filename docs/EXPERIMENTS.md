@@ -26,9 +26,12 @@ gh workflow run live-scale.yml -f scope=matrix -f native_run_id=<validated-run-i
 gh workflow run live-acceptance.yml -f suite=all -f native_run_id=<validated-run-id>
 python3 -m bench.analysis.scale --source-commit <experiment-sha>
 python3 -m bench.analysis.heatmap --source-commit <experiment-sha>
+python3 -m bench.analysis.faults --source-commit <experiment-sha>
 ```
 
 工作流的每台 hosted runner 独立运行 Kind/gVisor、PostgreSQL 和 Dynamo；原生 wheel 通过源码摘要匹配后复用。原生构建、规模矩阵和 15 类故障均保留独立状态与清理证据。
+
+故障汇总输出 JSON 与 CSV 审计表，固定保留全部 15 项计划分母。每项选择最早安排的运行；准备失败导致的未执行项、运行清理失败和后续重跑分别记录。完整验收要求全部首次计划项通过，且对应运行完成资源清理。
 
 ## 已归档的五组混合负载
 
