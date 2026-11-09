@@ -9,11 +9,19 @@ from bench.substrate_live import quantile, write_json
 
 
 def summarize(trials,samples=2000):
+    if not trials or samples<1:
+        raise ValueError('measured trials and a positive bootstrap count are required')
+    if len({json.dumps(t.get('source_sha256',{}),sort_keys=True) for t in trials})!=1:
+        raise ValueError('source digests differ; select one frozen experiment source with --source-commit')
+    primary={};audit=[]
+    for trial in sorted(trials,key=lambda t:(t.get('generated_at',''),int(t.get('github_run_id') or 0),t['trial_id'])):
+        first=primary.setdefault((trial['heap_mib'],trial['seed']),trial)
+        audit.append(dict(trial_id=trial['trial_id'],seed=trial['seed'],heap_mib=trial['heap_mib'],
+            status=trial['status'],primary=first is trial,github_run_id=trial.get('github_run_id'),error=trial.get('error')))
+    selected=list(primary.values())
     rng=random.Random(9031);cells=[]
-    for heap in sorted({t['heap_mib'] for t in trials}):
-        group=[t for t in trials if t['heap_mib']==heap]
-        if len({t['seed'] for t in group})!=len(group):
-            raise ValueError('duplicate heap/seed trials require explicit source selection')
+    for heap in sorted({t['heap_mib'] for t in selected}):
+        group=[t for t in selected if t['heap_mib']==heap]
         for wait in (1,2,5,10,20,40,60):
             pairs=[]
             for trial in group:
@@ -30,8 +38,12 @@ def summarize(trials,samples=2000):
                 cell[metric]=dict(mean=statistics.mean(values) if values else None,ci95=[quantile(distribution,.025),quantile(distribution,.975)])
             cell['measured_resource_benefit']=len(pairs)>=3 and cell['reserved_gb_s_saved']['ci95'][0]>0
             cells.append(cell)
-    return dict(cells=cells,planned_windows=sum(len(t['measurements']) for t in trials),
-        passed_windows=sum(r['status']=='passed' for t in trials for r in t['measurements']),
+    return dict(cells=cells,planned_windows=sum(len(t['measurements']) for t in selected),
+        passed_windows=sum(r['status']=='passed' for t in selected for r in t['measurements']),
+        attempt_audit=audit,all_attempts=dict(trials=len(trials),
+            planned_windows=sum(len(t['measurements']) for t in trials),
+            passed_windows=sum(r['status']=='passed' for t in trials for r in t['measurements'])),
+        primary_selection='earliest attempt per heap and seed, independent of outcome',
         independent_seeds=sorted({t['seed'] for t in trials}),bootstrap_samples=samples,
         benefit_definition='KEEP observed reservation integral minus suspend/restore observed integral',
         return_latency_definition='time from the actual scheduled arrival until Actor is RUNNING and attached')

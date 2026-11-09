@@ -1,6 +1,8 @@
 # AgentCloud
 
-AgentCloud 是连接 Agent 执行生命周期与 LLM 准入调度的可运行系统。Go 协调器提供持久请求、工具准入与恢复 manifest；Dynamo 原生 Rust 扩展将执行状态应用到 ThunderAgent；Substrate 扩展提供 Actor 身份 fencing、指定快照持久化与实际恢复回执。DeerFlow 用于研究任务，轻量 Coding Runtime 用于编程任务。两种模式均已在真实 gVisor Actor 中完成 MEMORY 休眠恢复：DeerFlow 外置进程从持久图检查点继续研究，Coding Loop 保留 Actor 内 RAM 状态。
+AgentCloud 将 Agent 执行生命周期与 LLM 准入调度连接起来。Go 协调器根据真实排队、Worker 容量与恢复成本自动选择驻留、挂起和恢复；PostgreSQL 增量实体事务保存请求、工具回执与恢复 manifest。Dynamo 原生 Rust 扩展向 ThunderAgent 提供执行反馈和有界会话回收，Substrate 扩展提供 Actor 身份 fencing、快照持久化与实际恢复回执。
+
+Azure CPA 的真实 `gpt-6-luna` 已完成多文件 Coding 修复与 DeerFlow 研究任务。Coding Agent 经过 8 轮推理和 11 次工具调用修改两个源码文件，原有 4 项测试通过，8 次 gVisor MEMORY 恢复保持内存状态连续。DeerFlow 完成两个并发子任务、文件上传、70 个 PostgreSQL 图检查点与新进程恢复。[完整真实模型证据](docs/evidence/deep-agents-summary.json)保留全部验收尝试和清理结果。
 
 ## 快速运行
 
@@ -33,7 +35,7 @@ export AGENTCLOUD_DATABASE_URL='postgresql://user:password@localhost/agentcloud'
 bin/agentcloud serve --model-url mock://deterministic --allow-local-shell
 ```
 
-日志使用单写者锁与 revision CAS。未知副作用保留为 `OUTCOME_UNKNOWN`，安全点保持关闭并等待对账。
+日志使用单写者锁与 revision CAS，按变更实体事务提交。未知副作用保留为 `OUTCOME_UNKNOWN`，安全点保持关闭并等待对账。
 
 ## 真实 Dynamo CPU 路径
 
@@ -62,11 +64,11 @@ bin/agentcloud serve \
 
 [Substrate 部署目录](deploy/substrate/)提供隔离 Kind 集群、gVisor 安装、Runtime 镜像、ActorTemplate、身份投影和客户端接入。真实后端通过 `--backend substrate`、Substrate gRPC 地址和 mTLS gateway 参数启动，完整参数见 `bin/agentcloud serve --help`。
 
-- [DeerFlow 适配](adapters/deerflow/)：真实 Provider/Sandbox/Extension API、研究工具、SQLite 图检查点与两阶段 manifest 对账。
-- [Coding Runtime](runtime/coding/)：稳定工具 ID、持久模型请求和恢复后结果认领。
+- [DeerFlow 适配](adapters/deerflow/)：真实 Provider/Sandbox/Extension API、并发研究与上传、PostgreSQL / SQLite 图检查点及两阶段 manifest 对账。
+- [Coding Runtime](runtime/coding/)：模型驱动的多文件修改、原有测试验证、持久请求与 MEMORY 恢复认领。
 - [Actor 内运行循环](runtime/in_actor.py)：在 Actor 进程内维护任务状态，使用可信 UID 投影核验恢复 attach。
 - [服务 API](docs/API.md)：接口、身份、epoch、gate 与故障语义。
-- [成本协调策略](docs/SCHEDULING.md)：预计等待、实际排队观测、盈亏阈值和恢复迟滞。
+- [自主调度](docs/SCHEDULING.md)：服务端等待预测、WorkerPool 压力、实测快照成本、收益阈值和恢复迟滞。
 - [系统架构](docs/ARCHITECTURE.md)：组件关系和安全点流程。
 
 ## 验证与实验
@@ -89,6 +91,10 @@ make live-suite
 
 `make live-bench` 单独执行真实 Substrate / Dynamo 消融。实验记录首 token、容量排队、MEMORY 恢复、Worker 保留内存积分和响应丢失后的幂等恢复，输出 JSON、CSV 与独立图表。
 
+大规模验收使用 GitHub Actions 的 `Real Actor scale experiments` 和 `Live fault and break-even acceptance`：四租户、两 Worker、N=8/16/32/64、六轮 1K～16K 上下文、TTL=0/2/5/15s 与自主调度，以及 15 类真实故障和等待／内存热力图。工作流复用经过源码摘要核验的原生 wheel；每个 runner 独立创建和清理数据库、Actor、Tag 与 Kind 集群。最新完成状态见[交付状态](docs/STATUS.md)。
+
+普通 CI 执行契约、构建、竞态和源码还原；重型工作流提供真实 Kind/gVisor、Rust Frontend 与 CPU Mocker 的运行证据。
+
 PostgreSQL 验证可设置 `AGENTCLOUD_TEST_PG_ADMIN`；测试会创建独立临时数据库并在结束时清理。DeerFlow 的真实上游契约使用 `adapters/deerflow/setup.sh` 安装的独立环境运行。
 
 [验证状态](docs/STATUS.md)索引真实测试、端到端案例和原始日志。[实验报告](docs/EXPERIMENTS.md)包含真实 Substrate / Dynamo 五组消融的 15 次配对运行：120/120 业务请求与 45/45 故障恢复通过；另有 280 组离散事件对照和 40 组原生 Router 配对实验。所有失败和未完成请求进入实验分母，逻辑预算与物理 GPU/KV 指标分别报告。
@@ -97,6 +103,6 @@ PostgreSQL 验证可设置 `AGENTCLOUD_TEST_PG_ADMIN`；测试会创建独立临
 
 ## 源码交付
 
-`integrations/` 保存完整修改文件、基线提交和内容哈希。`make upstream` 从官方仓库获取锁定源码并应用完整文件；`make verify-delivery` 在全新 checkout 验证还原。根项目采用 Apache-2.0，来源和上游许可证见 [NOTICE](NOTICE) 与 [licenses](licenses/)。
+`integrations/` 保存完整修改文件、标准 format-patch 序列、基线提交、内容哈希和原生测试映射。[上游 PR 说明](docs/UPSTREAM_PRS.md)描述可独立审阅的上游贡献。`make verify-delivery` 在全新 checkout 验证完整文件和补丁得到相同 Git tree。根项目采用 Apache-2.0，来源和上游许可证见 [NOTICE](NOTICE) 与 [licenses](licenses/)。
 
 [实施计划](docs/IMPLEMENTATION_PLAN.md)记录交付目标，[原始设计](AGENTCLOUD_PLAN.md)保留详细协议与源码依据。

@@ -46,8 +46,8 @@ Substrate fencing 使用同一 Actor lease 下可核验的 `expected_uid` 与 `e
 ## 依据
 
 - [源码审计与详细协议](../AGENTCLOUD_PLAN.md)
-- [原始计划](../计划.txt)
-- [白盒协同与双运行模式要求](../小修正.txt)
+- [工程加固与规模验收](HARDENING_PLAN.md)
+- [双模式运行架构](ARCHITECTURE.md)
 - [上游版本锁](evidence/upstream-lock.json)
 
 工程任务顺序与验收以本计划为入口；详细故障语义及源码定位见源码审计材料。

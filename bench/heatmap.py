@@ -20,7 +20,7 @@ from scripts.resource_guard import stop
 
 ROOT=Path(__file__).resolve().parents[1]
 WAIT_SECONDS=(1,2,5,10,20,40,60)
-RESERVATION_MIB={16:128,64:256,128:512}
+MEMORY_LIMIT_MIB={16:128,64:256,128:512}
 
 
 def run(args):
@@ -32,7 +32,7 @@ def run(args):
     order=list(WAIT_SECONDS);rng=random.Random(args.seed);rng.shuffle(order)
     planned=[dict(wait_seconds=wait,policy=policy,status='NOT_RUN') for wait in order for policy in rng.sample(['keep','suspend'],2)]
     report=dict(schema_version=1,status='incomplete',trial_id=trial.id,heap_mib=args.heap_mib,
-        actor_reservation_mib=RESERVATION_MIB[args.heap_mib],seed=args.seed,measurements=planned,
+        actor_memory_limit_mib=MEMORY_LIMIT_MIB[args.heap_mib],seed=args.seed,measurements=planned,
         execution_kind='real-substrate-memory-wait-working-set-sweep',gpu_execution=False,
         generated_at=datetime.now(timezone.utc).isoformat(),github_run_id=os.getenv('GITHUB_RUN_ID'),
         source_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
@@ -45,13 +45,17 @@ def run(args):
     signal.signal(signal.SIGTERM,interrupted)
     try:
         trial.start()
-        completed=subprocess.run(['python3','deploy/substrate/configure-matrix.py','--workers','2','--actor-memory-mib',str(RESERVATION_MIB[args.heap_mib])],
+        completed=subprocess.run(['python3','deploy/substrate/configure-matrix.py','--workers','2','--actor-memory-mib',str(MEMORY_LIMIT_MIB[args.heap_mib])],
             cwd=ROOT,capture_output=True,text=True,timeout=120)
         if completed.returncode: raise RuntimeError(completed.stderr[-1000:])
         report['actor_configuration']=json.loads(completed.stdout.splitlines()[-1])
         entry=trial._provision(0);trial.resume(entry,'heatmap-start')
         actor=entry['state']['actor'];uid=actor['uid']
-        assert actor['assigned_memory_bytes']==RESERVATION_MIB[args.heap_mib]*2**20
+        limit=MEMORY_LIMIT_MIB[args.heap_mib]*2**20
+        assigned=actor['assigned_memory_bytes']
+        assert assigned>=limit,'observed Worker reservation is below the configured Actor limit'
+        report.update(actor_memory_limit_bytes=limit,observed_assigned_memory_bytes=assigned,
+            observed_runtime_overhead_bytes=assigned-limit)
         report['actor_uid']=uid
         for row in planned:
             trial.guard();row['status']='failed'
@@ -100,7 +104,7 @@ def run(args):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--heap-mib',type=int,choices=RESERVATION_MIB,required=True)
+    p.add_argument('--heap-mib',type=int,choices=MEMORY_LIMIT_MIB,required=True)
     p.add_argument('--seed',type=int,required=True)
     p.add_argument('--output-dir',type=Path,default=ROOT/'docs/evidence/heatmap')
     args=p.parse_args()

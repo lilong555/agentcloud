@@ -1,5 +1,37 @@
 # 实验与验证
 
+真实模型、规模调度、故障恢复与资源热力图分别保存原始证据。Azure CPA 的真实 `gpt-6-luna` 已完成两类 Agent 功能任务；规模与故障矩阵由独立 GitHub Actions 执行，当前运行结果由 [STATUS](STATUS.md)索引。
+
+## 真实模型 Agent
+
+| 任务 | 实际执行 | 恢复与正确性 |
+| --- | --- | --- |
+| Coding | 8 轮推理、11 次工具调用，模型修改 `shop/pricing.py` 与 `shop/cart.py` | 原有 4 项测试保持原样并通过，8 次 MEMORY 恢复，AST／上下文对象与 nonce 连续 |
+| DeerFlow | 两个并发子任务、文件上传、70 个 PostgreSQL 图检查点 | 两阶段 manifest、独立 Tag 核验、新进程恢复与实际 MEMORY 恢复 |
+
+[真实模型汇总](evidence/deep-agents-summary.json)链接两项完整结果和全部尝试。Coding 的成功结果来自组合验收中的独立子项；该次随后 DeerFlow 失败，原组合状态保留。DeerFlow 的成功来自单独完成的验收。研究资料为受控 HTTP 来源，模型通过真实 CPA 推理选择和执行工具。
+
+## 多租户规模与收益扫描
+
+固定 [规模配置](../bench/configs/scale-live.json)包含 N=8/16/32/64、四租户、两 Worker、四个 FIFO Actor permits、六轮 1K～16K 增长前缀、三个配对种子，以及 TTL=0/2/5/15s 和自主调度。完整矩阵计划 60 个 trial、10,800 个业务请求。
+
+每次运行保存真实 Actor 工具回执、内存连续性、原生 pause／final／缓存事件、服务端调度观测、Worker assignment 和协调器／Frontend／Mocker 的 CPU、RSS。请求到达采用固定 think 间隔的闭环 Workspace 轨迹，TTFT 包含 FIFO 容量等待与恢复。
+
+分析以最早尝试为主样本，独立保留重跑记录；失败和未投递请求计入计划分母。p50／p95／p99 的 95% 区间按 seed trial 和完整 Workspace 轨迹分层 bootstrap，策略差异按种子配对。联合收益要求完整配对中的 Stranded 下降、Goodput 保持或提高、交互 p95 保持或降低，并满足预声明区间判据。
+
+热力图比较 KEEP 与真实 MEMORY 挂起／恢复，扫描 16/64/128 MiB 随机触达 RAM、1/2/5/10/20/40/60 秒等待，三个种子共 126 个窗口。配置内存与含运行时开销的实际预留分别记录；资源收益由逐 Worker assignment 积分计算，同时报告返回增加的时延。
+
+```bash
+gh workflow run live-scale.yml -f scope=matrix -f native_run_id=<validated-run-id>
+gh workflow run live-acceptance.yml -f suite=all -f native_run_id=<validated-run-id>
+python3 -m bench.analysis.scale --source-commit <experiment-sha>
+python3 -m bench.analysis.heatmap --source-commit <experiment-sha>
+```
+
+工作流的每台 hosted runner 独立运行 Kind/gVisor、PostgreSQL 和 Dynamo；原生 wheel 通过源码摘要匹配后复用。原生构建、规模矩阵和 15 类故障均保留独立状态与清理证据。
+
+## 已归档的五组混合负载
+
 真实 Substrate 与原生 ThunderAgent / 官方 Mocker 完成 A～E 五组混合负载，3 个配对种子共 15 组：120/120 业务模型请求完成，60 个交互请求进入 SLO 分母，45/45 响应丢失故障恢复成功。另有 30 个收尾 Final 请求用于释放推理程序。
 
 ## 真实混合负载

@@ -1,55 +1,94 @@
-# 模型边界成本协调
+# 自主生命周期调度
 
-`POST /v1/sessions/{id}/model-boundary` 在受认证的模型边界请求中计算执行沙箱驻留策略，并持久保存操作决策。符合成本条件且工具处于安全点时，协调器关闭新工具准入，调用现有快照与挂起生命周期；模型结果就绪后通过 `POST /v1/sessions/{id}/resume` 恢复。
+AgentCloud 从持久请求、Dynamo 实际准入队列、WorkerPool 可分配容量及已经完成的快照／恢复操作估计等待收益，自动执行 KEEP、SUSPEND 和 RESUME。每个决策保留观测来源、成本、epoch、原因与生命周期回执。
+
+## 服务端闭环
+
+在配置 Substrate 与 Dynamo 的协调器启动参数中加入：
+
+```text
+--enable-autonomous-scheduler
+--scheduler-interval 250ms
+--scheduler-stable-for 500ms
+```
+
+调度器每次选择待模型、显式闲置或有返回需求的会话。同一会话的生命周期互斥，不同会话最多同时执行四个调度操作。正在运行的工具、未决副作用、陈旧观测和恢复冷却都会保留当前资源，并在诊断中记录原因。
+
+```mermaid
+flowchart LR
+    D[持久请求与真实闲置窗口] --> E[服务端等待与成本估计]
+    Q[Dynamo 队列与 admission 历史] --> E
+    W[WorkerPool 容量与分配] --> E
+    C[已完成快照、恢复、事务耗时] --> E
+    E --> P[收益阈值、安全点、迟滞]
+    P --> K[KEEP]
+    P --> S[关闭 gate → 排空工具 → MEMORY 快照 → SUSPEND]
+    S --> F[Dynamo 执行反馈与预算重算]
+    R[真实返回需求] --> A[容量核验 → RESUME → attach]
+    A --> D
+```
+
+等待估计使用同租户、同画像最近 32 个模型完成观测的 p75。对于协调器排队中的请求，结合前方请求数与模型并发上限计算等待；对于已经发出的请求，扣除实际已执行时间。Dynamo 存在排队时，原生 admission 历史和队列长度参与预测。所有输入带观测时间，超过五秒的上游观测会触发 KEEP。
+
+闲置估计来自已经结束的 `idle_window_ms`，缺少显式窗口时使用实际工具间隔 `idle_until_tool_ms`。`--scheduler-idle-prior` 默认零；可配置冷启动先验，获得历史样本后由 p75 观测替代。真实模型请求和实际工具返回持续更新估计。
+
+Worker 压力取 Actor 槽位占用率与内存预留占用率的较大值。恢复时按每台 ACTIVE Worker 检查是否容纳目标 Actor，保留跨 Worker 的资源碎片信息。内存来自真实 assignment，包含运行时预留开销。
+
+## Agent 接入
+
+In-Actor 模型循环先持久登记逻辑请求，模型完成后调度器登记返回需求。Actor 恢复并 attach 后认领原请求；KEEP 路径可在同一 epoch 继续执行模型工具调用。
+
+External Harness 用以下接口报告已经发生的事实：
 
 ```http
-POST /v1/sessions/demo/model-boundary
+POST /v1/sessions/demo/idle-window
 Authorization: Bearer <tenant-token>
 Content-Type: application/json
 
-{
-  "operation_id": "turn-8-boundary",
-  "expected_epoch": 1,
-  "checkpoint_id": "graph-checkpoint-8",
-  "expected_wait_ms": 12000,
-  "snapshot_cost_ms": 500,
-  "resume_cost_ms": 500,
-  "journal_cost_ms": 50,
-  "worker_pressure": 0.9,
-  "min_residence_ms": 1000
-}
+{"operation_id":"think-8","expected_epoch":3,"phase":"START","ttl_ms":600000}
 ```
 
-`operation_id` 与 `expected_epoch` 为必填字段。相同操作 ID 与相同输入返回原有持久回执；修改输入返回 `409 payload_conflict`。新操作使用当前执行 epoch，恢复会递增 epoch。处理中或完成情况未知的操作返回 `409 scheduling_unknown`，重启后进入 `RECOVERY_REQUIRED` 并保持工具准入关闭。
+窗口结束时以原窗口 epoch 提交 `phase: END`。TTL 控制闲置观测有效期；等待长度由完成的历史窗口测得。用户或工具真正返回时提交：
 
-| 输入 | 单位与范围 | 默认值 |
-| --- | --- | --- |
-| `expected_wait_ms` | 毫秒，0～86400000 | 0，保持驻留 |
-| `snapshot_cost_ms` | 毫秒，0～600000 | 500 |
-| `resume_cost_ms` | 毫秒，0～600000 | 500 |
-| `journal_cost_ms` | 毫秒，0～600000 | 50 |
-| `worker_pressure` | 有限数值，0～1 | 0 |
-| `min_residence_ms` | 毫秒，0～600000 | 1000 |
+```http
+POST /v1/sessions/demo/return-demand
+Authorization: Bearer <tenant-token>
+Content-Type: application/json
 
-成本与等待由调用方提供估计，响应标记 `estimate_source: caller_estimate`。`worker_pressure` 同样为调用方输入，可来自 WorkerPool 容量或 Request Parking 观测。服务端以当前时间与会话驻留、恢复时间计算实际驻留时长。
+{"operation_id":"return-8","expected_epoch":3}
+```
 
-策略使用保守的串行成本启发式：
+返回回执从 PENDING 变为 COMPLETED，并携带 `result_epoch`。该请求可在挂起途中登记；生命周期完成后调度器根据实际容量恢复。相同操作 ID 与 epoch 重试返回持久回执。
+
+## 收益阈值与迟滞
 
 ```text
 break_even_ms = snapshot_cost_ms + resume_cost_ms + journal_cost_ms
 pressure_factor = 1 - 0.75 × worker_pressure
-effective_margin_ms = ceil(config.margin_ms × pressure_factor)
+effective_margin_ms = ceil(margin_ms × pressure_factor)
 effective_min_residence_ms = ceil(min_residence_ms × pressure_factor)
 threshold_ms = break_even_ms + effective_margin_ms
 ```
 
-默认安全余量为 500 毫秒。预计等待严格超过 `threshold_ms`、驻留时间达到有效门槛、恢复后经过默认 5000 毫秒冷却窗口时，决策为 `SUSPEND`。执行压力达到 1 时，安全余量与驻留门槛保留默认值的 25%；恢复冷却窗口持续生效。响应中的 `estimated_released_ms` 为预计等待减串行成本后的时间估计，实际挂起生命周期从发起到完成的耗时单独记录在 `actual_lifecycle_elapsed_ms`。
+快照成本优先取 `checkpoint_ready_ms` 的 p75，也可由挂起与持久化等待相加；恢复成本来自 `resume_ready_ms`，事务成本来自 `journal_commit_ms`。无观测时采用 500／500／50 毫秒的启动成本先验。默认安全余量 500 毫秒、最小驻留 1000 毫秒、恢复冷却 5000 毫秒。
 
-活跃工具、未知工具回执、进行中或未知生命周期操作、未决调度操作会产生 `KEEP`。安全检查与新工具准入关闭共享协调器锁，生命周期继续核验 epoch、排空工具、提交快照 manifest，并由 Substrate 后端执行 UID/generation fencing。恢复通过提交的 manifest 校验快照和回执水位。
+预计等待超过阈值、驻留与冷却满足条件、工具安全点成立且候选状态稳定至少 500 毫秒后，执行 SUSPEND。实际生命周期耗时与估计分别保存，用于检查预测误差和恢复代价。
 
-配置 DynamoBridge 后，协调器调用原生控制面的 Session 查询，记录 `queue_observation.source: native_dynamo`、`scope: classifier`、`waiting_requests` 与 `observed_at`。该计数表示 classifier 总等待请求数，用于证明推理侧存在排队压力；每个会话的等待时长继续采用调用方估计。计数为零且 `worker_pressure` 为零时保持驻留；执行侧存在压力时继续依据成本阈值与安全点决定挂起，覆盖模型正在生成而执行槽位紧张的场景。查询失败或观测超过 5 秒时保持驻留并记录原因。原生返回挂起生命周期的 `SUSPENDED`、`PARKED`、`HEAVY_TOOL`、`RESUMING` 状态反馈继续影响推理侧 Acting 准入权重。
+## 显式模型边界
+
+`POST /v1/sessions/{id}/model-boundary` 支持手动触发。提交 `operation_id`、`expected_epoch`，省略或使用零 `expected_wait_ms` 时，服务端根据持久请求与 Dynamo 观测估计成本和等待。自主调度内部还传入实际 WorkerPool 观测；返回 `estimate_source: server_observed` 与 `server_evidence`。
+
+显式非零等待估计用于可控回放与兼容客户端，回执标记 `estimate_source: caller_estimate`。可选的 `snapshot_cost_ms`、`resume_cost_ms`、`journal_cost_ms`、`min_residence_ms` 范围为 0～600000，`expected_wait_ms` 范围为 0～86400000，`worker_pressure` 范围为 0～1。
+
+操作 ID 同时保护请求输入和生命周期预留。相同 ID 的不同输入返回 `409 payload_conflict`；处理结果未知时保持闭闸并进入 `RECOVERY_REQUIRED`。Substrate 在同一 lease 中检查 Actor UID/version，快照按 UUID/generation 等待 durable，恢复核验独立 Tag 与实际 MEMORY fidelity。
+
+## 诊断与验收
 
 ```bash
-go test -race ./internal/policy ./internal/control \
-  -run 'TestLifecycle|TestModelBoundary|TestInterruptedBoundary' -count=1
+bin/agentcloud status --url http://127.0.0.1:8090
+bin/agentcloud trace workspace-id --json
 ```
+
+CLI 使用 `AGENTCLOUD_TOKEN`。事件包含 `autonomous.keep`、`autonomous.SUSPEND`、`autonomous.RESUME`、决策原因和原始观测。Prometheus 与 OpenTelemetry 关联请求、模型 attempt、原生 admission、快照持久化和恢复阶段。
+
+[自主闭环回归](../internal/control/autonomous_test.go)、[生命周期竞争回归](../internal/control/scheduling_test.go)、[WorkerPool 资源碎片回归](../internal/adapters/substrate/observability_test.go)与[真实规模实验](EXPERIMENTS.md)共同提供验收依据。

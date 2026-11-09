@@ -15,6 +15,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+import uuid
 
 ROOT=Path(__file__).resolve().parents[2]
 UPSTREAM=ROOT/'upstream/dynamo'
@@ -99,7 +100,8 @@ class Stack:
         model,self.token=prepare(self.args.control_port,self.runtime_dir,getattr(self.args,'max_model_len',8192),getattr(self.args,'tenants',1),getattr(self.args,'max_sessions',10000))
         self.tenant_tokens=json.loads((self.runtime_dir/'tenant-tokens.json').read_text())
         self.front=f'http://127.0.0.1:{self.args.port}';self.control=f'http://127.0.0.1:{self.args.control_port}'
-        env=os.environ.copy();env.update(PYTHONPATH=str(UPSTREAM/'components/src'),DYN_FILE_KV=str(self.runtime_dir/f'discovery-{os.getpid()}'),DYN_NAMESPACE=f'agentcloud-{os.getpid()}',DYN_LOG='info',DYN_COMPUTE_THREADS='2',DYN_SYSTEM_THREADS='2',HF_HUB_OFFLINE='1',TRANSFORMERS_OFFLINE='1')
+        instance=f'{os.getpid()}-{uuid.uuid4().hex[:12]}'
+        env=os.environ.copy();env.update(PYTHONPATH=str(UPSTREAM/'components/src'),DYN_FILE_KV=str(self.runtime_dir/f'discovery-{instance}'),DYN_NAMESPACE=f'agentcloud-{instance}',DYN_LOG='info',DYN_COMPUTE_THREADS='2',DYN_SYSTEM_THREADS='2',HF_HUB_OFFLINE='1',TRANSFORMERS_OFFLINE='1')
         common=['--discovery-backend','file','--request-plane','tcp','--event-plane','zmq']
         frontend=[str(PYTHON),'-m','dynamo.frontend','--http-host','127.0.0.1','--http-port',str(self.args.port),'--router-mode','kv','--router-policy-config',str(self.runtime_dir/'thunderagent.yaml'),'--kv-cache-block-size','16',*common]
         mocker=[str(PYTHON),'-m','dynamo.mocker','--model-path',str(model),'--model-name','agentcloud-tiny','--block-size','16','--num-gpu-blocks-override',str(getattr(self.args,'num_gpu_blocks',64)),'--max-model-len',str(getattr(self.args,'max_model_len',8192)),'--kv-bytes-per-token','512','--num-workers',str(getattr(self.args,'num_workers',1)),'--speedup-ratio',str(getattr(self.args,'speedup_ratio',1)),*common]
