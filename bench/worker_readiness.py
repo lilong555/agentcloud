@@ -22,7 +22,7 @@ def placement_capacity(sample, config):
     if len(classes) != 1 or classes[0].get('sandboxClass') != 'gvisor':
         return None
     runtime = classes[0].get('defaultRuntime', {})
-    if not runtime.get('version'):
+    if not runtime.get('version', {}).get('schemaVersion'):
         return None
     overhead = runtime.get('actorOverhead', {})
     memory = config['actor_memory_bytes']

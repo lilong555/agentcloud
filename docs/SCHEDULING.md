@@ -32,7 +32,7 @@ flowchart LR
 
 闲置估计来自已经结束的 `idle_window_ms`，缺少显式窗口时使用实际工具间隔 `idle_until_tool_ms`。`--scheduler-idle-prior` 默认零；可配置冷启动先验，获得历史样本后由 p75 观测替代。真实模型请求和实际工具返回持续更新估计。
 
-Worker 压力取 Actor 槽位占用率与内存预留占用率的较大值。恢复时按每台 ACTIVE Worker 检查是否容纳目标 Actor，保留跨 Worker 的资源碎片信息。内存来自真实 assignment，包含运行时预留开销。
+Worker 压力取 Actor 槽位占用率与内存预留占用率的较大值。恢复候选同时满足 ACTIVE、正注册 epoch、已发布 sandbox class 和默认运行时兼容版本，再逐 Worker 检查可分配空间，保留资源碎片信息。尚在初始化的 Worker 记录于 `unready_workers`，待运行时注册完成后参与容量判断。内存来自真实 assignment，包含运行时预留开销。
 
 ## Agent 接入
 

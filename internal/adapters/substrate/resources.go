@@ -67,6 +67,7 @@ func (c *Client) WorkerMemoryAssignments(ctx context.Context, worker string) (ma
 
 type WorkerCapacity struct {
 	Workers              []string  `json:"workers,omitempty"`
+	UnreadyWorkers       []string  `json:"unready_workers,omitempty"`
 	FitsActor            *bool     `json:"fits_actor,omitempty"`
 	Worker               string    `json:"worker"`
 	CapacityActors       int64     `json:"capacity_actors"`
@@ -78,7 +79,8 @@ type WorkerCapacity struct {
 }
 
 // WorkerPoolCapacity observes the pool of the last assigned Worker. Fit is
-// evaluated on each active Worker, preserving placement fragmentation.
+// evaluated on each registered Worker with a published runtime, preserving
+// placement fragmentation during startup and rolling worker replacements.
 func (c *Client) WorkerPoolCapacity(ctx context.Context, worker string, memory int64) (WorkerCapacity, error) {
 	previous, err := c.control.GetWorker(ctx, &ateapi.GetWorkerRequest{Worker: &ateapi.ObjectRef{Name: worker}})
 	if err != nil {
@@ -101,12 +103,17 @@ func (c *Client) WorkerPoolCapacity(ctx context.Context, worker string, memory i
 }
 func poolCapacity(previous *ateapi.Worker, candidates []*ateapi.Worker, memory int64) WorkerCapacity {
 	fits := false
-	result := WorkerCapacity{Worker: previous.GetMetadata().GetName(), ObservedAt: time.Now().UTC(), Source: "substrate_active_worker_pool_capacity_and_allocated", FitsActor: &fits}
+	result := WorkerCapacity{Worker: previous.GetMetadata().GetName(), ObservedAt: time.Now().UTC(), Source: "substrate_registered_worker_pool_capacity_and_allocated", FitsActor: &fits}
 	for _, w := range candidates {
 		if w.GetWorkerNamespace() != previous.GetWorkerNamespace() || w.GetWorkerPool() != previous.GetWorkerPool() || w.GetStatus().GetState() != ateapi.WorkerState_WORKER_STATE_ACTIVE {
 			continue
 		}
 		status := w.GetStatus()
+		classes := status.GetSandboxClasses()
+		if status.GetRegisteredEpoch() == 0 || len(classes) != 1 || classes[0].GetSandboxClass() == "" || classes[0].GetDefaultRuntime().GetVersion().GetSchemaVersion() == "" {
+			result.UnreadyWorkers = append(result.UnreadyWorkers, w.GetMetadata().GetName())
+			continue
+		}
 		capacity, allocated := status.GetCapacity(), status.GetAllocated()
 		result.Workers = append(result.Workers, w.GetMetadata().GetName())
 		result.CapacityActors += int64(capacity.GetActors())

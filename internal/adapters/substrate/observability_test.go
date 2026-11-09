@@ -80,7 +80,9 @@ func TestNativeGRPCTraceMetadataAndSeparateDurabilityTimings(t *testing.T) {
 
 func TestWorkerPoolFitUsesActiveWorkersAndPreservesFragmentation(t *testing.T) {
 	worker := func(name string, free int64) *ateapi.Worker {
-		return &ateapi.Worker{Metadata: &ateapi.ResourceMetadata{Name: name}, WorkerNamespace: "team", WorkerPool: "pool", Status: &ateapi.WorkerStatus{State: ateapi.WorkerState_WORKER_STATE_ACTIVE, Capacity: &ateapi.WorkerResources{Actors: 4, MemoryBytes: 1024}, Allocated: &ateapi.WorkerResources{Actors: 2, MemoryBytes: 1024 - free}}}
+		return &ateapi.Worker{Metadata: &ateapi.ResourceMetadata{Name: name}, WorkerNamespace: "team", WorkerPool: "pool", Status: &ateapi.WorkerStatus{State: ateapi.WorkerState_WORKER_STATE_ACTIVE, RegisteredEpoch: 1,
+			SandboxClasses: []*ateapi.WorkerSandboxClass{{SandboxClass: "gvisor", DefaultRuntime: &ateapi.WorkerSandboxRuntime{Version: &ateapi.VersionedSandboxCompat{SchemaVersion: "v1"}}}},
+			Capacity:       &ateapi.WorkerResources{Actors: 4, MemoryBytes: 1024}, Allocated: &ateapi.WorkerResources{Actors: 2, MemoryBytes: 1024 - free}}}
 	}
 	a, b := worker("a", 128), worker("b", 128)
 	draining := worker("draining", 1024)
@@ -95,5 +97,18 @@ func TestWorkerPoolFitUsesActiveWorkersAndPreservesFragmentation(t *testing.T) {
 	result = poolCapacity(a, []*ateapi.Worker{a, b}, 256)
 	if !*result.FitsActor {
 		t.Fatal("available peer Worker ignored")
+	}
+	for _, incomplete := range []func(*ateapi.WorkerStatus){
+		func(s *ateapi.WorkerStatus) { s.RegisteredEpoch = 0 },
+		func(s *ateapi.WorkerStatus) { s.SandboxClasses = nil },
+		func(s *ateapi.WorkerStatus) { s.SandboxClasses[0].DefaultRuntime = nil },
+		func(s *ateapi.WorkerStatus) { s.SandboxClasses[0].DefaultRuntime.Version = nil },
+	} {
+		starting := worker("starting", 1024)
+		incomplete(starting.Status)
+		result = poolCapacity(a, []*ateapi.Worker{a, starting}, 256)
+		if *result.FitsActor || result.CapacityMemoryBytes != 1024 || len(result.UnreadyWorkers) != 1 || result.UnreadyWorkers[0] != "starting" {
+			t.Fatalf("unregistered runtime admitted a return demand: %+v", result)
+		}
 	}
 }

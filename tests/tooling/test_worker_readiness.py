@@ -13,7 +13,7 @@ class WorkerReadinessTests(unittest.TestCase):
         self.worker = {'at': '2026-11-09T00:00:00Z', 'observation': 1, 'worker_name': 'worker-a',
                        'worker_status': {'state': 'WORKER_STATE_ACTIVE', 'registeredEpoch': '1',
                         'capacity': {'actors': '1000', 'memoryBytes': str(704 * 2**20), 'cpuMillicores': '1000'},
-                        'sandboxClasses': [{'sandboxClass': 'gvisor', 'defaultRuntime': {'version': {'hash': 'runtime'}}}]}}
+                        'sandboxClasses': [{'sandboxClass': 'gvisor', 'defaultRuntime': {'version': {'schemaVersion': 'v1'}}}]}}
         self.now = 1794182400
 
     def test_active_worker_waits_for_registration_and_runtime(self):
