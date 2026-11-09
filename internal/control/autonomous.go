@@ -16,7 +16,7 @@ type CapacityObserver interface {
 }
 
 func (b *SubstrateBackend) SchedulingCapacity(ctx context.Context, s *Session) (CapacityObservation, error) {
-	return b.cfg.Client.WorkerCapacity(ctx, s.Actor.AssignedWorker)
+	return b.cfg.Client.WorkerPoolCapacity(ctx, s.Actor.AssignedWorker, s.Actor.AssignedMemoryBytes)
 }
 
 type ServerEstimateEvidence struct {
@@ -188,6 +188,9 @@ func (c *Controller) autonomousLoop() {
 					if s.State != "RUNNING" && s.State != "CHECKPOINTED" && s.State != "SUSPENDED" {
 						continue
 					}
+					if (s.State == "CHECKPOINTED" || s.State == "SUSPENDED") && (s.Autonomous == nil || !s.Autonomous.ReturnDemand) {
+						continue
+					}
 					if c.schedulerBusy[key(s.TenantID, s.SessionID)] {
 						continue
 					}
@@ -306,10 +309,13 @@ func (c *Controller) autonomousStep(snapshot *Session) {
 		reason = "worker_capacity_stale"
 	} else if queue != nil && (queue.ObservedAt.IsZero() || now.Sub(queue.ObservedAt) > 5*time.Second) {
 		reason = "queue_observation_stale"
-	} else if s.State == "SUSPENDED" {
+	} else if s.State == "SUSPENDED" || s.State == "CHECKPOINTED" {
 		reason = "await_return_demand"
 		if a.ReturnDemand {
 			available := capacity == nil && c.cfg.Backend.Name() != "substrate" || capacity != nil && (capacity.CapacityActors == 0 || capacity.AllocatedActors < capacity.CapacityActors) && (capacity.CapacityMemoryBytes == 0 || capacity.CapacityMemoryBytes-capacity.AllocatedMemoryBytes >= s.Actor.AssignedMemoryBytes)
+			if capacity != nil && capacity.FitsActor != nil {
+				available = *capacity.FitsActor
+			}
 			if available {
 				action, reason = "RESUME", "model_ready_return_demand_capacity_available"
 			} else {

@@ -65,7 +65,8 @@ func main() {
 				os.Exit(1)
 			}
 			allocated, _ := protojson.Marshal(worker.GetStatus().GetAllocated())
-			_ = encoder.Encode(map[string]any{"at": time.Now().UTC(), "worker_name": worker.GetMetadata().GetName(), "assignments": json.RawMessage(data), "worker_allocated": json.RawMessage(allocated)})
+			capacity, _ := protojson.Marshal(worker.GetStatus().GetCapacity())
+			_ = encoder.Encode(map[string]any{"at": time.Now().UTC(), "worker_name": worker.GetMetadata().GetName(), "worker_pool": worker.GetWorkerPool(), "worker_namespace": worker.GetWorkerNamespace(), "worker_state": worker.GetStatus().GetState().String(), "assignments": json.RawMessage(data), "worker_allocated": json.RawMessage(allocated), "worker_capacity": json.RawMessage(capacity)})
 		}
 		stop()
 		select {

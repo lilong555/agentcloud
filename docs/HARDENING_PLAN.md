@@ -1,0 +1,16 @@
+# 工程加固与规模实验验收计划
+
+本轮交付覆盖上游源码、真实执行、调度实验、故障恢复、观测诊断及公开复现。所有实验记录冻结配置、种子、软件摘要、请求分母和失败事件。根分区在每次构建、压测及故障测试前后检查，执行阈值为至少 6 GiB，满足可用空间持续大于 4 GB 的要求。
+
+| 阶段 | 交付物 | 验收证据 |
+| --- | --- | --- |
+| 1. 仓库与上游 | 根目录提示文件归档至忽略目录；Substrate / Dynamo 完整文件、format-patch 序列和 `UPSTREAM_PRS.md` | 锁定基线 `git am` 后逐文件摘要一致；每个行为修改映射到通过的原生测试 |
+| 2. 大规模实验 | N=8/16/32/64 并发会话；每会话 5～8 轮，1K～16K 增长前缀；受限 Worker 与 Mocker KV；静态 TTL=0/2/5/15s 与动态协调；等待 1～60s × 内存工作集热力图 | 真实 Actor 工具回执、MEMORY 恢复身份、Rust PAUSED 与 acting 权重、KV 缓存事件、原始时序与资源样本；p50/p95/p99 和 95% CI |
+| 3. 深度 Agent | PostgreSQL / SQLite DeerFlow 检查点、并发子任务、文件上传、两阶段 manifest；多文件 Coding 缺陷修复与单测 | 新进程恢复、全局安全点、回执与不可变快照对账、RAM AST 连续性、真实测试输出；四类 Actor 负载闭环 |
+| 4. 观测诊断 | Prometheus、OpenTelemetry、`agentcloud status`、`agentcloud trace <workspace-id>` | 指标抓取、跨层父子 Span、状态与 epoch 轨迹、manifest 摘要和关键路径实测 |
+| 5. 故障矩阵 | 至少 15 个独立故障窗口的自动化注入与恢复 | Substrate + PostgreSQL + Dynamo 实机逐项审计；含返回/Suspend 竞态、旧 epoch、PENDING、ROOTFS 降级、UNKNOWN、防重放和 Frontend 重启 |
+| 6. 公开交付 | README、实验与状态文档、架构图、`INTERVIEW_DEFENSE.md`、一键入口 | 完整源码还原、证据校验、全套实机验证、源码行号与结果对应、公开 GitHub 提交及 CI |
+
+实验采用依赖关系相同的多轮 Workspace 轨迹和配对种子，所有策略使用相同工作量、资源限制及排队规则。静态基线独立调优，动态策略从服务端实际队列、WorkerPool 可分配容量、既往模型耗时与快照恢复成本生成估计；调用方报告已经开始或结束的闲置窗口与真实返回需求。收益、延迟、Goodput、恢复开销分别计算；全面优势以全部基线和预先声明指标的实测及置信区间为判据，出现取舍时记录完整结果并继续优化。
+
+验证按 P0 会话绑定回收、P0 服务端自主成本观测、P1 真实模型 Coding 与多租户规模、P2 物理 GPU 测量排序。GitHub Actions 执行 Rust 编译、Kind/gVisor 与 N=8/16/32/64 压测。本机检查使用进程组资源保护器，默认峰值 RSS 上限 1536 MiB、可用内存下限 1536 MiB、日志上限 64 MiB；每项检查结束回收所属进程组。实验驱动统一管理临时数据库、Actor、Tag、端口转发和原生推理进程的退出清理。原生 CPU Mocker 的 KV 块代表配置的推理缓存容量，实验标注实际运行后端和硬件来源。

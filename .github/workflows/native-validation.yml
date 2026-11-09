@@ -52,7 +52,7 @@ jobs:
           key: native-cpu-${{ runner.os }}-${{ hashFiles('integrations/dynamo/manifest.json') }}
           restore-keys: native-cpu-${{ runner.os }}-
       - name: Build native Rust Frontend bindings
-        run: python3 experiments/dynamo/build_cpu.py
+        run: python3 scripts/resource_guard.py --min-available-mib 1536 --max-rss-mib 12000 --timeout 5400 -- python3 experiments/dynamo/build_cpu.py
       - name: Run mapped native Go and Rust tests
         run: python3 scripts/upstream_native_tests.py --go go --cargo cargo
       - name: Apply format-patch series on clean locked sources

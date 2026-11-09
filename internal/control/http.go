@@ -1,6 +1,7 @@
 package control
 
 import (
+	"context"
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
@@ -8,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func decode(w http.ResponseWriter, r *http.Request, out any) error {
@@ -80,7 +82,7 @@ func (c *Controller) Handler() http.Handler {
 		if c.cfg.EnableExperimentControls {
 			groups = []string{"A", "B", "C", "D", "E"}
 		}
-		respond(w, 200, map[string]any{"protocol_version": 1, "execution_backend": c.cfg.Backend.Name(), "journal_backend": c.store.Backend(), "durable_requests": true, "streaming": true, "first_token_observation": "upstream_sse_nonempty_content", "first_token_kinds": []string{"content", "reasoning_content", "refusal", "tool_call_arguments"}, "execution_feedback": c.cfg.Signals != nil, "experiment_controls_enabled": c.cfg.EnableExperimentControls, "ablation_groups": groups, "ablation_controls": map[string]any{"state_feedback_groups": []string{"E"}, "request_final_groups": []string{"A", "B"}, "model_boundary_groups": []string{"D", "E"}, "native_inference_admission": true}, "single_writer": true, "tools": []string{"file_read", "file_write", "shell"}})
+		respond(w, 200, map[string]any{"protocol_version": 1, "execution_backend": c.cfg.Backend.Name(), "journal_backend": c.store.Backend(), "durable_requests": true, "streaming": true, "first_token_observation": "upstream_sse_nonempty_content", "first_token_kinds": []string{"content", "reasoning_content", "refusal", "tool_call_arguments"}, "execution_feedback": c.cfg.Signals != nil, "autonomous_scheduler_enabled": c.cfg.EnableAutonomousScheduler, "experiment_controls_enabled": c.cfg.EnableExperimentControls, "ablation_groups": groups, "ablation_controls": map[string]any{"state_feedback_groups": []string{"E"}, "request_final_groups": []string{"A", "B"}, "model_boundary_groups": []string{"D", "E"}, "native_inference_admission": true}, "single_writer": true, "tools": []string{"file_read", "file_write", "shell"}})
 		return nil
 	}))
 	mux.HandleFunc("POST /v1/sessions", c.authenticated(func(w http.ResponseWriter, r *http.Request, tenant string) error {
@@ -199,6 +201,24 @@ func (c *Controller) Handler() http.Handler {
 			}
 		}
 		respond(w, 200, map[string]any{"events": events, "last_sequence": c.state.EventSequence})
+		return nil
+	}))
+	mux.HandleFunc("GET /v1/sessions/{id}/native", c.authenticated(func(w http.ResponseWriter, r *http.Request, tenant string) error {
+		s, err := c.Get(tenant, r.PathValue("id"))
+		if err != nil {
+			return err
+		}
+		bridge, ok := c.cfg.Signals.(*DynamoBridge)
+		if !ok {
+			return problem(409, "native_dynamo_unavailable", "native Dynamo bridge is required")
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+		receipt, err := bridge.Session(ctx, s)
+		if err != nil {
+			return problem(503, "native_observation_unavailable", err.Error())
+		}
+		respond(w, 200, map[string]any{"epoch": s.Epoch, "snapshot": receipt.Snapshot})
 		return nil
 	}))
 	mux.HandleFunc("POST /v1/sessions/{id}/finalize", c.authenticated(func(w http.ResponseWriter, r *http.Request, tenant string) error {

@@ -77,3 +77,23 @@ func TestNativeGRPCTraceMetadataAndSeparateDurabilityTimings(t *testing.T) {
 		}
 	}
 }
+
+func TestWorkerPoolFitUsesActiveWorkersAndPreservesFragmentation(t *testing.T) {
+	worker := func(name string, free int64) *ateapi.Worker {
+		return &ateapi.Worker{Metadata: &ateapi.ResourceMetadata{Name: name}, WorkerNamespace: "team", WorkerPool: "pool", Status: &ateapi.WorkerStatus{State: ateapi.WorkerState_WORKER_STATE_ACTIVE, Capacity: &ateapi.WorkerResources{Actors: 4, MemoryBytes: 1024}, Allocated: &ateapi.WorkerResources{Actors: 2, MemoryBytes: 1024 - free}}}
+	}
+	a, b := worker("a", 128), worker("b", 128)
+	draining := worker("draining", 1024)
+	draining.Status.State = ateapi.WorkerState_WORKER_STATE_DRAINING
+	foreign := worker("foreign", 1024)
+	foreign.WorkerPool = "another-pool"
+	result := poolCapacity(a, []*ateapi.Worker{a, b, draining, foreign}, 256)
+	if *result.FitsActor || len(result.Workers) != 2 || result.CapacityMemoryBytes != 2048 {
+		t.Fatalf("fragmented capacity admitted: %+v", result)
+	}
+	b.Status.Allocated.MemoryBytes = 512
+	result = poolCapacity(a, []*ateapi.Worker{a, b}, 256)
+	if !*result.FitsActor {
+		t.Fatal("available peer Worker ignored")
+	}
+}
