@@ -48,7 +48,7 @@ jobs:
     if: always() && needs.plan.result == 'success' && (needs.native.result == 'success' || needs.native.result == 'skipped')
     strategy:
       fail-fast: false
-      max-parallel: ${{ inputs.max_parallel || 8 }}
+      max-parallel: ${{ fromJSON(format('{0}', inputs.max_parallel || 8)) }}
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     runs-on: ubuntu-latest
     timeout-minutes: 120

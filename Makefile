@@ -65,6 +65,7 @@ evidence-audit:
 
 verify-delivery:
 	$(PYTHON) scripts/repro_sources.py
+	$(PYTHON) scripts/upstream_patches.py verify
 
 serve: build
 	$(GO) run ./cmd/agentcloud serve
