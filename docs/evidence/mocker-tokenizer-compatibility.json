@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "component": "official-dynamo-mocker-tokenizer",
+  "validation_kind": "read-only-source-and-tokenizer-decode",
+  "mocker_generator": {
+    "source": "upstream/dynamo/lib/llm/src/mocker.rs",
+    "line": 235,
+    "function": "generate_random_token",
+    "expression": "rng.random_range(1000..2000)",
+    "minimum_token_id": 1000,
+    "maximum_token_id_inclusive": 1999
+  },
+  "compatible_tokenizer": {
+    "source": "experiments/dynamo/native_mocker.py",
+    "vocabulary_size": 4096,
+    "minimum_token_id": 0,
+    "maximum_token_id_inclusive": 4095,
+    "generated_token_text_pattern": "token{token_id}",
+    "generated_ids_have_visible_text": true,
+    "config_vocab_size": 4096
+  },
+  "observed_1024_tokenizer_decode": {
+    "1000": "token1000",
+    "1007": "token1007",
+    "1023": "token1023",
+    "1024": "",
+    "1500": "",
+    "1999": "",
+    "generated_id_coverage_fraction": 0.024,
+    "eight_independent_generated_ids_all_invisible_probability": 0.8233766397273575
+  },
+  "in_memory_compatible_decode": {
+    "input_token_ids": [1000, 1024, 1999],
+    "decoded_text": "token1000 token1024 token1999"
+  },
+  "streaming_request": {
+    "max_tokens": 192,
+    "min_tokens": 192,
+    "ignore_eos": true,
+    "stream": true,
+    "stream_options": {"include_usage": true}
+  },
+  "request_parameter_locations": {
+    "max_tokens": "root",
+    "min_tokens": "root",
+    "ignore_eos": "root"
+  },
+  "acceptance": {
+    "first_nonempty_generated_content": "SSE choices[].delta.content containing generated token text",
+    "terminal_completion_tokens": 192,
+    "generated_id_mapping": "Every token ID in [1000, 1999] maps to visible ordinary vocabulary text."
+  }
+}

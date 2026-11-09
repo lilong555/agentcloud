@@ -1,0 +1,105 @@
+configuration: 2 set, 56 default
+  actorJWT.algorithm                          ES256                (from default)
+  actorJWT.issuer                             ""                   (from default)
+  ateapi.authz.bootstrapOwners                ""                   (from default)
+  ateapi.authz.egressGatewayExtraSPIFFEIDs    ""                   (from default)
+  ateapi.expectedJWTIssuer                    ""                   (from default)
+  ateapi.logLevel                             ""                   (from default)
+  ateapi.postgres.cloudsql.gsa                ""                   (from default)
+  ateapi.postgres.cloudsql.iamAuth            ""                   (from default)
+  ateapi.postgres.cloudsql.instance           ""                   (from default)
+  ateapi.postgres.cloudsql.ipType             ""                   (from default)
+  ateapi.postgres.owner.connectionString      ""                   (from default)
+  ateapi.postgres.owner.role                  substrate_owner      (from default)
+  ateapi.postgres.poolMaxConns                ""                   (from default)
+  ateapi.postgres.readWrite.connectionString  ""                   (from default)
+  ateapi.postgres.readWrite.role              substrate_readwrite  (from default)
+  ateapi.postgres.schema                      ""                   (from default)
+  ateapi.postgres.serverCAFile                ""                   (from default)
+  ateapi.postgres.storageClass                ""                   (from default)
+  atenet.dataplane                            envoy                (from default)
+  atenet.egress.additionalExtprocService      ""                   (from default)
+  atenet.egress.credentialProvider            ""                   (from default)
+  benchmark.actorMemory                       ""                   (from default)
+  benchmark.sandboxClass                      gvisor               (from default)
+  benchmark.workerCount                       1                    (from default)
+  clusterSize                                 size0                (from default)
+  context                                     ""                   (from default)
+  cordonSystemInfraComponents                 false                (from default)
+  csi.setup                                   none                 (from default)
+  demo.anthropicAPIKey                        ""                   (from default)
+  demo.counter.storageClass                   standard             (from default)
+  demo.counter.withExternalVolume             false                (from default)
+  docker.buildFlags                           ""                   (from default)
+  e2e.envoyConcurrency                        0                    (from default)
+  e2e.tuning                                  false                (from default)
+  fakeDataPlane.enabled                       false                (from default)
+  gcp.clusterLocation                         ""                   (from default)
+  gcp.clusterName                             ""                   (from default)
+  gcp.projectID                               ""                   (from default)
+  images.repo                                 ""                   (from default)
+  images.tag                                  ""                   (from default)
+  ingressAllowedSPIFFEIDs                     ""                   (from default)
+  kindCluster.enabled                         false                (from default)
+  kindCluster.name                            kind                 (from default)
+  ko.defaultPlatforms                         linux/amd64          (from KO_DEFAULTPLATFORMS)
+  ko.dockerRepo                               localhost:5001       (from KO_DOCKER_REPO)
+  kubeconfig                                  ""                   (from default)
+  namespace                                   ate-system           (from default)
+  otlpEndpoint                                ""                   (from default)
+  podcert.workersPerSigner                    0                    (from default)
+  preview                                     ""                   (from default)
+  publish.binariesDir                         bin/release          (from default)
+  publish.overwrite                           false                (from default)
+  record.dir                                  ""                   (from default)
+  rolloutTimeout                              1m0s                 (from default)
+  sandboxClasses                              gvisor,microvm       (from default)
+  storage.bucketName                          ""                   (from default)
+  storage.snapshotLocation                    ""                   (from default)
+  storage.transferGSAName                     ""                   (from default)
+[1;36m[step]: publish_worker_images (94e0a26a-dirty)[0m
+[1;36m[step]: images: built from source with ko[0m
+2026/11/09 22:02:37 Using base gcr.io/distroless/static-debian13:nonroot@sha256:18f4cc26c9ffa7f20a359298be7deadac5c607c8e03a02b8119f1a5fc2f82c99 for go.ate.dev/substrate/cmd/ateworker-gvisor
+2026/11/09 22:02:38 git doesn't contain any tags. Tag info will not be available
+git is in a dirty state
+Please check in your pipeline what can be changing the following files:
+ M api/ateapi/v1/ateapi.pb.go
+ M api/ateapi/v1/ateapi.proto
+ M api/ateapi/v1/ateapi_grpc.pb.go
+ M cmd/ateapi/internal/apivalidation/actor.go
+ M cmd/ateapi/internal/apivalidation/actor_test.go
+ M cmd/ateapi/internal/apivalidation/zz_generated.validation.go
+ M cmd/ateapi/internal/authz/registry.go
+ M cmd/ateapi/internal/controlapi/actor.go
+ M cmd/ateapi/internal/controlapi/tag.go
+ M cmd/ateapi/internal/controlapi/workflow.go
+ M cmd/ateapi/internal/controlapi/workflow_resume.go
+ M cmd/ateapi/internal/controlapi/workflow_resume_test.go
+ M cmd/ateapi/internal/controlapi/workflow_suspend.go
+ M cmd/ateapi/internal/controlapi/workflow_tag.go
+ M cmd/ateapi/internal/controlapi/workflow_tag_test.go
+ M cmd/ateapi/internal/store/storetest/storetest.go
+ M cmd/atelet/lifecycle_test.go
+ M cmd/atelet/main.go
+ M cmd/ateworker-gvisor/main.go
+ M cmd/ateworker-microvm/restore.go
+ M docs/reference/api-guide.md
+ M internal/proto/ateletpb/atelet.pb.go
+ M internal/proto/ateletpb/atelet.proto
+ M internal/proto/ateworkerpb/ateworker.pb.go
+ M internal/proto/ateworkerpb/ateworker.proto
+?? cmd/agentcloud-credentials/
+?? cmd/ateapi/internal/controlapi/snapshot_durability.go
+?? cmd/ateapi/internal/controlapi/snapshot_durability_test.go
+?? cmd/ateapi/internal/controlapi/workflow_preconditions_test.go
+
+2026/11/09 22:02:38 Building go.ate.dev/substrate/cmd/ateworker-gvisor for linux/amd64
+2026/11/09 22:02:47 Publishing localhost:5001/ateworker-gvisor:latest
+2026/11/09 22:02:47 pushed blob: sha256:f6a26cd1b12c2c15110a96f70afda49c5842e53a16487424b1f5abcac5696e07
+2026/11/09 22:02:47 pushed blob: sha256:08ab1d1e4e26411273c620bd9a5b9d2eb5bee9d6468130328704601e95dbd23b
+2026/11/09 22:02:47 localhost:5001/ateworker-gvisor:sha256-4390b5d7eae795f5a136c492b14733bb8415f989acc06834798d45a473fbac15.sbom: digest: sha256:5f508f346a72076a7cbce6c18fc2dec3f7d07f12d0f99eafb59abd12344f91b3 size: 374
+2026/11/09 22:02:47 Published SBOM localhost:5001/ateworker-gvisor:sha256-4390b5d7eae795f5a136c492b14733bb8415f989acc06834798d45a473fbac15.sbom
+2026/11/09 22:02:48 pushed blob: sha256:c172f21841dff4c8cf45cde46589c1c2616cefe7e819965e92e6d3475c428aa0
+2026/11/09 22:02:49 pushed blob: sha256:2cc7ee286bf3a9e6af5f71756d7fc8e22e23ce65fec9047d774511ffcef79fa8
+signal: interrupt
+Error: failed to publish images: error publishing ko://go.ate.dev/substrate/cmd/ateworker-gvisor: Get "https://gcr.io/artifacts-downloads/namespaces/distroless/repositories/gcr.io/downloads/I9v99fRu9ZuHudKK": context canceled

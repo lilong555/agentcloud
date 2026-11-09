@@ -1,0 +1,341 @@
+{
+  "schema_version": 1,
+  "execution_kind": "contract-replay",
+  "upstream_execution": false,
+  "trust_source": "explicit_local_fixture",
+  "input": "fixtures/signals/demo.jsonl",
+  "signal_config": {
+    "min_ttl_ms": 100,
+    "max_ttl_ms": 60000,
+    "max_estimated_return_ms": 600000
+  },
+  "policy_config": {
+    "parked_multiplier": 0.1,
+    "suspended_multiplier": 0,
+    "heavy_tool_multiplier": 0.25,
+    "heavy_tool_minimum_ms": 1000
+  },
+  "future_skew_ms": 1000,
+  "recovery_hold_ms": 1000,
+  "minimum_residence_ms": 250,
+  "summary": {
+    "records": 17,
+    "registrations_accepted": 2,
+    "updates_accepted": 4,
+    "updates_rejected": 2,
+    "evaluations_accepted": 9,
+    "records_rejected": 2
+  },
+  "outcomes": [
+    {
+      "line": 1,
+      "type": "register",
+      "at": "2026-11-09T00:00:00Z",
+      "accepted": true,
+      "reason": "accepted"
+    },
+    {
+      "line": 2,
+      "type": "evaluate",
+      "at": "2026-11-09T00:00:00Z",
+      "accepted": true,
+      "reason": "accepted",
+      "decision": {
+        "identity": {
+          "source_id": "coordinator-local",
+          "tenant_id": "tenant-a",
+          "workspace_id": "workspace-a",
+          "session_id": "session-a",
+          "actor_uid": "actor-001",
+          "epoch": 1
+        },
+        "program_status": "Acting",
+        "signal_state": "RUNNING_FAST",
+        "signal_fresh": false,
+        "baseline_tokens": 1000,
+        "baseline_weight": 0.8,
+        "acting_baseline_weight": 0.8,
+        "applied_multiplier": 1,
+        "effective_weight": 0.8,
+        "logical_budget_tokens": 800,
+        "reason": "no_signal",
+        "physical_kv_action": "none"
+      }
+    },
+    {
+      "line": 3,
+      "type": "update",
+      "at": "2026-11-09T00:00:00.1Z",
+      "accepted": true,
+      "reason": "accepted"
+    },
+    {
+      "line": 4,
+      "type": "evaluate",
+      "at": "2026-11-09T00:00:00.2Z",
+      "accepted": true,
+      "reason": "accepted",
+      "decision": {
+        "identity": {
+          "source_id": "coordinator-local",
+          "tenant_id": "tenant-a",
+          "workspace_id": "workspace-a",
+          "session_id": "session-a",
+          "actor_uid": "actor-001",
+          "epoch": 1
+        },
+        "program_status": "Acting",
+        "signal_state": "SUSPENDED",
+        "signal_fresh": true,
+        "baseline_tokens": 1000,
+        "baseline_weight": 0.8,
+        "acting_baseline_weight": 0.8,
+        "applied_multiplier": 1,
+        "effective_weight": 0.8,
+        "logical_budget_tokens": 800,
+        "reason": "state_debounce",
+        "physical_kv_action": "none"
+      }
+    },
+    {
+      "line": 5,
+      "type": "evaluate",
+      "at": "2026-11-09T00:00:00.4Z",
+      "accepted": true,
+      "reason": "accepted",
+      "decision": {
+        "identity": {
+          "source_id": "coordinator-local",
+          "tenant_id": "tenant-a",
+          "workspace_id": "workspace-a",
+          "session_id": "session-a",
+          "actor_uid": "actor-001",
+          "epoch": 1
+        },
+        "program_status": "Acting",
+        "signal_state": "SUSPENDED",
+        "signal_fresh": true,
+        "baseline_tokens": 1000,
+        "baseline_weight": 0.8,
+        "acting_baseline_weight": 0.8,
+        "applied_multiplier": 0,
+        "effective_weight": 0,
+        "logical_budget_tokens": 0,
+        "reason": "suspended_acting",
+        "physical_kv_action": "none"
+      }
+    },
+    {
+      "line": 6,
+      "type": "evaluate",
+      "at": "2026-11-09T00:00:00.4Z",
+      "accepted": true,
+      "reason": "accepted",
+      "decision": {
+        "identity": {
+          "source_id": "coordinator-local",
+          "tenant_id": "tenant-a",
+          "workspace_id": "workspace-a",
+          "session_id": "session-a",
+          "actor_uid": "actor-001",
+          "epoch": 1
+        },
+        "program_status": "Reasoning",
+        "signal_state": "SUSPENDED",
+        "signal_fresh": true,
+        "baseline_tokens": 1000,
+        "baseline_weight": 1,
+        "acting_baseline_weight": 0.8,
+        "applied_multiplier": 1,
+        "effective_weight": 1,
+        "logical_budget_tokens": 1000,
+        "reason": "reasoning_preserved",
+        "physical_kv_action": "none"
+      }
+    },
+    {
+      "line": 7,
+      "type": "update",
+      "at": "2026-11-09T00:00:00.45Z",
+      "accepted": false,
+      "reason": "replay_or_out_of_order",
+      "detail": "replay_or_out_of_order: sequence must strictly increase within the epoch"
+    },
+    {
+      "line": 8,
+      "type": "update",
+      "at": "2026-11-09T00:00:00.5Z",
+      "accepted": true,
+      "reason": "accepted"
+    },
+    {
+      "line": 9,
+      "type": "evaluate",
+      "at": "2026-11-09T00:00:00.5Z",
+      "accepted": true,
+      "reason": "accepted",
+      "decision": {
+        "identity": {
+          "source_id": "coordinator-local",
+          "tenant_id": "tenant-a",
+          "workspace_id": "workspace-a",
+          "session_id": "session-a",
+          "actor_uid": "actor-001",
+          "epoch": 1
+        },
+        "program_status": "Acting",
+        "signal_state": "RESUMING",
+        "signal_fresh": true,
+        "baseline_tokens": 1000,
+        "baseline_weight": 0.8,
+        "acting_baseline_weight": 0.8,
+        "applied_multiplier": 1,
+        "effective_weight": 0.8,
+        "logical_budget_tokens": 800,
+        "reason": "resuming_baseline",
+        "physical_kv_action": "none"
+      }
+    },
+    {
+      "line": 10,
+      "type": "update",
+      "at": "2026-11-09T00:00:00.6Z",
+      "accepted": true,
+      "reason": "accepted"
+    },
+    {
+      "line": 11,
+      "type": "evaluate",
+      "at": "2026-11-09T00:00:01Z",
+      "accepted": true,
+      "reason": "accepted",
+      "decision": {
+        "identity": {
+          "source_id": "coordinator-local",
+          "tenant_id": "tenant-a",
+          "workspace_id": "workspace-a",
+          "session_id": "session-a",
+          "actor_uid": "actor-001",
+          "epoch": 1
+        },
+        "program_status": "Acting",
+        "signal_state": "PARKED",
+        "signal_fresh": true,
+        "baseline_tokens": 1000,
+        "baseline_weight": 0.8,
+        "acting_baseline_weight": 0.8,
+        "applied_multiplier": 1,
+        "effective_weight": 0.8,
+        "logical_budget_tokens": 800,
+        "reason": "recovery_hold",
+        "physical_kv_action": "none"
+      }
+    },
+    {
+      "line": 12,
+      "type": "evaluate",
+      "at": "2026-11-09T00:00:01.6Z",
+      "accepted": true,
+      "reason": "accepted",
+      "decision": {
+        "identity": {
+          "source_id": "coordinator-local",
+          "tenant_id": "tenant-a",
+          "workspace_id": "workspace-a",
+          "session_id": "session-a",
+          "actor_uid": "actor-001",
+          "epoch": 1
+        },
+        "program_status": "Acting",
+        "signal_state": "PARKED",
+        "signal_fresh": true,
+        "baseline_tokens": 1000,
+        "baseline_weight": 0.8,
+        "acting_baseline_weight": 0.8,
+        "applied_multiplier": 0.1,
+        "effective_weight": 0.08000000000000002,
+        "logical_budget_tokens": 80,
+        "reason": "parked_acting",
+        "physical_kv_action": "none"
+      }
+    },
+    {
+      "line": 13,
+      "type": "evaluate",
+      "at": "2026-11-09T00:00:03Z",
+      "accepted": true,
+      "reason": "accepted",
+      "decision": {
+        "identity": {
+          "source_id": "coordinator-local",
+          "tenant_id": "tenant-a",
+          "workspace_id": "workspace-a",
+          "session_id": "session-a",
+          "actor_uid": "actor-001",
+          "epoch": 1
+        },
+        "program_status": "Acting",
+        "signal_state": "RUNNING_FAST",
+        "signal_fresh": false,
+        "baseline_tokens": 1000,
+        "baseline_weight": 0.8,
+        "acting_baseline_weight": 0.8,
+        "applied_multiplier": 1,
+        "effective_weight": 0.8,
+        "logical_budget_tokens": 800,
+        "reason": "ttl_expired",
+        "physical_kv_action": "none"
+      }
+    },
+    {
+      "line": 14,
+      "type": "register",
+      "at": "2026-11-09T00:00:03.1Z",
+      "accepted": true,
+      "reason": "accepted"
+    },
+    {
+      "line": 15,
+      "type": "update",
+      "at": "2026-11-09T00:00:03.1Z",
+      "accepted": false,
+      "reason": "identity_mismatch",
+      "detail": "identity_mismatch: source or Actor differs from trusted binding"
+    },
+    {
+      "line": 16,
+      "type": "update",
+      "at": "2026-11-09T00:00:03.2Z",
+      "accepted": true,
+      "reason": "accepted"
+    },
+    {
+      "line": 17,
+      "type": "evaluate",
+      "at": "2026-11-09T00:00:03.5Z",
+      "accepted": true,
+      "reason": "accepted",
+      "decision": {
+        "identity": {
+          "source_id": "coordinator-local",
+          "tenant_id": "tenant-a",
+          "workspace_id": "workspace-a",
+          "session_id": "session-a",
+          "actor_uid": "actor-002",
+          "epoch": 2
+        },
+        "program_status": "Acting",
+        "signal_state": "HEAVY_TOOL",
+        "signal_fresh": true,
+        "baseline_tokens": 1000,
+        "baseline_weight": 0.8,
+        "acting_baseline_weight": 0.8,
+        "applied_multiplier": 0.25,
+        "effective_weight": 0.2,
+        "logical_budget_tokens": 200,
+        "reason": "heavy_tool_acting",
+        "physical_kv_action": "none"
+      }
+    }
+  ]
+}

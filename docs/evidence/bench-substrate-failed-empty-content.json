@@ -1,0 +1,378 @@
+{
+  "schema_version": 1,
+  "status": "failed",
+  "execution_kind": "live-substrate-postgres-native-thunderagent-official-mocker",
+  "upstream_execution": true,
+  "gpu_execution": false,
+  "inference_backend": "official dynamo.mocker process / native ThunderAgent CPU",
+  "run_id": "live-c3fceef850",
+  "config": {
+    "schema_version": 1,
+    "execution_kind": "live-substrate-postgres-native-thunderagent-official-mocker",
+    "paired_seeds": [
+      7101,
+      7102,
+      7103
+    ],
+    "randomized_order_seed": 9031,
+    "groups": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "actor_memory_bytes": 805306368,
+    "worker_allocatable_memory_bytes": 1543503872,
+    "interactive_slo_seconds": 8.0,
+    "request_timeout_seconds": 90.0,
+    "poll_interval_seconds": 0.025,
+    "cpu_compile_iterations": 24,
+    "cpu_source_functions": 1100,
+    "io_documents": 8,
+    "io_document_bytes": 65536,
+    "io_service_delay_seconds": 0.06,
+    "background_output_tokens": 192,
+    "background_expected_wait_ms": 4800,
+    "snapshot_cost_ms": 1800,
+    "resume_cost_ms": 300,
+    "journal_cost_ms": 50,
+    "contender_arrival_offset_seconds": 0.3,
+    "think_gap_seconds": 2.0,
+    "idle_ttl_seconds": 0.2,
+    "batch_files": 16,
+    "batch_file_bytes": 32768
+  },
+  "capabilities": {
+    "ablation_controls": {
+      "model_boundary_groups": [
+        "D",
+        "E"
+      ],
+      "native_inference_admission": true,
+      "request_final_groups": [
+        "A",
+        "B"
+      ],
+      "state_feedback_groups": [
+        "E"
+      ]
+    },
+    "ablation_groups": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "durable_requests": true,
+    "execution_backend": "substrate",
+    "execution_feedback": true,
+    "experiment_controls_enabled": true,
+    "first_token_kinds": [
+      "content",
+      "reasoning_content",
+      "refusal",
+      "tool_call_arguments"
+    ],
+    "first_token_observation": "upstream_sse_nonempty_content",
+    "journal_backend": "postgresql",
+    "protocol_version": 1,
+    "single_writer": true,
+    "streaming": true,
+    "tools": [
+      "file_read",
+      "file_write",
+      "shell"
+    ]
+  },
+  "native_capabilities": {
+    "protocol_version": 1,
+    "execution_feedback": true,
+    "trusted_bindings": true,
+    "opaque_routing_sessions": true,
+    "inference_lease_header": "x-agentcloud-inference-lease",
+    "classifier_count": 1,
+    "max_body_bytes": 8192,
+    "requests_per_second": 1000,
+    "ttl_ms": {
+      "min": 100,
+      "max": 60000
+    },
+    "native_frontend": true,
+    "gpu_execution": false
+  },
+  "raw_events": "docs/evidence/bench-substrate-events.jsonl",
+  "paired_seeds": [
+    7101,
+    7102,
+    7103
+  ],
+  "randomized_schedule": [
+    [
+      7101,
+      "B"
+    ],
+    [
+      7101,
+      "E"
+    ],
+    [
+      7101,
+      "A"
+    ],
+    [
+      7101,
+      "D"
+    ],
+    [
+      7101,
+      "C"
+    ],
+    [
+      7102,
+      "A"
+    ],
+    [
+      7102,
+      "E"
+    ],
+    [
+      7102,
+      "C"
+    ],
+    [
+      7102,
+      "B"
+    ],
+    [
+      7102,
+      "D"
+    ],
+    [
+      7103,
+      "B"
+    ],
+    [
+      7103,
+      "C"
+    ],
+    [
+      7103,
+      "D"
+    ],
+    [
+      7103,
+      "E"
+    ],
+    [
+      7103,
+      "A"
+    ]
+  ],
+  "ttft_definition": "client workload arrival to first observed persisted upstream SSE nonempty content/reasoning_content; includes create/Actor queue/Resume/admission and HTTP polling",
+  "server_first_token_definition": "coordinator observation timestamp of first upstream SSE nonempty generated piece; clock-shared localhost server",
+  "complete_response_definition": "arrival to durable COMPLETED observation, separately from TTFT",
+  "polling_interval_seconds": 0.025,
+  "experiment_scope": "two real sessions, one allocatable Actor slot; Actor creation competes on the single Worker; mixed CPU compile, controlled actor-local HTTP research, file batch and interactive requests",
+  "group_semantics": {
+    "A": "resident through model wait + fixed think gap; final each turn",
+    "B": "A + idle-think TTL suspend",
+    "C": "B + retained cross-turn ThunderAgent Acting logical program budget",
+    "D": "C + real model-boundary safe-point wait coordination",
+    "E": "D + coordinator-derived execution-state feedback"
+  },
+  "native_inference_admission": true,
+  "physical_kv_measurement": null,
+  "actual_rss_measurement": null,
+  "fault_definition": "real HTTP connection closed after response status line, response body discarded; original persisted operation ID replay and retained file checks",
+  "offered_definition": "eight measured business model requests per trial, including four interactive; two real terminal model requests per successful trial are cleanup operations outside measured request denominator",
+  "runs": [
+    {
+      "seed": 7101,
+      "group": "B",
+      "randomized_order": 0,
+      "status": "failed",
+      "error": "模型缺少成功首 token: COMPLETED",
+      "duration_seconds": 4.023453710000467,
+      "offered": 8,
+      "completed": 1,
+      "failed": 7,
+      "interactive_offered": 4,
+      "interactive_completed": 0,
+      "interactive_slo_successes": 0,
+      "interactive_slo_fraction": 0.0,
+      "interactive_goodput_per_second": 0.0,
+      "ttft_p50_seconds": 0.1692346429990721,
+      "ttft_p95_seconds": 0.1692346429990721,
+      "interactive_ttft_p50_seconds": null,
+      "interactive_ttft_p95_seconds": null,
+      "resume_p50_seconds": null,
+      "resume_p95_seconds": null,
+      "fault_injections": 0,
+      "fault_recovered": 0,
+      "fault_planned": 3,
+      "fault_skipped": 3,
+      "fault_recovery_fraction": null,
+      "model_boundary": null,
+      "models": [
+        {
+          "session_id": "live-c3fceef850-7101-B-primary",
+          "workload": "cpu-planning",
+          "logical_request_id": "live-c3fceef850-7101-B-primary-cpu-planning",
+          "offered": true,
+          "interactive": false,
+          "status": "COMPLETED",
+          "arrival_monotonic": 16994.069217368,
+          "arrival_unix": 1794238449.9937434,
+          "input_prompt_repeats": 320,
+          "requested_output_tokens": 8,
+          "first_token_observed": 16994.238452011,
+          "end_to_end_ttft_seconds": 0.1692346429990721,
+          "first_token_at": "2026-11-09T15:34:10.105539379Z",
+          "first_token_kind": "content",
+          "first_token_poll_rtt_seconds": 0.038995154998701764,
+          "configured_poll_interval_seconds": 0.025,
+          "server_first_token_since_arrival_seconds": 0.11179566383361816,
+          "poll_and_network_observation_lag_seconds": 0.05767035484313965,
+          "completion_seconds": 0.27823862900186214,
+          "result": {
+            "choices": [
+              {
+                "finish_reason": "length",
+                "index": 0,
+                "message": {
+                  "content": " token1007",
+                  "role": "assistant"
+                }
+              }
+            ],
+            "created": 1794238450,
+            "id": "chatcmpl-e478f447-35b4-40c6-82c7-ca71f6316f01",
+            "model": "agentcloud-tiny",
+            "object": "chat.completion"
+          },
+          "attempt_id": "18b8ffb909f6f3f31ac2b08ef2fbdf78"
+        },
+        {
+          "session_id": "live-c3fceef850-7101-B-primary",
+          "workload": "interactive-during-cpu",
+          "logical_request_id": "live-c3fceef850-7101-B-primary-interactive-during-cpu",
+          "offered": true,
+          "interactive": true,
+          "status": "FAILED",
+          "arrival_monotonic": 16994.44905307,
+          "arrival_unix": 1794238450.373582,
+          "input_prompt_repeats": 128,
+          "requested_output_tokens": 8,
+          "first_token_observed": null,
+          "error": "模型缺少成功首 token: COMPLETED"
+        }
+      ],
+      "tools": [
+        {
+          "session_id": "live-c3fceef850-7101-B-primary",
+          "workload": "actor-toolchain-probe",
+          "tool_op_id": "actor-toolchain-probe",
+          "offered": true,
+          "status": "COMPLETED",
+          "started_seconds": 0.8085857840014796,
+          "result": {
+            "stdout": "{\"python\": \"3.13.18 (main, Nov  5 2026, 07:59:38) [GCC 14.2.0]\", \"compilers\": {\"cc\": null, \"gcc\": null, \"clang\": null}}\n",
+            "exit_code": 0
+          },
+          "receipt_seq": 1,
+          "duration_seconds": 0.2679288250001264
+        },
+        {
+          "session_id": "live-c3fceef850-7101-B-primary",
+          "workload": "retained-proof",
+          "tool_op_id": "retained-proof",
+          "offered": true,
+          "status": "COMPLETED",
+          "started_seconds": 1.0765188469995337,
+          "result": {
+            "content": "seed:7101",
+            "exit_code": 0
+          },
+          "receipt_seq": 2,
+          "duration_seconds": 0.12380401500195148
+        },
+        {
+          "session_id": "live-c3fceef850-7101-B-primary",
+          "workload": "primary-cpu-compile",
+          "tool_op_id": "primary-cpu-compile",
+          "offered": true,
+          "status": "COMPLETED",
+          "started_seconds": 1.4997592830004578,
+          "result": {
+            "stdout": "{\"kind\": \"python-bytecode\", \"compiler\": null, \"iterations\": 24, \"source_functions\": 1100, \"source_bytes\": 48065, \"wall_seconds\": 0.33510935100000006, \"cpu_seconds\": 0.30999999999999994, \"sha256\": \"6d101e6dedcefe8481322818c1d06c5c43492c8757fefa1c67d22c6574c14a8f\"}\n",
+            "exit_code": 0
+          },
+          "receipt_seq": 3,
+          "duration_seconds": 0.586822237000888
+        }
+      ],
+      "resumes": [],
+      "faults": [],
+      "residency_events": [
+        {
+          "session_id": "live-c3fceef850-7101-B-primary",
+          "resident": true,
+          "seconds": 0.8085370219996548,
+          "reason": "create_returned_running"
+        },
+        {
+          "session_id": "live-c3fceef850-7101-B-primary",
+          "resident": false,
+          "seconds": 3.869797108000057,
+          "reason": "suspend_returned"
+        }
+      ],
+      "receipt_actor_reserved_memory_gb_seconds": 2.4652522413603517,
+      "receipt_stranded_worker_reserved_memory_gb_seconds": 1.6772156064111328,
+      "receipt_stranded_worker_reserved_seconds": 2.0827050089974364,
+      "receipt_memory_measurement": "ActorTemplate reserved memory × API-observed RUNNING-to-SUSPENDED residency intervals; create/resume before their returned RUNNING receipt omitted, suspend until returned SUSPENDED receipt included",
+      "actual_rss_gb_seconds": null,
+      "actor_reserved_memory_gb_seconds": 1.770467712,
+      "stranded_worker_reserved_memory_gb_seconds": 0.9824310770507815,
+      "memory_measurement": "real Substrate ListWorkerActorAssignments.resources including runtime actor overhead; 100ms samples with left-step integration; Stranded subtracts union of actual Actor tool execution intervals",
+      "assignment_sampling_interval_seconds": 0.1,
+      "assignment_sample_count": 40,
+      "assignment_sample_max_gap_seconds": 0.1023721694946289,
+      "assignment_missing_samples_estimate": 0,
+      "assignment_uncovered_seconds": 0.0645828222441196,
+      "assignment_transition_error_bound_gb_seconds": 0.127857024,
+      "max_observed_assigned_actors": 1,
+      "worker_allocated_crosscheck_mismatched_samples": 0
+    }
+  ],
+  "aggregates": [
+    {
+      "group": "B",
+      "independent_paired_seeds": 1,
+      "successful_trials": 0,
+      "offered": 8,
+      "completed": 1,
+      "failed": 7,
+      "ttft_p50_seconds": 0.1692346429990721,
+      "ttft_p95_seconds": 0.1692346429990721,
+      "interactive_ttft_p50_seconds": null,
+      "interactive_ttft_p95_seconds": null,
+      "resume_p50_seconds": null,
+      "resume_p95_seconds": null,
+      "interactive_offered": 4,
+      "interactive_slo_successes": 0,
+      "interactive_slo_fraction": 0.0,
+      "interactive_goodput_per_second": 0.0,
+      "stranded_worker_reserved_memory_gb_seconds": 0.9824310770507815,
+      "mean_stranded_worker_reserved_memory_gb_seconds": 0.9824310770507815,
+      "actor_reserved_memory_gb_seconds": 1.770467712,
+      "fault_planned": 3,
+      "fault_skipped": 3,
+      "fault_injections": 0,
+      "fault_recovered": 0,
+      "fault_recovery_fraction": null
+    }
+  ]
+}

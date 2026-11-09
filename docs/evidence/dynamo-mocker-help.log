@@ -1,0 +1,647 @@
+usage: __main__.py [-h] [--version] [--model-path MODEL_PATH]
+                   [--endpoint ENDPOINT] [--model-name MODEL_NAME]
+                   [--num-gpu-blocks-override NUM_GPU_BLOCKS]
+                   [--block-size BLOCK_SIZE] [--max-model-len MAX_MODEL_LEN]
+                   [--max-num-seqs MAX_NUM_SEQS]
+                   [--max-num-batched-tokens MAX_NUM_BATCHED_TOKENS]
+                   [--enable-prefix-caching] [--no-enable-prefix-caching]
+                   [--enable-chunked-prefill] [--no-enable-chunked-prefill]
+                   [--preemption-mode PREEMPTION_MODE]
+                   [--speedup-ratio SPEEDUP_RATIO]
+                   [--decode-speedup-ratio DECODE_SPEEDUP_RATIO]
+                   [--data-parallel-size DP_SIZE]
+                   [--startup-time STARTUP_TIME]
+                   [--planner-profile-data PLANNER_PROFILE_DATA]
+                   [--ais-perf-model]
+                   [--gpu-memory-utilization GPU_MEMORY_UTILIZATION]
+                   [--mem-fraction-static MEM_FRACTION_STATIC]
+                   [--free-gpu-memory-fraction FREE_GPU_MEMORY_FRACTION]
+                   [--ais-system AIS_SYSTEM] [--ais-backend AIS_BACKEND]
+                   [--ais-backend-version AIS_BACKEND_VERSION]
+                   [--ais-tp-size AIS_TP_SIZE]
+                   [--ais-moe-tp-size AIS_MOE_TP_SIZE]
+                   [--ais-moe-ep-size AIS_MOE_EP_SIZE]
+                   [--ais-attention-dp-size AIS_ATTENTION_DP_SIZE]
+                   [--ais-nextn AIS_NEXTN]
+                   [--ais-nextn-accept-rates AIS_NEXTN_ACCEPT_RATES]
+                   [--ais-mtp-seed AIS_MTP_SEED] [--num-workers NUM_WORKERS]
+                   [--ais-perf-config AIS_PERF_CONFIG] [--reasoning REASONING]
+                   [--response-replay-trace-path RESPONSE_REPLAY_TRACE_PATH]
+                   [--engine-type ENGINE_TYPE]
+                   [--sglang-schedule-policy SGLANG_SCHEDULE_POLICY]
+                   [--sglang-page-size SGLANG_PAGE_SIZE]
+                   [--sglang-max-prefill-tokens SGLANG_MAX_PREFILL_TOKENS]
+                   [--sglang-chunked-prefill-size SGLANG_CHUNKED_PREFILL_SIZE]
+                   [--sglang-clip-max-new-tokens SGLANG_CLIP_MAX_NEW_TOKENS]
+                   [--sglang-schedule-conservativeness SGLANG_SCHEDULE_CONSERVATIVENESS]
+                   [--sglang-generate] [--systemone-serial]
+                   [--trtllm-capacity-scheduler-policy TRTLLM_CAPACITY_SCHEDULER_POLICY]
+                   [--extra-engine-args EXTRA_ENGINE_ARGS]
+                   [--disaggregation-mode {agg,prefill,decode}]
+                   [--is-prefill-worker] [--is-decode-worker]
+                   [--zmq-kv-events-ports ZMQ_KV_EVENTS_PORTS]
+                   [--zmq-replay-ports ZMQ_REPLAY_PORTS]
+                   [--bootstrap-ports BOOTSTRAP_PORTS]
+                   [--kv-transfer-bandwidth KV_TRANSFER_BANDWIDTH]
+                   [--kv-transfer-timing-mode KV_TRANSFER_TIMING_MODE]
+                   [--kv-cache-dtype {auto,bfloat16,fp8,fp8_ds_mla,fp8_e4m3,fp8_e5m2,fp8_inc}]
+                   [--kv-bytes-per-token KV_BYTES_PER_TOKEN]
+                   [--num-host-blocks NUM_HOST_BLOCKS]
+                   [--host-offload-d2h-bandwidth-gbps HOST_OFFLOAD_D2H_BANDWIDTH_GBPS]
+                   [--host-offload-h2d-bandwidth-gbps HOST_OFFLOAD_H2D_BANDWIDTH_GBPS]
+                   [--stagger-delay STAGGER_DELAY]
+                   [--discovery-backend {kubernetes,etcd,file,mem}]
+                   [--request-plane {nats,tcp}]
+                   [--response-plane {tcp,quic,velo}]
+                   [--event-plane {nats,zmq}]
+                   [--router-mode {round-robin,random,kv,direct,least-loaded,device-aware-weighted}]
+                   [--router-session-affinity-ttl-secs SESSION_AFFINITY_TTL_SECS]
+                   [--router-session-affinity-mode {hard,soft}]
+                   [--active-decode-blocks-threshold ACTIVE_DECODE_BLOCKS_THRESHOLD]
+                   [--active-prefill-tokens-threshold ACTIVE_PREFILL_TOKENS_THRESHOLD]
+                   [--active-prefill-tokens-threshold-frac ACTIVE_PREFILL_TOKENS_THRESHOLD_FRAC]
+                   [--load-aware | --no-load-aware]
+                   [--router-kv-overlap-score-credit OVERLAP_SCORE_CREDIT]
+                   [--router-kv-overlap-score-credit-decay OVERLAP_SCORE_CREDIT_DECAY]
+                   [--router-prefill-load-scale PREFILL_LOAD_SCALE]
+                   [--router-decode-active-request-weight DECODE_ACTIVE_REQUEST_WEIGHT]
+                   [--router-host-cache-hit-weight HOST_CACHE_HIT_WEIGHT]
+                   [--router-disk-cache-hit-weight DISK_CACHE_HIT_WEIGHT]
+                   [--router-temperature ROUTER_TEMPERATURE]
+                   [--router-kv-events | --no-router-kv-events | --kv-events | --no-kv-events]
+                   [--router-replica-sync | --no-router-replica-sync]
+                   [--router-track-active-blocks | --no-router-track-active-blocks | --track-active-blocks | --no-track-active-blocks]
+                   [--router-track-output-blocks | --no-router-track-output-blocks | --track-output-blocks | --no-track-output-blocks]
+                   [--router-assume-kv-reuse | --no-router-assume-kv-reuse | --assume-kv-reuse | --no-assume-kv-reuse]
+                   [--router-track-prefill-tokens | --no-router-track-prefill-tokens]
+                   [--router-tracking-hash {public-xxh3-v1,keyed-xxh3-v1}]
+                   [--router-tracking-key-file ROUTER_TRACKING_KEY_FILE]
+                   [--router-tracking-key-id ROUTER_TRACKING_KEY_ID]
+                   [--router-prefill-load-model {none,ais}]
+                   [--router-ttl-secs ROUTER_TTL_SECS]
+                   [--router-approximate-cache-policy {ttl,lru}]
+                   [--router-queue-threshold ROUTER_QUEUE_THRESHOLD]
+                   [--router-policy-config ROUTER_POLICY_CONFIG]
+                   [--router-conditional-disagg | --no-router-conditional-disagg]
+                   [--router-conditional-disagg-config JSON]
+                   [--router-prefill-policy ROUTER_PREFILL_POLICY]
+                   [--router-decode-policy ROUTER_DECODE_POLICY]
+                   [--router-event-threads ROUTER_EVENT_THREADS]
+                   [--router-queue-policy {fcfs,wspt}]
+                   [--use-remote-indexer | --no-use-remote-indexer]
+                   [--enable-session-prefix-index | --no-enable-session-prefix-index]
+                   [--shared-cache-multiplier SHARED_CACHE_MULTIPLIER]
+                   [--shared-cache-type {none,hicache}]
+                   [--router-predicted-ttl-secs ROUTER_PREDICTED_TTL_SECS]
+
+Mocker engine for testing Dynamo LLM infrastructure with vLLM-style CLI.
+
+options:
+  -h, --help            show this help message and exit
+  --version             show program's version number and exit
+  --model-path MODEL_PATH
+                        Path to model directory or HuggingFace model ID for
+                        tokenizer
+  --endpoint ENDPOINT   Dynamo endpoint string (default:
+                        dyn://dynamo.backend.generate for aggregated/decode,
+                        dyn://dynamo.prefill.generate for prefill)
+  --model-name MODEL_NAME
+                        Model name for API responses (default: derived from
+                        model-path)
+  --num-gpu-blocks-override NUM_GPU_BLOCKS
+                        Explicit usable GPU-block capacity per data-parallel
+                        rank for the mock KV cache. When unset, AIS-backed
+                        mocker estimates the value; non-AIS mocker uses 16384.
+  --block-size BLOCK_SIZE
+                        Token block size for KV cache blocks. When unset, the
+                        default depends on engine: vLLM 64, SGLang 1, TRTLLM
+                        32.
+  --max-model-len MAX_MODEL_LEN
+                        Maximum sequence length, including prompt and
+                        generated tokens. When omitted, no model-length limit
+                        is enforced.
+  --max-num-seqs MAX_NUM_SEQS
+                        Maximum number of sequences per iteration (default:
+                        256)
+  --max-num-batched-tokens MAX_NUM_BATCHED_TOKENS
+                        Maximum number of batched tokens per iteration
+                        (default: 8192)
+  --enable-prefix-caching
+                        Enable automatic prefix caching (default: True)
+  --no-enable-prefix-caching
+                        Disable automatic prefix caching
+  --enable-chunked-prefill
+                        Enable chunked prefill (default: True)
+  --no-enable-chunked-prefill
+                        Disable chunked prefill
+  --preemption-mode PREEMPTION_MODE
+                        Preemption mode for decode eviction under memory
+                        pressure. 'lifo' (default) evicts the newest request
+                        (matches vLLM v1), 'fifo' evicts the oldest request.
+  --speedup-ratio SPEEDUP_RATIO
+                        Speedup ratio for mock execution (default: 1.0). Use 0
+                        for infinite speedup (no simulation delays).
+  --decode-speedup-ratio DECODE_SPEEDUP_RATIO
+                        Additional speedup multiplier applied only to decode
+                        steps (default: 1.0). Models speculative decoding
+                        (e.g. Eagle) where decode throughput improves without
+                        affecting prefill latency. Effective decode speedup is
+                        speedup_ratio * decode_speedup_ratio.
+  --data-parallel-size DP_SIZE
+                        Number of data parallel replicas (default: 1)
+  --startup-time STARTUP_TIME
+                        Simulated engine startup time in seconds (default:
+                        None)
+  --planner-profile-data PLANNER_PROFILE_DATA
+                        Path to profile results directory containing
+                        selected_prefill_interpolation/ and
+                        selected_decode_interpolation/ subdirectories
+                        (default: None, uses hardcoded polynomials)
+  --ais-perf-model, --aic-perf-model
+                        Use AISimulate's perf model directly for latency
+                        prediction. Requires aisimulate installed.
+  --gpu-memory-utilization GPU_MEMORY_UTILIZATION
+                        GPU memory fraction for AIS KV capacity estimation
+                        with vLLM (default: 0.9).
+  --mem-fraction-static MEM_FRACTION_STATIC
+                        Static memory fraction for AIS KV capacity estimation
+                        with SGLang (default: 0.88).
+  --free-gpu-memory-fraction FREE_GPU_MEMORY_FRACTION
+                        Fraction of free GPU memory (after model load) for the
+                        KV cache, for AIS KV capacity estimation with TRT-LLM
+                        (default: 0.9).
+  --ais-system AIS_SYSTEM, --aic-system AIS_SYSTEM
+                        AIS system name (e.g., 'h200_sxm'). Used with --ais-
+                        perf-model.
+  --ais-backend AIS_BACKEND, --aic-backend AIS_BACKEND
+                        AIS backend name used for perf database lookups. When
+                        unset, falls back to --engine-type. Set this to
+                        decouple the AIS perf model from the simulated engine
+                        type (e.g. simulate with vllm while using trtllm AIS
+                        data).
+  --ais-backend-version AIS_BACKEND_VERSION, --aic-backend-version AIS_BACKEND_VERSION
+                        AIS performance-database version: 'current',
+                        'previous', or 'next' when available, or a version
+                        assigned to one of those slots. Defaults to the
+                        release database's 'current' slot.
+  --ais-tp-size AIS_TP_SIZE, --aic-tp-size AIS_TP_SIZE
+                        Tensor parallel size for AIS latency prediction
+                        (default: 1). Only affects AIS performance model
+                        lookups, not mocker scheduling.
+  --ais-moe-tp-size AIS_MOE_TP_SIZE, --aic-moe-tp-size AIS_MOE_TP_SIZE
+                        MoE tensor-parallel size for AIS latency prediction.
+                        Required for MoE models. Constraint: ais_tp_size *
+                        ais_attention_dp_size == ais_moe_tp_size *
+                        ais_moe_ep_size.
+  --ais-moe-ep-size AIS_MOE_EP_SIZE, --aic-moe-ep-size AIS_MOE_EP_SIZE
+                        MoE expert-parallel size for AIS latency prediction.
+                        Required for MoE models. Constraint: ais_tp_size *
+                        ais_attention_dp_size == ais_moe_tp_size *
+                        ais_moe_ep_size.
+  --ais-attention-dp-size AIS_ATTENTION_DP_SIZE, --aic-attention-dp-size AIS_ATTENTION_DP_SIZE
+                        Attention data-parallel size for AIS latency
+                        prediction (default: 1). Corresponds to the 'dp'
+                        dimension in AIS CLI output.
+  --ais-nextn AIS_NEXTN, --aic-nextn AIS_NEXTN
+                        [EXPERIMENTAL] Number of MTP draft tokens to sample
+                        (1-5).
+  --ais-nextn-accept-rates AIS_NEXTN_ACCEPT_RATES, --aic-nextn-accept-rates AIS_NEXTN_ACCEPT_RATES
+                        [EXPERIMENTAL] Comma-separated conditional MTP
+                        acceptance rates. Entry i is P(draft i accepted | all
+                        earlier drafts were accepted).
+  --ais-mtp-seed AIS_MTP_SEED, --aic-mtp-seed AIS_MTP_SEED
+                        [EXPERIMENTAL] Base RNG seed for mocker MTP burst
+                        sampling.
+  --num-workers NUM_WORKERS
+                        Number of mocker workers to launch in the same process
+                        (default: 1). All workers share the same tokio runtime
+                        and thread pool.
+  --ais-perf-config AIS_PERF_CONFIG
+                        Complete ForwardPassPerfModelConfig as JSON or a
+                        JSON/YAML file.
+  --reasoning REASONING
+                        Enable reasoning token output. JSON object with
+                        fields: start_thinking_token_id (u32),
+                        end_thinking_token_id (u32), thinking_ratio (0.0-1.0).
+                        Example: '{"start_thinking_token_id": 123,
+                        "end_thinking_token_id": 456, "thinking_ratio": 0.6}'
+  --response-replay-trace-path RESPONSE_REPLAY_TRACE_PATH
+                        Optional Mooncake JSONL trace containing
+                        output_token_ids for output_replay_id annotation
+                        lookup.
+  --engine-type ENGINE_TYPE
+                        Engine simulation type: 'vllm' (default), 'sglang', or
+                        'trtllm'.
+  --sglang-schedule-policy SGLANG_SCHEDULE_POLICY
+                        SGLang scheduling policy: 'fifo' (default) or 'lpm'
+                        (longest prefix match). The 'fcfs' alias is deprecated
+                        and will be removed in Dynamo 1.8.0.
+  --sglang-page-size SGLANG_PAGE_SIZE
+                        Deprecated SGLang alias for --block-size; removed in
+                        Dynamo 1.8.0. Ignored for other backends.
+  --sglang-max-prefill-tokens SGLANG_MAX_PREFILL_TOKENS
+                        SGLang maximum prefill tokens budget per batch
+                        (default: 16384).
+  --sglang-chunked-prefill-size SGLANG_CHUNKED_PREFILL_SIZE
+                        SGLang chunked prefill size — max tokens per chunk
+                        (default: 8192).
+  --sglang-clip-max-new-tokens SGLANG_CLIP_MAX_NEW_TOKENS
+                        SGLang clip max new tokens for admission budget
+                        (default: 4096).
+  --sglang-schedule-conservativeness SGLANG_SCHEDULE_CONSERVATIVENESS
+                        SGLang schedule conservativeness factor 0.0-1.0
+                        (default: 1.0).
+  --sglang-generate     Serve native streaming SGLang /generate requests
+                        (default: disabled).
+  --systemone-serial    Enable the serial SystemOne profile: native SGLang,
+                        aggregated, DP1, with scheduler max_num_seqs=1
+                        (default: disabled).
+  --trtllm-capacity-scheduler-policy TRTLLM_CAPACITY_SCHEDULER_POLICY
+                        TRT-LLM capacity scheduler policy. v1 supports only
+                        'guaranteed_no_evict' (default).
+  --extra-engine-args EXTRA_ENGINE_ARGS
+                        Path to JSON file with mocker configuration. If
+                        provided, overrides individual CLI arguments.
+  --disaggregation-mode {agg,prefill,decode}
+                        Worker disaggregation mode: 'agg' (default,
+                        aggregated), 'prefill' (prefill-only worker), or
+                        'decode' (decode-only worker).
+  --is-prefill-worker   DEPRECATED: use --disaggregation-mode=prefill.
+                        Register as Prefill model type instead of
+                        Chat+Completions (default: False)
+  --is-decode-worker    DEPRECATED: use --disaggregation-mode=decode. Mark
+                        this as a decode worker which does not publish KV
+                        events (default: False)
+  --zmq-kv-events-ports ZMQ_KV_EVENTS_PORTS
+                        Comma-separated list of ZMQ PUB base ports for KV
+                        event publishing in vLLM native wire format. One port
+                        per worker (must match --num-workers). Each worker's
+                        DP ranks bind on base_port + dp_rank. A
+                        KvEventPublisher relay subscribes and forwards events
+                        to NATS. (default: None, disabled)
+  --zmq-replay-ports ZMQ_REPLAY_PORTS
+                        Comma-separated list of ZMQ ROUTER base ports for KV
+                        event replay. One port per worker (must match --num-
+                        workers). Each worker's DP ranks bind on base_port +
+                        dp_rank. Used alongside --zmq-kv-events-ports for gap
+                        recovery. (default: None, disabled)
+  --bootstrap-ports BOOTSTRAP_PORTS
+                        Comma-separated list of bootstrap ports for
+                        disaggregated serving rendezvous. One port per worker
+                        (must match --num-workers). Prefill workers listen on
+                        these ports; decode workers connect to them. If not
+                        specified, bootstrap rendezvous is disabled.
+  --kv-transfer-bandwidth KV_TRANSFER_BANDWIDTH
+                        KV cache transfer bandwidth in GB/s for disaggregated
+                        serving latency simulation. When unset, uses the
+                        AISimulate engine default. Set to 0 to disable KV
+                        transfer delay. For intra-node NVLink, typical value
+                        is ~450.
+  --kv-transfer-timing-mode KV_TRANSFER_TIMING_MODE
+                        Physical KV footprint used for coordinated
+                        disaggregated transfer timing.
+  --kv-cache-dtype {auto,bfloat16,fp8,fp8_ds_mla,fp8_e4m3,fp8_e5m2,fp8_inc}
+                        Data type for KV cache, used to compute
+                        kv_bytes_per_token. 'auto' uses the model's dtype
+                        (default).
+  --kv-bytes-per-token KV_BYTES_PER_TOKEN
+                        KV cache bytes per token. If not specified, auto-
+                        computed from model config using: num_layers * 2 *
+                        num_kv_heads * head_dim * dtype_bytes.
+  --num-host-blocks NUM_HOST_BLOCKS
+                        Enable native vLLM G2 (host) KV offload with this per-
+                        DP-rank host cache capacity in blocks. Host blocks are
+                        sized by --kv-bytes-per-token. Requires prefix
+                        caching.
+  --host-offload-d2h-bandwidth-gbps HOST_OFFLOAD_D2H_BANDWIDTH_GBPS
+                        Per-DP-rank native G2 D2H bandwidth in decimal GB/s
+                        (AISimulate default when unset; 0 is unlimited).
+                        Requires --num-host-blocks.
+  --host-offload-h2d-bandwidth-gbps HOST_OFFLOAD_H2D_BANDWIDTH_GBPS
+                        Per-DP-rank native G2 H2D bandwidth in decimal GB/s
+                        (AISimulate default when unset; 0 is unlimited).
+                        Requires --num-host-blocks.
+  --stagger-delay STAGGER_DELAY
+                        Delay in seconds between launching each worker. Set to
+                        0 to disable staggering (default). Use -1 for auto
+                        mode (0.1s for 33-128 workers, 0.2s for >128 workers,
+                        0 otherwise).
+  --discovery-backend {kubernetes,etcd,file,mem}
+                        Discovery backend: kubernetes (K8s API), etcd
+                        (distributed KV), file (local filesystem), mem (in-
+                        memory). Etcd uses the ETCD_* env vars (e.g.
+                        ETCD_ENDPOINTS) for connection details. File uses root
+                        dir from env var DYN_FILE_KV or defaults to
+                        $TMPDIR/dynamo_store_kv.
+  --request-plane {nats,tcp}
+                        Determines how requests are distributed from routers
+                        to workers. 'tcp' is fastest [nats|tcp]
+  --response-plane {tcp,quic,velo}
+                        Select the response transport. Frontend and workers
+                        must match.
+  --event-plane {nats,zmq}
+                        Determines how events are published [nats|zmq]. If
+                        unset, auto-detected from --discovery-backend (zmq for
+                        file/mem, nats for etcd/kubernetes).
+
+Router Options:
+  --router-mode {round-robin,random,kv,direct,least-loaded,device-aware-weighted}
+                        How to route the request. least-loaded routes to the
+                        worker with the fewest active requests. device-aware-
+                        weighted routes based on worker device type
+                        (CPU/CUDA). In disaggregated prefill mode, least-
+                        loaded skips bootstrap optimization and falls back to
+                        the synchronous prefill path. env var: DYN_ROUTER_MODE
+                        | default: None
+  --router-session-affinity-ttl-secs SESSION_AFFINITY_TTL_SECS
+                        Enable session affinity with this router-local idle
+                        TTL in seconds. Bindings synchronize across router
+                        replicas on a best-effort basis. Affinity is disabled
+                        when this option is omitted. This is independent of KV
+                        prediction TTL settings. env var:
+                        DYN_ROUTER_SESSION_AFFINITY_TTL_SECS | default: None
+  --router-session-affinity-mode {hard,soft}
+                        How an existing session binding participates in worker
+                        selection. hard makes the binding an exact constraint;
+                        soft exposes it as a policy-visible preference. env
+                        var: DYN_ROUTER_SESSION_AFFINITY_MODE | default: hard
+  --active-decode-blocks-threshold ACTIVE_DECODE_BLOCKS_THRESHOLD
+                        Threshold fraction (0.0-1.0) of KV cache block
+                        utilization above which a worker is considered busy.
+                        Setting a numeric value enables this rejection check.
+                        Unset by default; pass 'None' to disable it. env var:
+                        DYN_ACTIVE_DECODE_BLOCKS_THRESHOLD | default: None
+  --active-prefill-tokens-threshold ACTIVE_PREFILL_TOKENS_THRESHOLD
+                        Deprecated; will be removed in v1.7. Use --active-
+                        prefill-tokens-threshold-frac. Literal token count
+                        threshold for determining when a worker is considered
+                        busy based on prefill token utilization. When active
+                        prefill tokens exceed this threshold, the worker is
+                        marked as busy. Setting a numeric value enables this
+                        rejection check. Unset by default; pass 'None' to
+                        disable it. Uses OR logic with --active-prefill-
+                        tokens-threshold-frac. env var:
+                        DYN_ACTIVE_PREFILL_TOKENS_THRESHOLD | default: None
+  --active-prefill-tokens-threshold-frac ACTIVE_PREFILL_TOKENS_THRESHOLD_FRAC
+                        Fraction of max_num_batched_tokens for busy detection.
+                        Worker is busy when active_prefill_tokens > frac *
+                        max_num_batched_tokens. Setting a numeric value
+                        enables this rejection check. Unset by default; pass
+                        'None' to disable it. Uses OR logic with --active-
+                        prefill-tokens-threshold. env var:
+                        DYN_ACTIVE_PREFILL_TOKENS_THRESHOLD_FRAC | default:
+                        None
+
+KV Router Options:
+  --load-aware, --no-load-aware
+                        --load-aware is deprecated and will be removed in
+                        v1.7; use the load-only policy and router tracking
+                        settings in --router-policy-config. KV Router: Enable
+                        the load-aware routing preset. On the frontend, this
+                        implies --router-mode kv. This preset sets
+                        overlap_score_credit=0, disables KV events and KV-
+                        reuse assumptions, enables active-block and prefill-
+                        token load tracking, and disables remote/shared cache
+                        indexers. The builtin policy does not request cache
+                        inputs in this mode. env var: DYN_ROUTER_LOAD_AWARE |
+                        default: False
+  --router-kv-overlap-score-credit OVERLAP_SCORE_CREDIT
+                        --router-kv-overlap-score-credit is deprecated and
+                        will be removed in v1.7; use overlap_score_credit in
+                        the default policy parameters in --router-policy-
+                        config. KV Router: Credit multiplier for device-local
+                        prefix overlap. Must be finite and non-negative;
+                        values above 1.0 give device overlap extra credit,
+                        with adjusted prefill cost clamped at zero. env var:
+                        DYN_ROUTER_KV_OVERLAP_SCORE_CREDIT | default: 1.0
+  --router-kv-overlap-score-credit-decay OVERLAP_SCORE_CREDIT_DECAY
+                        --router-kv-overlap-score-credit-decay is deprecated
+                        and will be removed in v1.7; use
+                        overlap_score_credit_decay in the default policy
+                        parameters in --router-policy-config. KV Router: Decay
+                        rate for device-local overlap credit as active prefill
+                        load rises above the least-loaded eligible worker. 0
+                        disables decay; 1 halves credit at one request-
+                        equivalent of excess active prefill load. env var:
+                        DYN_ROUTER_KV_OVERLAP_SCORE_CREDIT_DECAY | default:
+                        0.0
+  --router-prefill-load-scale PREFILL_LOAD_SCALE
+                        --router-prefill-load-scale is deprecated and will be
+                        removed in v1.7; use prefill_load_scale in the default
+                        policy parameters in --router-policy-config. KV
+                        Router: Scale applied to adjusted prompt-side prefill
+                        load after overlap and lower-tier cache-hit credits
+                        are subtracted. env var: DYN_ROUTER_PREFILL_LOAD_SCALE
+                        | default: 1.0
+  --router-decode-active-request-weight DECODE_ACTIVE_REQUEST_WEIGHT
+                        --router-decode-active-request-weight is deprecated
+                        and will be removed in v1.7; use
+                        decode_active_request_weight in the default policy
+                        parameters in --router-policy-config. [EXPERIMENTAL]
+                        KV Router: Block-equivalent decode cost added for each
+                        active request on a candidate worker. Use this to
+                        balance decode batch size when step latency depends
+                        more on request count than resident KV footprint. Must
+                        be finite and non-negative. env var:
+                        DYN_ROUTER_DECODE_ACTIVE_REQUEST_WEIGHT | default: 0.0
+  --router-host-cache-hit-weight HOST_CACHE_HIT_WEIGHT
+                        KV Router: Credit multiplier for host-pinned (CPU
+                        offload) prefix overlap. Range: 0.0 to 1.0; higher
+                        values more strongly prefer workers holding the prefix
+                        in CPU-tier KV cache. Symmetric to --router-kv-
+                        overlap-score-credit but applied to host_pinned tier
+                        overlap. env var: DYN_ROUTER_HOST_CACHE_HIT_WEIGHT |
+                        default: 0.75
+  --router-disk-cache-hit-weight DISK_CACHE_HIT_WEIGHT
+                        KV Router: Credit multiplier for disk/lower-tier (e.g.
+                        NVMe-backed) prefix overlap. Range: 0.0 to 1.0. Same
+                        semantics as --router-host-cache-hit-weight applied to
+                        the disk tier. env var:
+                        DYN_ROUTER_DISK_CACHE_HIT_WEIGHT | default: 0.25
+  --router-temperature ROUTER_TEMPERATURE
+                        --router-temperature is deprecated and will be removed
+                        in v1.7; use router_temperature in the default policy
+                        parameters in --router-policy-config. KV Router:
+                        Temperature for normalized worker sampling via
+                        softmax. Higher values promote more randomness, and 0
+                        falls back to deterministic. env var:
+                        DYN_ROUTER_TEMPERATURE | default: 0.0
+  --router-kv-events, --no-router-kv-events, --kv-events, --no-kv-events
+                        KV Router: Enable/disable KV events. Use --router-kv-
+                        events to enable (default, router receives cache state
+                        events from workers) or --no-router-kv-events to
+                        disable (router predicts cache state based on routing
+                        decisions). env var: DYN_ROUTER_USE_KV_EVENTS |
+                        default: True deprecating flag: --kv-events
+  --router-replica-sync, --no-router-replica-sync
+                        KV Router: Enable best-effort active-sequence
+                        synchronization through the Runtime event plane. env
+                        var: DYN_ROUTER_REPLICA_SYNC | default: False
+  --router-track-active-blocks, --no-router-track-active-blocks, --track-active-blocks, --no-track-active-blocks
+                        KV Router: Track active blocks (blocks being used for
+                        ongoing generation). By default, active blocks are
+                        tracked for load balancing. env var:
+                        DYN_ROUTER_TRACK_ACTIVE_BLOCKS | default: True
+                        deprecating flag: --track-active-blocks
+  --router-track-output-blocks, --no-router-track-output-blocks, --track-output-blocks, --no-track-output-blocks
+                        KV Router: Track output blocks during generation. When
+                        enabled, the router adds placeholder blocks as tokens
+                        are generated. With expected output sequence length,
+                        fractional decay applies to output blocks and the
+                        structurally exclusive prompt suffix; shared prompt
+                        blocks retain full weight. env var:
+                        DYN_ROUTER_TRACK_OUTPUT_BLOCKS | default: False
+                        deprecating flag: --track-output-blocks
+  --router-assume-kv-reuse, --no-router-assume-kv-reuse, --assume-kv-reuse, --no-assume-kv-reuse
+                        KV Router: When tracking active blocks, assume KV
+                        cache reuse. Use --no-router-assume-kv-reuse to
+                        generate random hashes instead (when KV cache reuse is
+                        not expected). env var: DYN_ROUTER_ASSUME_KV_REUSE |
+                        default: True deprecating flag: --assume-kv-reuse
+  --router-track-prefill-tokens, --no-router-track-prefill-tokens
+                        KV Router: Include prompt-side prefill tokens in
+                        active load accounting. Use --no-router-track-prefill-
+                        tokens to ignore prompt tokens in router prefill-token
+                        load, queue pressure, and active_prefill_tokens
+                        metrics. env var: DYN_ROUTER_TRACK_PREFILL_TOKENS |
+                        default: True
+  --router-tracking-hash {public-xxh3-v1,keyed-xxh3-v1}
+                        KV Router: Hash function for router-derived active-
+                        sequence identities. env var: DYN_ROUTER_TRACKING_HASH
+                        | default: public-xxh3-v1
+  --router-tracking-key-file ROUTER_TRACKING_KEY_FILE
+                        KV Router: File containing the 32-byte provider
+                        tracking key. env var: DYN_ROUTER_TRACKING_KEY_FILE |
+                        default: None
+  --router-tracking-key-id ROUTER_TRACKING_KEY_ID
+                        KV Router: Provider-managed tracking-key epoch
+                        identifier. env var: DYN_ROUTER_TRACKING_KEY_ID |
+                        default: None
+  --router-prefill-load-model {none,ais}
+                        [EXPERIMENTAL] KV Router: Prompt-side prefill load
+                        model. 'none' keeps static prompt load accounting.
+                        'ais' decays the oldest active prefill request using
+                        AISimulate-predicted duration. env var:
+                        DYN_ROUTER_PREFILL_LOAD_MODEL | default: none
+  --router-ttl-secs ROUTER_TTL_SECS
+                        KV Router: Time-to-live in seconds for blocks when KV
+                        events are disabled. Only used when --no-router-kv-
+                        events is set. env var: DYN_ROUTER_TTL_SECS | default:
+                        120.0
+  --router-approximate-cache-policy {ttl,lru}
+                        [EXPERIMENTAL] KV Router: Retention policy for the
+                        local primary approximate indexer used with --no-
+                        router-kv-events. 'ttl' keeps the existing time-based
+                        behavior; 'lru' uses each worker rank's advertised KV
+                        capacity. Side indexers remain TTL-only. env var:
+                        DYN_ROUTER_APPROXIMATE_CACHE_POLICY | default: ttl
+  --router-queue-threshold ROUTER_QUEUE_THRESHOLD
+                        --router-queue-threshold is deprecated and will be
+                        removed in v1.7; use
+                        policy_classes[].prefill_busy_threshold_frac in
+                        --router-policy-config. KV Router: Queue threshold
+                        fraction for prefill token capacity. Requests are
+                        queued if all workers exceed this fraction of
+                        max_num_batched_tokens. Must be >= 0. Use 0.0 for
+                        maximum queueing sensitivity (queue once every
+                        eligible worker has active prefill load). Unset by
+                        default; setting a numeric value enables router
+                        queueing. Note (SGLang backend): when --max-prefill-
+                        tokens is not set, MDC's max_num_batched_tokens falls
+                        back to max_total_num_tokens (the KV cache pool size),
+                        not the per-step prefill window, which inflates the
+                        threshold's effective denominator. Set --max-prefill-
+                        tokens explicitly for predictable semantics, or use a
+                        smaller threshold. env var: DYN_ROUTER_QUEUE_THRESHOLD
+                        | default: None
+  --router-policy-config ROUTER_POLICY_CONFIG
+                        KV Router: Startup-only YAML configuration for shared
+                        router settings, policy-class queues, and per-role
+                        worker-selection policies. When omitted,
+                        router_queue_threshold and router_queue_policy define
+                        one synthetic policy class; queueing remains disabled
+                        unless router_queue_threshold is set. env var:
+                        DYN_ROUTER_POLICY_CONFIG | default: None
+  --router-conditional-disagg, --no-router-conditional-disagg
+                        [EXPERIMENTAL] KV Router: Enable conditional
+                        disaggregation. When enabled, the router may bypass
+                        the remote prefill step and route requests directly to
+                        a decode worker. The configured policy determines
+                        whether local prefill and decode is preferable for
+                        each request. env var: DYN_ROUTER_CONDITIONAL_DISAGG |
+                        default: False
+  --router-conditional-disagg-config JSON
+                        [EXPERIMENTAL] KV Router: JSON object for conditional
+                        disaggregation policy settings. Supported fields:
+                        policy, eff_isl_threshold, eff_isl_ratio_threshold,
+                        prefill_busy_threshold, decode_busy_threshold. env
+                        var: DYN_ROUTER_CONDITIONAL_DISAGG_CONFIG | default:
+                        None
+  --router-prefill-policy ROUTER_PREFILL_POLICY
+                        --router-prefill-policy is deprecated and will be
+                        removed in v1.7; use worker_selection.prefill in
+                        --router-policy-config. KV Router: Process-local
+                        worker-selection policy type for disaggregated prefill
+                        workers in this router process. Overrides
+                        worker_selection.prefill from --router-policy-config.
+                        Use 'default' for Dynamo's built-in worker selector.
+                        env var: DYN_ROUTER_PREFILL_POLICY | default: None
+  --router-decode-policy ROUTER_DECODE_POLICY
+                        --router-decode-policy is deprecated and will be
+                        removed in v1.7; use worker_selection.decode in
+                        --router-policy-config. KV Router: Process-local
+                        worker-selection policy type for decode workers in
+                        this router process. Overrides worker_selection.decode
+                        from --router-policy-config. Use 'default' for
+                        Dynamo's built-in worker selector. env var:
+                        DYN_ROUTER_DECODE_POLICY | default: None
+  --router-event-threads ROUTER_EVENT_THREADS
+                        KV Router: Number of KV indexer worker threads. When >
+                        1, uses a concurrent radix tree with a thread pool for
+                        higher throughput, including approximate routing when
+                        --no-router-kv-events is set. env var:
+                        DYN_ROUTER_EVENT_THREADS | default: 4
+  --router-queue-policy {fcfs,wspt}
+                        --router-queue-policy is deprecated and will be
+                        removed in v1.7; use policy_classes[].queue_policy in
+                        --router-policy-config. KV Router: Scheduling policy
+                        for the router queue. 'fcfs' (default): first-come
+                        first-served with priority bumps — optimizes tail
+                        TTFT. 'wspt': weighted shortest processing time
+                        (Smith's rule) — optimizes average TTFT. env var:
+                        DYN_ROUTER_QUEUE_POLICY | default: fcfs
+  --use-remote-indexer, --no-use-remote-indexer
+                        [EXPERIMENTAL] KV Router: Query a remote KV indexer
+                        served from the worker component via the request plane
+                        instead of maintaining a local radix tree. env var:
+                        DYN_USE_REMOTE_INDEXER | default: False
+  --enable-session-prefix-index, --no-enable-session-prefix-index
+                        [EXPERIMENTAL] KV Router: Track per-session block
+                        lineage in a logical prefix index that outlives engine
+                        cache eviction. Nothing consumes the index for routing
+                        decisions yet. env var:
+                        DYN_ENABLE_SESSION_PREFIX_INDEX | default: False
+  --shared-cache-multiplier SHARED_CACHE_MULTIPLIER
+                        --shared-cache-multiplier is deprecated and will be
+                        removed in v1.7; use shared_cache_multiplier in the
+                        default policy parameters in --router-policy-config.
+                        [EXPERIMENTAL] KV Router: Multiplier for shared cache
+                        hits (0.0-1.0). Blocks in the shared cache are less
+                        valuable than device-local blocks. E.g. 0.5 means each
+                        shared hit counts as half a device-local hit. Also
+                        credits blocks a worker can fetch from a peer through
+                        a KV fetch hint. The default policy uses 0.5 when
+                        shared cache is enabled. env var:
+                        DYN_SHARED_CACHE_MULTIPLIER | default: None
+  --shared-cache-type {none,hicache}
+                        [EXPERIMENTAL] KV Router: Type of external shared KV
+                        cache to query. 'none' (default): disabled. 'hicache':
+                        query Mooncake master directly for SGLang L3 (HiCache)
+                        state using SGLang-compatible Mooncake key derivation.
+                        env var: DYN_SHARED_CACHE_TYPE | default: none
+  --router-predicted-ttl-secs ROUTER_PREDICTED_TTL_SECS
+                        KV Router: Enable predict-on-route with this TTL in
+                        seconds for entries in the local side indexer.
+                        Requires KV events; omit to disable. Independent of
+                        --router-ttl-secs, which covers pure approximate mode.
+                        env var: DYN_ROUTER_PREDICTED_TTL_SECS | default: None

@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-11-09T15:34:12.683128+00:00",
+  "execution_kind": "contract-tests",
+  "upstream_execution": false,
+  "source_sha256": "a5a8608ed404781b919f8e197768886b32a848245f7c86debd1b60656f34e17b",
+  "commands": [
+    {
+      "name": "race-tests",
+      "command": [
+        "/home/li/.local/share/agentcloud/go/bin/go",
+        "test",
+        "-p",
+        "2",
+        "-race",
+        "-count=1",
+        "-json",
+        "./..."
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 11.304,
+      "stdout": "docs/evidence/logs/local-20261109T153357843663Z/race-tests.stdout.log",
+      "stderr": "docs/evidence/logs/local-20261109T153357843663Z/race-tests.stderr.log"
+    },
+    {
+      "name": "vet",
+      "command": [
+        "/home/li/.local/share/agentcloud/go/bin/go",
+        "vet",
+        "./..."
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.482,
+      "stdout": "docs/evidence/logs/local-20261109T153357843663Z/vet.stdout.log",
+      "stderr": "docs/evidence/logs/local-20261109T153357843663Z/vet.stderr.log"
+    },
+    {
+      "name": "tooling-tests",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests/tooling",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.481,
+      "stdout": "docs/evidence/logs/local-20261109T153357843663Z/tooling-tests.stdout.log",
+      "stderr": "docs/evidence/logs/local-20261109T153357843663Z/tooling-tests.stderr.log"
+    },
+    {
+      "name": "runtime-tests",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests/python",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 2.164,
+      "stdout": "docs/evidence/logs/local-20261109T153357843663Z/runtime-tests.stdout.log",
+      "stderr": "docs/evidence/logs/local-20261109T153357843663Z/runtime-tests.stderr.log"
+    },
+    {
+      "name": "python-syntax",
+      "command": [
+        "/usr/bin/python3",
+        "-m",
+        "compileall",
+        "-q",
+        "-x",
+        "[/\\\\](\\.venv|__pycache__)[/\\\\]",
+        "scripts",
+        "experiments",
+        "runtime",
+        "adapters",
+        "bench"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.235,
+      "stdout": "docs/evidence/logs/local-20261109T153357843663Z/python-syntax.stdout.log",
+      "stderr": "docs/evidence/logs/local-20261109T153357843663Z/python-syntax.stderr.log"
+    },
+    {
+      "name": "replay",
+      "command": [
+        "/home/li/.local/share/agentcloud/go/bin/go",
+        "run",
+        "./cmd/agentcloud",
+        "replay",
+        "--input",
+        "fixtures/signals/demo.jsonl",
+        "--output",
+        "artifacts/replay-demo.json"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 0.171,
+      "stdout": "docs/evidence/logs/local-20261109T153357843663Z/replay.stdout.log",
+      "stderr": "docs/evidence/logs/local-20261109T153357843663Z/replay.stderr.log"
+    }
+  ],
+  "top_level_tests_passed": 46,
+  "test_cases": [
+    "github.com/lilong555/agentcloud/cmd/agentcloud:TestReplayDemo",
+    "github.com/lilong555/agentcloud/cmd/agentcloud:TestReplayRejectsMalformedAndBackwardTrace",
+    "github.com/lilong555/agentcloud/cmd/agentcloud:TestCLIProducesAtomicReport",
+    "github.com/lilong555/agentcloud/internal/adapters/dynamo:TestClientTransportsTrustedBindingsAndReceipts",
+    "github.com/lilong555/agentcloud/internal/adapters/dynamo:TestClientDoesNotForwardTokenAcrossRedirects",
+    "github.com/lilong555/agentcloud/internal/adapters/dynamo:TestClientRejectsMismatchedReceiptIdentity",
+    "github.com/lilong555/agentcloud/internal/adapters/substrate:TestCoordinatorEgressWire",
+    "github.com/lilong555/agentcloud/internal/adapters/substrate:TestPublicLifecycleWire",
+    "github.com/lilong555/agentcloud/internal/adapters/substrate:TestRetainReconcilesUnknownCreate",
+    "github.com/lilong555/agentcloud/internal/control:TestTenantGlobalLogicalRequestIdentityAndClaim",
+    "github.com/lilong555/agentcloud/internal/control:TestGateDrainAndDuplicateInFlightTool",
+    "github.com/lilong555/agentcloud/internal/control:TestApplicationSnapshotRestoreAndOldEpoch",
+    "github.com/lilong555/agentcloud/internal/control:TestSnapshotDigestCorruptionFailsClosed",
+    "github.com/lilong555/agentcloud/internal/journal:TestFileJournalDurabilityAndSingleWriter",
+    "github.com/lilong555/agentcloud/internal/journal:TestInvalidFileJournalFailsClosed",
+    "github.com/lilong555/agentcloud/internal/control:TestPostgresRestartKeepsUnknownAndClosedGate",
+    "github.com/lilong555/agentcloud/internal/journal:TestPostgresDurableReopenAndAdvisoryOwnership",
+    "github.com/lilong555/agentcloud/internal/control:TestHTTPIdentityStrictDecodeAndEndToEnd",
+    "github.com/lilong555/agentcloud/internal/control:TestSSEFirstTokenDurableWhileStreamingAndReplay",
+    "github.com/lilong555/agentcloud/internal/journal:TestPostgresRevisionConflictPoisonsWriter",
+    "github.com/lilong555/agentcloud/internal/control:TestSSETerminalErrorsPreserveFirstTokenAndSingleAttempt",
+    "github.com/lilong555/agentcloud/internal/control:TestSSEInterruptedRestartKeepsProgressWithoutRedispatch",
+    "github.com/lilong555/agentcloud/internal/control:TestSSEToolCallsAccumulateAndClaim",
+    "github.com/lilong555/agentcloud/internal/control:TestExperimentGroupsIdentityHeadersAndFeedback",
+    "github.com/lilong555/agentcloud/internal/control:TestExperimentDefaultDisabledCapabilitiesAndTerminalIdentity",
+    "github.com/lilong555/agentcloud/internal/control:TestModelBoundarySuspendsAtSafePointAndRestoresFiles",
+    "github.com/lilong555/agentcloud/internal/policy:TestLifecycleThresholdAndPressure",
+    "github.com/lilong555/agentcloud/internal/policy:TestLifecycleSafetyCooldownAndEstimateValidation",
+    "github.com/lilong555/agentcloud/internal/control:TestModelBoundaryActiveAndUnknownToolsKeepAdmission",
+    "github.com/lilong555/agentcloud/internal/control:TestModelBoundaryQueueEvidenceAndFailureFallback",
+    "github.com/lilong555/agentcloud/internal/control:TestModelBoundaryPersistenceAndAuthenticatedEndpoint",
+    "github.com/lilong555/agentcloud/internal/control:TestInterruptedBoundaryRequiresReconciliation",
+    "github.com/lilong555/agentcloud/internal/control:TestModelBoundaryConcurrentReplayClosesToolAdmission",
+    "github.com/lilong555/agentcloud/internal/control:TestModelBoundaryOperationIDRejectsPublicLifecycleReuse",
+    "github.com/lilong555/agentcloud/internal/control:TestModelBoundaryReservationFencesPublicLifecycleBeforeActuation",
+    "github.com/lilong555/agentcloud/tests/contract:TestIdentityAndFreshness",
+    "github.com/lilong555/agentcloud/tests/contract:TestMonotonicSequenceAndObservation",
+    "github.com/lilong555/agentcloud/tests/contract:TestEpochRotationFencesOldActor",
+    "github.com/lilong555/agentcloud/tests/contract:TestTTLExpiryPreservesReplayWatermark",
+    "github.com/lilong555/agentcloud/tests/contract:TestConcurrentDuplicateHasOneWinner",
+    "github.com/lilong555/agentcloud/tests/contract:TestActingWeightsAndReasoningPreserved",
+    "github.com/lilong555/agentcloud/tests/contract:TestResumeRestoresImmediatelyAndDebouncesReparking",
+    "github.com/lilong555/agentcloud/tests/contract:TestHeartbeatKeepsStateResidence",
+    "github.com/lilong555/agentcloud/tests/contract:TestCachedViewExpiresBeforeDecision",
+    "github.com/lilong555/agentcloud/tests/contract:TestPolicyNumericValidation",
+    "github.com/lilong555/agentcloud/internal/control:TestModelBoundaryConcurrentManualSuspendKeepsKnownOutcome"
+  ],
+  "status": "passed",
+  "replay_summary": {
+    "records": 17,
+    "registrations_accepted": 2,
+    "updates_accepted": 4,
+    "updates_rejected": 2,
+    "evaluations_accepted": 9,
+    "records_rejected": 2
+  },
+  "replay_sha256": "15df11c6c943bb3f857cd4f35b3384aacd3d322fc0d5cf7b8c904e8923a91387"
+}

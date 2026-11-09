@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "component": "dynamo",
+  "validation_level": "native-frontend-official-mocker-process-integration",
+  "execution_kind": "native-router-mocker-cpu",
+  "upstream_commit": "c5680e573b86623df3b6b017a408373aeba93469",
+  "upstream_execution": true,
+  "gpu_execution": false,
+  "weights_downloaded": false,
+  "started_at": "2026-11-09T13:49:03.211796+00:00",
+  "status": "passed",
+  "logs": "docs/evidence/logs/dynamo-native-20261109T134903211771Z",
+  "commands": [
+    {
+      "name": "frontend",
+      "command": [
+        "/home/li/code/Claudeagent/.venv-dynamo/bin/python",
+        "-m",
+        "dynamo.frontend",
+        "--http-host",
+        "127.0.0.1",
+        "--http-port",
+        "18080",
+        "--router-mode",
+        "kv",
+        "--router-policy-config",
+        "/home/li/code/Claudeagent/experiments/dynamo/runtime/thunderagent.yaml",
+        "--kv-cache-block-size",
+        "16",
+        "--discovery-backend",
+        "file",
+        "--request-plane",
+        "tcp",
+        "--event-plane",
+        "zmq"
+      ],
+      "pid": 203158
+    },
+    {
+      "name": "mocker",
+      "command": [
+        "/home/li/code/Claudeagent/.venv-dynamo/bin/python",
+        "-m",
+        "dynamo.mocker",
+        "--model-path",
+        "/home/li/code/Claudeagent/experiments/dynamo/runtime/tokenizer",
+        "--model-name",
+        "agentcloud-tiny",
+        "--block-size",
+        "16",
+        "--num-gpu-blocks-override",
+        "64",
+        "--kv-bytes-per-token",
+        "512",
+        "--num-workers",
+        "1",
+        "--speedup-ratio",
+        "1",
+        "--discovery-backend",
+        "file",
+        "--request-plane",
+        "tcp",
+        "--event-plane",
+        "zmq"
+      ],
+      "pid": 203159
+    }
+  ],
+  "duration_seconds": 3.524,
+  "process_exit_codes": [
+    0,
+    0
+  ],
+  "passed": 16,
+  "failed": 0
+}

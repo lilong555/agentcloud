@@ -1,0 +1,136 @@
+{
+  "protocol_version": 1,
+  "review_type": "fresh_independent_adversarial_review",
+  "generated_at": "2026-11-09T13:59:54.351929+00:00",
+  "scope": [
+    "Substrate 生命周期 UID/version fencing、快照持久性等待、实际恢复 fidelity、Tag 来源身份",
+    "Substrate 适配器与协调器实际调用链、UNKNOWN 保留、epoch gate、PostgreSQL CAS",
+    "Dynamo 原生 execution_control/execution_feedback 的认证范围、lease、TTL 与暂停核算"
+  ],
+  "contributor_rules_read": [
+    "upstream/substrate/AGENTS.md",
+    "upstream/substrate/CONTRIBUTING.md",
+    "upstream/dynamo/AGENTS.md",
+    "upstream/dynamo/CONTRIBUTING.md"
+  ],
+  "blocking_findings": [],
+  "nonblocking_findings": [
+    {
+      "id": "AR-003",
+      "priority": "P2",
+      "status": "open",
+      "title": "Dynamo 控制绑定按前端进程累计占用会话额度",
+      "locations": [
+        {
+          "path": "upstream/dynamo/lib/router-plugins/builtin/src/thunderagent/execution_control.rs",
+          "line": 338
+        },
+        {
+          "path": "upstream/dynamo/lib/router-plugins/builtin/src/thunderagent/request_classifier/scheduler.rs",
+          "line": 255
+        },
+        {
+          "path": "upstream/dynamo/lib/router-plugins/builtin/src/thunderagent/request_classifier/scheduler.rs",
+          "line": 1343
+        }
+      ],
+      "trigger": [
+        "配置较小的 max_sessions，逐一登记不同 tenant/workspace/session 绑定。",
+        "结束这些会话的推理，或等待 session_retention_seconds 到期，使其 program 被移除。",
+        "登记第 max_sessions+1 个新会话；控制服务仍返回 429 session_limit。"
+      ],
+      "impact": "已结束的会话继续占用 ControlServer.sessions、inference_leases 和 execution_bindings；长期运行的前端达到配置额度后持续拒绝新会话。",
+      "evidence": "ControlServer 只有 capabilities/bindings/state/session 路由；登记写入 sessions，缺少删除路径。scheduler 的 expire_retained_programs 仅 remove_program，execution_bindings 没有回收调用，另受 max_tracked_requests 总量限制。",
+      "recommendation": "增加认证后的会话终结与绑定回收，撤销 inference lease，并设计保留 epoch/sequence 防重放水位的有界记录。"
+    }
+  ],
+  "resolved_findings": [
+    {
+      "id": "AR-001",
+      "priority": "P1",
+      "status": "verified_resolved",
+      "title": "Substrate 工具调用路径与实际 Runtime 路由失配",
+      "locations": [
+        {
+          "path": "internal/control/substrate.go",
+          "line": 168
+        },
+        {
+          "path": "runtime/tools_server.py",
+          "line": 282
+        }
+      ],
+      "original_trigger": "通过 SubstrateBackend.Tool 发起工具操作，旧调用路径 /tools 在 Runtime 得到 404。",
+      "impact": "工具返回 OUTCOME_UNKNOWN，会话转入 RECOVERY_REQUIRED 并关闭 gate。",
+      "resolution": "后端调用 /runtime/v1/tools，与 Runtime 实际路由一致。",
+      "validation": {
+        "kind": "temporary_http_probe",
+        "canonical_tool_endpoint_http_status": 200,
+        "tool_status": "COMPLETED",
+        "old_tool_endpoint_http_status": 404,
+        "source_assertion": "SubstrateBackend.Tool 使用 /runtime/v1/tools"
+      }
+    },
+    {
+      "id": "AR-002",
+      "priority": "P1",
+      "status": "verified_resolved",
+      "title": "Runtime attach 原样回显 Actor UID，激活回执缺少可信自身身份",
+      "locations": [
+        {
+          "path": "internal/control/substrate.go",
+          "line": 133
+        },
+        {
+          "path": "runtime/tools_server.py",
+          "line": 78
+        },
+        {
+          "path": "deploy/substrate/render-runtime.py",
+          "line": 30
+        },
+        {
+          "path": "upstream/substrate/api/ateapi/v1/ateapi.proto",
+          "line": 1592
+        }
+      ],
+      "original_trigger": [
+        "协调器 Get/Resume 验证 Actor UID 后释放上游生命周期 lease。",
+        "另一个授权调用者删除并重建同名 Actor。",
+        "按 Actor 名称路由的 attach 到达替代 Runtime，旧实现回显请求中的旧 UID，协调器身份检查通过。"
+      ],
+      "impact": "协调器能够把替代 Actor 的工具进程登记为原 Actor 的新执行 epoch。",
+      "resolution": "部署模板使用 Substrate SystemInfoVolumeSource 投影只读 Actor UID；Runtime 比对投影与请求 UID、拒绝持久目录身份替换，并返回 identity_attested。协调器要求 identity_attested 为真。",
+      "validation": {
+        "unit_command": "python3 -m unittest tests.python.test_runtime.ToolRuntimeTests.test_trusted_actor_uid_projection_fences_attach",
+        "unit_result": "passed",
+        "kind": "temporary_http_probe_and_source_assertion",
+        "valid_attach_http_status": 200,
+        "valid_attach_identity_attested": true,
+        "forged_uid_attach_http_status": 409,
+        "forged_uid_error": "ACTOR_UID_MISMATCH",
+        "source_assertion": "SubstrateBackend.attach 拒绝 !receipt.IdentityAttested"
+      }
+    }
+  ],
+  "reviewed_file_sha256": {
+    "internal/control/substrate.go": "992b674507cc89589d3e1ee2f0eabd0657d1b48502081c558ba5a5bf8e43f310",
+    "internal/control/controller.go": "f127f0799c18d6220b151f02b9c46ad3f15127fb2c065242d1015fc37a1fc3e9",
+    "internal/control/inference.go": "d2c289c151d0d70a4bc4ff04a971236c5ce0cb708b5625ed2e9be8d303fc11b3",
+    "internal/journal/store.go": "1a789f779e01cd7c9e32f8d388462b0ca7df2beab6cdce08108c75995a21335f",
+    "internal/adapters/substrate/client.go": "2bbdf2c2c1a9928fb94cdb1ebdb054f718fd7dfb33213be5d4bf33f24d8153db",
+    "internal/adapters/substrate/retain.go": "ace69ddf5ec5c5d1ed99d049b5a9dbd36c712ac85af896f429da6770e67889ad",
+    "runtime/tools_server.py": "9d69e4e6b07ce87076379213c715311633e7031a14ea6aa91c5e3e5e5c6989df",
+    "deploy/substrate/render-runtime.py": "73c71079e90df2b79bb2247672439a70aba247c460f08d3eb2c10b4888cc7568",
+    "upstream/substrate/cmd/ateapi/internal/controlapi/workflow.go": "37951dea67ff0c9cd7d782f6920c7232eea7be5ce9c3294a89989632bfe6579f",
+    "upstream/substrate/cmd/ateapi/internal/controlapi/workflow_resume.go": "8ef42eef103c2b4bb935e121d915bcfc4036da472c2d73c42be7086a5f29acb5",
+    "upstream/substrate/cmd/ateapi/internal/controlapi/workflow_suspend.go": "eb2ab1de0dd99a4fbabfc4aaf434b5d3a7529913d29f8fe6530338a5bbf0e784",
+    "upstream/substrate/cmd/ateapi/internal/controlapi/workflow_tag.go": "51accf22e5111976e6c5a2c99dd746797c35abfeb5a6162e5bb754449dd86865",
+    "upstream/substrate/cmd/ateapi/internal/controlapi/snapshot_durability.go": "bf851f3d70c089aaa353488afc1e4acb841c320585f269a68648a70d7dbc1502",
+    "upstream/dynamo/lib/router-plugins/builtin/src/thunderagent/execution_control.rs": "f828f7ce30617094ce39769e127b15a9e6d45ea789db74a35022dbceee348306",
+    "upstream/dynamo/lib/router-plugins/builtin/src/thunderagent/request_classifier/execution_feedback.rs": "9e92f54afdb4feaa6cc1f92a5f6779b99034316339cb2daf2b7201739062e9d9",
+    "upstream/dynamo/lib/router-plugins/builtin/src/thunderagent/request_classifier/mod.rs": "e71112316c1c3a97eb6aa229fc832a394405d7153d2047b3527b37954fe311f3",
+    "upstream/dynamo/lib/router-plugins/builtin/src/thunderagent/request_classifier/scheduler.rs": "58ee3917bb33c8bd30160f12839c40efde6061bea54b7b1b741a13afcaa70128"
+  },
+  "validation_scope": "定向源码追踪、实际 Runtime HTTP 探针与 Actor UID 投影单项测试；上游全量测试由项目验证流程负责。"
+}

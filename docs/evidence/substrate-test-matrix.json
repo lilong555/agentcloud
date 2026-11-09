@@ -1,0 +1,83 @@
+{
+  "lifecycle": {
+    "source": "substrate-lifecycle-docker.jsonl",
+    "backend": "PostgreSQL 18 testcontainer",
+    "repeat_count": 3,
+    "distinct_tests_including_subtests": 740,
+    "distinct_top_level_tests": 73,
+    "results": {
+      "pass": 2220,
+      "fail": 0,
+      "skip": 0
+    },
+    "packages": {
+      "go.ate.dev/substrate/cmd/ateapi/internal/apivalidation": "pass",
+      "go.ate.dev/substrate/cmd/ateapi/internal/authz": "pass",
+      "go.ate.dev/substrate/cmd/ateapi/internal/controlapi": "pass"
+    }
+  },
+  "lifecycle_contract": {
+    "source": "substrate-lifecycle-contract.jsonl",
+    "backend": "control API contract",
+    "repeat_count": 3,
+    "distinct_tests_including_subtests": 37,
+    "distinct_top_level_tests": 4,
+    "results": {
+      "pass": 111,
+      "fail": 0,
+      "skip": 0
+    },
+    "packages": {
+      "go.ate.dev/substrate/cmd/ateapi/internal/controlapi": "pass"
+    }
+  },
+  "runtime_race": {
+    "source": "substrate-runtime-race.jsonl",
+    "backend": "atelet and worker Go packages",
+    "repeat_count": 3,
+    "distinct_tests_including_subtests": 108,
+    "distinct_top_level_tests": 23,
+    "results": {
+      "pass": 324,
+      "fail": 0,
+      "skip": 0
+    },
+    "packages": {
+      "go.ate.dev/substrate/cmd/ateapi/internal/apivalidation": "pass",
+      "go.ate.dev/substrate/cmd/ateapi/internal/controlapi": "pass",
+      "go.ate.dev/substrate/cmd/atelet": "pass",
+      "go.ate.dev/substrate/cmd/ateworker-gvisor": "pass",
+      "go.ate.dev/substrate/cmd/ateworker-microvm": "pass"
+    }
+  },
+  "external_postgres": {
+    "source": "substrate-external-postgres.jsonl",
+    "backend": "PostgreSQL 14 external DSN",
+    "repeat_count": 3,
+    "distinct_tests_including_subtests": 11,
+    "distinct_top_level_tests": 3,
+    "results": {
+      "pass": 33,
+      "fail": 0,
+      "skip": 0
+    },
+    "packages": {
+      "go.ate.dev/substrate/cmd/ateapi/internal/controlapi": "pass"
+    }
+  },
+  "adapter_race": {
+    "source": "substrate-adapter-tests.jsonl",
+    "backend": "native gRPC loopback",
+    "repeat_count": 3,
+    "distinct_tests_including_subtests": 5,
+    "distinct_top_level_tests": 3,
+    "results": {
+      "pass": 15,
+      "fail": 0,
+      "skip": 0
+    },
+    "packages": {
+      "github.com/lilong555/agentcloud/internal/adapters/substrate": "pass"
+    }
+  }
+}

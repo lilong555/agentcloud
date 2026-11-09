@@ -1,0 +1,277 @@
+{
+  "schema_version": 1,
+  "component": "dynamo",
+  "label": "whitebox-execution-feedback-final",
+  "upstream_commit": "c5680e573b86623df3b6b017a408373aeba93469",
+  "checkout": "upstream/dynamo",
+  "started_at": "2026-11-09T13:12:37.505218+00:00",
+  "command": [
+    "/home/li/.cargo/bin/cargo",
+    "test",
+    "--locked",
+    "-p",
+    "dynamo-router-policies",
+    "thunderagent",
+    "--lib",
+    "--",
+    "--nocapture"
+  ],
+  "status": "passed",
+  "exit_code": 0,
+  "duration_seconds": 4.175,
+  "tests": {
+    "passed": 54,
+    "failed": 0,
+    "ignored": 2
+  },
+  "environment": {
+    "CARGO_BUILD_JOBS": "2",
+    "CARGO_PROFILE_DEV_DEBUG": "0",
+    "CARGO_PROFILE_TEST_DEBUG": "0",
+    "CARGO_INCREMENTAL": "0"
+  },
+  "stdout": "docs/evidence/logs/dynamo-20261109T131237501619Z/stdout.log",
+  "stderr": "docs/evidence/logs/dynamo-20261109T131237501619Z/stderr.log",
+  "validation_level": "native-rust-unit-tests",
+  "feedback_transport": "in-process-authenticated-coordinator-seam",
+  "native_router_mocker_e2e": "not_run",
+  "gpu_performance": "not_run",
+  "actual_commit": "c5680e573b86623df3b6b017a408373aeba93469",
+  "source_diff": " Cargo.lock                                         |   1 +\n lib/router-plugins/builtin/Cargo.toml              |   1 +\n lib/router-plugins/builtin/src/lib.rs              |   4 +\n lib/router-plugins/builtin/src/thunderagent/mod.rs |   6 +-\n .../src/thunderagent/request_classifier/mod.rs     |  82 +++++++++\n .../thunderagent/request_classifier/scheduler.rs   | 198 +++++++++++++++++++--\n 6 files changed, 281 insertions(+), 11 deletions(-)\n",
+  "source_sha256": {
+    "Cargo.lock": "a45bb4562570e56a9601101d579130e40439144e22c7b7ab842e514370522e8c",
+    "lib/router-plugins/builtin/Cargo.toml": "14b9a72ef505254712575ba3eaf2280690f289726e5442bdf43cdda71f310895",
+    "lib/router-plugins/builtin/src/lib.rs": "c365ba3f9f0fd313a47e74db1c41f1e189ddfe8f13095fecc61c9e65f847dd87",
+    "lib/router-plugins/builtin/src/thunderagent/mod.rs": "3b8e49b6e772b6e01e51fd773be8021d137a51f64205f73f04ac57ae5ba12f2f",
+    "lib/router-plugins/builtin/src/thunderagent/request_classifier/execution_feedback.rs": "d3ea6450495355344612494c403d7d7184a26cf41fd6ede61ae94b1cc16fb933",
+    "lib/router-plugins/builtin/src/thunderagent/request_classifier/mod.rs": "b216e00a385a0fc313f817a135d74ce43dc6928ab1bff6833795084d0a9902f0",
+    "lib/router-plugins/builtin/src/thunderagent/request_classifier/scheduler.rs": "297a19a280a8b96579021f543971749491ce9b86c3b12854096af2325949d148"
+  },
+  "toolchain": "cargo 1.96.1 (356927216 2026-06-26)",
+  "test_cases": [
+    [
+      "thunderagent::config::tests::validates_control_values",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::execution_feedback::tests::defaults_debounce_recovery_hold_and_ttl_preserve_replay_watermark",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::capacity::tests::distinguishes_missing_capacity_from_worker_removal",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::execution_feedback::tests::rejects_replay_identity_expiry_and_invalid_values",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::scheduler::tests::benchmark_pause_by_rank",
+      "ignored"
+    ],
+    [
+      "thunderagent::request_classifier::execution_feedback::tests::wire_contract_uses_versioned_flat_identity_and_rfc3339_time",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::scheduler::tests::assigned_continuation_releases_before_periodic_pressure",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::scheduler::tests::cancelling_a_pinned_worker_change_restores_the_prior_charge",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::scheduler::tests::equal_size_pause_candidates_keep_their_existing_order",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::scheduler::tests::execution_binding_fences_epoch_and_cancellation_keeps_new_feedback",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::scheduler::tests::execution_feedback_preserves_reasoning_padding_ttl_and_resuming_budget",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::scheduler::tests::greedy_resume_selects_scalar_set_then_packs_largest_first",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::scheduler::tests::hard_pin_without_a_capacity_card_keeps_its_exact_target",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::scheduler::tests::hard_pin_waits_when_only_another_worker_has_capacity",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::scheduler::tests::pause_sees_a_request_force_resumed_in_the_same_reconcile",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::scheduler::tests::pause_isolates_worker_ranks_and_stops_acting_at_target",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::scheduler::tests::pinned_continuation_waits_when_changing_to_a_full_worker",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::scheduler::tests::hard_pins_are_charged_before_sent_and_block_an_interleaved_arrival",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::scheduler::tests::streamed_progress_updates_capacity_pressure_without_a_state_event",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::scheduler::tests::timed_out_hard_pin_waits_when_discovery_has_no_live_workers",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::scheduler::tests::pinned_continuation_waits_when_its_current_worker_cannot_fit_growth",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::scheduler::tests::waiting_hard_pin_resumes_only_on_its_worker_after_capacity_change",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::benchmark_ignored_events",
+      "ignored"
+    ],
+    [
+      "thunderagent::request_classifier::tests::aborted_request_rolls_back_new_program",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::an_old_waiter_cannot_read_a_reused_request_id",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::authoritative_empty_liveness_clears_the_last_assignment",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::derives_capacity_and_liveness_from_the_host_context",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::a_reused_request_id_does_not_revive_a_canceled_queue_entry",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::dropping_an_old_classification_preserves_a_reused_request_id",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::dropping_an_unpolled_classification_rolls_back_its_program",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::ignored_and_untracked_events_do_not_read_capacity",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::marked_count_stays_current_after_completion_and_rollback",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::implements_request_classifier",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::live_worker_without_a_model_card_keeps_its_session_assignment",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::final_session_waits_for_inflight_turn_then_removes_program",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::execution_feedback_releases_real_pending_admission_immediately",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::cold_start_without_model_cards_flows_through",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::final_session_frees_capacity_at_admission_without_restoring_on_abort",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::stale_capacity_card_is_not_used_for_assignment",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::selects_a_worker_then_reconciles_the_sent_event",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::serializes_requests_for_one_session",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::tracked_request_limit_is_enforced_before_allocating_state",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::sent_event_reconciles_the_actual_worker",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::timeout_logs_are_aggregated_outside_the_lock_and_unchanged_ticks_are_silent",
+      "ok"
+    ],
+    [
+      "thunderagent::worker_selection::tests::falls_back_when_the_classifier_target_is_unavailable",
+      "ok"
+    ],
+    [
+      "thunderagent::worker_selection::tests::honors_the_classifier_target_when_eligible",
+      "ok"
+    ],
+    [
+      "thunderagent::tests::registers_classifier_and_worker_selector",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::retained_programs_are_bounded_by_the_tracking_limit",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::capacity_growth_resumes_a_pending_program",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::retained_session_expires_before_its_next_request",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::arrival_tombstones_are_compacted_amortized",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::dropping_pending_classification_rolls_back_its_program",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::missing_capacity_respects_pause_until_timeout",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::timeout_forces_release_on_the_least_loaded_worker",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::pressure_pauses_an_acting_program_and_capacity_resumes_it",
+      "ok"
+    ],
+    [
+      "thunderagent::request_classifier::tests::releases_a_large_backlog_without_per_release_linear_removal",
+      "ok"
+    ]
+  ]
+}

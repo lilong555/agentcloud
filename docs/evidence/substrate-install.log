@@ -1,0 +1,157 @@
+configuration: 12 set, 46 default
+  actorJWT.algorithm                          ES256                                                     (from default)
+  actorJWT.issuer                             ""                                                        (from default)
+  ateapi.authz.bootstrapOwners                ""                                                        (from default)
+  ateapi.authz.egressGatewayExtraSPIFFEIDs    ""                                                        (from default)
+  ateapi.expectedJWTIssuer                    ""                                                        (from default)
+  ateapi.logLevel                             ""                                                        (from default)
+  ateapi.postgres.cloudsql.gsa                ""                                                        (from default)
+  ateapi.postgres.cloudsql.iamAuth            ""                                                        (from default)
+  ateapi.postgres.cloudsql.instance           ""                                                        (from default)
+  ateapi.postgres.cloudsql.ipType             ""                                                        (from default)
+  ateapi.postgres.owner.connectionString      ""                                                        (from default)
+  ateapi.postgres.owner.role                  substrate_owner                                           (from default)
+  ateapi.postgres.poolMaxConns                ""                                                        (from default)
+  ateapi.postgres.readWrite.connectionString  ""                                                        (from default)
+  ateapi.postgres.readWrite.role              substrate_readwrite                                       (from default)
+  ateapi.postgres.schema                      ""                                                        (from default)
+  ateapi.postgres.serverCAFile                ""                                                        (from default)
+  ateapi.postgres.storageClass                ""                                                        (from default)
+  atenet.dataplane                            envoy                                                     (from default)
+  atenet.egress.additionalExtprocService      ""                                                        (from default)
+  atenet.egress.credentialProvider            {"name":"k8s.io"}                                         (from --credential-provider)
+  benchmark.actorMemory                       ""                                                        (from default)
+  benchmark.sandboxClass                      gvisor                                                    (from default)
+  benchmark.workerCount                       1                                                         (from default)
+  clusterSize                                 size0                                                     (from default)
+  context                                     kind-agentcloud                                           (from --context)
+  cordonSystemInfraComponents                 false                                                     (from default)
+  csi.setup                                   none                                                      (from default)
+  demo.anthropicAPIKey                        ""                                                        (from default)
+  demo.counter.storageClass                   standard                                                  (from default)
+  demo.counter.withExternalVolume             false                                                     (from default)
+  docker.buildFlags                           ""                                                        (from default)
+  e2e.envoyConcurrency                        0                                                         (from default)
+  e2e.tuning                                  false                                                     (from default)
+  fakeDataPlane.enabled                       false                                                     (from default)
+  gcp.clusterLocation                         ""                                                        (from default)
+  gcp.clusterName                             ""                                                        (from default)
+  gcp.projectID                               ""                                                        (from default)
+  images.repo                                 ""                                                        (from default)
+  images.tag                                  ""                                                        (from default)
+  ingressAllowedSPIFFEIDs                     spiffe://cluster.local/ns/ate-system/sa/ate-client        (from --ingress-allowed-spiffe-ids)
+  kindCluster.enabled                         true                                                      (from --kind)
+  kindCluster.name                            kind                                                      (from default)
+  ko.defaultPlatforms                         linux/amd64                                               (from the --kind profile)
+  ko.dockerRepo                               localhost:5001                                            (from KO_DOCKER_REPO)
+  kubeconfig                                  /home/li/code/Claudeagent/artifacts/substrate/kubeconfig  (from KUBECONFIG)
+  namespace                                   ate-system                                                (from default)
+  otlpEndpoint                                ""                                                        (from default)
+  podcert.workersPerSigner                    0                                                         (from default)
+  preview                                     PerTemplateSnapshotLocation                               (from --preview)
+  publish.binariesDir                         bin/release                                               (from default)
+  publish.overwrite                           false                                                     (from default)
+  record.dir                                  ""                                                        (from default)
+  rolloutTimeout                              180s                                                      (from --rollout-timeout)
+  sandboxClasses                              gvisor                                                    (from --sandbox-classes)
+  storage.bucketName                          ate-snapshots                                             (from the --kind profile)
+  storage.snapshotLocation                    gs://ate-snapshots/                                       (from the --kind profile)
+  storage.transferGSAName                     ""                                                        (from default)
+[1;36m[step]: deploy_ate_system[0m
+  (apply of 1 objects took 0.016s)
+[1;36m[step]: deploy_crds[0m
+[1;36m[step]: images: built from source with ko[0m
+  (ko resolve -f - took 0.159s)
+  (apply of 5 objects took 0.158s)
+  (apply of 2 objects took 0.030s)
+  (apply of 1 objects took 0.037s)
+[1;36m[step]: ensure_apiserver_prerequisites[0m
+[1;36m[step]: create_jwt_authority_pool_secret[0m
+  created pool secret ate-system/actor-id-jwt-pool
+[1;36m[step]: create_actor_id_ca_pool_secret[0m
+  created pool secret ate-system/actor-id-ca-pool
+[1;36m[step]: create_actor_id_ca_certs_secret[0m
+[1;36m[step]: create_api_server_env_vars[0m
+[1;36m[step]: create_api_config[0m
+ate-api-config apiconfig.textproto:
+  | logging:  {
+  |   level:  "info"
+  | }
+[1;36m[step]: create_api_authentication_config[0m
+ate-api-authentication authentication.yaml:
+  | jwtProviders:
+  | - audiences:
+  |   - api.ate-system.svc
+  |   certificateAuthorityFile: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+  |   discoveryTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+  |   issuer: https://kubernetes.default.svc.cluster.local
+  |   name: kubernetes
+[1;36m[step]: create_podcertificate_controller_cas[0m
+  created pool secret podcertificate-controller-system/service-dns-ca-pool
+  created pool secret podcertificate-controller-system/pod-identity-ca-pool
+  created pool secret podcertificate-controller-system/postgres-ca-pool
+2026/11/09 21:54:12 Using base gcr.io/distroless/static-debian13:nonroot@sha256:18f4cc26c9ffa7f20a359298be7deadac5c607c8e03a02b8119f1a5fc2f82c99 for go.ate.dev/substrate/cmd/podcertcontroller
+2026/11/09 21:54:13 git doesn't contain any tags. Tag info will not be available
+git is in a dirty state
+Please check in your pipeline what can be changing the following files:
+ M api/ateapi/v1/ateapi.pb.go
+ M api/ateapi/v1/ateapi.proto
+ M api/ateapi/v1/ateapi_grpc.pb.go
+ M cmd/ateapi/internal/apivalidation/actor.go
+ M cmd/ateapi/internal/apivalidation/actor_test.go
+ M cmd/ateapi/internal/apivalidation/zz_generated.validation.go
+ M cmd/ateapi/internal/authz/registry.go
+ M cmd/ateapi/internal/controlapi/actor.go
+ M cmd/ateapi/internal/controlapi/tag.go
+ M cmd/ateapi/internal/controlapi/workflow.go
+ M cmd/ateapi/internal/controlapi/workflow_resume.go
+ M cmd/ateapi/internal/controlapi/workflow_resume_test.go
+ M cmd/ateapi/internal/controlapi/workflow_suspend.go
+ M cmd/ateapi/internal/controlapi/workflow_tag.go
+ M cmd/ateapi/internal/controlapi/workflow_tag_test.go
+ M cmd/ateapi/internal/store/storetest/storetest.go
+ M cmd/atelet/lifecycle_test.go
+ M cmd/atelet/main.go
+ M cmd/ateworker-gvisor/main.go
+ M cmd/ateworker-microvm/restore.go
+ M docs/reference/api-guide.md
+ M internal/proto/ateletpb/atelet.pb.go
+ M internal/proto/ateletpb/atelet.proto
+ M internal/proto/ateworkerpb/ateworker.pb.go
+ M internal/proto/ateworkerpb/ateworker.proto
+?? cmd/agentcloud-credentials/
+?? cmd/ateapi/internal/controlapi/snapshot_durability.go
+?? cmd/ateapi/internal/controlapi/snapshot_durability_test.go
+?? cmd/ateapi/internal/controlapi/workflow_preconditions_test.go
+
+2026/11/09 21:54:13 Building go.ate.dev/substrate/cmd/podcertcontroller for linux/amd64
+2026/11/09 21:54:19 Publishing localhost:5001/podcertcontroller:latest
+2026/11/09 21:54:19 pushed blob: sha256:a98aa4c44da745c4ccb8f9cdc0726d7c6b727006e76a979db16b40e74cee8681
+2026/11/09 21:54:19 pushed blob: sha256:fc20ae0371a76b283805574e387f215163122c1b35dfff7b856efa37878a51af
+2026/11/09 21:54:19 localhost:5001/podcertcontroller:sha256-c5a1f23dd6b8ffd21abeb0f01db183e992aae12cdc2bc53581f9de04cd203136.sbom: digest: sha256:c0175f7e5a9e2d8d4f9e7bf2cb031302921b465be5b7d10a82200129e525c917 size: 374
+2026/11/09 21:54:19 Published SBOM localhost:5001/podcertcontroller:sha256-c5a1f23dd6b8ffd21abeb0f01db183e992aae12cdc2bc53581f9de04cd203136.sbom
+2026/11/09 21:54:20 pushed blob: sha256:c172f21841dff4c8cf45cde46589c1c2616cefe7e819965e92e6d3475c428aa0
+2026/11/09 21:54:22 pushed blob: sha256:2cc7ee286bf3a9e6af5f71756d7fc8e22e23ce65fec9047d774511ffcef79fa8
+2026/11/09 21:54:24 pushed blob: sha256:617b009a71d625ef77982b400cb9939dd5ed9809ebf50681a0520b7c08c0ca89
+2026/11/09 21:54:26 pushed blob: sha256:a99dd1dd5eaf3e2099256f1a75c8e4c02a1d3a81b8e2bfd1735b1dd166b68a12
+2026/11/09 21:54:27 pushed blob: sha256:d6b1b89eccacc15c2420b2776d72c1dae334a00805ed9af54bf2f71e4d536f28
+2026/11/09 21:54:27 pushed blob: sha256:2780920e5dbfbe103d03a583ed75345306e572ec5a48cb10361f046767d9f29a
+2026/11/09 21:54:27 pushed blob: sha256:7c12895b777bcaa8ccae0605b4de635b68fc32d60fa08f421dc3818bf55ee212
+2026/11/09 21:54:27 pushed blob: sha256:3214acf345c0cc6bbdb56b698a41ccdefc624a09d6beb0d38b5de0b2303ecaf4
+2026/11/09 21:54:28 pushed blob: sha256:52630fc75a18675c530ed9eba5f55eca09b03e91bd5bc15307918bbc1a7e7296
+2026/11/09 21:54:28 pushed blob: sha256:dd64bf2dd177757451a98fcdc999a339c35dee5d9872d8f4dc69c8f3c4dd0112
+2026/11/09 21:54:28 pushed blob: sha256:b839dfae01f66e15c6a8b63520557ed315bdfe036342fa7a0c537259f10d7a9a
+2026/11/09 21:54:29 pushed blob: sha256:ebddc55facdc6b1f7e0f30816a5fc7cc62f38abdf76c0a8b0a0ce52085754795
+2026/11/09 21:54:29 pushed blob: sha256:4a2796d8ea5ef7ae1a64ba20ba56759987f49f2ea2091ddce6bade81c0ad1fa6
+2026/11/09 21:54:29 pushed blob: sha256:d9ef8ceaa3309c3889873c76c4699c9303f35b385ec689019673391cafb0bc9f
+2026/11/09 21:54:29 pushed blob: sha256:28378bc311afe4ddec537f2171e9e6f7319b129a06f86ca7ae0c1d1a380ce0f1
+2026/11/09 21:54:30 pushed blob: sha256:ec1b04bf2eb2122e86781f791b03ea0cf6588694e0f4a88245250224c186cdf0
+2026/11/09 21:54:30 localhost:5001/podcertcontroller:latest: digest: sha256:c5a1f23dd6b8ffd21abeb0f01db183e992aae12cdc2bc53581f9de04cd203136 size: 2938
+2026/11/09 21:54:30 Published localhost:5001/podcertcontroller@sha256:c5a1f23dd6b8ffd21abeb0f01db183e992aae12cdc2bc53581f9de04cd203136
+  (ko resolve -f - took 21.392s)
+  (apply of 7 objects took 0.049s)
+  (rollout status deployment/podcertificate-controller took 180.000s)
+Error: waiting for deployment/podcertificate-controller in podcertificate-controller-system: context deadline exceeded (last error: context deadline exceeded) (last status: 0/1 replicas available)
+the settings this run used were written to /home/li/.cache/ate-setup/failed/kind-agentcloud-20261109T135730Z.yaml
+retry with: ate-setup deploy ate-system --config /home/li/.cache/ate-setup/failed/kind-agentcloud-20261109T135730Z.yaml
+exit status 1

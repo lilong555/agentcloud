@@ -1,0 +1,612 @@
+{
+  "schema_version": 1,
+  "status": "failed",
+  "execution_kind": "live-substrate-postgres-native-thunderagent-official-mocker",
+  "upstream_execution": true,
+  "gpu_execution": false,
+  "inference_backend": "official dynamo.mocker process / native ThunderAgent CPU",
+  "run_id": "live-6e678d22cc",
+  "config": {
+    "schema_version": 1,
+    "execution_kind": "live-substrate-postgres-native-thunderagent-official-mocker",
+    "paired_seeds": [
+      7101,
+      7102,
+      7103
+    ],
+    "randomized_order_seed": 9031,
+    "groups": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "actor_memory_bytes": 805306368,
+    "worker_allocatable_memory_bytes": 1543503872,
+    "interactive_slo_seconds": 8.0,
+    "request_timeout_seconds": 90.0,
+    "poll_interval_seconds": 0.025,
+    "cpu_compile_iterations": 24,
+    "cpu_source_functions": 1100,
+    "io_documents": 8,
+    "io_document_bytes": 65536,
+    "io_service_delay_seconds": 0.06,
+    "background_output_tokens": 192,
+    "background_expected_wait_ms": 4800,
+    "snapshot_cost_ms": 1800,
+    "resume_cost_ms": 300,
+    "journal_cost_ms": 50,
+    "contender_arrival_offset_seconds": 0.3,
+    "think_gap_seconds": 2.0,
+    "idle_ttl_seconds": 0.2,
+    "batch_files": 16,
+    "batch_file_bytes": 32768
+  },
+  "capabilities": {
+    "ablation_controls": {
+      "model_boundary_groups": [
+        "D",
+        "E"
+      ],
+      "native_inference_admission": true,
+      "request_final_groups": [
+        "A",
+        "B"
+      ],
+      "state_feedback_groups": [
+        "E"
+      ]
+    },
+    "ablation_groups": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E"
+    ],
+    "durable_requests": true,
+    "execution_backend": "substrate",
+    "execution_feedback": true,
+    "experiment_controls_enabled": true,
+    "first_token_kinds": [
+      "content",
+      "reasoning_content",
+      "refusal",
+      "tool_call_arguments"
+    ],
+    "first_token_observation": "upstream_sse_nonempty_content",
+    "journal_backend": "postgresql",
+    "protocol_version": 1,
+    "single_writer": true,
+    "streaming": true,
+    "tools": [
+      "file_read",
+      "file_write",
+      "shell"
+    ]
+  },
+  "native_capabilities": {
+    "protocol_version": 1,
+    "execution_feedback": true,
+    "trusted_bindings": true,
+    "opaque_routing_sessions": true,
+    "inference_lease_header": "x-agentcloud-inference-lease",
+    "classifier_count": 1,
+    "max_body_bytes": 8192,
+    "requests_per_second": 1000,
+    "ttl_ms": {
+      "min": 100,
+      "max": 60000
+    },
+    "native_frontend": true,
+    "gpu_execution": false
+  },
+  "raw_events": "docs/evidence/bench-substrate-events.jsonl",
+  "paired_seeds": [
+    7101,
+    7102,
+    7103
+  ],
+  "randomized_schedule": [
+    [
+      7101,
+      "B"
+    ],
+    [
+      7101,
+      "E"
+    ],
+    [
+      7101,
+      "A"
+    ],
+    [
+      7101,
+      "D"
+    ],
+    [
+      7101,
+      "C"
+    ],
+    [
+      7102,
+      "A"
+    ],
+    [
+      7102,
+      "E"
+    ],
+    [
+      7102,
+      "C"
+    ],
+    [
+      7102,
+      "B"
+    ],
+    [
+      7102,
+      "D"
+    ],
+    [
+      7103,
+      "B"
+    ],
+    [
+      7103,
+      "C"
+    ],
+    [
+      7103,
+      "D"
+    ],
+    [
+      7103,
+      "E"
+    ],
+    [
+      7103,
+      "A"
+    ]
+  ],
+  "ttft_definition": "client workload arrival to first observed persisted upstream SSE nonempty content/reasoning_content; includes create/Actor queue/Resume/admission and HTTP polling",
+  "server_first_token_definition": "coordinator observation timestamp of first upstream SSE nonempty generated piece; clock-shared localhost server",
+  "complete_response_definition": "arrival to durable COMPLETED observation, separately from TTFT",
+  "polling_interval_seconds": 0.025,
+  "experiment_scope": "two real sessions, one allocatable Actor slot; Actor creation competes on the single Worker; mixed CPU compile, controlled actor-local HTTP research, file batch and interactive requests",
+  "group_semantics": {
+    "A": "resident through model wait + fixed think gap; final each turn",
+    "B": "A + idle-think TTL suspend",
+    "C": "B + retained cross-turn ThunderAgent Acting logical program budget",
+    "D": "C + real model-boundary safe-point wait coordination",
+    "E": "D + coordinator-derived execution-state feedback"
+  },
+  "native_inference_admission": true,
+  "physical_kv_measurement": null,
+  "actual_rss_measurement": null,
+  "fault_definition": "real HTTP connection closed after response status line, response body discarded; original persisted operation ID replay and retained file checks",
+  "offered_definition": "eight measured business model requests per trial, including four interactive; two real terminal model requests per successful trial are cleanup operations outside measured request denominator",
+  "runs": [
+    {
+      "seed": 7101,
+      "group": "B",
+      "randomized_order": 0,
+      "status": "failed",
+      "error": "create_unknown: rpc error: code = ResourceExhausted desc = no worker has room for the actor",
+      "duration_seconds": 12.697467912999855,
+      "offered": 8,
+      "completed": 5,
+      "failed": 3,
+      "interactive_offered": 4,
+      "interactive_completed": 2,
+      "interactive_slo_successes": 2,
+      "interactive_slo_fraction": 0.5,
+      "interactive_goodput_per_second": 0.15751171916350112,
+      "ttft_p50_seconds": 0.11181132099954993,
+      "ttft_p95_seconds": 0.27845517859896063,
+      "interactive_ttft_p50_seconds": 0.13349393699900247,
+      "interactive_ttft_p95_seconds": 0.15300829139850974,
+      "resume_p50_seconds": null,
+      "resume_p95_seconds": null,
+      "fault_injections": 0,
+      "fault_recovered": 0,
+      "fault_planned": 3,
+      "fault_skipped": 3,
+      "fault_recovery_fraction": null,
+      "model_boundary": null,
+      "models": [
+        {
+          "session_id": "live-6e678d22cc-7101-B-primary",
+          "workload": "cpu-planning",
+          "logical_request_id": "live-6e678d22cc-7101-B-primary-cpu-planning",
+          "offered": true,
+          "interactive": false,
+          "status": "COMPLETED",
+          "arrival_monotonic": 17489.76844767,
+          "arrival_unix": 1794238945.6929736,
+          "input_prompt_repeats": 320,
+          "requested_output_tokens": 8,
+          "first_token_observed": 17490.077722505,
+          "wait_window_start_seconds": 1.4370079620020988,
+          "end_to_end_ttft_seconds": 0.30927483499908703,
+          "first_token_at": "2026-11-09T15:42:25.937828478Z",
+          "first_token_kind": "content",
+          "first_token_poll_rtt_seconds": 0.05988291700123227,
+          "configured_poll_interval_seconds": 0.025,
+          "server_first_token_since_arrival_seconds": 0.24485445022583008,
+          "poll_and_network_observation_lag_seconds": 0.06459999084472656,
+          "completion_seconds": 0.44035581999924034,
+          "result": {
+            "choices": [
+              {
+                "finish_reason": "length",
+                "index": 0,
+                "message": {
+                  "content": " token1733 token1690 token1692 token1854 token1694 token1434 token1528 token1330",
+                  "role": "assistant"
+                }
+              }
+            ],
+            "created": 1794238945,
+            "id": "chatcmpl-f027e885-e670-4cdd-bfb2-c04de39e3b88",
+            "model": "agentcloud-tiny",
+            "object": "chat.completion",
+            "usage": {
+              "completion_tokens": 8,
+              "prompt_tokens": 320,
+              "prompt_tokens_details": {
+                "cached_tokens": 0
+              },
+              "total_tokens": 328
+            }
+          },
+          "attempt_id": "3051332e34dfdfa45e01b64ca1c004c9",
+          "wait_window_end_seconds": 1.8773637820013391,
+          "generated_output_tokens": 8
+        },
+        {
+          "session_id": "live-6e678d22cc-7101-B-primary",
+          "workload": "interactive-during-cpu",
+          "logical_request_id": "live-6e678d22cc-7101-B-primary-interactive-during-cpu",
+          "offered": true,
+          "interactive": true,
+          "status": "COMPLETED",
+          "arrival_monotonic": 17490.366573657,
+          "arrival_unix": 1794238946.2911003,
+          "input_prompt_repeats": 128,
+          "requested_output_tokens": 8,
+          "first_token_observed": 17490.52175021,
+          "wait_window_start_seconds": 2.0351339490007376,
+          "end_to_end_ttft_seconds": 0.155176552998455,
+          "first_token_at": "2026-11-09T15:42:26.409228421Z",
+          "first_token_kind": "content",
+          "first_token_poll_rtt_seconds": 0.012759596000250895,
+          "configured_poll_interval_seconds": 0.025,
+          "server_first_token_since_arrival_seconds": 0.11812782287597656,
+          "poll_and_network_observation_lag_seconds": 0.037097930908203125,
+          "completion_seconds": 0.23332851699888124,
+          "result": {
+            "choices": [
+              {
+                "finish_reason": "length",
+                "index": 0,
+                "message": {
+                  "content": " token1914 token1257 token1191 token1972 token1909 token1503 token1866 token1220",
+                  "role": "assistant"
+                }
+              }
+            ],
+            "created": 1794238946,
+            "id": "chatcmpl-9d0b15bb-6a62-432c-abb6-e370100041dc",
+            "model": "agentcloud-tiny",
+            "object": "chat.completion",
+            "usage": {
+              "completion_tokens": 8,
+              "prompt_tokens": 128,
+              "prompt_tokens_details": {
+                "cached_tokens": 112
+              },
+              "total_tokens": 136
+            }
+          },
+          "attempt_id": "a4f216381fbce3e1fe54a0e37d847edb",
+          "wait_window_end_seconds": 2.268462465999619,
+          "generated_output_tokens": 8
+        },
+        {
+          "session_id": "live-6e678d22cc-7101-B-primary",
+          "workload": "interactive-followup",
+          "logical_request_id": "live-6e678d22cc-7101-B-primary-interactive-followup",
+          "offered": true,
+          "interactive": true,
+          "status": "COMPLETED",
+          "arrival_monotonic": 17490.628892993,
+          "arrival_unix": 1794238946.553419,
+          "input_prompt_repeats": 96,
+          "requested_output_tokens": 8,
+          "first_token_observed": 17490.740704314,
+          "wait_window_start_seconds": 2.2974532850021205,
+          "end_to_end_ttft_seconds": 0.11181132099954993,
+          "first_token_at": "2026-11-09T15:42:26.634834619Z",
+          "first_token_kind": "content",
+          "first_token_poll_rtt_seconds": 0.007093854001141153,
+          "configured_poll_interval_seconds": 0.025,
+          "server_first_token_since_arrival_seconds": 0.08141493797302246,
+          "poll_and_network_observation_lag_seconds": 0.030437946319580078,
+          "completion_seconds": 0.1850555639975937,
+          "result": {
+            "choices": [
+              {
+                "finish_reason": "length",
+                "index": 0,
+                "message": {
+                  "content": " token1176 token1827 token1601 token1214 token1887 token1832 token1425 token1404",
+                  "role": "assistant"
+                }
+              }
+            ],
+            "created": 1794238946,
+            "id": "chatcmpl-05f38acb-e208-4e41-b98a-2ef647ebd0c3",
+            "model": "agentcloud-tiny",
+            "object": "chat.completion",
+            "usage": {
+              "completion_tokens": 8,
+              "prompt_tokens": 96,
+              "prompt_tokens_details": {
+                "cached_tokens": 80
+              },
+              "total_tokens": 104
+            }
+          },
+          "attempt_id": "d8e6945fb1eb77fa21f5579b26c6e6e5",
+          "wait_window_end_seconds": 2.4825088489997142,
+          "generated_output_tokens": 8
+        },
+        {
+          "session_id": "live-6e678d22cc-7101-B-primary",
+          "workload": "io-research-planning",
+          "logical_request_id": "live-6e678d22cc-7101-B-primary-io-research-planning",
+          "offered": true,
+          "interactive": false,
+          "status": "COMPLETED",
+          "arrival_monotonic": 17490.99058857,
+          "arrival_unix": 1794238946.9151154,
+          "input_prompt_repeats": 192,
+          "requested_output_tokens": 8,
+          "first_token_observed": 17491.100715322,
+          "wait_window_start_seconds": 2.659148861999711,
+          "end_to_end_ttft_seconds": 0.11012675200254307,
+          "first_token_at": "2026-11-09T15:42:26.996130269Z",
+          "first_token_kind": "content",
+          "first_token_poll_rtt_seconds": 0.02977467800155864,
+          "configured_poll_interval_seconds": 0.025,
+          "server_first_token_since_arrival_seconds": 0.08101463317871094,
+          "poll_and_network_observation_lag_seconds": 0.029146909713745117,
+          "completion_seconds": 0.21717795700169518,
+          "result": {
+            "choices": [
+              {
+                "finish_reason": "length",
+                "index": 0,
+                "message": {
+                  "content": " token1834 token1652 token1252 token1181 token1223 token1812 token1921 token1255",
+                  "role": "assistant"
+                }
+              }
+            ],
+            "created": 1794238946,
+            "id": "chatcmpl-8a617588-941f-44ab-b246-849f5892a91f",
+            "model": "agentcloud-tiny",
+            "object": "chat.completion",
+            "usage": {
+              "completion_tokens": 8,
+              "prompt_tokens": 192,
+              "prompt_tokens_details": {
+                "cached_tokens": 176
+              },
+              "total_tokens": 200
+            }
+          },
+          "attempt_id": "eb66beed4e69a388209cb13f48543f7e",
+          "wait_window_end_seconds": 2.876326819001406,
+          "generated_output_tokens": 8
+        },
+        {
+          "session_id": "live-6e678d22cc-7101-B-primary",
+          "workload": "background-model-wait",
+          "logical_request_id": "live-6e678d22cc-7101-B-primary-background-model-wait",
+          "offered": true,
+          "interactive": false,
+          "status": "COMPLETED",
+          "arrival_monotonic": 17492.756497127,
+          "arrival_unix": 1794238948.6810236,
+          "input_prompt_repeats": 609,
+          "requested_output_tokens": 192,
+          "first_token_observed": 17492.863528514,
+          "wait_window_start_seconds": 4.42505741900095,
+          "end_to_end_ttft_seconds": 0.10703138700046111,
+          "first_token_at": "2026-11-09T15:42:28.76213888Z",
+          "first_token_kind": "content",
+          "first_token_poll_rtt_seconds": 0.0052662849993794225,
+          "configured_poll_interval_seconds": 0.025,
+          "server_first_token_since_arrival_seconds": 0.08111429214477539,
+          "poll_and_network_observation_lag_seconds": 0.025944232940673828,
+          "completion_seconds": 5.9635797109986015,
+          "result": {
+            "choices": [
+              {
+                "finish_reason": "length",
+                "index": 0,
+                "message": {
+                  "content": " token1141 token1621 token1721 token1598 token1815 token1769 token1045 token1515 token1948 token1044 token1471 token1515 token1631 token1124 token1370 token1957 token1365 token1264 token1590 token1502 token1978 token1080 token1659 token1067 token1048 token1011 token1978 token1111 token1636 token1929 token1041 token1113 token1690 token1370 token1144 token1631 token1091 token1035 token1613 token1340 token1537 token1326 token1932 token1641 token1469 token1903 token1309 token1811 token1102 token1791 token1003 token1809 token1089 token1895 token1626 token1286 token1975 token1022 token1958 token1197 token1773 token1353 token1866 token1989 token1631 token1910 token1814 token1283 token1304 token1766 token1410 token1304 token1690 token1416 token1725 token1161 token1700 token1753 token1678 token1408 token1427 token1318 token1092 token1481 token1040 token1756 token1573 token1352 token1245 token1593 token1891 token1093 token1651 token1447 token1372 token1651 token1222 token1703 token1652 token1877 token1477 token1414 token1524 token1513 token1130 token1035 token1620 token1866 token1778 token1295 token1827 token1196 token1602 token1798 token1565 token1299 token1710 token1605 token1559 token1135 token1073 token1730 token1184 token1828 token1311 token1848 token1234 token1036 token1387 token1988 token1614 token1159 token1315 token1114 token1104 token1151 token1282 token1455 token1256 token1612 token1052 token1396 token1795 token1821 token1476 token1688 token1962 token1896 token1461 token1946 token1108 token1053 token1074 token1619 token1375 token1510 token1683 token1563 token1066 token1113 token1428 token1203 token1613 token1249 token1904 token1617 token1030 token1614 token1443 token1897 token1435 token1417 token1987 token1759 token1388 token1163 token1779 token1121 token1246 token1447 token1298 token1141 token1233 token1534 token1128 token1947 token1031 token1987 token1359 token1756 token1553 token1945",
+                  "role": "assistant"
+                }
+              }
+            ],
+            "created": 1794238948,
+            "id": "chatcmpl-f802c30c-26a7-4016-873e-b1969e6555b5",
+            "model": "agentcloud-tiny",
+            "object": "chat.completion",
+            "usage": {
+              "completion_tokens": 192,
+              "prompt_tokens": 609,
+              "prompt_tokens_details": {
+                "cached_tokens": 320
+              },
+              "total_tokens": 801
+            }
+          },
+          "attempt_id": "f7c1465814b40cbcd8609cd02fd552f4",
+          "wait_window_end_seconds": 10.388637129999552,
+          "generated_output_tokens": 192
+        }
+      ],
+      "tools": [
+        {
+          "session_id": "live-6e678d22cc-7101-B-primary",
+          "workload": "actor-toolchain-probe",
+          "tool_op_id": "actor-toolchain-probe",
+          "offered": true,
+          "status": "COMPLETED",
+          "started_seconds": 1.1232209209993016,
+          "result": {
+            "stdout": "{\"python\": \"3.13.18 (main, Nov  5 2026, 07:59:38) [GCC 14.2.0]\", \"compilers\": {\"cc\": null, \"gcc\": null, \"clang\": null}}\n",
+            "exit_code": 0
+          },
+          "receipt_seq": 1,
+          "duration_seconds": 0.24503483200169285
+        },
+        {
+          "session_id": "live-6e678d22cc-7101-B-primary",
+          "workload": "retained-proof",
+          "tool_op_id": "retained-proof",
+          "offered": true,
+          "status": "COMPLETED",
+          "started_seconds": 1.3682597709994297,
+          "result": {
+            "content": "seed:7101",
+            "exit_code": 0
+          },
+          "receipt_seq": 2,
+          "duration_seconds": 0.06874372200036305
+        },
+        {
+          "session_id": "live-6e678d22cc-7101-B-primary",
+          "workload": "primary-cpu-compile",
+          "tool_op_id": "primary-cpu-compile",
+          "offered": true,
+          "status": "COMPLETED",
+          "started_seconds": 1.9286096420000831,
+          "result": {
+            "stdout": "{\"kind\": \"python-bytecode\", \"compiler\": null, \"iterations\": 24, \"source_functions\": 1100, \"source_bytes\": 48065, \"wall_seconds\": 0.37673113, \"cpu_seconds\": 0.36000000000000004, \"sha256\": \"6d101e6dedcefe8481322818c1d06c5c43492c8757fefa1c67d22c6574c14a8f\"}\n",
+            "exit_code": 0
+          },
+          "receipt_seq": 3,
+          "duration_seconds": 0.7304704750022211
+        },
+        {
+          "session_id": "live-6e678d22cc-7101-B-primary",
+          "workload": "primary-io-research",
+          "tool_op_id": "primary-io-research",
+          "offered": true,
+          "status": "COMPLETED",
+          "started_seconds": 2.903201747001731,
+          "result": {
+            "stdout": "{\"kind\": \"actor-local-controlled-http-research\", \"documents\": 8, \"read_bytes\": 524288, \"fixture_service_delay_seconds\": 0.06, \"wall_seconds\": 0.9614228149999997, \"sha256\": \"1645bbd690472e7a8f595ae3e66e69b95c3c61f73e411b7648b106deb943ca1b\"}\n",
+            "exit_code": 0
+          },
+          "receipt_seq": 4,
+          "duration_seconds": 1.3521348039976147
+        },
+        {
+          "session_id": "live-6e678d22cc-7101-B-primary",
+          "workload": "primary-background-batch",
+          "tool_op_id": "primary-background-batch",
+          "offered": true,
+          "status": "COMPLETED",
+          "started_seconds": 4.255351960000553,
+          "result": {
+            "stdout": "{\"kind\": \"durable-file-batch\", \"files\": 16, \"bytes\": 524288, \"sha256\": \"435cc2dffd1e2c054b1bd358bf9234abae54bd7baee3fb64cda9eb194bcc05d8\", \"wall_seconds\": 0.010840974999999808}\n",
+            "exit_code": 0
+          },
+          "receipt_seq": 5,
+          "duration_seconds": 0.1668808110007376
+        }
+      ],
+      "resumes": [],
+      "faults": [],
+      "residency_events": [
+        {
+          "session_id": "live-6e678d22cc-7101-B-primary",
+          "resident": true,
+          "seconds": 1.1231887100002496,
+          "reason": "create_returned_running"
+        },
+        {
+          "session_id": "live-6e678d22cc-7101-B-primary",
+          "resident": false,
+          "seconds": 12.690594329000305,
+          "reason": "suspend_returned"
+        }
+      ],
+      "receipt_actor_reserved_memory_gb_seconds": 9.315305406219727,
+      "receipt_stranded_worker_reserved_memory_gb_seconds": 7.251092065535156,
+      "receipt_stranded_worker_reserved_seconds": 9.004140974997426,
+      "receipt_memory_measurement": "ActorTemplate reserved memory × API-observed RUNNING-to-SUSPENDED residency intervals; create/resume before their returned RUNNING receipt omitted, suspend until returned SUSPENDED receipt included",
+      "actual_rss_gb_seconds": null,
+      "actor_reserved_memory_gb_seconds": 8.774582783999998,
+      "stranded_worker_reserved_memory_gb_seconds": 5.871156421921873,
+      "non_tool_reserved_memory_gb_seconds": 6.710369443315427,
+      "transition_and_cleanup_reserved_memory_gb_seconds": 0.8392130213935545,
+      "memory_measurement": "real Substrate ListWorkerActorAssignments.resources including runtime actor overhead; 100ms samples with left-step integration; Stranded is assignment intersect (model arrival-to-terminal observation union explicit think windows), minus union of actual Actor tool execution intervals",
+      "assignment_sampling_interval_seconds": 0.1,
+      "assignment_sample_count": 127,
+      "assignment_sample_max_gap_seconds": 0.10394716262817383,
+      "assignment_missing_samples_estimate": 0,
+      "assignment_uncovered_seconds": 0.0,
+      "assignment_observed_transition_uncertainty_estimate_gb_seconds": 0.160392,
+      "assignment_uncovered_capacity_uncertainty_gb_seconds": 0.0,
+      "assignment_uncertainty_assumption": "observed-transition estimate assumes at most one assignment change between adjacent samples; intervals with unobserved changes remain sampled estimates",
+      "max_observed_assigned_actors": 1,
+      "worker_allocated_crosscheck_mismatched_samples": 0,
+      "explicit_idle_windows": [
+        {
+          "session_id": "live-6e678d22cc-7101-B-primary",
+          "start_seconds": 10.388697884001886,
+          "end_seconds": 12.388697884001886
+        }
+      ]
+    }
+  ],
+  "aggregates": [
+    {
+      "group": "B",
+      "independent_paired_seeds": 1,
+      "successful_trials": 0,
+      "offered": 8,
+      "completed": 5,
+      "failed": 3,
+      "ttft_p50_seconds": 0.11181132099954993,
+      "ttft_p95_seconds": 0.27845517859896063,
+      "interactive_ttft_p50_seconds": 0.13349393699900247,
+      "interactive_ttft_p95_seconds": 0.15300829139850974,
+      "resume_p50_seconds": null,
+      "resume_p95_seconds": null,
+      "interactive_offered": 4,
+      "interactive_slo_successes": 2,
+      "interactive_slo_fraction": 0.5,
+      "interactive_goodput_per_second": 0.15751171916350112,
+      "stranded_worker_reserved_memory_gb_seconds": 5.871156421921873,
+      "mean_stranded_worker_reserved_memory_gb_seconds": 5.871156421921873,
+      "actor_reserved_memory_gb_seconds": 8.774582783999998,
+      "non_tool_reserved_memory_gb_seconds": 6.710369443315427,
+      "transition_and_cleanup_reserved_memory_gb_seconds": 0.8392130213935545,
+      "fault_planned": 3,
+      "fault_skipped": 3,
+      "fault_injections": 0,
+      "fault_recovered": 0,
+      "fault_recovery_fraction": null
+    }
+  ]
+}

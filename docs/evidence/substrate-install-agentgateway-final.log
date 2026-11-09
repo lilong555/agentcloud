@@ -1,0 +1,364 @@
+configuration: 13 set, 45 default
+  actorJWT.algorithm                          ES256                                                                                                     (from default)
+  actorJWT.issuer                             ""                                                                                                        (from default)
+  ateapi.authz.bootstrapOwners                ""                                                                                                        (from default)
+  ateapi.authz.egressGatewayExtraSPIFFEIDs    ""                                                                                                        (from default)
+  ateapi.expectedJWTIssuer                    ""                                                                                                        (from default)
+  ateapi.logLevel                             ""                                                                                                        (from default)
+  ateapi.postgres.cloudsql.gsa                ""                                                                                                        (from default)
+  ateapi.postgres.cloudsql.iamAuth            ""                                                                                                        (from default)
+  ateapi.postgres.cloudsql.instance           ""                                                                                                        (from default)
+  ateapi.postgres.cloudsql.ipType             ""                                                                                                        (from default)
+  ateapi.postgres.owner.connectionString      ""                                                                                                        (from default)
+  ateapi.postgres.owner.role                  substrate_owner                                                                                           (from default)
+  ateapi.postgres.poolMaxConns                ""                                                                                                        (from default)
+  ateapi.postgres.readWrite.connectionString  ""                                                                                                        (from default)
+  ateapi.postgres.readWrite.role              substrate_readwrite                                                                                       (from default)
+  ateapi.postgres.schema                      ""                                                                                                        (from default)
+  ateapi.postgres.serverCAFile                ""                                                                                                        (from default)
+  ateapi.postgres.storageClass                ""                                                                                                        (from default)
+  atenet.dataplane                            agentgateway                                                                                              (from --atenet-dataplane)
+  atenet.egress.additionalExtprocService      ""                                                                                                        (from default)
+  atenet.egress.credentialProvider            {"enabled":false}                                                                                         (from --credential-provider)
+  benchmark.actorMemory                       ""                                                                                                        (from default)
+  benchmark.sandboxClass                      gvisor                                                                                                    (from default)
+  benchmark.workerCount                       1                                                                                                         (from default)
+  clusterSize                                 size0                                                                                                     (from default)
+  context                                     kind-agentcloud                                                                                           (from --context)
+  cordonSystemInfraComponents                 false                                                                                                     (from default)
+  csi.setup                                   none                                                                                                      (from default)
+  demo.anthropicAPIKey                        ""                                                                                                        (from default)
+  demo.counter.storageClass                   standard                                                                                                  (from default)
+  demo.counter.withExternalVolume             false                                                                                                     (from default)
+  docker.buildFlags                           ""                                                                                                        (from default)
+  e2e.envoyConcurrency                        0                                                                                                         (from default)
+  e2e.tuning                                  false                                                                                                     (from default)
+  fakeDataPlane.enabled                       false                                                                                                     (from default)
+  gcp.clusterLocation                         ""                                                                                                        (from default)
+  gcp.clusterName                             ""                                                                                                        (from default)
+  gcp.projectID                               ""                                                                                                        (from default)
+  images.repo                                 ""                                                                                                        (from default)
+  images.tag                                  ""                                                                                                        (from default)
+  ingressAllowedSPIFFEIDs                     spiffe://cluster.local/ns/ate-system/sa/atenet-client,spiffe://cluster.local/ns/ate-system/sa/ate-client  (from --ingress-allowed-spiffe-ids)
+  kindCluster.enabled                         true                                                                                                      (from --kind)
+  kindCluster.name                            kind                                                                                                      (from default)
+  ko.defaultPlatforms                         linux/amd64                                                                                               (from the --kind profile)
+  ko.dockerRepo                               localhost:5001                                                                                            (from KO_DOCKER_REPO)
+  kubeconfig                                  /home/li/code/Claudeagent/artifacts/substrate/kubeconfig                                                  (from KUBECONFIG)
+  namespace                                   ate-system                                                                                                (from default)
+  otlpEndpoint                                ""                                                                                                        (from default)
+  podcert.workersPerSigner                    0                                                                                                         (from default)
+  preview                                     PerTemplateSnapshotLocation                                                                               (from --preview)
+  publish.binariesDir                         bin/release                                                                                               (from default)
+  publish.overwrite                           false                                                                                                     (from default)
+  record.dir                                  ""                                                                                                        (from default)
+  rolloutTimeout                              180s                                                                                                      (from --rollout-timeout)
+  sandboxClasses                              gvisor                                                                                                    (from --sandbox-classes)
+  storage.bucketName                          ate-snapshots                                                                                             (from the --kind profile)
+  storage.snapshotLocation                    gs://ate-snapshots/                                                                                       (from the --kind profile)
+  storage.transferGSAName                     ""                                                                                                        (from default)
+[1;36m[step]: deploy_ate_system[0m
+  (apply of 1 objects took 0.005s)
+[1;36m[step]: deploy_crds[0m
+[1;36m[step]: images: built from source with ko[0m
+  (ko resolve -f - took 0.043s)
+  (apply of 5 objects took 0.031s)
+  (apply of 2 objects took 0.008s)
+  (apply of 1 objects took 0.157s)
+[1;36m[step]: ensure_apiserver_prerequisites[0m
+[1;36m[step]: create_api_server_env_vars[0m
+2026/11/09 22:14:54 Using base gcr.io/distroless/static-debian13:nonroot@sha256:18f4cc26c9ffa7f20a359298be7deadac5c607c8e03a02b8119f1a5fc2f82c99 for go.ate.dev/substrate/cmd/podcertcontroller
+2026/11/09 22:14:55 git doesn't contain any tags. Tag info will not be available
+git is in a dirty state
+Please check in your pipeline what can be changing the following files:
+ M api/ateapi/v1/ateapi.pb.go
+ M api/ateapi/v1/ateapi.proto
+ M api/ateapi/v1/ateapi_grpc.pb.go
+ M cmd/ateapi/internal/apivalidation/actor.go
+ M cmd/ateapi/internal/apivalidation/actor_test.go
+ M cmd/ateapi/internal/apivalidation/zz_generated.validation.go
+ M cmd/ateapi/internal/authz/registry.go
+ M cmd/ateapi/internal/controlapi/actor.go
+ M cmd/ateapi/internal/controlapi/tag.go
+ M cmd/ateapi/internal/controlapi/workflow.go
+ M cmd/ateapi/internal/controlapi/workflow_resume.go
+ M cmd/ateapi/internal/controlapi/workflow_resume_test.go
+ M cmd/ateapi/internal/controlapi/workflow_suspend.go
+ M cmd/ateapi/internal/controlapi/workflow_tag.go
+ M cmd/ateapi/internal/controlapi/workflow_tag_test.go
+ M cmd/ateapi/internal/store/storetest/storetest.go
+ M cmd/atelet/lifecycle_test.go
+ M cmd/atelet/main.go
+ M cmd/ateworker-gvisor/main.go
+ M cmd/ateworker-microvm/restore.go
+ M docs/reference/api-guide.md
+ M internal/proto/ateletpb/atelet.pb.go
+ M internal/proto/ateletpb/atelet.proto
+ M internal/proto/ateworkerpb/ateworker.pb.go
+ M internal/proto/ateworkerpb/ateworker.proto
+?? cmd/agentcloud-credentials/
+?? cmd/ateapi/internal/controlapi/snapshot_durability.go
+?? cmd/ateapi/internal/controlapi/snapshot_durability_test.go
+?? cmd/ateapi/internal/controlapi/workflow_preconditions_test.go
+
+2026/11/09 22:14:55 Building go.ate.dev/substrate/cmd/podcertcontroller for linux/amd64
+2026/11/09 22:14:57 Publishing localhost:5001/podcertcontroller:latest
+2026/11/09 22:14:57 existing manifest: sha256-c5a1f23dd6b8ffd21abeb0f01db183e992aae12cdc2bc53581f9de04cd203136.sbom@sha256:c0175f7e5a9e2d8d4f9e7bf2cb031302921b465be5b7d10a82200129e525c917
+2026/11/09 22:14:57 Published SBOM localhost:5001/podcertcontroller:sha256-c5a1f23dd6b8ffd21abeb0f01db183e992aae12cdc2bc53581f9de04cd203136.sbom
+2026/11/09 22:14:57 existing manifest: latest@sha256:c5a1f23dd6b8ffd21abeb0f01db183e992aae12cdc2bc53581f9de04cd203136
+2026/11/09 22:14:57 Published localhost:5001/podcertcontroller@sha256:c5a1f23dd6b8ffd21abeb0f01db183e992aae12cdc2bc53581f9de04cd203136
+  (ko resolve -f - took 4.975s)
+  (apply of 7 objects took 0.018s)
+  (rollout status deployment/podcertificate-controller took 0.001s)
+Waiting for podcertificate ClusterTrustBundles to be ready...
+  (wait for clustertrustbundles took 0.006s)
+[1;36m[step]: setup_csi[0m
+Skipping CSI driver setup.
+  (apply of 1 objects took 0.179s)
+  (apply of 3 objects took 0.547s)
+  (rollout status statefulset/postgres took 0.002s)
+[1;36m[step]: setup_bundled_postgres[0m
+2026/11/09 22:15:01 Using base gcr.io/distroless/static-debian13:nonroot@sha256:18f4cc26c9ffa7f20a359298be7deadac5c607c8e03a02b8119f1a5fc2f82c99 for go.ate.dev/substrate/cmd/objectstore-plugin
+2026/11/09 22:15:01 Using base gcr.io/distroless/static-debian13:nonroot@sha256:18f4cc26c9ffa7f20a359298be7deadac5c607c8e03a02b8119f1a5fc2f82c99 for go.ate.dev/substrate/cmd/ateapi
+2026/11/09 22:15:01 Using base gcr.io/distroless/static-debian13:nonroot@sha256:18f4cc26c9ffa7f20a359298be7deadac5c607c8e03a02b8119f1a5fc2f82c99 for go.ate.dev/substrate/cmd/atecontroller
+2026/11/09 22:15:01 Using base gcr.io/distroless/static-debian13:nonroot@sha256:18f4cc26c9ffa7f20a359298be7deadac5c607c8e03a02b8119f1a5fc2f82c99 for go.ate.dev/substrate/cmd/ate-idp-server
+2026/11/09 22:15:01 Using base gcr.io/distroless/base-debian13:latest@sha256:f5e95195e998742ff590b7569bae479accce1226e51ae6c3118954030121cdcb for go.ate.dev/substrate/cmd/atelet
+2026/11/09 22:15:02 git doesn't contain any tags. Tag info will not be available
+git is in a dirty state
+Please check in your pipeline what can be changing the following files:
+ M api/ateapi/v1/ateapi.pb.go
+ M api/ateapi/v1/ateapi.proto
+ M api/ateapi/v1/ateapi_grpc.pb.go
+ M cmd/ateapi/internal/apivalidation/actor.go
+ M cmd/ateapi/internal/apivalidation/actor_test.go
+ M cmd/ateapi/internal/apivalidation/zz_generated.validation.go
+ M cmd/ateapi/internal/authz/registry.go
+ M cmd/ateapi/internal/controlapi/actor.go
+ M cmd/ateapi/internal/controlapi/tag.go
+ M cmd/ateapi/internal/controlapi/workflow.go
+ M cmd/ateapi/internal/controlapi/workflow_resume.go
+ M cmd/ateapi/internal/controlapi/workflow_resume_test.go
+ M cmd/ateapi/internal/controlapi/workflow_suspend.go
+ M cmd/ateapi/internal/controlapi/workflow_tag.go
+ M cmd/ateapi/internal/controlapi/workflow_tag_test.go
+ M cmd/ateapi/internal/store/storetest/storetest.go
+ M cmd/atelet/lifecycle_test.go
+ M cmd/atelet/main.go
+ M cmd/ateworker-gvisor/main.go
+ M cmd/ateworker-microvm/restore.go
+ M docs/reference/api-guide.md
+ M internal/proto/ateletpb/atelet.pb.go
+ M internal/proto/ateletpb/atelet.proto
+ M internal/proto/ateworkerpb/ateworker.pb.go
+ M internal/proto/ateworkerpb/ateworker.proto
+?? cmd/agentcloud-credentials/
+?? cmd/ateapi/internal/controlapi/snapshot_durability.go
+?? cmd/ateapi/internal/controlapi/snapshot_durability_test.go
+?? cmd/ateapi/internal/controlapi/workflow_preconditions_test.go
+
+2026/11/09 22:15:02 Building go.ate.dev/substrate/cmd/objectstore-plugin for linux/amd64
+2026/11/09 22:15:02 git doesn't contain any tags. Tag info will not be available
+git is in a dirty state
+Please check in your pipeline what can be changing the following files:
+ M api/ateapi/v1/ateapi.pb.go
+ M api/ateapi/v1/ateapi.proto
+ M api/ateapi/v1/ateapi_grpc.pb.go
+ M cmd/ateapi/internal/apivalidation/actor.go
+ M cmd/ateapi/internal/apivalidation/actor_test.go
+ M cmd/ateapi/internal/apivalidation/zz_generated.validation.go
+ M cmd/ateapi/internal/authz/registry.go
+ M cmd/ateapi/internal/controlapi/actor.go
+ M cmd/ateapi/internal/controlapi/tag.go
+ M cmd/ateapi/internal/controlapi/workflow.go
+ M cmd/ateapi/internal/controlapi/workflow_resume.go
+ M cmd/ateapi/internal/controlapi/workflow_resume_test.go
+ M cmd/ateapi/internal/controlapi/workflow_suspend.go
+ M cmd/ateapi/internal/controlapi/workflow_tag.go
+ M cmd/ateapi/internal/controlapi/workflow_tag_test.go
+ M cmd/ateapi/internal/store/storetest/storetest.go
+ M cmd/atelet/lifecycle_test.go
+ M cmd/atelet/main.go
+ M cmd/ateworker-gvisor/main.go
+ M cmd/ateworker-microvm/restore.go
+ M docs/reference/api-guide.md
+ M internal/proto/ateletpb/atelet.pb.go
+ M internal/proto/ateletpb/atelet.proto
+ M internal/proto/ateworkerpb/ateworker.pb.go
+ M internal/proto/ateworkerpb/ateworker.proto
+?? cmd/agentcloud-credentials/
+?? cmd/ateapi/internal/controlapi/snapshot_durability.go
+?? cmd/ateapi/internal/controlapi/snapshot_durability_test.go
+?? cmd/ateapi/internal/controlapi/workflow_preconditions_test.go
+
+2026/11/09 22:15:02 Building go.ate.dev/substrate/cmd/ateapi for linux/amd64
+2026/11/09 22:15:06 Publishing localhost:5001/objectstore-plugin:latest
+2026/11/09 22:15:06 existing manifest: sha256-fc12f4057c4bd98d57b2980d551dca341d5d3c5b34207b860368ef0b2f656324.sbom@sha256:10f59cac57e2042ab4976b00d9476a1a2e5275c96612755628abc28d1d6aa5ee
+2026/11/09 22:15:06 Published SBOM localhost:5001/objectstore-plugin:sha256-fc12f4057c4bd98d57b2980d551dca341d5d3c5b34207b860368ef0b2f656324.sbom
+2026/11/09 22:15:06 existing manifest: latest@sha256:fc12f4057c4bd98d57b2980d551dca341d5d3c5b34207b860368ef0b2f656324
+2026/11/09 22:15:06 Published localhost:5001/objectstore-plugin@sha256:fc12f4057c4bd98d57b2980d551dca341d5d3c5b34207b860368ef0b2f656324
+2026/11/09 22:15:06 git doesn't contain any tags. Tag info will not be available
+git is in a dirty state
+Please check in your pipeline what can be changing the following files:
+ M api/ateapi/v1/ateapi.pb.go
+ M api/ateapi/v1/ateapi.proto
+ M api/ateapi/v1/ateapi_grpc.pb.go
+ M cmd/ateapi/internal/apivalidation/actor.go
+ M cmd/ateapi/internal/apivalidation/actor_test.go
+ M cmd/ateapi/internal/apivalidation/zz_generated.validation.go
+ M cmd/ateapi/internal/authz/registry.go
+ M cmd/ateapi/internal/controlapi/actor.go
+ M cmd/ateapi/internal/controlapi/tag.go
+ M cmd/ateapi/internal/controlapi/workflow.go
+ M cmd/ateapi/internal/controlapi/workflow_resume.go
+ M cmd/ateapi/internal/controlapi/workflow_resume_test.go
+ M cmd/ateapi/internal/controlapi/workflow_suspend.go
+ M cmd/ateapi/internal/controlapi/workflow_tag.go
+ M cmd/ateapi/internal/controlapi/workflow_tag_test.go
+ M cmd/ateapi/internal/store/storetest/storetest.go
+ M cmd/atelet/lifecycle_test.go
+ M cmd/atelet/main.go
+ M cmd/ateworker-gvisor/main.go
+ M cmd/ateworker-microvm/restore.go
+ M docs/reference/api-guide.md
+ M internal/proto/ateletpb/atelet.pb.go
+ M internal/proto/ateletpb/atelet.proto
+ M internal/proto/ateworkerpb/ateworker.pb.go
+ M internal/proto/ateworkerpb/ateworker.proto
+?? cmd/agentcloud-credentials/
+?? cmd/ateapi/internal/controlapi/snapshot_durability.go
+?? cmd/ateapi/internal/controlapi/snapshot_durability_test.go
+?? cmd/ateapi/internal/controlapi/workflow_preconditions_test.go
+
+2026/11/09 22:15:06 Building go.ate.dev/substrate/cmd/atecontroller for linux/amd64
+2026/11/09 22:15:08 Publishing localhost:5001/ateapi:latest
+2026/11/09 22:15:08 existing manifest: sha256-3f37451b6eb856fb1c0ae40a2759d84c632b3dc7c0c668fba99e7a0e1e7c6c47.sbom@sha256:b407a61913c7f8b19d9b3cfd9bd6c00c2fe07f273a7be2e83d957775d146fc78
+2026/11/09 22:15:08 Published SBOM localhost:5001/ateapi:sha256-3f37451b6eb856fb1c0ae40a2759d84c632b3dc7c0c668fba99e7a0e1e7c6c47.sbom
+2026/11/09 22:15:08 existing blob: sha256:c172f21841dff4c8cf45cde46589c1c2616cefe7e819965e92e6d3475c428aa0
+2026/11/09 22:15:08 existing blob: sha256:617b009a71d625ef77982b400cb9939dd5ed9809ebf50681a0520b7c08c0ca89
+2026/11/09 22:15:08 existing blob: sha256:a99dd1dd5eaf3e2099256f1a75c8e4c02a1d3a81b8e2bfd1735b1dd166b68a12
+2026/11/09 22:15:08 existing blob: sha256:2cc7ee286bf3a9e6af5f71756d7fc8e22e23ce65fec9047d774511ffcef79fa8
+2026/11/09 22:15:08 git doesn't contain any tags. Tag info will not be available
+git is in a dirty state
+Please check in your pipeline what can be changing the following files:
+ M api/ateapi/v1/ateapi.pb.go
+ M api/ateapi/v1/ateapi.proto
+ M api/ateapi/v1/ateapi_grpc.pb.go
+ M cmd/ateapi/internal/apivalidation/actor.go
+ M cmd/ateapi/internal/apivalidation/actor_test.go
+ M cmd/ateapi/internal/apivalidation/zz_generated.validation.go
+ M cmd/ateapi/internal/authz/registry.go
+ M cmd/ateapi/internal/controlapi/actor.go
+ M cmd/ateapi/internal/controlapi/tag.go
+ M cmd/ateapi/internal/controlapi/workflow.go
+ M cmd/ateapi/internal/controlapi/workflow_resume.go
+ M cmd/ateapi/internal/controlapi/workflow_resume_test.go
+ M cmd/ateapi/internal/controlapi/workflow_suspend.go
+ M cmd/ateapi/internal/controlapi/workflow_tag.go
+ M cmd/ateapi/internal/controlapi/workflow_tag_test.go
+ M cmd/ateapi/internal/store/storetest/storetest.go
+ M cmd/atelet/lifecycle_test.go
+ M cmd/atelet/main.go
+ M cmd/ateworker-gvisor/main.go
+ M cmd/ateworker-microvm/restore.go
+ M docs/reference/api-guide.md
+ M internal/proto/ateletpb/atelet.pb.go
+ M internal/proto/ateletpb/atelet.proto
+ M internal/proto/ateworkerpb/ateworker.pb.go
+ M internal/proto/ateworkerpb/ateworker.proto
+?? cmd/agentcloud-credentials/
+?? cmd/ateapi/internal/controlapi/snapshot_durability.go
+?? cmd/ateapi/internal/controlapi/snapshot_durability_test.go
+?? cmd/ateapi/internal/controlapi/workflow_preconditions_test.go
+
+2026/11/09 22:15:08 Building go.ate.dev/substrate/cmd/ate-idp-server for linux/amd64
+2026/11/09 22:15:08 pushed blob: sha256:2780920e5dbfbe103d03a583ed75345306e572ec5a48cb10361f046767d9f29a
+2026/11/09 22:15:09 pushed blob: sha256:7c12895b777bcaa8ccae0605b4de635b68fc32d60fa08f421dc3818bf55ee212
+2026/11/09 22:15:09 pushed blob: sha256:d6b1b89eccacc15c2420b2776d72c1dae334a00805ed9af54bf2f71e4d536f28
+2026/11/09 22:15:09 pushed blob: sha256:3214acf345c0cc6bbdb56b698a41ccdefc624a09d6beb0d38b5de0b2303ecaf4
+2026/11/09 22:15:09 Publishing localhost:5001/ate-idp-server:latest
+2026/11/09 22:15:09 existing manifest: sha256-fc666b25c26a26387f0e8836e28e5a5268124c189a09a51aba91984752c6c0e4.sbom@sha256:1e4f138d5509416e19be3b2e539a76b7510531a8df7943f42e16fa69c5d01b3a
+2026/11/09 22:15:09 Published SBOM localhost:5001/ate-idp-server:sha256-fc666b25c26a26387f0e8836e28e5a5268124c189a09a51aba91984752c6c0e4.sbom
+2026/11/09 22:15:09 existing manifest: latest@sha256:fc666b25c26a26387f0e8836e28e5a5268124c189a09a51aba91984752c6c0e4
+2026/11/09 22:15:09 Published localhost:5001/ate-idp-server@sha256:fc666b25c26a26387f0e8836e28e5a5268124c189a09a51aba91984752c6c0e4
+2026/11/09 22:15:10 pushed blob: sha256:52630fc75a18675c530ed9eba5f55eca09b03e91bd5bc15307918bbc1a7e7296
+2026/11/09 22:15:10 pushed blob: sha256:dd64bf2dd177757451a98fcdc999a339c35dee5d9872d8f4dc69c8f3c4dd0112
+2026/11/09 22:15:10 git doesn't contain any tags. Tag info will not be available
+git is in a dirty state
+Please check in your pipeline what can be changing the following files:
+ M api/ateapi/v1/ateapi.pb.go
+ M api/ateapi/v1/ateapi.proto
+ M api/ateapi/v1/ateapi_grpc.pb.go
+ M cmd/ateapi/internal/apivalidation/actor.go
+ M cmd/ateapi/internal/apivalidation/actor_test.go
+ M cmd/ateapi/internal/apivalidation/zz_generated.validation.go
+ M cmd/ateapi/internal/authz/registry.go
+ M cmd/ateapi/internal/controlapi/actor.go
+ M cmd/ateapi/internal/controlapi/tag.go
+ M cmd/ateapi/internal/controlapi/workflow.go
+ M cmd/ateapi/internal/controlapi/workflow_resume.go
+ M cmd/ateapi/internal/controlapi/workflow_resume_test.go
+ M cmd/ateapi/internal/controlapi/workflow_suspend.go
+ M cmd/ateapi/internal/controlapi/workflow_tag.go
+ M cmd/ateapi/internal/controlapi/workflow_tag_test.go
+ M cmd/ateapi/internal/store/storetest/storetest.go
+ M cmd/atelet/lifecycle_test.go
+ M cmd/atelet/main.go
+ M cmd/ateworker-gvisor/main.go
+ M cmd/ateworker-microvm/restore.go
+ M docs/reference/api-guide.md
+ M internal/proto/ateletpb/atelet.pb.go
+ M internal/proto/ateletpb/atelet.proto
+ M internal/proto/ateworkerpb/ateworker.pb.go
+ M internal/proto/ateworkerpb/ateworker.proto
+?? cmd/agentcloud-credentials/
+?? cmd/ateapi/internal/controlapi/snapshot_durability.go
+?? cmd/ateapi/internal/controlapi/snapshot_durability_test.go
+?? cmd/ateapi/internal/controlapi/workflow_preconditions_test.go
+
+2026/11/09 22:15:10 Building go.ate.dev/substrate/cmd/atelet for linux/amd64
+2026/11/09 22:15:10 pushed blob: sha256:b839dfae01f66e15c6a8b63520557ed315bdfe036342fa7a0c537259f10d7a9a
+2026/11/09 22:15:10 pushed blob: sha256:ebddc55facdc6b1f7e0f30816a5fc7cc62f38abdf76c0a8b0a0ce52085754795
+2026/11/09 22:15:10 pushed blob: sha256:4a2796d8ea5ef7ae1a64ba20ba56759987f49f2ea2091ddce6bade81c0ad1fa6
+2026/11/09 22:15:11 Publishing localhost:5001/atecontroller:latest
+2026/11/09 22:15:11 existing manifest: latest@sha256:2fb49f63c436ab414bf78513cba0c07b24bcb9987d2ee04bc97917c6f5fbaf5e
+2026/11/09 22:15:11 existing manifest: sha256-2fb49f63c436ab414bf78513cba0c07b24bcb9987d2ee04bc97917c6f5fbaf5e.sbom@sha256:1625d83d065d6e599686365f5f425a10067d9e31b0b3a4b2e5c889365ce97903
+2026/11/09 22:15:11 Published SBOM localhost:5001/atecontroller:sha256-2fb49f63c436ab414bf78513cba0c07b24bcb9987d2ee04bc97917c6f5fbaf5e.sbom
+2026/11/09 22:15:11 Published localhost:5001/atecontroller@sha256:2fb49f63c436ab414bf78513cba0c07b24bcb9987d2ee04bc97917c6f5fbaf5e
+2026/11/09 22:15:11 pushed blob: sha256:4c541ded7639458ff05ed626ff062437e11b034ad8afa0840884524b5fc72841
+2026/11/09 22:15:11 pushed blob: sha256:21f9c329568d9a1510a129c13b34af45c2023c9ab92d37d53084be81a6eabbeb
+2026/11/09 22:15:11 pushed blob: sha256:ec1b04bf2eb2122e86781f791b03ea0cf6588694e0f4a88245250224c186cdf0
+2026/11/09 22:15:11 localhost:5001/ateapi:latest: digest: sha256:3f37451b6eb856fb1c0ae40a2759d84c632b3dc7c0c668fba99e7a0e1e7c6c47 size: 2938
+2026/11/09 22:15:11 Published localhost:5001/ateapi@sha256:3f37451b6eb856fb1c0ae40a2759d84c632b3dc7c0c668fba99e7a0e1e7c6c47
+2026/11/09 22:15:15 Publishing localhost:5001/atelet:latest
+2026/11/09 22:15:15 existing manifest: sha256-5a49deb4741bb317c3e428d7300cd10b23c7f464cb625dc72804db13ea06653a.sbom@sha256:f3b1c6aeb8e73a0e22612a29d4c10fd58b93a97e985cf04473eab9d62a31f2e8
+2026/11/09 22:15:15 Published SBOM localhost:5001/atelet:sha256-5a49deb4741bb317c3e428d7300cd10b23c7f464cb625dc72804db13ea06653a.sbom
+2026/11/09 22:15:15 existing manifest: latest@sha256:5a49deb4741bb317c3e428d7300cd10b23c7f464cb625dc72804db13ea06653a
+2026/11/09 22:15:15 Published localhost:5001/atelet@sha256:5a49deb4741bb317c3e428d7300cd10b23c7f464cb625dc72804db13ea06653a
+  (ko resolve -f - took 16.700s)
+  (delete of 8 objects took 0.019s)
+Warning: system:serviceaccount:ate-system:ate-client is a bootstrap owner, so anyone who can mint a token for it is a global owner of this install. It is the default so the demos, benchmarks and e2e tests work; for a shared or production install, set --ateapi-authz-bootstrap-owners (ATE_API_AUTHZ_BOOTSTRAP_OWNERS) to your operators' own principals. See docs/authorization.md.
+  (apply of 58 objects took 11.178s)
+[1;36m[step]: create_egress_mitm_ca_pool_secret[0m
+  created pool secret ate-system/egress-mitm-ca-pool
+  (ko resolve -f - took 0.186s)
+  (apply of 6 objects took 0.925s)
+[1;36m[step]: Waiting for ATE system components to be ready...[0m
+  (rollout status deployment/ate-api-server took 0.003s)
+  (rollout status deployment/ate-idp-server took 0.003s)
+  (rollout status deployment/ate-controller took 0.002s)
+  (rollout status deployment/atenet-router took 2.003s)
+  (rollout status deployment/atenet-egress took 2.003s)
+  (rollout status daemonset/atelet took 0.012s)
+recorded this configuration in /home/li/.cache/ate-setup/installs/kind-agentcloud.yaml
+NAME                              READY   STATUS              RESTARTS   AGE   IP            NODE                       NOMINATED NODE   READINESS GATES
+ate-api-server-747f69556b-469p2   2/2     Running             0          16s   10.244.0.10   agentcloud-control-plane   <none>           <none>
+ate-api-server-747f69556b-zbhlm   2/2     Running             0          16s   10.244.0.12   agentcloud-control-plane   <none>           <none>
+ate-controller-778fd5ff4b-zlrvv   1/1     Running             0          14s   10.244.0.11   agentcloud-control-plane   <none>           <none>
+ate-idp-server-756cb687c9-kv7bs   1/1     Running             0          16s   10.244.0.16   agentcloud-control-plane   <none>           <none>
+ate-idp-server-756cb687c9-xrmp6   1/1     Running             0          16s   10.244.0.15   agentcloud-control-plane   <none>           <none>
+atelet-82wks                      2/2     Running             0          12s   10.244.0.13   agentcloud-control-plane   <none>           <none>
+atenet-egress-5b59495f6b-8wtz8    1/1     Running             0          5s    10.244.0.24   agentcloud-control-plane   <none>           <none>
+atenet-router-7c5c864d47-dm8kr    1/1     Running             0          12s   10.244.0.23   agentcloud-control-plane   <none>           <none>
+postgres-0                        2/2     Running             0          13m   10.244.0.7    agentcloud-control-plane   <none>           <none>
+rustfs-54c86945fb-wzf54           0/1     ContainerCreating   0          9s    <none>        agentcloud-control-plane   <none>           <none>
+rustfs-bucket-init-dlfgf          0/1     ContainerCreating   0          9s    <none>        agentcloud-control-plane   <none>           <none>

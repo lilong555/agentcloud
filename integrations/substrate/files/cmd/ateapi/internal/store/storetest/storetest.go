@@ -1,0 +1,309 @@
+// Copyright 2026 The Agent Substrate Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package storetest provides isolated PostgreSQL-backed stores for tests.
+//
+// One PostgreSQL container is shared by every test in a package; each test gets
+// its own database. Nothing stops that container when the test binary exits, so
+// packages using this package must call [Shutdown] from their TestMain.
+package storetest
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"os"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"testing"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/testcontainers/testcontainers-go/modules/postgres"
+	"go.ate.dev/substrate/api/ateapi/v1"
+	"go.ate.dev/substrate/cmd/ateapi/internal/authz"
+	"go.ate.dev/substrate/cmd/ateapi/internal/store"
+	"go.ate.dev/substrate/cmd/ateapi/internal/store/atepg"
+	"go.ate.dev/substrate/cmd/ateapi/internal/store/dockerenv"
+	"go.ate.dev/substrate/internal/installdefaults"
+	"go.ate.dev/substrate/internal/resources"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
+)
+
+var (
+	containerOnce  sync.Once
+	adminPool      *pgxpool.Pool
+	containerPG    *postgres.PostgresContainer
+	containerErr   error
+	databaseCount  atomic.Uint64
+	databasePrefix = strings.ReplaceAll(uuid.NewString(), "-", "")
+	// pools maps each *atepg.Persistence SetupPostgresPersistence returned to
+	// its pool, for fixtures the store API cannot write.
+	pools sync.Map
+)
+
+// SetupTestStore returns a real PostgreSQL-backed store with a database unique
+// to this test. A shared container keeps this suitable for packages that run
+// subtests in parallel; databases are dropped during cleanup.
+func SetupTestStore(t *testing.T) (store.Interface, func()) {
+	t.Helper()
+	return SetupPostgresPersistence(t), func() {}
+}
+
+// SetupPostgresPersistence returns an isolated atepg persistence instance.
+// SUBSTRATE_TEST_DATABASE_URL selects an existing PostgreSQL test server.
+// Each test creates and drops a separate database.
+func SetupPostgresPersistence(t *testing.T) *atepg.Persistence {
+	t.Helper()
+	ctx := context.Background()
+	admin := requireAdminPool(t)
+	databaseName := fmt.Sprintf("ateapi_test_%s_%d", databasePrefix, databaseCount.Add(1))
+	if _, err := admin.Exec(ctx, "CREATE DATABASE "+databaseName); err != nil {
+		t.Fatalf("creating PostgreSQL test database: %v", err)
+	}
+
+	config := admin.Config().Copy()
+	config.ConnConfig.Database = databaseName
+	pool, err := pgxpool.NewWithConfig(ctx, config)
+	if err != nil {
+		t.Fatalf("connecting to PostgreSQL test database: %v", err)
+	}
+	persistence, err := atepg.NewPersistence(ctx, pool)
+	if err != nil {
+		pool.Close()
+		t.Fatalf("creating PostgreSQL persistence: %v", err)
+	}
+	pools.Store(persistence, pool)
+	t.Cleanup(func() {
+		pools.Delete(persistence)
+		pool.Close()
+		if _, err := admin.Exec(context.Background(), "DROP DATABASE "+databaseName); err != nil {
+			t.Errorf("dropping PostgreSQL test database: %v", err)
+		}
+	})
+	// The server always wires a PolicyManager, so test stores do too.
+	fgaServer, err := authz.NewOpenFGAServer(pool)
+	if err != nil {
+		t.Fatalf("creating OpenFGA server: %v", err)
+	}
+	t.Cleanup(fgaServer.Close)
+	_, policyManager, err := authz.New(ctx, pool, fgaServer, nil, DefaultSystemPrincipals())
+	if err != nil {
+		t.Fatalf("initializing OpenFGA authz: %v", err)
+	}
+	persistence.SetPolicyManager(policyManager)
+	return persistence
+}
+
+// DefaultSystemPrincipals returns valid SystemPrincipals for tests that
+// initialize authz.New without testing system component roles.
+func DefaultSystemPrincipals() authz.SystemPrincipals {
+	return authz.SystemPrincipals{
+		ControllerSPIFFEID:       installdefaults.ControllerSPIFFEID(installdefaults.SystemNamespace),
+		EgressGatewaySPIFFEIDs:   []string{installdefaults.EgressSPIFFEID(installdefaults.SystemNamespace)},
+		IngressRouterSPIFFEID:    installdefaults.RouterSPIFFEID(installdefaults.SystemNamespace),
+		AteletSPIFFEID:           installdefaults.AteletSPIFFEID(installdefaults.SystemNamespace),
+		APIServerSidecarSPIFFEID: installdefaults.APIServerSPIFFEID(installdefaults.SystemNamespace),
+	}
+}
+
+// MustCreateAtespace creates name unless it already exists. PostgreSQL enforces
+// the parent relationship for actor and snapshot records, so test fixtures use
+// this before seeding those resources.
+func MustCreateAtespace(t *testing.T, ctx context.Context, s store.Interface, name string) {
+	t.Helper()
+	_, err := s.CreateAtespace(ctx, &ateapi.Atespace{Metadata: &ateapi.ResourceMetadata{Name: name}})
+	if err != nil && !errors.Is(err, store.ErrAlreadyExists) {
+		t.Fatalf("creating test atespace %q: %v", name, err)
+	}
+}
+
+// MustCreateActor ensures actor's parent atespace exists, then creates actor.
+// Use the store method directly only in tests that exercise missing-parent
+// behavior.
+func MustCreateActor(t *testing.T, ctx context.Context, s store.Interface, actor *ateapi.Actor) *ateapi.Actor {
+	t.Helper()
+	atespace := actor.GetMetadata().GetAtespace()
+	MustCreateAtespace(t, ctx, s, atespace)
+	created, err := s.CreateActor(ctx, actor)
+	if err != nil {
+		t.Fatalf("creating test actor %q/%q: %v", atespace, actor.GetMetadata().GetName(), err)
+	}
+	return created
+}
+
+// MustSeedAssignment books assignment on workerName as BindActorToWorker does,
+// stamping its metadata the same way, but without the Actor update
+// BindActorToWorker commits with it. Tests use it to seed an Actor already
+// placed, or a Worker's bookings with no Actor stored behind them. s must come
+// from SetupPostgresPersistence or SetupTestStore.
+func MustSeedAssignment(t *testing.T, ctx context.Context, s store.Interface, workerName string, assignment *ateapi.ActorAssignment) {
+	t.Helper()
+	persistence, _ := s.(*atepg.Persistence)
+	pool, ok := pools.Load(persistence)
+	if !ok {
+		t.Fatalf("seeding an assignment: store %T was not made by SetupPostgresPersistence", s)
+	}
+	now := timestamppb.Now()
+	assignment.Metadata = &ateapi.ResourceMetadata{
+		Name:       assignment.GetActorUid(),
+		Uid:        uuid.NewString(),
+		Version:    1,
+		CreateTime: now,
+		UpdateTime: now,
+	}
+	assignmentBytes, err := proto.Marshal(assignment)
+	if err != nil {
+		t.Fatalf("marshaling assignment: %v", err)
+	}
+	if _, err := pool.(*pgxpool.Pool).Exec(ctx, `INSERT INTO worker_assignments (actor_uid, worker_name, proto) VALUES ($1, $2, $3)`,
+		assignment.GetActorUid(), workerName, assignmentBytes); err != nil {
+		t.Fatalf("seeding assignment of actor %q on worker %q: %v", assignment.GetActorUid(), workerName, err)
+	}
+	worker, err := s.GetWorker(ctx, workerName)
+	if err != nil {
+		t.Fatalf("getting worker %q to book a seeded assignment: %v", workerName, err)
+	}
+	if _, err := s.UpdateWorker(ctx, workerName, store.PreconditionFrom(worker), func(w *ateapi.Worker) error {
+		if w.Status == nil {
+			w.Status = &ateapi.WorkerStatus{}
+		}
+		w.Status.Allocated = resources.AddToAllocated(w.Status.Allocated, assignment, +1)
+		return nil
+	}); err != nil {
+		t.Fatalf("booking a seeded assignment on worker %q: %v", workerName, err)
+	}
+}
+
+// WorkerHostingActor returns the name of the Worker holding an assignment for
+// actorUID, or "" when none does.
+func WorkerHostingActor(t *testing.T, ctx context.Context, s store.Interface, actorUID string) string {
+	t.Helper()
+	for workerToken := ""; ; {
+		workers, err := s.ListWorkers(ctx, store.ListOptions{PageToken: workerToken})
+		if err != nil {
+			t.Fatalf("listing workers: %v", err)
+		}
+		for _, worker := range workers.Items {
+			name := worker.GetMetadata().GetName()
+			if _, err := s.GetWorkerAssignment(ctx, name, actorUID); err == nil {
+				return name
+			} else if !errors.Is(err, store.ErrNotFound) {
+				t.Fatalf("getting the assignment of actor %q on worker %q: %v", actorUID, name, err)
+			}
+		}
+		if !workers.HasNextPage() {
+			return ""
+		}
+		workerToken = workers.NextPageToken
+	}
+}
+
+// MustCreateTag ensures tag's parent atespace exists, then stores
+// tag as given — ready or still pending, whichever state the test needs to
+// start from. Use the store method directly only in tests that exercise
+// missing-parent behavior.
+func MustCreateTag(t *testing.T, ctx context.Context, s store.Interface, tag *ateapi.Tag) *ateapi.Tag {
+	t.Helper()
+	atespace := tag.GetMetadata().GetAtespace()
+	name := tag.GetMetadata().GetName()
+	MustCreateAtespace(t, ctx, s, atespace)
+	created, err := s.CreateTag(ctx, tag)
+	if err != nil {
+		t.Fatalf("creating test tag %q/%q: %v", atespace, name, err)
+	}
+	return created
+}
+
+// RunTests runs m and terminates the shared PostgreSQL container afterwards.
+// Packages with no other TestMain work should use it as their whole TestMain;
+// the rest must call [Shutdown] themselves.
+func RunTests(m *testing.M) {
+	code := m.Run()
+	Shutdown()
+	os.Exit(code)
+}
+
+// Shutdown terminates the shared PostgreSQL container, if one was started.
+func Shutdown() {
+	if adminPool != nil {
+		adminPool.Close()
+		adminPool = nil
+	}
+	if containerPG != nil {
+		if err := containerPG.Terminate(context.Background()); err != nil {
+			fmt.Fprintf(os.Stderr, "terminating PostgreSQL testcontainer: %v\n", err)
+		}
+		containerPG = nil
+	}
+}
+
+func requireAdminPool(t *testing.T) *pgxpool.Pool {
+	t.Helper()
+	containerOnce.Do(func() {
+		ctx := context.Background()
+		if dsn := os.Getenv("SUBSTRATE_TEST_DATABASE_URL"); dsn != "" {
+			adminPool, containerErr = pgxpool.New(ctx, dsn)
+			if containerErr == nil {
+				containerErr = adminPool.Ping(ctx)
+			}
+			return
+		}
+		if err := dockerenv.Configure(ctx); err != nil {
+			containerErr = err
+			return
+		}
+		containerPG, containerErr = postgres.Run(ctx, "postgres:18-alpine",
+			postgres.WithDatabase("postgres"),
+			postgres.WithUsername("postgres"),
+			postgres.WithPassword("postgres"),
+		)
+		if containerErr != nil {
+			return
+		}
+		dsn, err := containerPG.ConnectionString(ctx, "sslmode=disable")
+		if err != nil {
+			containerErr = err
+			return
+		}
+		adminPool, containerErr = pgxpool.New(ctx, dsn)
+		if containerErr != nil {
+			return
+		}
+		var pingErr error
+		for i := 0; i < 30; i++ {
+			pingErr = adminPool.Ping(ctx)
+			if pingErr == nil {
+				return
+			}
+			time.Sleep(500 * time.Millisecond)
+		}
+		adminPool.Close()
+		adminPool = nil
+		containerErr = fmt.Errorf("pinging PostgreSQL testcontainer after retries: %w", pingErr)
+	})
+	if containerErr != nil {
+		if os.Getenv("SUBSTRATE_TEST_DATABASE_URL") != "" {
+			t.Fatalf("configured PostgreSQL test server unavailable: %v", containerErr)
+		}
+		if dockerenv.Required() {
+			t.Fatalf("PostgreSQL testcontainer unavailable and required (CI or REQUIRE_DOCKER is set): %v", containerErr)
+		}
+		t.Skipf("PostgreSQL testcontainer unavailable (requires Docker): %v", containerErr)
+	}
+	return adminPool
+}

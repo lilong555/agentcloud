@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-09T15:02:24.274247+00:00",
+  "status": "pass",
+  "checks": [
+    {
+      "command": [
+        "shellcheck",
+        "deploy/substrate/build-runtime.sh",
+        "deploy/substrate/build-worker.sh",
+        "deploy/substrate/configure-node-proxy.sh",
+        "deploy/substrate/create-cluster.sh",
+        "deploy/substrate/export-client.sh",
+        "deploy/substrate/install.sh"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "bash",
+        "-n",
+        "deploy/substrate/build-runtime.sh"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "bash",
+        "-n",
+        "deploy/substrate/build-worker.sh"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "bash",
+        "-n",
+        "deploy/substrate/configure-node-proxy.sh"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "bash",
+        "-n",
+        "deploy/substrate/create-cluster.sh"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "bash",
+        "-n",
+        "deploy/substrate/export-client.sh"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "bash",
+        "-n",
+        "deploy/substrate/install.sh"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "check": "Python AST syntax",
+      "files": [
+        "deploy/substrate/collect-evidence.py",
+        "deploy/substrate/configure-coordinator.py",
+        "deploy/substrate/configure-sandbox.py",
+        "deploy/substrate/configure-snapshots.py",
+        "deploy/substrate/extract-ca.py",
+        "deploy/substrate/render-runtime.py",
+        "deploy/substrate/run-coordinator.py",
+        "deploy/substrate/stage-runtime.py",
+        "deploy/substrate/stage-worker.py",
+        "deploy/substrate/tcp-forward.py"
+      ],
+      "exit_code": 0
+    },
+    {
+      "check": "provision Go build",
+      "command": [
+        "go",
+        "build",
+        "-p=2",
+        "-o",
+        "artifacts/substrate/provision",
+        "./experiments/substrate/provision"
+      ],
+      "exit_code": 0
+    },
+    {
+      "check": "public evidence excludes current private credentials",
+      "credential_types": [
+        "coordinator-token",
+        "router-key.pem",
+        "runtime-token",
+        "token"
+      ],
+      "hits": [],
+      "exit_code": 0
+    }
+  ]
+}

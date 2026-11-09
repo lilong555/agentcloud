@@ -1,0 +1,56 @@
+{
+  "name": "lifecycle-fencing-disabled-regression",
+  "command": [
+    "/home/li/.local/share/agentcloud/go/bin/go",
+    "test",
+    "-p",
+    "2",
+    "-json",
+    "./cmd/ateapi/internal/controlapi",
+    "-run",
+    "^TestActorLifecyclePreconditions$",
+    "-count",
+    "1"
+  ],
+  "cwd": "/home/li/code/Claudeagent/upstream/substrate",
+  "status": "failed",
+  "exit_code": 1,
+  "duration_seconds": 8.488,
+  "environment": {
+    "GOMAXPROCS": "2",
+    "REQUIRE_DOCKER": "true",
+    "GOTOOLCHAIN": "local"
+  },
+  "stdout": "docs/evidence/logs/substrate-20261109T131231376987Z-lifecycle-fencing-disabled-regression/stdout.log",
+  "stderr": "docs/evidence/logs/substrate-20261109T131231376987Z-lifecycle-fencing-disabled-regression/stderr.log",
+  "passed_tests": [
+    "TestActorLifecyclePreconditions/suspend/matching_guards",
+    "TestActorLifecyclePreconditions/suspend/UID_only",
+    "TestActorLifecyclePreconditions/suspend/version_only",
+    "TestActorLifecyclePreconditions/suspend/resumed_with_same_snapshot_generation",
+    "TestActorLifecyclePreconditions/suspend/unguarded",
+    "TestActorLifecyclePreconditions/resume/matching_guards",
+    "TestActorLifecyclePreconditions/resume/UID_only",
+    "TestActorLifecyclePreconditions/resume/version_only",
+    "TestActorLifecyclePreconditions/resume/unguarded"
+  ],
+  "skipped_tests": [],
+  "blocker": null,
+  "stage": "mutation",
+  "mutation": "disabled lifecycle precondition check",
+  "expected_exit_code": 1,
+  "expectation_satisfied": true,
+  "source_diff_sha256": "80a408f62893825fb68d46e9eea2555b1db7ebd572bc8dc1dcfc6b782d889777",
+  "failed_tests": [
+    "TestActorLifecyclePreconditions/suspend/UID_replaced_under_lease",
+    "TestActorLifecyclePreconditions/suspend/version_advanced_under_lease",
+    "TestActorLifecyclePreconditions/suspend/stale_version",
+    "TestActorLifecyclePreconditions/resume/UID_replaced_under_lease",
+    "TestActorLifecyclePreconditions/resume/version_advanced_under_lease",
+    "TestActorLifecyclePreconditions/resume/stale_version",
+    "TestActorLifecyclePreconditions/resume/resumed_with_same_snapshot_generation",
+    "TestActorLifecyclePreconditions"
+  ],
+  "expected_status": "failed",
+  "assertion_status": "passed"
+}

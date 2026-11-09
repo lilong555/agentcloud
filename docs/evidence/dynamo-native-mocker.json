@@ -1,0 +1,399 @@
+{
+  "schema_version": 1,
+  "component": "dynamo",
+  "validation_level": "native-frontend-official-mocker-process-integration",
+  "execution_kind": "native-router-mocker-cpu",
+  "upstream_commit": "c5680e573b86623df3b6b017a408373aeba93469",
+  "upstream_execution": true,
+  "gpu_execution": false,
+  "weights_downloaded": false,
+  "started_at": "2026-11-09T13:49:03.211796+00:00",
+  "status": "passed",
+  "checks": [
+    {
+      "name": "official_native_processes_ready",
+      "passed": true,
+      "detail": {
+        "protocol_version": 1,
+        "execution_feedback": true,
+        "trusted_bindings": true,
+        "opaque_routing_sessions": true,
+        "inference_lease_header": "x-agentcloud-inference-lease",
+        "classifier_count": 1,
+        "max_body_bytes": 8192,
+        "requests_per_second": 1000,
+        "ttl_ms": {
+          "min": 100,
+          "max": 60000
+        },
+        "native_frontend": true,
+        "gpu_execution": false
+      }
+    },
+    {
+      "name": "trusted_pre_registration",
+      "passed": true,
+      "detail": {
+        "protocol_version": 1,
+        "accepted": true,
+        "applied": false,
+        "reconciled": true,
+        "binding": {
+          "source_id": "coordinator-local",
+          "tenant_id": "tenant-a",
+          "workspace_id": "workspace-a",
+          "session_id": "session-a",
+          "actor_uid": "actor-session-a",
+          "epoch": 1
+        },
+        "routing_session_id": "ac:42a7fc99f3da4839b049ce47f909bddf",
+        "classifier_id": 0,
+        "sequence": 0,
+        "received_at": "2026-11-09T13:49:04.075731032Z",
+        "snapshot": {
+          "program_present": false,
+          "phase": null,
+          "lifecycle": null,
+          "baseline_tokens": null,
+          "logical_budget_tokens": null,
+          "execution_multiplier": 1.0,
+          "state": null,
+          "sequence": 0,
+          "fresh": false,
+          "waiting_requests": 0,
+          "paused_programs": 0,
+          "completed_events": 0,
+          "aborted_events": 0,
+          "pause_events": 0,
+          "final_events": 0
+        }
+      }
+    },
+    {
+      "name": "ordinary_session_cannot_inject_trusted_program",
+      "passed": true,
+      "detail": {
+        "status": 500,
+        "response": {
+          "message": "Internal server error",
+          "type": "Internal Server Error",
+          "code": 500
+        }
+      }
+    },
+    {
+      "name": "real_mocker_first_turn",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "usage": {
+          "prompt_tokens": 700,
+          "completion_tokens": 8,
+          "total_tokens": 708,
+          "prompt_tokens_details": {
+            "audio_tokens": null,
+            "cached_tokens": 0
+          }
+        }
+      }
+    },
+    {
+      "name": "native_acting_budget",
+      "passed": true,
+      "detail": {
+        "program_present": true,
+        "phase": "Acting",
+        "lifecycle": "Active",
+        "baseline_tokens": 708,
+        "logical_budget_tokens": 708,
+        "execution_multiplier": 1.0,
+        "state": null,
+        "sequence": 0,
+        "fresh": false,
+        "waiting_requests": 0,
+        "paused_programs": 0,
+        "completed_events": 1,
+        "aborted_events": 0,
+        "pause_events": 0,
+        "final_events": 0
+      }
+    },
+    {
+      "name": "state_applied_to_native_classifier",
+      "passed": true,
+      "detail": {
+        "protocol_version": 1,
+        "accepted": true,
+        "applied": true,
+        "reconciled": true,
+        "binding": {
+          "source_id": "coordinator-local",
+          "tenant_id": "tenant-a",
+          "workspace_id": "workspace-a",
+          "session_id": "session-a",
+          "actor_uid": "actor-session-a",
+          "epoch": 1
+        },
+        "routing_session_id": "ac:42a7fc99f3da4839b049ce47f909bddf",
+        "classifier_id": 0,
+        "sequence": 1,
+        "received_at": "2026-11-09T13:49:04.351657646Z",
+        "snapshot": {
+          "program_present": true,
+          "phase": "Acting",
+          "lifecycle": "Active",
+          "baseline_tokens": 708,
+          "logical_budget_tokens": 708,
+          "execution_multiplier": 1.0,
+          "state": "SUSPENDED",
+          "sequence": 1,
+          "fresh": true,
+          "waiting_requests": 0,
+          "paused_programs": 0,
+          "completed_events": 1,
+          "aborted_events": 0,
+          "pause_events": 0,
+          "final_events": 0
+        }
+      }
+    },
+    {
+      "name": "suspended_native_budget_zero",
+      "passed": true,
+      "detail": {
+        "program_present": true,
+        "phase": "Acting",
+        "lifecycle": "Active",
+        "baseline_tokens": 708,
+        "logical_budget_tokens": 0,
+        "execution_multiplier": 0.0,
+        "state": "SUSPENDED",
+        "sequence": 1,
+        "fresh": true,
+        "waiting_requests": 0,
+        "paused_programs": 0,
+        "completed_events": 1,
+        "aborted_events": 0,
+        "pause_events": 0,
+        "final_events": 0
+      }
+    },
+    {
+      "name": "second_real_session_admitted",
+      "passed": true,
+      "detail": {
+        "status": 200,
+        "usage": {
+          "prompt_tokens": 400,
+          "completion_tokens": 8,
+          "total_tokens": 408,
+          "prompt_tokens_details": {
+            "audio_tokens": null,
+            "cached_tokens": 384
+          }
+        }
+      }
+    },
+    {
+      "name": "replay_rejected",
+      "passed": true,
+      "detail": {
+        "protocol_version": 1,
+        "accepted": false,
+        "applied": false,
+        "error": "replay"
+      }
+    },
+    {
+      "name": "cross_tenant_rejected",
+      "passed": true,
+      "detail": {
+        "protocol_version": 1,
+        "accepted": false,
+        "applied": false,
+        "error": "scope_mismatch"
+      }
+    },
+    {
+      "name": "ttl_restores_default_weight",
+      "passed": true,
+      "detail": {
+        "program_present": true,
+        "phase": "Acting",
+        "lifecycle": "Active",
+        "baseline_tokens": 708,
+        "logical_budget_tokens": 708,
+        "execution_multiplier": 1.0,
+        "state": "SUSPENDED",
+        "sequence": 1,
+        "fresh": false,
+        "waiting_requests": 0,
+        "paused_programs": 1,
+        "completed_events": 2,
+        "aborted_events": 0,
+        "pause_events": 1,
+        "final_events": 0
+      }
+    },
+    {
+      "name": "resuming_restores_budget",
+      "passed": true,
+      "detail": {
+        "program_present": true,
+        "phase": "Acting",
+        "lifecycle": "Active",
+        "baseline_tokens": 708,
+        "logical_budget_tokens": 708,
+        "execution_multiplier": 1.0,
+        "state": "RESUMING",
+        "sequence": 2,
+        "fresh": true,
+        "waiting_requests": 0,
+        "paused_programs": 1,
+        "completed_events": 2,
+        "aborted_events": 0,
+        "pause_events": 1,
+        "final_events": 0
+      }
+    },
+    {
+      "name": "real_stream_received",
+      "passed": true,
+      "detail": {
+        "first_line": "data: {\"id\":\"cmpl-c9a97934-fc6d-41ed-9670-7fbc1df47790\",\"choices\":[{\"text\":\" token1018\",\"index\":0}],\"created\":1794232146,\"model\":\"agentcloud-tiny\",\"system_fingerprint\":null,\"object\":\"text_completion\","
+      }
+    },
+    {
+      "name": "native_cancel_lifecycle",
+      "passed": true,
+      "detail": {
+        "program_present": false,
+        "phase": null,
+        "lifecycle": null,
+        "baseline_tokens": null,
+        "logical_budget_tokens": null,
+        "execution_multiplier": 1.0,
+        "state": null,
+        "sequence": 0,
+        "fresh": false,
+        "waiting_requests": 0,
+        "paused_programs": 0,
+        "completed_events": 3,
+        "aborted_events": 1,
+        "pause_events": 1,
+        "final_events": 1
+      }
+    },
+    {
+      "name": "native_final_releases_program",
+      "passed": true,
+      "detail": {
+        "program_present": false,
+        "phase": null,
+        "lifecycle": null,
+        "baseline_tokens": null,
+        "logical_budget_tokens": null,
+        "execution_multiplier": 1.0,
+        "state": "SUSPENDED",
+        "sequence": 3,
+        "fresh": true,
+        "waiting_requests": 0,
+        "paused_programs": 0,
+        "completed_events": 4,
+        "aborted_events": 1,
+        "pause_events": 1,
+        "final_events": 2
+      }
+    },
+    {
+      "name": "native_pause_observed",
+      "passed": true,
+      "detail": {
+        "program_present": false,
+        "phase": null,
+        "lifecycle": null,
+        "baseline_tokens": null,
+        "logical_budget_tokens": null,
+        "execution_multiplier": 1.0,
+        "state": "SUSPENDED",
+        "sequence": 3,
+        "fresh": true,
+        "waiting_requests": 0,
+        "paused_programs": 0,
+        "completed_events": 4,
+        "aborted_events": 1,
+        "pause_events": 1,
+        "final_events": 2
+      }
+    }
+  ],
+  "logs": "docs/evidence/logs/dynamo-native-20261109T134903211771Z",
+  "commands": [
+    {
+      "name": "frontend",
+      "command": [
+        "/home/li/code/Claudeagent/.venv-dynamo/bin/python",
+        "-m",
+        "dynamo.frontend",
+        "--http-host",
+        "127.0.0.1",
+        "--http-port",
+        "18080",
+        "--router-mode",
+        "kv",
+        "--router-policy-config",
+        "/home/li/code/Claudeagent/experiments/dynamo/runtime/thunderagent.yaml",
+        "--kv-cache-block-size",
+        "16",
+        "--discovery-backend",
+        "file",
+        "--request-plane",
+        "tcp",
+        "--event-plane",
+        "zmq"
+      ],
+      "pid": 203158
+    },
+    {
+      "name": "mocker",
+      "command": [
+        "/home/li/code/Claudeagent/.venv-dynamo/bin/python",
+        "-m",
+        "dynamo.mocker",
+        "--model-path",
+        "/home/li/code/Claudeagent/experiments/dynamo/runtime/tokenizer",
+        "--model-name",
+        "agentcloud-tiny",
+        "--block-size",
+        "16",
+        "--num-gpu-blocks-override",
+        "64",
+        "--kv-bytes-per-token",
+        "512",
+        "--num-workers",
+        "1",
+        "--speedup-ratio",
+        "1",
+        "--discovery-backend",
+        "file",
+        "--request-plane",
+        "tcp",
+        "--event-plane",
+        "zmq"
+      ],
+      "pid": 203159
+    }
+  ],
+  "duration_seconds": 3.524,
+  "process_exit_codes": [
+    0,
+    0
+  ],
+  "passed": 16,
+  "failed": 0,
+  "source_sha256": {
+    "lib/router-plugins/builtin/src/thunderagent/execution_control.rs": "7703bdb75e2d63468d13dc01922f224710c6daded33ec7e2e143d2586308e8f4",
+    "lib/router-plugins/builtin/src/thunderagent/request_classifier/mod.rs": "e71112316c1c3a97eb6aa229fc832a394405d7153d2047b3527b37954fe311f3",
+    "lib/router-plugins/builtin/src/thunderagent/request_classifier/scheduler.rs": "58ee3917bb33c8bd30160f12839c40efde6061bea54b7b1b741a13afcaa70128"
+  }
+}

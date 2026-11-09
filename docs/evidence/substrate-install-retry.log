@@ -1,0 +1,481 @@
+configuration: 12 set, 46 default
+  actorJWT.algorithm                          ES256                                                                                                     (from default)
+  actorJWT.issuer                             ""                                                                                                        (from default)
+  ateapi.authz.bootstrapOwners                ""                                                                                                        (from default)
+  ateapi.authz.egressGatewayExtraSPIFFEIDs    ""                                                                                                        (from default)
+  ateapi.expectedJWTIssuer                    ""                                                                                                        (from default)
+  ateapi.logLevel                             ""                                                                                                        (from default)
+  ateapi.postgres.cloudsql.gsa                ""                                                                                                        (from default)
+  ateapi.postgres.cloudsql.iamAuth            ""                                                                                                        (from default)
+  ateapi.postgres.cloudsql.instance           ""                                                                                                        (from default)
+  ateapi.postgres.cloudsql.ipType             ""                                                                                                        (from default)
+  ateapi.postgres.owner.connectionString      ""                                                                                                        (from default)
+  ateapi.postgres.owner.role                  substrate_owner                                                                                           (from default)
+  ateapi.postgres.poolMaxConns                ""                                                                                                        (from default)
+  ateapi.postgres.readWrite.connectionString  ""                                                                                                        (from default)
+  ateapi.postgres.readWrite.role              substrate_readwrite                                                                                       (from default)
+  ateapi.postgres.schema                      ""                                                                                                        (from default)
+  ateapi.postgres.serverCAFile                ""                                                                                                        (from default)
+  ateapi.postgres.storageClass                ""                                                                                                        (from default)
+  atenet.dataplane                            envoy                                                                                                     (from default)
+  atenet.egress.additionalExtprocService      ""                                                                                                        (from default)
+  atenet.egress.credentialProvider            {"name":"k8s.io"}                                                                                         (from --credential-provider)
+  benchmark.actorMemory                       ""                                                                                                        (from default)
+  benchmark.sandboxClass                      gvisor                                                                                                    (from default)
+  benchmark.workerCount                       1                                                                                                         (from default)
+  clusterSize                                 size0                                                                                                     (from default)
+  context                                     kind-agentcloud                                                                                           (from --context)
+  cordonSystemInfraComponents                 false                                                                                                     (from default)
+  csi.setup                                   none                                                                                                      (from default)
+  demo.anthropicAPIKey                        ""                                                                                                        (from default)
+  demo.counter.storageClass                   standard                                                                                                  (from default)
+  demo.counter.withExternalVolume             false                                                                                                     (from default)
+  docker.buildFlags                           ""                                                                                                        (from default)
+  e2e.envoyConcurrency                        0                                                                                                         (from default)
+  e2e.tuning                                  false                                                                                                     (from default)
+  fakeDataPlane.enabled                       false                                                                                                     (from default)
+  gcp.clusterLocation                         ""                                                                                                        (from default)
+  gcp.clusterName                             ""                                                                                                        (from default)
+  gcp.projectID                               ""                                                                                                        (from default)
+  images.repo                                 ""                                                                                                        (from default)
+  images.tag                                  ""                                                                                                        (from default)
+  ingressAllowedSPIFFEIDs                     spiffe://cluster.local/ns/ate-system/sa/atenet-client,spiffe://cluster.local/ns/ate-system/sa/ate-client  (from --ingress-allowed-spiffe-ids)
+  kindCluster.enabled                         true                                                                                                      (from --kind)
+  kindCluster.name                            kind                                                                                                      (from default)
+  ko.defaultPlatforms                         linux/amd64                                                                                               (from the --kind profile)
+  ko.dockerRepo                               localhost:5001                                                                                            (from KO_DOCKER_REPO)
+  kubeconfig                                  /home/li/code/Claudeagent/artifacts/substrate/kubeconfig                                                  (from KUBECONFIG)
+  namespace                                   ate-system                                                                                                (from default)
+  otlpEndpoint                                ""                                                                                                        (from default)
+  podcert.workersPerSigner                    0                                                                                                         (from default)
+  preview                                     PerTemplateSnapshotLocation                                                                               (from --preview)
+  publish.binariesDir                         bin/release                                                                                               (from default)
+  publish.overwrite                           false                                                                                                     (from default)
+  record.dir                                  ""                                                                                                        (from default)
+  rolloutTimeout                              180s                                                                                                      (from --rollout-timeout)
+  sandboxClasses                              gvisor                                                                                                    (from --sandbox-classes)
+  storage.bucketName                          ate-snapshots                                                                                             (from the --kind profile)
+  storage.snapshotLocation                    gs://ate-snapshots/                                                                                       (from the --kind profile)
+  storage.transferGSAName                     ""                                                                                                        (from default)
+[1;36m[step]: deploy_ate_system[0m
+  (apply of 1 objects took 0.006s)
+[1;36m[step]: deploy_crds[0m
+[1;36m[step]: images: built from source with ko[0m
+  (ko resolve -f - took 0.048s)
+  (apply of 5 objects took 0.032s)
+  (apply of 2 objects took 0.015s)
+  (apply of 1 objects took 0.150s)
+[1;36m[step]: ensure_apiserver_prerequisites[0m
+[1;36m[step]: create_api_server_env_vars[0m
+2026/11/09 22:01:23 Using base gcr.io/distroless/static-debian13:nonroot@sha256:18f4cc26c9ffa7f20a359298be7deadac5c607c8e03a02b8119f1a5fc2f82c99 for go.ate.dev/substrate/cmd/podcertcontroller
+2026/11/09 22:01:25 git doesn't contain any tags. Tag info will not be available
+git is in a dirty state
+Please check in your pipeline what can be changing the following files:
+ M api/ateapi/v1/ateapi.pb.go
+ M api/ateapi/v1/ateapi.proto
+ M api/ateapi/v1/ateapi_grpc.pb.go
+ M cmd/ateapi/internal/apivalidation/actor.go
+ M cmd/ateapi/internal/apivalidation/actor_test.go
+ M cmd/ateapi/internal/apivalidation/zz_generated.validation.go
+ M cmd/ateapi/internal/authz/registry.go
+ M cmd/ateapi/internal/controlapi/actor.go
+ M cmd/ateapi/internal/controlapi/tag.go
+ M cmd/ateapi/internal/controlapi/workflow.go
+ M cmd/ateapi/internal/controlapi/workflow_resume.go
+ M cmd/ateapi/internal/controlapi/workflow_resume_test.go
+ M cmd/ateapi/internal/controlapi/workflow_suspend.go
+ M cmd/ateapi/internal/controlapi/workflow_tag.go
+ M cmd/ateapi/internal/controlapi/workflow_tag_test.go
+ M cmd/ateapi/internal/store/storetest/storetest.go
+ M cmd/atelet/lifecycle_test.go
+ M cmd/atelet/main.go
+ M cmd/ateworker-gvisor/main.go
+ M cmd/ateworker-microvm/restore.go
+ M docs/reference/api-guide.md
+ M internal/proto/ateletpb/atelet.pb.go
+ M internal/proto/ateletpb/atelet.proto
+ M internal/proto/ateworkerpb/ateworker.pb.go
+ M internal/proto/ateworkerpb/ateworker.proto
+?? cmd/agentcloud-credentials/
+?? cmd/ateapi/internal/controlapi/snapshot_durability.go
+?? cmd/ateapi/internal/controlapi/snapshot_durability_test.go
+?? cmd/ateapi/internal/controlapi/workflow_preconditions_test.go
+
+2026/11/09 22:01:25 Building go.ate.dev/substrate/cmd/podcertcontroller for linux/amd64
+2026/11/09 22:01:28 Publishing localhost:5001/podcertcontroller:latest
+2026/11/09 22:01:28 existing manifest: latest@sha256:c5a1f23dd6b8ffd21abeb0f01db183e992aae12cdc2bc53581f9de04cd203136
+2026/11/09 22:01:28 existing manifest: sha256-c5a1f23dd6b8ffd21abeb0f01db183e992aae12cdc2bc53581f9de04cd203136.sbom@sha256:c0175f7e5a9e2d8d4f9e7bf2cb031302921b465be5b7d10a82200129e525c917
+2026/11/09 22:01:28 Published SBOM localhost:5001/podcertcontroller:sha256-c5a1f23dd6b8ffd21abeb0f01db183e992aae12cdc2bc53581f9de04cd203136.sbom
+2026/11/09 22:01:28 Published localhost:5001/podcertcontroller@sha256:c5a1f23dd6b8ffd21abeb0f01db183e992aae12cdc2bc53581f9de04cd203136
+  (ko resolve -f - took 6.750s)
+  (apply of 7 objects took 0.020s)
+  (rollout status deployment/podcertificate-controller took 0.002s)
+Waiting for podcertificate ClusterTrustBundles to be ready...
+  (wait for clustertrustbundles took 4.011s)
+[1;36m[step]: setup_csi[0m
+Skipping CSI driver setup.
+  (apply of 1 objects took 0.005s)
+  (apply of 3 objects took 0.042s)
+  (rollout status statefulset/postgres took 114.004s)
+[1;36m[step]: setup_bundled_postgres[0m
+#0 building with "default" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 DONE 0.0s
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile: 3.10kB done
+#1 DONE 0.1s
+
+#2 [internal] load metadata for docker.io/library/rust:bookworm@sha256:93ce27a88655056a51dbdd8f5f2d7ddc071c7b0070fb288a37b5a285fc83971e
+#2 ...
+
+#3 [internal] load metadata for docker.io/envoyproxy/envoy:v1.39.5@sha256:8fc594a5d85eb76dca24155cfb9208882406873932b20cf33649a0a611194c43
+#3 DONE 5.0s
+
+#2 [internal] load metadata for docker.io/library/rust:bookworm@sha256:93ce27a88655056a51dbdd8f5f2d7ddc071c7b0070fb288a37b5a285fc83971e
+#2 DONE 5.1s
+
+#4 [internal] load .dockerignore
+#4 transferring context: 2B done
+#4 DONE 0.1s
+
+#5 [stage-1 1/2] FROM docker.io/envoyproxy/envoy:v1.39.5@sha256:8fc594a5d85eb76dca24155cfb9208882406873932b20cf33649a0a611194c43
+#5 resolve docker.io/envoyproxy/envoy:v1.39.5@sha256:8fc594a5d85eb76dca24155cfb9208882406873932b20cf33649a0a611194c43 0.1s done
+#5 ...
+
+#6 [internal] load build context
+#6 transferring context: 61.81kB done
+#6 DONE 0.1s
+
+#7 [builder 1/5] FROM docker.io/library/rust:bookworm@sha256:93ce27a88655056a51dbdd8f5f2d7ddc071c7b0070fb288a37b5a285fc83971e
+#7 resolve docker.io/library/rust:bookworm@sha256:93ce27a88655056a51dbdd8f5f2d7ddc071c7b0070fb288a37b5a285fc83971e 0.1s done
+#7 DONE 0.5s
+
+#5 [stage-1 1/2] FROM docker.io/envoyproxy/envoy:v1.39.5@sha256:8fc594a5d85eb76dca24155cfb9208882406873932b20cf33649a0a611194c43
+#5 ...
+
+#7 [builder 1/5] FROM docker.io/library/rust:bookworm@sha256:93ce27a88655056a51dbdd8f5f2d7ddc071c7b0070fb288a37b5a285fc83971e
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 3.15MB / 213.84MB 5.4s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 3.15MB / 211.71MB 5.3s
+#7 sha256:81578410df169380efec491bfdc60a7e586d4b48ef4c0aeb9b6ff085812d9a7d 8.39MB / 64.42MB 5.3s
+#7 sha256:7b2de2423ebd9d3290883175c0e46dccd6de955b08e6e9a5bd20909e3face240 0B / 24.06MB 5.3s
+#7 sha256:81578410df169380efec491bfdc60a7e586d4b48ef4c0aeb9b6ff085812d9a7d 12.58MB / 64.42MB 7.8s
+#7 sha256:7b2de2423ebd9d3290883175c0e46dccd6de955b08e6e9a5bd20909e3face240 2.10MB / 24.06MB 9.8s
+#7 sha256:81578410df169380efec491bfdc60a7e586d4b48ef4c0aeb9b6ff085812d9a7d 16.78MB / 64.42MB 9.9s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 7.34MB / 213.84MB 10.5s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 6.29MB / 211.71MB 10.4s
+#7 sha256:81578410df169380efec491bfdc60a7e586d4b48ef4c0aeb9b6ff085812d9a7d 20.97MB / 64.42MB 13.2s
+#7 sha256:7b2de2423ebd9d3290883175c0e46dccd6de955b08e6e9a5bd20909e3face240 4.19MB / 24.06MB 14.7s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 11.53MB / 213.84MB 15.6s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 9.44MB / 211.71MB 15.5s
+#7 sha256:81578410df169380efec491bfdc60a7e586d4b48ef4c0aeb9b6ff085812d9a7d 23.07MB / 64.42MB 18.3s
+#7 sha256:7b2de2423ebd9d3290883175c0e46dccd6de955b08e6e9a5bd20909e3face240 6.29MB / 24.06MB 19.2s
+#7 sha256:81578410df169380efec491bfdc60a7e586d4b48ef4c0aeb9b6ff085812d9a7d 27.26MB / 64.42MB 19.8s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 14.68MB / 213.84MB 20.7s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 12.58MB / 211.71MB 20.6s
+#7 sha256:7b2de2423ebd9d3290883175c0e46dccd6de955b08e6e9a5bd20909e3face240 8.39MB / 24.06MB 21.8s
+#7 sha256:7b2de2423ebd9d3290883175c0e46dccd6de955b08e6e9a5bd20909e3face240 10.49MB / 24.06MB 23.6s
+#7 sha256:81578410df169380efec491bfdc60a7e586d4b48ef4c0aeb9b6ff085812d9a7d 31.46MB / 64.42MB 23.9s
+#7 sha256:7b2de2423ebd9d3290883175c0e46dccd6de955b08e6e9a5bd20909e3face240 12.58MB / 24.06MB 25.5s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 16.78MB / 213.84MB 25.8s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 18.87MB / 211.71MB 25.7s
+#7 sha256:81578410df169380efec491bfdc60a7e586d4b48ef4c0aeb9b6ff085812d9a7d 34.60MB / 64.42MB 29.0s
+#7 sha256:7b2de2423ebd9d3290883175c0e46dccd6de955b08e6e9a5bd20909e3face240 14.68MB / 24.06MB 29.3s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 17.83MB / 213.84MB 30.9s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 23.07MB / 211.71MB 30.8s
+#7 sha256:7b2de2423ebd9d3290883175c0e46dccd6de955b08e6e9a5bd20909e3face240 16.78MB / 24.06MB 32.1s
+#7 sha256:81578410df169380efec491bfdc60a7e586d4b48ef4c0aeb9b6ff085812d9a7d 38.80MB / 64.42MB 32.3s
+#7 sha256:7b2de2423ebd9d3290883175c0e46dccd6de955b08e6e9a5bd20909e3face240 18.87MB / 24.06MB 35.6s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 17.83MB / 213.84MB 36.0s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 28.31MB / 211.71MB 35.9s
+#7 sha256:81578410df169380efec491bfdc60a7e586d4b48ef4c0aeb9b6ff085812d9a7d 42.99MB / 64.42MB 36.5s
+#7 sha256:7b2de2423ebd9d3290883175c0e46dccd6de955b08e6e9a5bd20909e3face240 20.97MB / 24.06MB 38.0s
+#7 sha256:7b2de2423ebd9d3290883175c0e46dccd6de955b08e6e9a5bd20909e3face240 23.07MB / 24.06MB 39.6s
+#7 sha256:7b2de2423ebd9d3290883175c0e46dccd6de955b08e6e9a5bd20909e3face240 24.06MB / 24.06MB 40.3s done
+#7 sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 0B / 48.50MB 0.2s
+#7 sha256:81578410df169380efec491bfdc60a7e586d4b48ef4c0aeb9b6ff085812d9a7d 47.19MB / 64.42MB 40.8s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 34.60MB / 211.71MB 41.0s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 18.87MB / 213.84MB 41.1s
+#7 sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 1.05MB / 48.50MB 5.3s
+#7 sha256:81578410df169380efec491bfdc60a7e586d4b48ef4c0aeb9b6ff085812d9a7d 50.33MB / 64.42MB 45.9s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 36.70MB / 211.71MB 46.1s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 23.07MB / 213.84MB 46.2s
+#7 sha256:81578410df169380efec491bfdc60a7e586d4b48ef4c0aeb9b6ff085812d9a7d 54.53MB / 64.42MB 48.9s
+#7 sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 3.15MB / 48.50MB 10.4s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 40.89MB / 211.71MB 51.2s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 25.17MB / 213.84MB 51.3s
+#7 sha256:81578410df169380efec491bfdc60a7e586d4b48ef4c0aeb9b6ff085812d9a7d 58.72MB / 64.42MB 53.7s
+#7 sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 5.24MB / 48.50MB 15.5s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 47.19MB / 211.71MB 56.3s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 29.36MB / 213.84MB 56.4s
+#7 sha256:81578410df169380efec491bfdc60a7e586d4b48ef4c0aeb9b6ff085812d9a7d 62.91MB / 64.42MB 57.6s
+#7 sha256:81578410df169380efec491bfdc60a7e586d4b48ef4c0aeb9b6ff085812d9a7d 64.42MB / 64.42MB 60.2s done
+#7 sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 6.29MB / 48.50MB 20.6s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 54.53MB / 211.71MB 61.4s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 33.55MB / 213.84MB 61.5s
+#7 sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 8.39MB / 48.50MB 25.7s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 62.91MB / 211.71MB 66.5s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 36.70MB / 213.84MB 66.6s
+#7 ...
+
+#5 [stage-1 1/2] FROM docker.io/envoyproxy/envoy:v1.39.5@sha256:8fc594a5d85eb76dca24155cfb9208882406873932b20cf33649a0a611194c43
+#5 sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 32B / 32B 2.3s done
+#5 sha256:9001f826b2a2b6d17a17b7d3ccc7cf524dcfeab98c957a54a839c1ec1a8aad55 4.19MB / 37.42MB 8.0s
+#5 ...
+
+#7 [builder 1/5] FROM docker.io/library/rust:bookworm@sha256:93ce27a88655056a51dbdd8f5f2d7ddc071c7b0070fb288a37b5a285fc83971e
+#7 sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 10.49MB / 48.50MB 30.8s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 67.11MB / 211.71MB 71.6s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 40.89MB / 213.84MB 71.7s
+#7 sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 13.63MB / 48.50MB 35.3s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 76.55MB / 211.71MB 76.7s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 42.99MB / 213.84MB 76.8s
+#7 sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 13.63MB / 48.50MB 40.4s
+#7 ...
+
+#5 [stage-1 1/2] FROM docker.io/envoyproxy/envoy:v1.39.5@sha256:8fc594a5d85eb76dca24155cfb9208882406873932b20cf33649a0a611194c43
+#5 sha256:9001f826b2a2b6d17a17b7d3ccc7cf524dcfeab98c957a54a839c1ec1a8aad55 9.44MB / 37.42MB 18.3s
+#5 ...
+
+#7 [builder 1/5] FROM docker.io/library/rust:bookworm@sha256:93ce27a88655056a51dbdd8f5f2d7ddc071c7b0070fb288a37b5a285fc83971e
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 87.03MB / 211.71MB 81.8s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 46.14MB / 213.84MB 81.9s
+#7 sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 14.68MB / 48.50MB 45.5s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 93.32MB / 211.71MB 86.9s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 50.33MB / 213.84MB 87.0s
+#7 sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 14.68MB / 48.50MB 50.6s
+#7 ...
+
+#5 [stage-1 1/2] FROM docker.io/envoyproxy/envoy:v1.39.5@sha256:8fc594a5d85eb76dca24155cfb9208882406873932b20cf33649a0a611194c43
+#5 sha256:9001f826b2a2b6d17a17b7d3ccc7cf524dcfeab98c957a54a839c1ec1a8aad55 12.58MB / 37.42MB 28.7s
+#5 ...
+
+#7 [builder 1/5] FROM docker.io/library/rust:bookworm@sha256:93ce27a88655056a51dbdd8f5f2d7ddc071c7b0070fb288a37b5a285fc83971e
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 96.47MB / 211.71MB 92.0s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 57.67MB / 213.84MB 92.1s
+#7 sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 17.83MB / 48.50MB 55.7s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 102.76MB / 211.71MB 97.1s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 61.87MB / 213.84MB 97.2s
+#7 sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 18.87MB / 48.50MB 60.8s
+#7 ...
+
+#5 [stage-1 1/2] FROM docker.io/envoyproxy/envoy:v1.39.5@sha256:8fc594a5d85eb76dca24155cfb9208882406873932b20cf33649a0a611194c43
+#5 sha256:9001f826b2a2b6d17a17b7d3ccc7cf524dcfeab98c957a54a839c1ec1a8aad55 15.73MB / 37.42MB 39.0s
+#5 ...
+
+#7 [builder 1/5] FROM docker.io/library/rust:bookworm@sha256:93ce27a88655056a51dbdd8f5f2d7ddc071c7b0070fb288a37b5a285fc83971e
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 105.91MB / 211.71MB 102.2s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 66.06MB / 213.84MB 102.3s
+#7 sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 22.02MB / 48.50MB 65.6s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 108.00MB / 211.71MB 107.3s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 69.21MB / 213.84MB 107.4s
+#7 sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 25.17MB / 48.50MB 68.0s
+#7 sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 28.31MB / 48.50MB 70.7s
+#7 ...
+
+#5 [stage-1 1/2] FROM docker.io/envoyproxy/envoy:v1.39.5@sha256:8fc594a5d85eb76dca24155cfb9208882406873932b20cf33649a0a611194c43
+#5 sha256:9001f826b2a2b6d17a17b7d3ccc7cf524dcfeab98c957a54a839c1ec1a8aad55 23.07MB / 37.42MB 49.4s
+#5 ...
+
+#7 [builder 1/5] FROM docker.io/library/rust:bookworm@sha256:93ce27a88655056a51dbdd8f5f2d7ddc071c7b0070fb288a37b5a285fc83971e
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 109.05MB / 211.71MB 112.4s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 72.35MB / 213.84MB 112.5s
+#7 sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 31.46MB / 48.50MB 74.0s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 111.15MB / 211.71MB 117.5s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 77.59MB / 213.84MB 117.6s
+#7 sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 34.60MB / 48.50MB 78.3s
+#7 ...
+
+#5 [stage-1 1/2] FROM docker.io/envoyproxy/envoy:v1.39.5@sha256:8fc594a5d85eb76dca24155cfb9208882406873932b20cf33649a0a611194c43
+#5 sha256:9001f826b2a2b6d17a17b7d3ccc7cf524dcfeab98c957a54a839c1ec1a8aad55 29.36MB / 37.42MB 59.7s
+#5 ...
+
+#7 [builder 1/5] FROM docker.io/library/rust:bookworm@sha256:93ce27a88655056a51dbdd8f5f2d7ddc071c7b0070fb288a37b5a285fc83971e
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 112.20MB / 211.71MB 122.6s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 82.84MB / 213.84MB 122.7s
+#7 sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 36.70MB / 48.50MB 83.4s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 116.39MB / 211.71MB 127.7s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 89.13MB / 213.84MB 127.8s
+#7 sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 37.75MB / 48.50MB 88.5s
+#7 sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 40.89MB / 48.50MB 91.1s
+#7 ...
+
+#5 [stage-1 1/2] FROM docker.io/envoyproxy/envoy:v1.39.5@sha256:8fc594a5d85eb76dca24155cfb9208882406873932b20cf33649a0a611194c43
+#5 sha256:9001f826b2a2b6d17a17b7d3ccc7cf524dcfeab98c957a54a839c1ec1a8aad55 32.51MB / 37.42MB 70.1s
+#5 ...
+
+#7 [builder 1/5] FROM docker.io/library/rust:bookworm@sha256:93ce27a88655056a51dbdd8f5f2d7ddc071c7b0070fb288a37b5a285fc83971e
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 119.54MB / 211.71MB 132.8s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 96.47MB / 213.84MB 132.9s
+#7 sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 44.04MB / 48.50MB 95.9s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 121.63MB / 211.71MB 137.9s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 100.66MB / 213.84MB 138.0s
+#7 sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 47.19MB / 48.50MB 99.5s
+#7 sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 48.50MB / 48.50MB 101.2s done
+#7 extracting sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6
+#7 extracting sha256:eaac70c68abdf6ffacf6de10d31ed9de4813505d1a794eb7393cb27fceb624a6 1.1s done
+#7 extracting sha256:7b2de2423ebd9d3290883175c0e46dccd6de955b08e6e9a5bd20909e3face240
+#7 ...
+
+#5 [stage-1 1/2] FROM docker.io/envoyproxy/envoy:v1.39.5@sha256:8fc594a5d85eb76dca24155cfb9208882406873932b20cf33649a0a611194c43
+#5 sha256:9001f826b2a2b6d17a17b7d3ccc7cf524dcfeab98c957a54a839c1ec1a8aad55 37.42MB / 37.42MB 74.6s done
+#5 sha256:07be8420ff0d82fb24319e68b15bf9d2fada27f5a622084a1ca259bb0e86d80a 4.68kB / 4.68kB 2.5s done
+#5 sha256:e1542acd298fa40735b2911ffb1120d5d77aa1025a704a54dbbffad1af2b5bf7 484B / 484B 0.5s done
+#5 sha256:9c26c7f6bca51920f158e9bc9bc943c1245e1b69b058e8f9b5740d23abf53277 790B / 790B 0.5s done
+#5 sha256:306aec818efa3f75f424106cf7e0270ea16445efc2dd99c5b65fb4bf03591115 1.05MB / 4.77MB 2.3s
+#5 sha256:b339d25ae28e6432dffbb3731a386ecb6023f221ad6d31cb95a12b9f8e028599 174B / 174B 1.1s done
+#5 sha256:bbd25e34176c6d6594bcb555ad9ae80e75d2196eb59766cf939c24ef4f222763 0B / 1.40kB 0.3s
+#5 sha256:bbd25e34176c6d6594bcb555ad9ae80e75d2196eb59766cf939c24ef4f222763 1.40kB / 1.40kB 0.4s done
+#5 ...
+
+#7 [builder 1/5] FROM docker.io/library/rust:bookworm@sha256:93ce27a88655056a51dbdd8f5f2d7ddc071c7b0070fb288a37b5a285fc83971e
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 128.97MB / 211.71MB 143.0s
+#7 extracting sha256:7b2de2423ebd9d3290883175c0e46dccd6de955b08e6e9a5bd20909e3face240 0.4s done
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 106.95MB / 213.84MB 143.1s
+#7 extracting sha256:81578410df169380efec491bfdc60a7e586d4b48ef4c0aeb9b6ff085812d9a7d
+#7 extracting sha256:81578410df169380efec491bfdc60a7e586d4b48ef4c0aeb9b6ff085812d9a7d 1.3s done
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 113.25MB / 213.84MB 148.2s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 134.22MB / 211.71MB 148.1s
+#7 ...
+
+#5 [stage-1 1/2] FROM docker.io/envoyproxy/envoy:v1.39.5@sha256:8fc594a5d85eb76dca24155cfb9208882406873932b20cf33649a0a611194c43
+#5 sha256:306aec818efa3f75f424106cf7e0270ea16445efc2dd99c5b65fb4bf03591115 4.77MB / 4.77MB 6.8s done
+#5 sha256:98c4455a98982b35380ec62f90d5cf0edff02eeb4b3bb18595d871fdeb0c0c67 3.15MB / 29.75MB 10.1s
+#5 ...
+
+#7 [builder 1/5] FROM docker.io/library/rust:bookworm@sha256:93ce27a88655056a51dbdd8f5f2d7ddc071c7b0070fb288a37b5a285fc83971e
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 117.44MB / 213.84MB 153.3s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 139.46MB / 211.71MB 153.2s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 119.54MB / 213.84MB 158.4s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 144.70MB / 211.71MB 158.3s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 120.59MB / 213.84MB 163.5s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 147.85MB / 211.71MB 163.4s
+#7 ...
+
+#5 [stage-1 1/2] FROM docker.io/envoyproxy/envoy:v1.39.5@sha256:8fc594a5d85eb76dca24155cfb9208882406873932b20cf33649a0a611194c43
+#5 sha256:98c4455a98982b35380ec62f90d5cf0edff02eeb4b3bb18595d871fdeb0c0c67 11.53MB / 29.75MB 20.4s
+#5 ...
+
+#7 [builder 1/5] FROM docker.io/library/rust:bookworm@sha256:93ce27a88655056a51dbdd8f5f2d7ddc071c7b0070fb288a37b5a285fc83971e
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 123.73MB / 213.84MB 168.6s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 149.95MB / 211.71MB 168.5s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 127.93MB / 213.84MB 173.7s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 152.04MB / 211.71MB 173.6s
+#7 ...
+
+#5 [stage-1 1/2] FROM docker.io/envoyproxy/envoy:v1.39.5@sha256:8fc594a5d85eb76dca24155cfb9208882406873932b20cf33649a0a611194c43
+#5 sha256:98c4455a98982b35380ec62f90d5cf0edff02eeb4b3bb18595d871fdeb0c0c67 19.92MB / 29.75MB 30.8s
+#5 ...
+
+#7 [builder 1/5] FROM docker.io/library/rust:bookworm@sha256:93ce27a88655056a51dbdd8f5f2d7ddc071c7b0070fb288a37b5a285fc83971e
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 131.07MB / 213.84MB 178.8s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 154.14MB / 211.71MB 178.7s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 134.22MB / 213.84MB 183.9s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 158.33MB / 211.71MB 183.8s
+#7 ...
+
+#5 [stage-1 1/2] FROM docker.io/envoyproxy/envoy:v1.39.5@sha256:8fc594a5d85eb76dca24155cfb9208882406873932b20cf33649a0a611194c43
+#5 sha256:98c4455a98982b35380ec62f90d5cf0edff02eeb4b3bb18595d871fdeb0c0c67 29.36MB / 29.75MB 41.1s
+#5 ...
+
+#7 [builder 1/5] FROM docker.io/library/rust:bookworm@sha256:93ce27a88655056a51dbdd8f5f2d7ddc071c7b0070fb288a37b5a285fc83971e
+#7 ...
+
+#5 [stage-1 1/2] FROM docker.io/envoyproxy/envoy:v1.39.5@sha256:8fc594a5d85eb76dca24155cfb9208882406873932b20cf33649a0a611194c43
+#5 sha256:98c4455a98982b35380ec62f90d5cf0edff02eeb4b3bb18595d871fdeb0c0c67 29.75MB / 29.75MB 42.0s done
+#5 extracting sha256:98c4455a98982b35380ec62f90d5cf0edff02eeb4b3bb18595d871fdeb0c0c67 0.8s done
+#5 DONE 186.3s
+
+#7 [builder 1/5] FROM docker.io/library/rust:bookworm@sha256:93ce27a88655056a51dbdd8f5f2d7ddc071c7b0070fb288a37b5a285fc83971e
+#7 ...
+
+#5 [stage-1 1/2] FROM docker.io/envoyproxy/envoy:v1.39.5@sha256:8fc594a5d85eb76dca24155cfb9208882406873932b20cf33649a0a611194c43
+#5 extracting sha256:bbd25e34176c6d6594bcb555ad9ae80e75d2196eb59766cf939c24ef4f222763 0.0s done
+#5 extracting sha256:b339d25ae28e6432dffbb3731a386ecb6023f221ad6d31cb95a12b9f8e028599 0.0s done
+#5 extracting sha256:306aec818efa3f75f424106cf7e0270ea16445efc2dd99c5b65fb4bf03591115 0.3s done
+#5 extracting sha256:9c26c7f6bca51920f158e9bc9bc943c1245e1b69b058e8f9b5740d23abf53277 0.0s done
+#5 DONE 186.7s
+
+#7 [builder 1/5] FROM docker.io/library/rust:bookworm@sha256:93ce27a88655056a51dbdd8f5f2d7ddc071c7b0070fb288a37b5a285fc83971e
+#7 ...
+
+#5 [stage-1 1/2] FROM docker.io/envoyproxy/envoy:v1.39.5@sha256:8fc594a5d85eb76dca24155cfb9208882406873932b20cf33649a0a611194c43
+#5 extracting sha256:e1542acd298fa40735b2911ffb1120d5d77aa1025a704a54dbbffad1af2b5bf7 0.0s done
+#5 extracting sha256:07be8420ff0d82fb24319e68b15bf9d2fada27f5a622084a1ca259bb0e86d80a 0.0s done
+#5 extracting sha256:9001f826b2a2b6d17a17b7d3ccc7cf524dcfeab98c957a54a839c1ec1a8aad55 0.3s done
+#5 extracting sha256:4f4fb700ef54461cfa02571ae0db9a0dc1e0cdb5577484a6d75e68dc38e8acc1 0.0s done
+#5 DONE 187.2s
+
+#7 [builder 1/5] FROM docker.io/library/rust:bookworm@sha256:93ce27a88655056a51dbdd8f5f2d7ddc071c7b0070fb288a37b5a285fc83971e
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 138.41MB / 213.84MB 189.0s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 161.48MB / 211.71MB 188.9s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 142.61MB / 213.84MB 194.1s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 165.68MB / 211.71MB 194.0s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 145.75MB / 213.84MB 199.2s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 169.87MB / 211.71MB 199.1s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 152.04MB / 213.84MB 204.3s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 177.21MB / 211.71MB 204.2s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 155.19MB / 213.84MB 209.4s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 179.31MB / 211.71MB 209.3s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 156.24MB / 213.84MB 214.5s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 182.45MB / 211.71MB 214.4s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 160.43MB / 213.84MB 219.6s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 183.50MB / 211.71MB 219.5s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 164.63MB / 213.84MB 224.7s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 184.55MB / 211.71MB 224.6s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 166.72MB / 213.84MB 229.8s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 189.79MB / 211.71MB 229.7s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 171.97MB / 213.84MB 234.9s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 193.99MB / 211.71MB 234.8s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 180.36MB / 213.84MB 240.0s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 199.23MB / 211.71MB 239.9s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 190.84MB / 213.84MB 245.1s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 205.52MB / 211.71MB 245.0s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 198.18MB / 213.84MB 250.2s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 208.67MB / 211.71MB 250.1s
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 209.72MB / 213.84MB 254.3s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 210.76MB / 211.71MB 255.2s
+#7 sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 211.71MB / 211.71MB 256.1s done
+#7 extracting sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a
+#7 sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 213.84MB / 213.84MB 256.6s done
+#7 extracting sha256:de9e8d0a007171cac57d643a3982902d45431cd860400eea55e18df75fc0b12a 3.3s done
+#7 DONE 259.9s
+
+#7 [builder 1/5] FROM docker.io/library/rust:bookworm@sha256:93ce27a88655056a51dbdd8f5f2d7ddc071c7b0070fb288a37b5a285fc83971e
+#7 extracting sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357
+#7 extracting sha256:47495189b3619615361bf1ba54a703b2a44cb7d76757ae1cd6a77d4f845bd357 1.8s done
+#7 DONE 261.7s
+
+#8 [builder 2/5] WORKDIR /usr/src/dynamic-modules
+#8 DONE 0.1s
+
+#9 [builder 3/5] RUN case "amd64" in       amd64) echo x86_64 > /target-arch ;;       arm64) echo aarch64 > /target-arch ;;       *) echo "unsupported TARGETARCH: amd64" >&2; exit 1 ;;     esac     && arch="$(cat /target-arch)"     && if [ "amd64" != "amd64" ]; then cross="gcc-$(echo "$arch" | tr _ -)-linux-gnu libc6-dev-amd64-cross"; fi     && apt-get update && apt-get install -y --no-install-recommends     clang     libclang-dev     $cross     && rm -rf /var/lib/apt/lists/*     && rustup target add "${arch}-unknown-linux-gnu"
+#9 1.181 Get:1 http://deb.debian.org/debian bookworm InRelease [151 kB]
+#9 1.947 Get:2 http://deb.debian.org/debian bookworm-updates InRelease [55.4 kB]
+#9 2.225 Get:3 http://deb.debian.org/debian-security bookworm-security InRelease [34.8 kB]
+#9 2.735 Get:4 http://deb.debian.org/debian bookworm/main amd64 Packages [8790 kB]
+#9 77.73 Get:5 http://deb.debian.org/debian bookworm-updates/main amd64 Packages [6924 B]
+#9 77.96 Get:6 http://deb.debian.org/debian-security bookworm-security/main amd64 Packages [366 kB]
+#9 80.57 Fetched 9404 kB in 1min 20s (117 kB/s)
+#9 80.57 Reading package lists...
+#9 80.88 Reading package lists...
+#9 81.19 Building dependency tree...
+#9 81.27 Reading state information...
+#9 81.35 The following additional packages will be installed:
+#9 81.35   clang-14 libclang-14-dev libclang-common-14-dev libclang-cpp14 libclang1-14
+#9 81.35   libgc1 libllvm14 libobjc-12-dev libobjc4 libz3-4 llvm-14-linker-tools
+#9 81.35 Suggested packages:
+#9 81.35   clang-14-doc wasi-libc
+#9 81.35 Recommended packages:
+#9 81.35   llvm-14-dev libclang-rt-14-dev
+#9 81.43 The following NEW packages will be installed:
+#9 81.43   clang clang-14 libclang-14-dev libclang-common-14-dev libclang-cpp14
+#9 81.43   libclang-dev libclang1-14 libgc1 libllvm14 libobjc-12-dev libobjc4 libz3-4
+#9 81.43   llvm-14-linker-tools
+#9 81.92 0 upgraded, 13 newly installed, 0 to remove and 47 not upgraded.
+#9 81.92 Need to get 72.1 MB of archives.
+#9 81.92 After this operation, 496 MB of additional disk space will be used.
+#9 81.92 Get:1 http://deb.debian.org/debian bookworm/main amd64 libz3-4 amd64 4.8.12-3.1 [7216 kB]
+#9 133.1 Get:2 http://deb.debian.org/debian bookworm/main amd64 libllvm14 amd64 1:14.0.6-12 [21.8 MB]
+signal: interrupt

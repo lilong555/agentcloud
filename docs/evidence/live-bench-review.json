@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "reviewed_at_utc": "2026-11-09T15:41:08.600731+00:00",
+  "review_kind": "read-only source and recorded-event audit",
+  "status": "source_review_complete_formal_execution_pending",
+  "scope": [
+    "TTFT",
+    "Worker reservation integration",
+    "Stranded attribution",
+    "A–E controls",
+    "request and fault denominators",
+    "cleanup",
+    "performance statement scope"
+  ],
+  "source_sha256": {
+    "bench/substrate_live.py": "27e1b498fad5e380f29d25c8cde57d537936760724f1ce17a12cf61f974952e2",
+    "bench/live.py": "2457e68d250dd61d9162dc13a1e1ea7d330bc3e03f217d209af96e6991a26771",
+    "bench/worker_probe/main.go": "482956cd35b1cbe8065606478fdaa2e99e15b8f61c4701535fe37d2d7dd6a63b",
+    "bench/configs/substrate-mixed-live.json": "a50e522ea0b1b6a480c35f632021f722851d3033bae8d3a0c96b26262d71219e",
+    "internal/control/inference.go": "5d5ae9b84fa2d0a59943267ec5d6461917ce9c525a73d0783bbccbe570b77db4",
+    "internal/control/controller.go": "985aeffacd385eafb960e05733401ed522a92d638ec804c22f6c14cf5782ca87"
+  },
+  "checks": [
+    {
+      "id": "ttft",
+      "status": "passed",
+      "fact": "模型首 token 取自协调器持久化的上游 SSE 非空生成片段；客户端到达至首次观察使用单调时钟，排队请求保存 Actor 创建前的原始到达时间，服务端首片段时间与轮询延迟独立记录。D/E 后台模型观察与 model-boundary 调用并发。"
+    },
+    {
+      "id": "timeout",
+      "status": "passed",
+      "fact": "观察循环先判端到端截止时间，再接受 COMPLETED；超过截止时间的完成记录 late_completion_observed。"
+    },
+    {
+      "id": "reserved_memory",
+      "status": "passed",
+      "fact": "主资源积分使用 ListWorkerActorAssignments.resources.memoryBytes 的 100 毫秒采样左端阶梯积分。Substrate UpdateActorAndRelease 同一持久化写操作清空 WorkerAssignment 并释放资源；API 回执驻留量保留为 receipt_* 诊断。"
+    },
+    {
+      "id": "stranded",
+      "status": "passed",
+      "fact": "主 Stranded 指标取实际 assignment 预留区间与业务模型到达至终态观察区间、显式 think 窗口并集的交集，再减去同会话工具调用区间并集。故障 file_write 的真实首次工具调用区间进入排除集合。"
+    },
+    {
+      "id": "sampling_uncertainty",
+      "status": "passed",
+      "fact": "报告包含采样最大间隔、估计缺失样本、未覆盖时间和容量不确定度。可见转变不确定度使用 estimate 标签并披露每相邻采样最多一次 assignment 变化的假设；试验终点冻结后等待覆盖终点的样本，最多 300 毫秒。"
+    },
+    {
+      "id": "denominators",
+      "status": "passed",
+      "fact": "每试验预定业务模型请求分母 8、交互分母 4；提前失败的预定请求保持在分母。两次 terminal 收尾模型请求独立于业务测量分母。故障记录 planned=3、实际 injections、recovered、skipped，恢复率以实际注入数为分母。"
+    },
+    {
+      "id": "ablation_controls",
+      "status": "passed",
+      "fact": "A/B 通过原生 Final 消除跨轮 ACTING 程序保留；全部组保留原生推理准入，C/D/E 保留程序，D/E 调用真实 model-boundary，E 从协调器实际状态派生反馈。配对种子、同组参数和随机顺序来自冻结配置。失败试验终止后续组。"
+    },
+    {
+      "id": "cleanup",
+      "status": "passed",
+      "fact": "创建前登记 attempted_sessions，异常清理按尝试会话集合查询；contender 自带 finally 清理。main finally 统一停止 Worker 采样子进程并关闭证据文件，覆盖 KeyboardInterrupt。"
+    },
+    {
+      "id": "scope_and_claims",
+      "status": "passed",
+      "fact": "报告明确真实 Substrate、PostgreSQL、原生 ThunderAgent 与官方 CPU Mocker；GPU execution=false，物理 KV 与 RSS 测量字段为空。当前源码报告提供实测统计和采样假设。"
+    },
+    {
+      "id": "verification",
+      "status": "passed",
+      "fact": "两入口及生成 CPU/IO/batch Python 程序通过 AST 语法检查；RFC3339 纳秒时间戳解析通过。独立区间夹具覆盖重叠模型等待、重叠工具和 think 窗口：10 GB·s 总预留、3 GB·s Stranded、6 GB·s 无工具预留，与解析期望一致。"
+    }
+  ],
+  "observations": [],
+  "execution_evidence": [
+    {
+      "path": "docs/evidence/bench-substrate-failed-rfc3339nano.json",
+      "status": "failed",
+      "run_id": "live-4585610bdf",
+      "trials": []
+    },
+    {
+      "path": "docs/evidence/bench-substrate-failed-empty-content.json",
+      "status": "incomplete",
+      "run_id": "live-c3fceef850",
+      "trials": [
+        {
+          "seed": 7101,
+          "group": "B",
+          "status": "failed",
+          "offered": 8,
+          "completed": 1,
+          "error": "模型缺少成功首 token: COMPLETED"
+        }
+      ]
+    }
+  ],
+  "execution_validation": "正式三种子全组运行需以最终 bench-substrate.json 完整状态与逐试验记录验收；已归档空输出轨迹中上游确实返回 content=null，首 token 为空，试验保持失败状态。",
+  "performance_conclusion": "本审查确认测量口径与实现对应关系；完整正式运行结果决定各组性能数值。"
+}

@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "component": "dynamo",
+  "validation_level": "native-classifier-authenticated-control-tests",
+  "status": "passed",
+  "upstream_commit": "c5680e573b86623df3b6b017a408373aeba93469",
+  "rust": {
+    "command": [
+      "/home/li/.cargo/bin/cargo",
+      "test",
+      "--locked",
+      "-p",
+      "dynamo-router-policies",
+      "thunderagent",
+      "--lib",
+      "--",
+      "--nocapture"
+    ],
+    "exit_code": 0,
+    "passed": 59,
+    "ignored": 2,
+    "failed": 0,
+    "log": "docs/evidence/dynamo-control-tests.log"
+  },
+  "go": {
+    "command": [
+      "/home/li/.local/share/agentcloud/go/bin/go",
+      "test",
+      "-race",
+      "./internal/adapters/dynamo"
+    ],
+    "exit_code": 0,
+    "passed": 3,
+    "log": "docs/evidence/dynamo-go-client-tests.log"
+  },
+  "native_process_evidence": "docs/evidence/dynamo-native-mocker.json",
+  "cpu_build_evidence": "docs/evidence/dynamo-cpu-build.json",
+  "source_sha256": {
+    "lib/router-plugins/builtin/src/thunderagent/execution_control.rs": "f828f7ce30617094ce39769e127b15a9e6d45ea789db74a35022dbceee348306",
+    "lib/router-plugins/builtin/src/thunderagent/request_classifier/mod.rs": "e71112316c1c3a97eb6aa229fc832a394405d7153d2047b3527b37954fe311f3",
+    "lib/router-plugins/builtin/src/thunderagent/request_classifier/scheduler.rs": "58ee3917bb33c8bd30160f12839c40efde6061bea54b7b1b741a13afcaa70128",
+    "lib/llm/src/protocols/agents.rs": "f05aa8ae65e6cda093e4fdccef3385eab600d3702a1a7c6a5d3d2fd01cec6b1e",
+    "lib/llm/src/protocols/common/extensions.rs": "77cc2ea171c3ada814774fd171859ccbac401f0a0a4015107f6d760e73e222a1"
+  },
+  "clippy": {
+    "command": [
+      "cargo",
+      "clippy",
+      "--locked",
+      "--no-deps",
+      "-p",
+      "dynamo-router-policies",
+      "--lib",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    "exit_code": 0,
+    "log": "docs/evidence/dynamo-control-clippy.log"
+  }
+}

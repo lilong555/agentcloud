@@ -1,0 +1,521 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "execution_kind": "live-coordinator-http",
+  "capabilities": {
+    "durable_requests": true,
+    "execution_backend": "local-process",
+    "execution_feedback": false,
+    "journal_backend": "fsync-json",
+    "protocol_version": 1,
+    "single_writer": true,
+    "streaming": false,
+    "tools": [
+      "file_read",
+      "file_write",
+      "shell"
+    ]
+  },
+  "mode": "external",
+  "run_id": "smoke-10e8c2c318da",
+  "model": "agentcloud-deterministic",
+  "actual_fidelity": "VOLUMES",
+  "assertions": [
+    "file_receipt_idempotency",
+    "closed_safe_point",
+    "retained_manifest",
+    "model_completion_while_suspended",
+    "new_epoch_claim",
+    "restored_file",
+    "cross_epoch_tool_receipt"
+  ],
+  "events": [
+    {
+      "method": "GET",
+      "path": "/v1/capabilities",
+      "duration_seconds": 0.004341433999798028,
+      "result": {
+        "durable_requests": true,
+        "execution_backend": "local-process",
+        "execution_feedback": false,
+        "journal_backend": "fsync-json",
+        "protocol_version": 1,
+        "single_writer": true,
+        "streaming": false,
+        "tools": [
+          "file_read",
+          "file_write",
+          "shell"
+        ]
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/v1/sessions",
+      "duration_seconds": 0.02140072499969392,
+      "result": {
+        "running_since": "2026-11-09T14:07:15.657528337Z",
+        "last_resumed_at": "0001-01-01T00:00:00Z",
+        "tenant_id": "tenant-a",
+        "workspace_id": "smoke-10e8c2c318da",
+        "session_id": "smoke-10e8c2c318da",
+        "mode": "external",
+        "state": "RUNNING",
+        "gate": "OPEN",
+        "epoch": 1,
+        "barrier_generation": 0,
+        "receipt_watermark": 0,
+        "next_receipt": 0,
+        "signal_sequence": 0,
+        "actor": {
+          "name": "smoke-10e8c2c318da",
+          "uid": "44be152b2404c284e8bfea6b9c414fbe",
+          "version": 1,
+          "actual_fidelity": "VOLUMES",
+          "boot_id": "53dde1b644be29f8bfd29c7e70b5f4c6"
+        },
+        "actor_uid": "44be152b2404c284e8bfea6b9c414fbe",
+        "backend": "local-process",
+        "actual_fidelity": "VOLUMES",
+        "active_tools": 0,
+        "tools": {},
+        "lifecycle": {},
+        "created_at": "2026-11-09T14:07:15.647586681Z",
+        "updated_at": "2026-11-09T14:07:15.657532124Z"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/v1/sessions/smoke-10e8c2c318da/tools",
+      "duration_seconds": 0.024141472998962854,
+      "result": {
+        "tool_op_id": "write",
+        "epoch": 1,
+        "status": "COMPLETED",
+        "payload_hash": "ed9141b9148d9ea595699df8e9c731eb4fc407a0919f442f2f577e43f4458653",
+        "receipt_seq": 1,
+        "result": {
+          "content": "AgentCloud durable workspace",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-09T14:07:45.669661567Z",
+        "started_at": "2026-11-09T14:07:15.669661517Z",
+        "finished_at": "2026-11-09T14:07:15.684417531Z"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/v1/sessions/smoke-10e8c2c318da/tools",
+      "duration_seconds": 0.0034431770000082906,
+      "result": {
+        "tool_op_id": "write",
+        "epoch": 1,
+        "status": "COMPLETED",
+        "payload_hash": "ed9141b9148d9ea595699df8e9c731eb4fc407a0919f442f2f577e43f4458653",
+        "receipt_seq": 1,
+        "result": {
+          "content": "AgentCloud durable workspace",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-09T14:07:45.669661567Z",
+        "started_at": "2026-11-09T14:07:15.669661517Z",
+        "finished_at": "2026-11-09T14:07:15.684417531Z"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/v1/sessions/smoke-10e8c2c318da/requests",
+      "duration_seconds": 0.013236845999927027,
+      "result": {
+        "logical_request_id": "smoke-10e8c2c318da-model",
+        "tenant_id": "tenant-a",
+        "session_id": "smoke-10e8c2c318da",
+        "payload_hash": "819826e5c462f77a2bc9a3c72e5626bd758fec444ca2d30ae0729cd1d7768372",
+        "payload": {
+          "max_tokens": 8,
+          "messages": [
+            {
+              "content": "x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x ",
+              "role": "user"
+            }
+          ],
+          "model": "agentcloud-deterministic",
+          "stream": false,
+          "temperature": 0
+        },
+        "status": "PENDING",
+        "created_at": "2026-11-09T14:07:15.69691383Z",
+        "updated_at": "2026-11-09T14:07:15.69691383Z"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/v1/sessions/smoke-10e8c2c318da/checkpoint",
+      "duration_seconds": 0.03403744299976097,
+      "result": {
+        "manifest_id": "d31e8d459305c7c59225498b38576ce7",
+        "state": "COMMITTED",
+        "epoch": 1,
+        "barrier_generation": 1,
+        "receipt_watermark": 1,
+        "actor_uid": "44be152b2404c284e8bfea6b9c414fbe",
+        "snapshot_uuid": "9a465b28aed10a848c7a5caebebcd60f",
+        "snapshot_generation": 1,
+        "workspace_digest": "04886c491c77b975d6ed091cf1ffc6b6d283b3e4ec06b165fa9dadcfe9b3770d",
+        "fidelity": "VOLUMES",
+        "checkpoint_id": "graph-smoke-10e8c2c318da",
+        "created_at": "2026-11-09T14:07:15.734404173Z"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/v1/sessions/smoke-10e8c2c318da/suspend",
+      "duration_seconds": 0.014798124000662938,
+      "result": {
+        "running_since": "2026-11-09T14:07:15.657528337Z",
+        "last_resumed_at": "0001-01-01T00:00:00Z",
+        "tenant_id": "tenant-a",
+        "workspace_id": "smoke-10e8c2c318da",
+        "session_id": "smoke-10e8c2c318da",
+        "mode": "external",
+        "state": "SUSPENDED",
+        "gate": "CLOSED",
+        "epoch": 1,
+        "barrier_generation": 1,
+        "receipt_watermark": 1,
+        "next_receipt": 1,
+        "signal_sequence": 0,
+        "actor": {
+          "name": "smoke-10e8c2c318da",
+          "uid": "44be152b2404c284e8bfea6b9c414fbe",
+          "version": 3,
+          "snapshot_uuid": "9a465b28aed10a848c7a5caebebcd60f",
+          "snapshot_generation": 1,
+          "actual_fidelity": "VOLUMES",
+          "boot_id": "53dde1b644be29f8bfd29c7e70b5f4c6"
+        },
+        "actor_uid": "44be152b2404c284e8bfea6b9c414fbe",
+        "backend": "local-process",
+        "actual_fidelity": "VOLUMES",
+        "active_tools": 0,
+        "tools": {
+          "write": {
+            "tool_op_id": "write",
+            "epoch": 1,
+            "status": "COMPLETED",
+            "payload_hash": "ed9141b9148d9ea595699df8e9c731eb4fc407a0919f442f2f577e43f4458653",
+            "receipt_seq": 1,
+            "result": {
+              "content": "AgentCloud durable workspace",
+              "exit_code": 0
+            },
+            "deadline": "2026-11-09T14:07:45.669661567Z",
+            "started_at": "2026-11-09T14:07:15.669661517Z",
+            "finished_at": "2026-11-09T14:07:15.684417531Z"
+          }
+        },
+        "lifecycle": {
+          "checkpoint": {
+            "operation_id": "checkpoint",
+            "action": "checkpoint",
+            "epoch": 1,
+            "payload_hash": "aa3355d7deaeb228c0ed473ec74ad7f575979d627306e0e64aafc191e78ff9c3",
+            "status": "COMPLETED",
+            "manifest": {
+              "manifest_id": "d31e8d459305c7c59225498b38576ce7",
+              "state": "COMMITTED",
+              "epoch": 1,
+              "barrier_generation": 1,
+              "receipt_watermark": 1,
+              "actor_uid": "44be152b2404c284e8bfea6b9c414fbe",
+              "snapshot_uuid": "9a465b28aed10a848c7a5caebebcd60f",
+              "snapshot_generation": 1,
+              "workspace_digest": "04886c491c77b975d6ed091cf1ffc6b6d283b3e4ec06b165fa9dadcfe9b3770d",
+              "fidelity": "VOLUMES",
+              "checkpoint_id": "graph-smoke-10e8c2c318da",
+              "created_at": "2026-11-09T14:07:15.734404173Z"
+            }
+          },
+          "suspend": {
+            "operation_id": "suspend",
+            "action": "suspend",
+            "epoch": 1,
+            "payload_hash": "a542346b57733f89ee70c58a554494a52d3b7db7aea5b76b44bed8b5df8eac49",
+            "status": "COMPLETED",
+            "manifest": {
+              "manifest_id": "d31e8d459305c7c59225498b38576ce7",
+              "state": "COMMITTED",
+              "epoch": 1,
+              "barrier_generation": 1,
+              "receipt_watermark": 1,
+              "actor_uid": "44be152b2404c284e8bfea6b9c414fbe",
+              "snapshot_uuid": "9a465b28aed10a848c7a5caebebcd60f",
+              "snapshot_generation": 1,
+              "workspace_digest": "04886c491c77b975d6ed091cf1ffc6b6d283b3e4ec06b165fa9dadcfe9b3770d",
+              "fidelity": "VOLUMES",
+              "checkpoint_id": "graph-smoke-10e8c2c318da",
+              "created_at": "2026-11-09T14:07:15.734404173Z"
+            }
+          }
+        },
+        "manifest": {
+          "manifest_id": "d31e8d459305c7c59225498b38576ce7",
+          "state": "COMMITTED",
+          "epoch": 1,
+          "barrier_generation": 1,
+          "receipt_watermark": 1,
+          "actor_uid": "44be152b2404c284e8bfea6b9c414fbe",
+          "snapshot_uuid": "9a465b28aed10a848c7a5caebebcd60f",
+          "snapshot_generation": 1,
+          "workspace_digest": "04886c491c77b975d6ed091cf1ffc6b6d283b3e4ec06b165fa9dadcfe9b3770d",
+          "fidelity": "VOLUMES",
+          "checkpoint_id": "graph-smoke-10e8c2c318da",
+          "created_at": "2026-11-09T14:07:15.734404173Z"
+        },
+        "created_at": "2026-11-09T14:07:15.647586681Z",
+        "updated_at": "2026-11-09T14:07:15.749690423Z"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/v1/sessions/smoke-10e8c2c318da/requests/smoke-10e8c2c318da-model",
+      "duration_seconds": 0.003457971999523579,
+      "result": {
+        "logical_request_id": "smoke-10e8c2c318da-model",
+        "tenant_id": "tenant-a",
+        "session_id": "smoke-10e8c2c318da",
+        "payload_hash": "819826e5c462f77a2bc9a3c72e5626bd758fec444ca2d30ae0729cd1d7768372",
+        "payload": {
+          "max_tokens": 8,
+          "messages": [
+            {
+              "content": "x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x ",
+              "role": "user"
+            }
+          ],
+          "model": "agentcloud-deterministic",
+          "stream": false,
+          "temperature": 0
+        },
+        "status": "COMPLETED",
+        "attempt_id": "ff8d05cdc325fb516e237fb8149e6b9d",
+        "result": {
+          "choices": [
+            {
+              "finish_reason": "stop",
+              "index": 0,
+              "message": {
+                "content": "x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x ",
+                "role": "assistant"
+              }
+            }
+          ],
+          "execution_kind": "deterministic-model",
+          "id": "ff8d05cdc325fb516e237fb8149e6b9d",
+          "model": "agentcloud-deterministic",
+          "object": "chat.completion"
+        },
+        "created_at": "2026-11-09T14:07:15.69691383Z",
+        "updated_at": "2026-11-09T14:07:15.719941791Z"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/v1/sessions/smoke-10e8c2c318da/resume",
+      "duration_seconds": 0.026716889000454103,
+      "result": {
+        "running_since": "2026-11-09T14:07:15.777868526Z",
+        "last_resumed_at": "2026-11-09T14:07:15.777868526Z",
+        "tenant_id": "tenant-a",
+        "workspace_id": "smoke-10e8c2c318da",
+        "session_id": "smoke-10e8c2c318da",
+        "mode": "external",
+        "state": "RUNNING",
+        "gate": "OPEN",
+        "epoch": 2,
+        "barrier_generation": 2,
+        "receipt_watermark": 1,
+        "next_receipt": 1,
+        "signal_sequence": 0,
+        "actor": {
+          "name": "smoke-10e8c2c318da",
+          "uid": "44be152b2404c284e8bfea6b9c414fbe",
+          "version": 4,
+          "snapshot_uuid": "9a465b28aed10a848c7a5caebebcd60f",
+          "snapshot_generation": 1,
+          "actual_fidelity": "VOLUMES",
+          "boot_id": "76213c345e2aff0072e86c073a80dd7e"
+        },
+        "actor_uid": "44be152b2404c284e8bfea6b9c414fbe",
+        "backend": "local-process",
+        "actual_fidelity": "VOLUMES",
+        "active_tools": 0,
+        "tools": {
+          "write": {
+            "tool_op_id": "write",
+            "epoch": 1,
+            "status": "COMPLETED",
+            "payload_hash": "ed9141b9148d9ea595699df8e9c731eb4fc407a0919f442f2f577e43f4458653",
+            "receipt_seq": 1,
+            "result": {
+              "content": "AgentCloud durable workspace",
+              "exit_code": 0
+            },
+            "deadline": "2026-11-09T14:07:45.669661567Z",
+            "started_at": "2026-11-09T14:07:15.669661517Z",
+            "finished_at": "2026-11-09T14:07:15.684417531Z"
+          }
+        },
+        "lifecycle": {
+          "checkpoint": {
+            "operation_id": "checkpoint",
+            "action": "checkpoint",
+            "epoch": 1,
+            "payload_hash": "aa3355d7deaeb228c0ed473ec74ad7f575979d627306e0e64aafc191e78ff9c3",
+            "status": "COMPLETED",
+            "manifest": {
+              "manifest_id": "d31e8d459305c7c59225498b38576ce7",
+              "state": "COMMITTED",
+              "epoch": 1,
+              "barrier_generation": 1,
+              "receipt_watermark": 1,
+              "actor_uid": "44be152b2404c284e8bfea6b9c414fbe",
+              "snapshot_uuid": "9a465b28aed10a848c7a5caebebcd60f",
+              "snapshot_generation": 1,
+              "workspace_digest": "04886c491c77b975d6ed091cf1ffc6b6d283b3e4ec06b165fa9dadcfe9b3770d",
+              "fidelity": "VOLUMES",
+              "checkpoint_id": "graph-smoke-10e8c2c318da",
+              "created_at": "2026-11-09T14:07:15.734404173Z"
+            }
+          },
+          "resume": {
+            "operation_id": "resume",
+            "action": "resume",
+            "epoch": 1,
+            "payload_hash": "09e394f142ddc2005773c6532c6f6c89d5cc51972871adea114728e1261e1d19",
+            "status": "COMPLETED"
+          },
+          "suspend": {
+            "operation_id": "suspend",
+            "action": "suspend",
+            "epoch": 1,
+            "payload_hash": "a542346b57733f89ee70c58a554494a52d3b7db7aea5b76b44bed8b5df8eac49",
+            "status": "COMPLETED",
+            "manifest": {
+              "manifest_id": "d31e8d459305c7c59225498b38576ce7",
+              "state": "COMMITTED",
+              "epoch": 1,
+              "barrier_generation": 1,
+              "receipt_watermark": 1,
+              "actor_uid": "44be152b2404c284e8bfea6b9c414fbe",
+              "snapshot_uuid": "9a465b28aed10a848c7a5caebebcd60f",
+              "snapshot_generation": 1,
+              "workspace_digest": "04886c491c77b975d6ed091cf1ffc6b6d283b3e4ec06b165fa9dadcfe9b3770d",
+              "fidelity": "VOLUMES",
+              "checkpoint_id": "graph-smoke-10e8c2c318da",
+              "created_at": "2026-11-09T14:07:15.734404173Z"
+            }
+          }
+        },
+        "manifest": {
+          "manifest_id": "d31e8d459305c7c59225498b38576ce7",
+          "state": "COMMITTED",
+          "epoch": 1,
+          "barrier_generation": 1,
+          "receipt_watermark": 1,
+          "actor_uid": "44be152b2404c284e8bfea6b9c414fbe",
+          "snapshot_uuid": "9a465b28aed10a848c7a5caebebcd60f",
+          "snapshot_generation": 1,
+          "workspace_digest": "04886c491c77b975d6ed091cf1ffc6b6d283b3e4ec06b165fa9dadcfe9b3770d",
+          "fidelity": "VOLUMES",
+          "checkpoint_id": "graph-smoke-10e8c2c318da",
+          "created_at": "2026-11-09T14:07:15.734404173Z"
+        },
+        "created_at": "2026-11-09T14:07:15.647586681Z",
+        "updated_at": "2026-11-09T14:07:15.777872574Z"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/v1/sessions/smoke-10e8c2c318da/requests/smoke-10e8c2c318da-model/claim",
+      "duration_seconds": 0.01241818400012562,
+      "result": {
+        "logical_request_id": "smoke-10e8c2c318da-model",
+        "tenant_id": "tenant-a",
+        "session_id": "smoke-10e8c2c318da",
+        "payload_hash": "819826e5c462f77a2bc9a3c72e5626bd758fec444ca2d30ae0729cd1d7768372",
+        "payload": {
+          "max_tokens": 8,
+          "messages": [
+            {
+              "content": "x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x ",
+              "role": "user"
+            }
+          ],
+          "model": "agentcloud-deterministic",
+          "stream": false,
+          "temperature": 0
+        },
+        "status": "COMPLETED",
+        "attempt_id": "ff8d05cdc325fb516e237fb8149e6b9d",
+        "result": {
+          "choices": [
+            {
+              "finish_reason": "stop",
+              "index": 0,
+              "message": {
+                "content": "x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x ",
+                "role": "assistant"
+              }
+            }
+          ],
+          "execution_kind": "deterministic-model",
+          "id": "ff8d05cdc325fb516e237fb8149e6b9d",
+          "model": "agentcloud-deterministic",
+          "object": "chat.completion"
+        },
+        "created_at": "2026-11-09T14:07:15.69691383Z",
+        "updated_at": "2026-11-09T14:07:15.719941791Z",
+        "claimed_epoch": 2
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/v1/sessions/smoke-10e8c2c318da/tools",
+      "duration_seconds": 0.01509116400120547,
+      "result": {
+        "tool_op_id": "read",
+        "epoch": 2,
+        "status": "COMPLETED",
+        "payload_hash": "30a5e42fb33240d2161a94256e3b0961ec4f9e0ebb37ec9a14fd1ccb7f38ace5",
+        "receipt_seq": 2,
+        "result": {
+          "content": "AgentCloud durable workspace",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-09T14:07:45.80189379Z",
+        "started_at": "2026-11-09T14:07:15.80189374Z",
+        "finished_at": "2026-11-09T14:07:15.807359889Z"
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/v1/sessions/smoke-10e8c2c318da/tools",
+      "duration_seconds": 0.0031029790006869007,
+      "result": {
+        "tool_op_id": "write",
+        "epoch": 1,
+        "status": "COMPLETED",
+        "payload_hash": "ed9141b9148d9ea595699df8e9c731eb4fc407a0919f442f2f577e43f4458653",
+        "receipt_seq": 1,
+        "result": {
+          "content": "AgentCloud durable workspace",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-09T14:07:45.669661567Z",
+        "started_at": "2026-11-09T14:07:15.669661517Z",
+        "finished_at": "2026-11-09T14:07:15.684417531Z"
+      }
+    }
+  ]
+}

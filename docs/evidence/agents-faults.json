@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-09T13:55:19.782934+00:00",
+  "execution_kind": "actual-http-go-postgresql-local-tools",
+  "success": true,
+  "cases": [
+    {
+      "case": "duplicate-tool-id",
+      "status": "PASS",
+      "receipt_seq": 1
+    },
+    {
+      "case": "payload-mismatch",
+      "status": "PASS",
+      "error_code": "payload_conflict",
+      "http_status": 409
+    },
+    {
+      "case": "cross-tenant-read",
+      "status": "PASS",
+      "error_code": "session_not_found",
+      "http_status": 404
+    },
+    {
+      "case": "stale-tool-epoch",
+      "status": "PASS",
+      "error_code": "stale_epoch",
+      "http_status": 409
+    },
+    {
+      "case": "path-escape",
+      "status": "PASS",
+      "error_code": "invalid_path",
+      "http_status": 400
+    },
+    {
+      "case": "parallel-tool-checkpoint-drain",
+      "status": "PASS",
+      "watermark": 2
+    },
+    {
+      "case": "upload-after-safe-point",
+      "status": "PASS",
+      "error_code": "admission_closed",
+      "http_status": 423
+    },
+    {
+      "case": "old-epoch-after-resume",
+      "status": "PASS",
+      "error_code": "stale_epoch",
+      "http_status": 409
+    },
+    {
+      "case": "files-survive-application-restore",
+      "status": "PASS",
+      "actual_fidelity": "VOLUMES"
+    },
+    {
+      "case": "logical-id-payload-mismatch",
+      "status": "PASS",
+      "error_code": "payload_conflict",
+      "http_status": 409
+    },
+    {
+      "case": "same-logical-id-result-claim",
+      "status": "PASS",
+      "attempt_id": "2ecf417020f433d89f87acc66cba5a45"
+    },
+    {
+      "case": "tool-timeout-unknown",
+      "status": "PASS",
+      "receipt": {
+        "tool_op_id": "timeout",
+        "epoch": 2,
+        "status": "OUTCOME_UNKNOWN",
+        "payload_hash": "547473c125b44e9c8b36fc6679073b2fd960472c0cacc9f2e677e1160fcac99a",
+        "receipt_seq": 4,
+        "result": {
+          "exit_code": -1
+        },
+        "error": "tool deadline or shutdown: context deadline exceeded",
+        "deadline": "2026-11-09T13:55:19.773236622Z",
+        "started_at": "2026-11-09T13:55:19.753236572Z",
+        "finished_at": "2026-11-09T13:55:19.778085516Z"
+      }
+    },
+    {
+      "case": "unknown-tool-not-replayed",
+      "status": "PASS",
+      "receipt_seq": 4
+    },
+    {
+      "case": "unknown-blocks-checkpoint",
+      "status": "PASS",
+      "error_code": "lifecycle_busy",
+      "http_status": 409
+    }
+  ],
+  "case_count": 14,
+  "base_url": "http://127.0.0.1:8090",
+  "session_id": "fault-faults-verified-03",
+  "components": {
+    "coordinator": "actual Go HTTP service",
+    "journal": "actual PostgreSQL",
+    "tools": "actual local process",
+    "model": "controlled mock backend"
+  },
+  "gpu_measurements": null
+}

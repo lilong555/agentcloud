@@ -1,0 +1,346 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-09T15:01:46.400021+00:00",
+  "execution": "real Kubernetes kind cluster with gVisor actors",
+  "context": "kind-agentcloud",
+  "dataplane": "agentgateway",
+  "runsc_platform": "ptrace",
+  "snapshot_upload_delay": "1s",
+  "kvm_available": false,
+  "source_commit": "94e0a26ac90151886a76410568aaac2664a54d90",
+  "runtime_image": "localhost:5001/agentcloud-tools@sha256:efaa10af3534217731757fc0a4bd75fbe1aa45e6b0f8db848249c7af68bf17ee",
+  "worker_image": "localhost:5001/agentcloud-worker@sha256:514db00bcd15f6248f7fed3504dd460940eb376c93807379ae56679fd0489e86",
+  "sandbox_config": {
+    "defaultVersion": "v7",
+    "sandboxClass": "gvisor",
+    "versions": [
+      {
+        "assets": {
+          "amd64": {
+            "gvisor": {
+              "sha256": "a1439ffbba7d212e0fde32ea79fa9bb51cbc4c5f6c16af1f047260290b861d42",
+              "url": "gs://gvisor/releases/release/20261102.0/x86_64/gvisor.tar.zstd"
+            }
+          },
+          "arm64": {
+            "gvisor": {
+              "sha256": "f702ae92ad7a0c4134be34ca23f52966dbb696db0c0f5b8ec439210ab2cd7c6a",
+              "url": "gs://gvisor/releases/release/20261102.0/aarch64/gvisor.tar.zstd"
+            }
+          }
+        },
+        "name": "v7",
+        "state": "Enabled"
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "name": "agentcloud-control-plane",
+      "node_info": {
+        "architecture": "amd64",
+        "bootID": "02bfb843-03f0-435b-bf78-2d5078ba66dc",
+        "containerRuntimeVersion": "containerd://2.3.4",
+        "kernelVersion": "6.18.54.1-microsoft-standard-WSL2",
+        "kubeProxyVersion": "",
+        "kubeletVersion": "v1.37.0",
+        "machineID": "8bf993b8e7f94dc4a672dbe50bb7ee7a",
+        "operatingSystem": "linux",
+        "osImage": "Debian GNU/Linux 13 (trixie)",
+        "runningInUserNamespace": false,
+        "swap": {
+          "capacity": 2147483648
+        },
+        "systemUUID": "8bf993b8e7f94dc4a672dbe50bb7ee7a"
+      },
+      "conditions": [
+        {
+          "lastHeartbeatTime": "2026-11-09T14:59:07Z",
+          "lastTransitionTime": "2026-11-09T13:42:08Z",
+          "message": "kubelet has sufficient memory available",
+          "reason": "KubeletHasSufficientMemory",
+          "status": "False",
+          "type": "MemoryPressure"
+        },
+        {
+          "lastHeartbeatTime": "2026-11-09T14:59:07Z",
+          "lastTransitionTime": "2026-11-09T13:42:08Z",
+          "message": "kubelet has no disk pressure",
+          "reason": "KubeletHasNoDiskPressure",
+          "status": "False",
+          "type": "DiskPressure"
+        },
+        {
+          "lastHeartbeatTime": "2026-11-09T14:59:07Z",
+          "lastTransitionTime": "2026-11-09T13:42:08Z",
+          "message": "kubelet has sufficient PID available",
+          "reason": "KubeletHasSufficientPID",
+          "status": "False",
+          "type": "PIDPressure"
+        },
+        {
+          "lastHeartbeatTime": "2026-11-09T14:59:07Z",
+          "lastTransitionTime": "2026-11-09T13:42:33Z",
+          "message": "kubelet is posting ready status",
+          "reason": "KubeletReady",
+          "status": "True",
+          "type": "Ready"
+        }
+      ]
+    }
+  ],
+  "pods": [
+    {
+      "namespace": "agentcloud",
+      "name": "agentcloud-7fc87f7886-2hgh5",
+      "uid": "6ae64fcf-c762-4387-8e68-66f8719ce23c",
+      "node": "agentcloud-control-plane",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "worker",
+          "ready": true,
+          "restartCount": 0,
+          "image": "sha256:33c99321ca2b2e7e528b0f0d003d5d7c92d312fa1889eb9f575991ca225f11b2",
+          "imageID": "localhost:5001/agentcloud-worker@sha256:514db00bcd15f6248f7fed3504dd460940eb376c93807379ae56679fd0489e86",
+          "containerID": "containerd://577f0ed778413f064becd5dafd5ec407588e42c4121495fda0fc0ee841dc2a9c"
+        }
+      ]
+    },
+    {
+      "namespace": "ate-system",
+      "name": "ate-api-server-747f69556b-469p2",
+      "uid": "7064e0cf-f227-4efb-92fa-cae296ba73cd",
+      "node": "agentcloud-control-plane",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "ate-api-server",
+          "ready": true,
+          "restartCount": 0,
+          "image": "sha256:21f9c329568d9a1510a129c13b34af45c2023c9ab92d37d53084be81a6eabbeb",
+          "imageID": "localhost:5001/ateapi@sha256:3f37451b6eb856fb1c0ae40a2759d84c632b3dc7c0c668fba99e7a0e1e7c6c47",
+          "containerID": "containerd://631b326b7099f592c4390423ec88527afd46b54edf89cbb7fb96971aa6c58854"
+        }
+      ]
+    },
+    {
+      "namespace": "ate-system",
+      "name": "ate-api-server-747f69556b-zbhlm",
+      "uid": "9ea60600-405e-4fae-9cf3-b2c686f5e53e",
+      "node": "agentcloud-control-plane",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "ate-api-server",
+          "ready": true,
+          "restartCount": 0,
+          "image": "sha256:21f9c329568d9a1510a129c13b34af45c2023c9ab92d37d53084be81a6eabbeb",
+          "imageID": "localhost:5001/ateapi@sha256:3f37451b6eb856fb1c0ae40a2759d84c632b3dc7c0c668fba99e7a0e1e7c6c47",
+          "containerID": "containerd://c764caef572ba2c4d008922ae4c1eaf7f8fc1ec2cd9d4c27db92cb1b2002b576"
+        }
+      ]
+    },
+    {
+      "namespace": "ate-system",
+      "name": "ate-controller-778fd5ff4b-zlrvv",
+      "uid": "94a35871-c461-40d4-bcdb-228d3e540db0",
+      "node": "agentcloud-control-plane",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "ate-controller",
+          "ready": true,
+          "restartCount": 0,
+          "image": "sha256:1f943d364b293fb5d600f7aed36679a46995485eff6c862f36ef761d942f5312",
+          "imageID": "localhost:5001/atecontroller@sha256:2fb49f63c436ab414bf78513cba0c07b24bcb9987d2ee04bc97917c6f5fbaf5e",
+          "containerID": "containerd://5464f6dfc7b9e28a508a6d3461c9f6849bf02919bd337448853ae1b9226fa6e8"
+        }
+      ]
+    },
+    {
+      "namespace": "ate-system",
+      "name": "ate-idp-server-756cb687c9-kv7bs",
+      "uid": "5b1513f1-68ea-4052-9255-33ddb3810aa8",
+      "node": "agentcloud-control-plane",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "ate-idp-server",
+          "ready": true,
+          "restartCount": 0,
+          "image": "sha256:374c09b72aa4275d123cd90438c89907196d64f40ed55a81f9d9e85402d14d77",
+          "imageID": "localhost:5001/ate-idp-server@sha256:fc666b25c26a26387f0e8836e28e5a5268124c189a09a51aba91984752c6c0e4",
+          "containerID": "containerd://51222dfe90481ef2ca2ad961106b3dfad2b465e8bb3bc2b235e26bf2cea70936"
+        }
+      ]
+    },
+    {
+      "namespace": "ate-system",
+      "name": "ate-idp-server-756cb687c9-xrmp6",
+      "uid": "1eb3e58d-e95f-4114-9849-8035036fd0a7",
+      "node": "agentcloud-control-plane",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "ate-idp-server",
+          "ready": true,
+          "restartCount": 0,
+          "image": "sha256:374c09b72aa4275d123cd90438c89907196d64f40ed55a81f9d9e85402d14d77",
+          "imageID": "localhost:5001/ate-idp-server@sha256:fc666b25c26a26387f0e8836e28e5a5268124c189a09a51aba91984752c6c0e4",
+          "containerID": "containerd://122f228e4799f633f4437c1b077e749d0e71ca5052dc72ba80007eb76c6f529c"
+        }
+      ]
+    },
+    {
+      "namespace": "ate-system",
+      "name": "atelet-bw9c8",
+      "uid": "11b774eb-4d87-4269-9cc4-56566d1e53e3",
+      "node": "agentcloud-control-plane",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "atelet",
+          "ready": true,
+          "restartCount": 0,
+          "image": "sha256:5f6b6409f5ebccf0d28ef5d3c909bc10816911d4f3a61f12093268e7f8e72ae1",
+          "imageID": "localhost:5001/atelet@sha256:5a49deb4741bb317c3e428d7300cd10b23c7f464cb625dc72804db13ea06653a",
+          "containerID": "containerd://c310fc775c9574c220d415a7dd6327434bf1f874a98be6a3c6efb20497bd0e55"
+        }
+      ]
+    },
+    {
+      "namespace": "ate-system",
+      "name": "atenet-egress-5b59495f6b-8wtz8",
+      "uid": "968d8040-0a6a-46ee-a157-f5282363e1ed",
+      "node": "agentcloud-control-plane",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "agentgateway",
+          "ready": true,
+          "restartCount": 0,
+          "image": "sha256:1d52eae857d13e142bb67a57010e1702110410e662e6dd9a85fe23d52dd4f188",
+          "imageID": "cr.agentgateway.dev/agentgateway@sha256:60216aafb03d37f94e952ff3d51d2f630a65b10ecaebdc0a864882f92610c45b",
+          "containerID": "containerd://daf14c726e1b4e648119c2921eda4460dd8d9d818880f008e8c382974945d904"
+        }
+      ]
+    },
+    {
+      "namespace": "ate-system",
+      "name": "atenet-router-7c5c864d47-dm8kr",
+      "uid": "72218880-030f-435c-973b-c164809ec849",
+      "node": "agentcloud-control-plane",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "agentgateway",
+          "ready": true,
+          "restartCount": 0,
+          "image": "sha256:1d52eae857d13e142bb67a57010e1702110410e662e6dd9a85fe23d52dd4f188",
+          "imageID": "cr.agentgateway.dev/agentgateway@sha256:60216aafb03d37f94e952ff3d51d2f630a65b10ecaebdc0a864882f92610c45b",
+          "containerID": "containerd://1a974dee81caaa710b828a8f05b88ac522a255177c1f5d994d5849f660265de4"
+        }
+      ]
+    },
+    {
+      "namespace": "ate-system",
+      "name": "postgres-0",
+      "uid": "d4a29756-04a3-4e25-83df-1760e599e139",
+      "node": "agentcloud-control-plane",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "postgres",
+          "ready": true,
+          "restartCount": 0,
+          "image": "sha256:bd1890816ae0b8ad4644f05728570d4be774e1f1490d7232f5084b52ea335183",
+          "imageID": "docker.io/library/postgres@sha256:9a8afca54e7861fd90fab5fdf4c42477a6b1cb7d293595148e674e0a3181de15",
+          "containerID": "containerd://71e89ecb27f776e4b80afd34d7cbf999293430f3fdab54516c4f1d3cf3d59464"
+        }
+      ]
+    },
+    {
+      "namespace": "ate-system",
+      "name": "rustfs-54c86945fb-wzf54",
+      "uid": "6412e1bf-72eb-4ca7-a25f-8b81744b0a6c",
+      "node": "agentcloud-control-plane",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "rustfs",
+          "ready": true,
+          "restartCount": 0,
+          "image": "sha256:cf1d7ba6108cd433dc8468d23b4361e644dc5424524481f5956bfd2dbc0f9b84",
+          "imageID": "docker.io/rustfs/rustfs@sha256:9ca9559533b537d10482fe923288b676ad08f92a7069d9a17327fbae3cab688b",
+          "containerID": "containerd://33324ea9ed4cdde0cc0724bee8da603842e6246705f0ce44abcf3826ac89c086"
+        }
+      ]
+    },
+    {
+      "namespace": "ate-system",
+      "name": "rustfs-bucket-init-dlfgf",
+      "uid": "f3e2ee1d-2538-46a3-8f2b-55dcf2c1dfab",
+      "node": "agentcloud-control-plane",
+      "phase": "Succeeded",
+      "containers": [
+        {
+          "name": "create-bucket",
+          "ready": false,
+          "restartCount": 0,
+          "image": "sha256:e84d8cf62bb8820751a8575e8d60a55735bb561e53db1f5d44e7c8ab1d147c6e",
+          "imageID": "docker.io/amazon/aws-cli@sha256:c8156a0e74e13929a42d7e60f0d4e14e7d28d980cd21822505d4bff80e5460c1",
+          "containerID": "containerd://625129f22bd2def27a686ab3e29a62adafcdddf4eeeb8eaa4c69232fef43dd28"
+        }
+      ]
+    },
+    {
+      "namespace": "podcertificate-controller-system",
+      "name": "podcertificate-controller-76c5cc88d7-mq6d2",
+      "uid": "8de26818-bf1e-4726-8d5e-2bc8dbc2e3a9",
+      "node": "agentcloud-control-plane",
+      "phase": "Running",
+      "containers": [
+        {
+          "name": "controller",
+          "ready": true,
+          "restartCount": 0,
+          "image": "sha256:28378bc311afe4ddec537f2171e9e6f7319b129a06f86ca7ae0c1d1a380ce0f1",
+          "imageID": "localhost:5001/podcertcontroller@sha256:c5a1f23dd6b8ffd21abeb0f01db183e992aae12cdc2bc53581f9de04cd203136",
+          "containerID": "containerd://4402f3ea0a6c62817cf7d47b02e4f039dbea53ee8970d9e0207495c59404080e"
+        }
+      ]
+    }
+  ],
+  "bucket_init": {
+    "completionTime": "2026-11-09T14:19:10Z",
+    "conditions": [
+      {
+        "lastProbeTime": "2026-11-09T14:19:10Z",
+        "lastTransitionTime": "2026-11-09T14:19:10Z",
+        "message": "Reached expected number of succeeded pods",
+        "reason": "CompletionsReached",
+        "status": "True",
+        "type": "SuccessCriteriaMet"
+      },
+      {
+        "lastProbeTime": "2026-11-09T14:19:10Z",
+        "lastTransitionTime": "2026-11-09T14:19:10Z",
+        "message": "Reached expected number of succeeded pods",
+        "reason": "CompletionsReached",
+        "status": "True",
+        "type": "Complete"
+      }
+    ],
+    "ready": 0,
+    "startTime": "2026-11-09T14:15:23Z",
+    "succeeded": 1,
+    "terminating": 0,
+    "uncountedTerminatedPods": {}
+  },
+  "client_tls": {
+    "api_server_name": "api.ate-system.svc",
+    "router_server_name": "atenet-router.ate-system.svc",
+    "client_authentication": "SPIFFE mTLS"
+  }
+}

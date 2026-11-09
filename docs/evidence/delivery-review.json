@@ -1,0 +1,211 @@
+{
+  "schema_version": 1,
+  "recorded_at": "2026-11-09T14:15:58.137146+00:00",
+  "execution_kind": "read-only-delivery-review",
+  "status": "passed_with_advisories",
+  "scope": [
+    "README/Makefile/CI/bootstrap",
+    "source overlay与全新稀疏checkout",
+    "公开候选文件大小与凭据模式",
+    "文档链接与上游许可证",
+    "模型边界成本协调路径"
+  ],
+  "source_modified": true,
+  "checks": [
+    {
+      "name": "source-tool-contracts",
+      "status": "passed",
+      "command": "python3 -B -m unittest discover -s tests/tooling -v",
+      "tests": 5
+    },
+    {
+      "name": "python-runtime-contracts",
+      "status": "passed",
+      "command": "python3 -B -m unittest discover -s tests/python -v",
+      "tests": 14,
+      "skipped": 1,
+      "skip_reason": "DeerFlow契约使用独立Python 3.12环境"
+    },
+    {
+      "name": "cost-scheduling-existing-race-tests",
+      "status": "passed",
+      "command": "GOMAXPROCS=2 go test -p 2 -race -count=1 ./internal/control -run 'TestModelBoundary|TestInterruptedBoundary'"
+    },
+    {
+      "name": "fresh-sparse-checkout-source-reproduction",
+      "status": "passed",
+      "network_used": false,
+      "repositories": [
+        {
+          "repository": "substrate",
+          "complete_files_verified": 10
+        },
+        {
+          "repository": "dynamo",
+          "complete_files_verified": 12
+        }
+      ]
+    },
+    {
+      "name": "public-candidate-scan",
+      "status": "passed",
+      "candidate_files": 609,
+      "total_bytes": 18594217,
+      "single_files_over_5_MiB": [],
+      "high_specificity_secret_patterns": [
+        "PEM/OpenSSH private keys",
+        "GitHub tokens",
+        "AWS access key IDs",
+        "Slack tokens"
+      ],
+      "secret_pattern_hits": []
+    },
+    {
+      "name": "local-markdown-links",
+      "status": "passed",
+      "broken_links": []
+    },
+    {
+      "name": "license-provenance",
+      "status": "passed",
+      "root_license": "Apache-2.0",
+      "notice": "NOTICE",
+      "upstream_licenses": [
+        "licenses/substrate-Apache-2.0.txt",
+        "licenses/dynamo-license.txt",
+        "licenses/deerflow-MIT.txt"
+      ],
+      "upstream_source_headers_preserved": true
+    },
+    {
+      "name": "bootstrap-dependency-chain",
+      "status": "reviewed",
+      "go_toolchain": "go1.27.3",
+      "official_archive_sha256_pinned": true,
+      "root_go_replace": "./upstream/substrate",
+      "source_fetch_precedes_build_in_README_and_CI": true
+    },
+    {
+      "name": "cost-scheduling-regression-after-fix",
+      "status": "passed",
+      "command": "GOMAXPROCS=2 go test -p 2 -race -count=1 ./internal/control -run 'TestModelBoundary|TestInterruptedBoundary'",
+      "exit_code": 0,
+      "elapsed_seconds": 4.185,
+      "new_top_level_tests": [
+        "TestModelBoundaryOperationIDRejectsPublicLifecycleReuse",
+        "TestModelBoundaryReservationFencesPublicLifecycleBeforeActuation",
+        "TestModelBoundaryConcurrentManualSuspendKeepsKnownOutcome"
+      ],
+      "concurrent_stress_attempts": 32
+    },
+    {
+      "name": "control-go-vet-after-fix",
+      "status": "passed",
+      "command": "GOMAXPROCS=2 go vet ./internal/control",
+      "exit_code": 0
+    }
+  ],
+  "findings": [
+    {
+      "id": "DELIVERY-COST-001",
+      "priority": "P1",
+      "blocking": false,
+      "title": "成本调度的生命周期预留存在并发抢占窗口",
+      "locations": [
+        {
+          "path": "internal/control/scheduling.go",
+          "line": 212
+        },
+        {
+          "path": "internal/control/scheduling.go",
+          "line": 228
+        },
+        {
+          "path": "internal/control/controller.go",
+          "line": 445
+        }
+      ],
+      "trigger": "同一RUNNING会话并发提交满足成本阈值的ModelBoundary(cost)和人工Lifecycle(manual suspend)。成本决策先持久化RUNNING并关闭Gate；人工生命周期在成本路径重新进入Lifecycle前抢先取得锁。",
+      "observed": "临时项目副本的-race定向测试在第2次迭代复现：code=lifecycle_busy session_state=SUSPENDED receipt_status=OUTCOME_UNKNOWN。",
+      "impact": "人工挂起成功后，成本操作永久返回scheduling_unknown。协调器重启时ReconcileScheduling将已挂起会话改成RECOVERY_REQUIRED/CLOSED，正常resume路径随后返回lifecycle_busy。",
+      "cause": "安全检查和工具准入关闭使用同一锁，但Lifecycle操作在释放该锁后才预留。公共Lifecycle只检查生命周期回执及会话状态，忽略RUNNING调度预留。成本路径将这个确定的前置拒绝标记为OUTCOME_UNKNOWN。",
+      "minimal_fix": "将成本调度和Lifecycle预留放入同一临界区，再执行共用生命周期执行函数；同时在公共Lifecycle中核验调度预留归属及payload，拒绝竞争操作。为并发人工suspend/checkpoint和同ID不同payload增加定向回归。",
+      "reproduction": {
+        "environment": "临时复制internal/和go.mod/go.sum，replace指向现有锁定Substrate；项目工作目录源码保持只读",
+        "command": "GOMAXPROCS=2 go test -p 2 -race -count=1 -v ./internal/control -run TestDeliveryReviewReservationRace",
+        "test_algorithm": "每轮创建独立LocalBackend会话；同步启动ModelBoundary(cost, epoch=1, expected_wait_ms=10000, worker_pressure=1, min_residence_ms=0)与Lifecycle(manual,suspend,epoch=1)，等待两者结束并检查scheduling cost回执；最多200轮。",
+        "stdout": "reservation overtaken: iteration=1 code=lifecycle_busy session_state=SUSPENDED receipt_status=OUTCOME_UNKNOWN"
+      },
+      "status": "resolved_and_verified",
+      "resolution": "公共Lifecycle核验调度预留归属；成本路径通过内部reservedBoundary入口继承唯一RUNNING预留。人工竞争及已完成操作ID复用均被拒绝。"
+    },
+    {
+      "id": "DELIVERY-COST-002",
+      "priority": "P2",
+      "blocking": false,
+      "title": "公共生命周期允许复用已经完成的调度操作ID",
+      "locations": [
+        {
+          "path": "internal/control/controller.go",
+          "line": 445
+        },
+        {
+          "path": "internal/control/scheduling.go",
+          "line": 164
+        }
+      ],
+      "trigger": "先以operation_id=shared调用ModelBoundary(expected_wait_ms=0)获得KEEP，再以同ID调用人工suspend。",
+      "observed": "临时副本测试返回 original=KEEP replay=KEEP actual_state=SUSPENDED；两个接口均接受同一操作ID。",
+      "impact": "同一会话同一operation_id同时关联不同动作和payload，调度方向已有的跨接口payload_conflict规则失去对称性，并扩大预留期间同ID抢占风险。",
+      "minimal_fix": "公共Lifecycle为调度操作ID执行同一归属与payload检查；成本路径内部调用通过私有入口明确继承预留。",
+      "status": "resolved_and_verified",
+      "resolution": "公共Lifecycle核验调度预留归属；成本路径通过内部reservedBoundary入口继承唯一RUNNING预留。人工竞争及已完成操作ID复用均被拒绝。"
+    },
+    {
+      "id": "DELIVERY-TOOLS-001",
+      "priority": "P2",
+      "blocking": false,
+      "title": "真实Dynamo构建入口缺少uv与Rust前置安装说明",
+      "locations": [
+        {
+          "path": "experiments/dynamo/build_cpu.py",
+          "line": 25
+        },
+        {
+          "path": "experiments/dynamo/README.md",
+          "line": 5
+        },
+        {
+          "path": "README.md",
+          "line": 7
+        }
+      ],
+      "trigger": "在仅具备README所列Linux/Python/Git/Make/C工具链的环境运行make native-build；uv与cargo尚未安装。",
+      "observed": "模拟缺少uv/cargo的全新工具目录后，build_cpu.main在创建venv时立即FileNotFoundError，missing_tool=uv。",
+      "impact": "主项目bootstrap只安装Go，真实Dynamo快速运行路径依赖开发者既有uv/rustup环境。",
+      "minimal_fix": "在Dynamo README提供uv、rustup以及锁定Rust 1.96.1的前置安装步骤，并在构建入口给出明确依赖检测。DeerFlow setup.sh同样需要uv。",
+      "status": "advisory"
+    }
+  ],
+  "parallel_work_followups": [
+    {
+      "path": "integrations/substrate/manifest.json",
+      "status": "root_confirmed_final_export_pending",
+      "observation": "当前活跃Substrate工作目录与10文件交付overlay存在差异；独立全新checkout中的overlay自身可完整还原。",
+      "required_final_check": "Substrate修改稳定后重新export并运行verify-delivery/evidence-audit。"
+    }
+  ],
+  "review_limits": [
+    "复核覆盖实际公开候选文件和指定成本路径。",
+    "全量上游构建与完整benchmark沿用已有证据。",
+    "STATUS和最终来源文档由root统一收尾。"
+  ],
+  "blocking_findings": 0,
+  "authorized_source_changes": [
+    {
+      "path": "internal/control/scheduling_test.go",
+      "scope": "root授权追加三个交付回归测试",
+      "sha256": "fea2c1f3849ff8828719b4bce3ea409d29eadd298825523548b36e56c0c52e7a"
+    }
+  ]
+}
