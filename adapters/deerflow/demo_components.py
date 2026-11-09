@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import shlex
 import urllib.request
+from typing import Literal
+import uuid
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import AIMessage,ToolMessage,SystemMessage
 import time
@@ -55,17 +57,21 @@ class ControlledResearchModel(BaseChatModel):
 
 
 @tool
-def fetch_research_source(source: str) -> str:
-    """抓取研究来源并在Actor持久保存引用文件。"""
+def fetch_research_source(source: Literal['a','b']) -> str:
+    """抓取来源 a（卷恢复接口）或 b（内存恢复接口），返回文档、真实引用文件路径和哈希。"""
     if not STATE.get('deep_agents'):
         return _fetch_research_source(source)
     identity='research-fetch-'+source
     token=TOOL_LOGICAL_ID.set(identity);subtoken=TOOL_SUBOP.set(0)
-    STATE['tool_events'].append(dict(event='tool_start',axis='native_subagent',tool_op_id=identity))
+    attempt=uuid.uuid4().hex
+    STATE['tool_events'].append(dict(event='tool_start',axis='native_subagent',tool_op_id=identity,attempt_id=attempt))
     try:
         output=_fetch_research_source(source)
-        STATE['tool_events'].append(dict(event='tool_completed',axis='native_subagent',tool_op_id=identity,tool_name='fetch_research_source',output=output))
+        STATE['tool_events'].append(dict(event='tool_completed',axis='native_subagent',tool_op_id=identity,attempt_id=attempt,tool_name='fetch_research_source',output=output))
         return output
+    except BaseException as error:
+        STATE['tool_events'].append(dict(event='tool_failed',axis='native_subagent',tool_op_id=identity,attempt_id=attempt,error_type=type(error).__name__))
+        raise
     finally:
         TOOL_SUBOP.reset(subtoken);TOOL_LOGICAL_ID.reset(token)
 

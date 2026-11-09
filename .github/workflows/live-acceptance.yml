@@ -1,0 +1,129 @@
+name: Live fault and break-even acceptance
+on:
+  workflow_dispatch:
+    inputs:
+      native_run_id:
+        description: 'Run containing a passed native-validation-evidence artifact and CPU wheel'
+        type: string
+        required: true
+      suite:
+        type: choice
+        options: [all, faults, heatmap]
+        default: all
+      max_parallel:
+        type: number
+        default: 4
+permissions:
+  contents: read
+  actions: read
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: plan
+        env:
+          SUITE: ${{ inputs.suite }}
+        run: |
+          python3 - <<'PY'
+          import itertools,json,os,runpy
+          cases=runpy.run_path('tests/faults/live.py')['CASES']
+          matrix=[]
+          if os.environ['SUITE'] in ('all','faults'):
+              matrix += [dict(suite='faults',name='faults-'+str(i),cases=','.join(cases[i::4]),heap=0,seed=7101) for i in range(4)]
+          if os.environ['SUITE'] in ('all','heatmap'):
+              matrix += [dict(suite='heatmap',name=f'heatmap-{heap}-{seed}',cases='',heap=heap,seed=seed) for heap,seed in itertools.product([16,64,128],[7101,7102,7103])]
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('matrix='+json.dumps({'include':matrix})+'\n')
+          PY
+  acceptance:
+    needs: plan
+    strategy:
+      fail-fast: false
+      max-parallel: ${{ inputs.max_parallel }}
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: agentcloud
+          POSTGRES_PASSWORD: agentcloud-ci
+          POSTGRES_DB: agentcloud_substrate
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U agentcloud -d agentcloud_substrate" --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGUSER: agentcloud
+      PGPASSWORD: agentcloud-ci
+      AGENTCLOUD_DATABASE_URL: postgresql://agentcloud:agentcloud-ci@127.0.0.1:5432/agentcloud_substrate?sslmode=disable
+      AGENTCLOUD_TEST_PG_ADMIN: postgresql://agentcloud:agentcloud-ci@127.0.0.1:5432/agentcloud_substrate?sslmode=disable
+      GOMAXPROCS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v7
+      - name: Restore locked sources
+        run: python3 scripts/upstream.py --fetch substrate dynamo
+      - name: Prepare Kind, gVisor, storage and WorkerPool
+        run: bash scripts/ci_live_prepare.sh
+      - name: Await native artifact publication
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NATIVE_RUN: ${{ inputs.native_run_id }}
+        run: gh run watch "$NATIVE_RUN" --interval 30
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-cpu-wheel
+          path: artifacts/native-wheels
+          run-id: ${{ inputs.native_run_id }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-validation-evidence
+          path: artifacts/native-proof
+          run-id: ${{ inputs.native_run_id }}
+          github-token: ${{ github.token }}
+      - name: Verify native provenance and install locked dependencies
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          root=pathlib.Path('.')
+          report=json.loads((root/'artifacts/native-proof/upstream-patches-native-tests.json').read_text())
+          assert report['status']=='passed','native test map must pass'
+          for repository in ('substrate','dynamo'):
+              expected={row['path']:row['sha256'] for row in json.loads((root/f'integrations/{repository}/manifest.json').read_text())['files']}
+              observed={row['path']:row['sha256'] for row in report['files'] if row['repository']==repository and row['status']=='passed'}
+              assert expected==observed,'native source digests differ'
+          PY
+          uv venv --python 3.12 .venv-dynamo
+          uv pip install --python .venv-dynamo/bin/python -r experiments/dynamo/requirements-cpu.lock artifacts/native-wheels/*.whl
+          "$HOME/.local/share/agentcloud/go/bin/go" build -p 2 -o artifacts/substrate/fault-probe ./tests/faults/probe
+      - name: Inject and reconcile real fault windows
+        if: matrix.suite == 'faults'
+        run: python3 tests/faults/live.py --cases '${{ matrix.cases }}'
+      - name: Measure wait and touched-memory break-even points
+        if: matrix.suite == 'heatmap'
+        run: python3 -m bench.heatmap --heap-mib '${{ matrix.heap }}' --seed '${{ matrix.seed }}'
+      - name: Collect runtime evidence
+        if: always()
+        run: python3 scripts/ci_live_collect.py
+      - name: Release owned resources
+        if: always()
+        run: python3 scripts/ci_live_cleanup.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-acceptance-${{ matrix.name }}
+          path: |
+            docs/evidence/faults/
+            docs/evidence/heatmap/
+            docs/evidence/ci-live-runtime.json
+            docs/evidence/ci-live-cleanup.json
+            docs/evidence/ci-live-logs/
+          retention-days: 30

@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 def inspect_links(value, errors: list[str], label: str) -> None:
     if isinstance(value, dict):
         for key, entry in value.items():
-            if key in {"stdout", "stderr", "stdout_path", "stderr_path", "log_path"} and isinstance(entry, str) and entry.startswith("docs/evidence/"):
+            if key in {"stdout", "stderr", "stdout_path", "stderr_path", "log_path", "evidence"} and isinstance(entry, str) and entry.startswith("docs/evidence/"):
                 path = (ROOT / entry).resolve()
                 if not path.is_relative_to(ROOT) or not path.is_file():
                     errors.append(f"{label}: 缺少日志 {entry}")
@@ -27,8 +27,8 @@ def main() -> int:
     errors = []
     directory = ROOT / "docs/evidence"
     lock = json.loads((directory / "upstream-lock.json").read_text())
-    for name in sorted(p.name for p in directory.glob("*.json")):
-        path = directory / name
+    for path in sorted(directory.rglob("*.json")):
+        name = str(path.relative_to(directory))
         if not path.is_file():
             errors.append(f"缺少报告 {name}")
             continue

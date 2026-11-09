@@ -64,7 +64,7 @@ def run_model_agent(runtime,run_id):
                     registration_status=registered['status'],model_payload_sha256=hashlib.sha256(json.dumps(payload,sort_keys=True).encode()).hexdigest(),
                     repository_before=context.state())
             if state['status']=='WAITING_MODEL':
-                if epoch<=state['wait_epoch'] or session['state']!='RUNNING':
+                if session['state']!='RUNNING' or (state.get('require_memory_resume',False) and epoch<=state['wait_epoch']):
                     time.sleep(.03);continue
                 pending=runtime.client.get_request(sid,state['logical_request_id'])
                 if pending['status']=='OUTCOME_UNKNOWN': raise RuntimeError('模型请求结果未知，保留原请求等待对账')

@@ -6,6 +6,36 @@ from runtime.coding.repository import FILES, RepositoryContext
 
 
 class CodingRepositoryTests(unittest.TestCase):
+    def test_model_keep_decision_continues_without_epoch_change(self):
+        import json,time
+        from unittest.mock import patch
+        from runtime.in_actor import ActorAgentRuntime
+        from runtime.tools_server import ToolRuntime
+        class KeptCoordinator:
+            def __init__(self,tools): self.tools=tools;self.payloads={}
+            def session(self,sid): return dict(epoch=1,state='RUNNING')
+            def tool(self,sid,epoch,op,kind,**args): return self.tools.execute(dict(epoch=epoch,tool_op_id=op,kind=kind,**args))
+            def request(self,sid,identity,payload): self.payloads[identity]=payload;return {'status':'PENDING'}
+            def get_request(self,sid,identity): return {'status':'COMPLETED'}
+            def claim(self,sid,identity,epoch):
+                message=dict(role='assistant',content='completed')
+                if not any(m['role']=='tool' for m in self.payloads[identity]['messages']):
+                    message['tool_calls']=[dict(id='source-edit',type='function',function=dict(name='write_file',arguments=json.dumps(dict(path='answer.py',content='value = 2\n'))))]
+                return dict(result=dict(choices=[dict(message=message)]))
+        with tempfile.TemporaryDirectory() as directory:
+            tools=ToolRuntime(directory);tools.attach({'epoch':1})
+            with patch('runtime.in_actor.Client',return_value=KeptCoordinator(tools)):
+                agent=ActorAgentRuntime(tools,'http://fixture','token')
+            agent.start(dict(run_id='kept',trajectory_id='kept',session_id='kept',agent_kind='model-tools',model_name='fixture',
+                repository={'answer.py':'value = 1\n'},test_command='python3 -B -c "import answer; assert answer.value == 2"'))
+            agent.threads['kept'].join(timeout=10)
+            state=agent.read('kept')
+            self.assertEqual(state['status'],'COMPLETED',state.get('reason'))
+            self.assertEqual(state['epoch'],1)
+            self.assertEqual(state['modified_files'],['answer.py'])
+            self.assertEqual(state['autonomous_model_turns'],2)
+            tools.db.close()
+
     def test_real_multifile_failure_ast_repair_and_four_tests(self):
         with tempfile.TemporaryDirectory() as directory:
             for name,content in FILES.items():
@@ -99,7 +129,7 @@ class CodingRepositoryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             tools=ToolRuntime(directory);tools.attach({'epoch':1});coordinator=ToolCallingModel(tools)
             with patch('runtime.in_actor.Client',return_value=coordinator): agent=ActorAgentRuntime(tools,'http://fixture','token')
-            agent.start(dict(run_id='model-loop',trajectory_id='fixture',session_id='model-loop',agent_kind='model-tools',model_name='tool-fixture'))
+            agent.start(dict(run_id='model-loop',trajectory_id='fixture',session_id='model-loop',agent_kind='model-tools',model_name='tool-fixture',require_memory_resume=True))
             seen=set();until=time.monotonic()+60
             while time.monotonic()<until:
                 state=agent.read('model-loop')

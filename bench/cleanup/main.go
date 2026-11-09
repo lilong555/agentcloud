@@ -36,8 +36,8 @@ func run() error {
 		return err
 	}
 	for _, item := range objects {
-		if item.Name == "" || item.UID == "" || strings.ContainsAny(item.Name, "/\\") || (item.Kind != "actor" && item.Kind != "tag") {
-			return fmt.Errorf("every object requires an exact name, UID and actor/tag kind")
+		if item.Name == "" || item.UID == "" || strings.ContainsAny(item.Name, "/\\") || (item.Kind != "actor" && item.Kind != "tag" && item.Kind != "template") {
+			return fmt.Errorf("every object requires an exact name, UID and actor/tag/template kind")
 		}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -53,8 +53,10 @@ func run() error {
 		options := &ateapi.DeleteOptions{Uid: item.UID}
 		if item.Kind == "actor" {
 			_, err = client.Control().DeleteActor(ctx, &ateapi.DeleteActorRequest{Actor: ref, Options: options})
-		} else {
+		} else if item.Kind == "tag" {
 			_, err = client.Control().DeleteTag(ctx, &ateapi.DeleteTagRequest{Tag: ref, Options: options})
+		} else {
+			_, err = client.Control().DeleteActorTemplate(ctx, &ateapi.DeleteActorTemplateRequest{ActorTemplate: ref, Options: options})
 		}
 		if err != nil && status.Code(err) != codes.NotFound {
 			return err

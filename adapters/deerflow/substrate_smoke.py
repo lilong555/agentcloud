@@ -39,7 +39,9 @@ from runtime.client import Client
 class ResearchBoundary(AgentMiddleware):
     def before_model(self,state,runtime):
         tools=[message for message in state['messages'] if isinstance(message,ToolMessage)]
-        if ((demo_components.STATE.get('deep_agents') and sum(message.name=='task' for message in tools)>=2 and any(message.name=='upload_research_file' for message in tools)) or sum(message.name=='fetch_research_source' for message in tools)==2) and not any(message.name=='write_research_report' for message in tools):
+        fetched={event.get('tool_op_id') for event in demo_components.STATE.get('tool_events',[]) if event['event']=='tool_completed' and event.get('tool_name')=='fetch_research_source'}
+        sources_ready={'research-fetch-a','research-fetch-b'}<=fetched
+        if ((demo_components.STATE.get('deep_agents') and sources_ready and sum(message.name=='task' for message in tools)>=2 and any(message.name=='upload_research_file' for message in tools)) or sum(message.name=='fetch_research_source' for message in tools)==2) and not any(message.name=='write_research_report' for message in tools):
             acknowledgement=interrupt(dict(kind='research-sources-applied',tool_call_ids=[message.tool_call_id for message in tools]))
             assert acknowledgement.get('manifest_verified') is True
         return None
@@ -56,7 +58,7 @@ def configure(provider,state):
     if state.get('deep_agents'):
         from deerflow.config.subagents_config import CustomSubagentConfig
         config.subagents.custom_agents={
-            'source-'+source:CustomSubagentConfig(description='研究来源 '+source,system_prompt='RESEARCH_SOURCE_'+source.upper()+' 抓取来源并直接返回原始工具JSON。',tools=['fetch_research_source'],skills=[]) for source in ('a','b')}
+            'source-'+source:CustomSubagentConfig(description='研究来源 '+source,system_prompt='RESEARCH_SOURCE_'+source.upper()+' 调用 fetch_research_source，source 参数设为 "'+source+'"。直接完整返回原始工具JSON。',tools=['fetch_research_source'],skills=[]) for source in ('a','b')}
         config.subagent_runtime.max_running=2
     config.title.enabled=False;config.memory.enabled=False;config.summarization.enabled=False
     config.skills.path=str(Path('adapters/deerflow/empty-skills').resolve())
@@ -83,13 +85,13 @@ def actor_outputs(events):
 def global_safety(events):
     active=set();tasks=set();max_tools=0;max_tasks=0
     for event in events:
-        identity=event.get('tool_op_id')
+        identity=event.get('attempt_id') or event.get('tool_op_id')
         if event['event']=='tool_start':
             active.add(identity)
             if event.get('tool_name')=='task':
                 tasks.add(identity)
             max_tools=max(max_tools,len(active));max_tasks=max(max_tasks,len(tasks))
-        elif event['event']=='tool_completed':
+        elif event['event'] in ('tool_completed','tool_failed'):
             active.discard(identity);tasks.discard(identity)
     assert not active,'全局安全点等待全部工具和上传完成'
     return dict(active_subagents=len(tasks),active_tools=len(active),max_concurrent_tool_calls=max_tools,max_concurrent_subagents=max_tasks)
@@ -180,6 +182,10 @@ def execute(args):
         assert answer==''
         frozen=client._agent.get_state({'configurable':{'thread_id':thread_id}})
         applied=messages(frozen)
+        (root/'boundary-diagnostic.json').write_text(json.dumps(dict(answer=answer,next=list(frozen.next),
+            messages=[dict(type=message.type,name=getattr(message,'name',None),content=message.content,
+                tool_calls=getattr(message,'tool_calls',None)) for message in frozen.values.get('messages',[])],
+            events=extension.events),ensure_ascii=False,indent=2)+'\n')
         assert len(applied)>=(3 if args.deep_agents else 2) and frozen.next
         assert any(task.interrupts for task in frozen.tasks)
         checkpoint_id=frozen.config['configurable']['checkpoint_id']

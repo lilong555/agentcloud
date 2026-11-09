@@ -84,7 +84,10 @@ class ActorAgentRuntime:
             origin_boot_id=self.boot_id,events=[],agent_kind=body.get('agent_kind','controlled'),
             task=body.get('task','修复折扣计算与购物车汇总错误，覆盖小数舍入与多件商品，保留现有4项测试。'),
             model_name=body.get('model_name'),max_turns=int(body.get('max_turns',24)),
+            require_memory_resume=body.get('require_memory_resume',False),
             repository=body.get('repository'),test_command=body.get('test_command','python3 -B -m unittest discover -s tests -v'))
+        if not isinstance(state['require_memory_resume'],bool):
+            raise ValueError('require_memory_resume需要布尔值')
         if not self.save(state):
             raise ValueError('Actor工具准入当前关闭，请完成attach后启动Agent')
         self.launch(body['run_id'])

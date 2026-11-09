@@ -14,6 +14,23 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def run_logged(command,cwd,env,path):
+    started=time.monotonic()
+    with path.open('w') as output:
+        process=subprocess.Popen(command,cwd=cwd,env=env,stdout=output,stderr=subprocess.STDOUT)
+        while True:
+            try:
+                code=process.wait(timeout=30)
+                if code: raise subprocess.CalledProcessError(code,command)
+                return
+            except subprocess.TimeoutExpired:
+                with path.open('rb') as tail:
+                    tail.seek(max(0,path.stat().st_size-2048))
+                    lines=tail.read().decode(errors='replace').splitlines()
+                print(json.dumps(dict(stage=path.name,elapsed_seconds=round(time.monotonic()-started),
+                    progress=lines[-1][-200:] if lines else 'waiting for native output')),flush=True)
+
+
 def summarize_logs() -> dict:
     results = []
     tests = set()
@@ -80,17 +97,15 @@ def main() -> None:
             names = sorted({test["test"] for row in mapping["files"] for test in row["tests"]})
             command = [args.go, "test", "-p", "1", "-count=3", "-shuffle=on", "-json", *["./" + name for name in packages], "-run", "^(" + "|".join(names) + ")$"]
             env = dict(os.environ, GOMAXPROCS="2", GOTOOLCHAIN="local", SUBSTRATE_TEST_DATABASE_URL=args.database_url)
-            with (ROOT / "docs/evidence/upstream-patches-substrate-native.jsonl").open("w") as output:
-                subprocess.run(command, cwd=ROOT / "upstream/substrate", env=env, stdout=output, stderr=subprocess.STDOUT, check=True)
+            run_logged(command,ROOT / "upstream/substrate",env,ROOT / "docs/evidence/upstream-patches-substrate-native.jsonl")
         if args.repository in ("dynamo", "all"):
-            env = dict(os.environ, CARGO_BUILD_JOBS="1", CARGO_PROFILE_DEV_DEBUG="0", CARGO_PROFILE_TEST_DEBUG="0", CARGO_INCREMENTAL="0")
+            env = dict(os.environ, CARGO_BUILD_JOBS=os.getenv("CARGO_BUILD_JOBS", "1"), CARGO_PROFILE_DEV_DEBUG="0", CARGO_PROFILE_TEST_DEBUG="0", CARGO_INCREMENTAL="0")
             for package, filter_name, filename in [("dynamo-router-policies", "thunderagent", "dynamo"), ("dynamo-llm", "protocols::", "dynamo-llm")]:
                 command = [args.cargo, "test", "--locked", "-p", package]
                 if package == "dynamo-llm":
                     command.append("--no-default-features")
                 command.extend([filter_name, "--lib", "--", "--nocapture"])
-                with (ROOT / f"docs/evidence/upstream-patches-{filename}-native.log").open("w") as output:
-                    subprocess.run(command, cwd=ROOT / "upstream/dynamo", env=env, stdout=output, stderr=subprocess.STDOUT, check=True)
+                run_logged(command,ROOT / "upstream/dynamo",env,ROOT / f"docs/evidence/upstream-patches-{filename}-native.log")
         subprocess.run(["python3", str(ROOT / "scripts/disk_guard.py")], check=True)
     report = summarize_logs()
     print(json.dumps({key: report[key] for key in ("status", "files_mapped", "native_tests_observed", "missing")}, ensure_ascii=False))

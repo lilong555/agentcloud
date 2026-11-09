@@ -36,7 +36,7 @@ def main() -> int:
         ("vet", [args.go, "vet", "./..."]),
         ("tooling-tests", [sys.executable, "-m", "unittest", "discover", "-s", "tests/tooling", "-v"]),
         ("runtime-tests", [sys.executable, "-m", "unittest", "discover", "-s", "tests/python", "-v"]),
-        ("python-syntax", [sys.executable, "-m", "compileall", "-q", "-x", "[/\\\\](\\.venv|__pycache__)[/\\\\]", "scripts", "experiments", "runtime", "adapters", "bench"]),
+        ("python-syntax", [sys.executable, "-m", "compileall", "-q", "-x", "[/\\\\](\\.venv|__pycache__)[/\\\\]", "scripts", "experiments", "runtime", "adapters", "bench", "tests/faults"]),
         ("replay", [args.go, "run", "./cmd/agentcloud", "replay", "--input", "fixtures/signals/demo.jsonl", "--output", "artifacts/replay-demo.json"]),
     ]
     records = []

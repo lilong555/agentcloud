@@ -39,7 +39,7 @@ def main():
     if hashlib.sha256(protoc.read_bytes()).hexdigest()!=PROTOC_SHA:raise RuntimeError('protoc binary SHA256 mismatch')
     if not VENV.exists():subprocess.run([uv,'venv','--python','3.12',str(VENV)],check=True)
     subprocess.run([uv,'pip','install','--python',str(VENV/'bin/python'),'-r',str(ROOT/'experiments/dynamo/requirements-cpu.lock')],check=True)
-    env=os.environ.copy();env.update(VIRTUAL_ENV=str(VENV),PATH=os.pathsep.join([str(VENV/'bin'),str(Path(cargo).parent),str(Path(uv).parent),env.get('PATH','')]),PROTOC=str(protoc),CARGO_TARGET_DIR=str(UPSTREAM/'target'),CARGO_BUILD_JOBS='2',CARGO_PROFILE_DEV_DEBUG='0',CARGO_INCREMENTAL='0')
+    env=os.environ.copy();env.update(VIRTUAL_ENV=str(VENV),PATH=os.pathsep.join([str(VENV/'bin'),str(Path(cargo).parent),str(Path(uv).parent),env.get('PATH','')]),PROTOC=str(protoc),CARGO_TARGET_DIR=str(UPSTREAM/'target'),CARGO_BUILD_JOBS=os.getenv('CARGO_BUILD_JOBS','2'),CARGO_PROFILE_DEV_DEBUG='0',CARGO_INCREMENTAL='0')
     command=[str(VENV/'bin/maturin'),'develop','--locked','--manifest-path','lib/bindings/python/Cargo.toml','--no-default-features','--features','custom-policy','--uv']
     stamp=dt.datetime.now(dt.timezone.utc).strftime('%Y%m%dT%H%M%S%fZ');logdir=ROOT/'docs/evidence/logs'/('dynamo-cpu-build-'+stamp);logdir.mkdir(parents=True,exist_ok=True)
     start=time.monotonic()

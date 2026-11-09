@@ -1,4 +1,4 @@
-From 7fa669a0498249ba14bccbbd10ef13b38d70f9fa Mon Sep 17 00:00:00 2001
+From 73fc1e83c787e5386616db2caee7f16d271b7c50 Mon Sep 17 00:00:00 2001
 From: lilong555 <173714821+lilong555@users.noreply.github.com>
 Date: Tue, 10 Nov 2026 00:00:00 +0000
 Subject: [PATCH 1/2] Accept authenticated execution feedback and retire final
@@ -85,7 +85,7 @@ index 8c7a2ceb6cb7a03498e7b11f7367c8db0bccd2cc..b290a8ada702fe62f01b67002880bf0d
      fn captures_open_families_and_repeated_values_verbatim() {
          let mut headers = HeaderMap::new();
 diff --git a/lib/llm/src/protocols/common/extensions.rs b/lib/llm/src/protocols/common/extensions.rs
-index 28a7048ba1450dd89a30637ee28d6974268691ae..43097f2220eb519abe1b3a2c7a5c5afdf97520ed 100644
+index 28a7048ba1450dd89a30637ee28d6974268691ae..6ccdc888b1f072241b62d279348df5f6f70a7f99 100644
 --- a/lib/llm/src/protocols/common/extensions.rs
 +++ b/lib/llm/src/protocols/common/extensions.rs
 @@ -85,7 +85,11 @@ pub struct AgentContext {
@@ -121,13 +121,17 @@ index 28a7048ba1450dd89a30637ee28d6974268691ae..43097f2220eb519abe1b3a2c7a5c5afd
  /// Hints from the agent/caller about request characteristics.
  #[derive(Serialize, Deserialize, Builder, Debug, Clone, Default, PartialEq)]
  #[serde(deny_unknown_fields)]
-@@ -977,6 +994,40 @@ mod tests {
+@@ -977,6 +994,43 @@ mod tests {
          }
      }
  
 +    #[test]
 +    fn agent_context_serialization_preserves_public_headers_and_redacts_inference_lease() {
 +        let context = AgentContext {
++            session_id: "redaction-test".into(),
++            parent_session_id: None,
++            session_final: None,
++            input_trigger: None,
 +            agent_headers: Arc::new(BTreeMap::from([
 +                (
 +                    "x-agentcloud-inference-lease".into(),
@@ -139,7 +143,6 @@ index 28a7048ba1450dd89a30637ee28d6974268691ae..43097f2220eb519abe1b3a2c7a5c5afd
 +                    vec!["first".into(), "second".into()],
 +                ),
 +            ])),
-+            ..Default::default()
 +        };
 +        let encoded = serde_json::to_value(&context).unwrap();
 +        assert!(

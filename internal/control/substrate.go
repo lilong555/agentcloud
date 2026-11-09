@@ -228,6 +228,9 @@ func (b *SubstrateBackend) Checkpoint(ctx context.Context, s *Session, operation
 	if err != nil {
 		return Actor{}, "", err
 	}
+	if current.SnapshotFidelity != "MEMORY" && (s.Mode == "in-actor" || current.SnapshotFidelity != "VOLUMES") {
+		return Actor{}, "", errors.New("snapshot fidelity does not satisfy session mode")
+	}
 	tag := "ac-snapshot-" + payloadHash([]string{s.TenantID, s.SessionID, operation})[:24]
 	retained, err := b.cfg.Client.RetainSnapshot(ctx, current.Name, current.UID, current.SnapshotUUID, current.SnapshotGeneration, tag)
 	if err != nil {
@@ -240,9 +243,6 @@ func (b *SubstrateBackend) Checkpoint(ctx context.Context, s *Session, operation
 	actor.BootID = s.Actor.BootID
 	actor.AssignedWorker = s.Actor.AssignedWorker
 	actor.AssignedMemoryBytes = s.Actor.AssignedMemoryBytes
-	if s.Mode == "in-actor" && actor.SnapshotFidelity != "MEMORY" {
-		return Actor{}, "", errors.New("in-actor safe points require MEMORY snapshots")
-	}
 	return actor, "", nil
 }
 func (b *SubstrateBackend) Suspend(ctx context.Context, s *Session) (Actor, error) {

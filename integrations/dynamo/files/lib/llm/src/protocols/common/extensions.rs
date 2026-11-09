@@ -997,6 +997,10 @@ mod tests {
     #[test]
     fn agent_context_serialization_preserves_public_headers_and_redacts_inference_lease() {
         let context = AgentContext {
+            session_id: "redaction-test".into(),
+            parent_session_id: None,
+            session_final: None,
+            input_trigger: None,
             agent_headers: Arc::new(BTreeMap::from([
                 (
                     "x-agentcloud-inference-lease".into(),
@@ -1008,7 +1012,6 @@ mod tests {
                     vec!["first".into(), "second".into()],
                 ),
             ])),
-            ..Default::default()
         };
         let encoded = serde_json::to_value(&context).unwrap();
         assert!(

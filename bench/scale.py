@@ -56,7 +56,11 @@ class Trial:
         self.private=ROOT/'artifacts/scale'/self.id;self.private.mkdir(parents=True)
         self.output=args.output_dir/self.id;self.output.mkdir(parents=True)
         self.ev=Evidence(self.output/'events.jsonl');self.stopped=threading.Event();self.slots=FairSlots(config['worker_slots'],self.stopped)
-        self.lock=threading.Lock();self.samples=[];self.rows=[];self.resumes=[];self.idle=[];self.tools=[];self.sessions=[]
+        self.lock=threading.Lock();self.samples=[];self.resumes=[];self.idle=[];self.tools=[];self.sessions=[];self.service_samples=[]
+        self.rows=[dict(session_id=f'{self.id}-w{index}',tenant=f'tenant-{chr(97+(index//len(KINDS)+index)%config["tenants"])}',
+            workspace_index=index,workload=KINDS[index%len(KINDS)],round=turn,status='NOT_OFFERED',
+            context_tokens=tokens,logical_request_id=f'{self.id}-w{index}-r{turn}')
+            for index in range(concurrency) for turn,tokens in enumerate(config['context_tokens'])]
         base=(args.client_dir/'coordinator-token').read_text().strip()
         self.tokens={f'tenant-{chr(97+i)}':base if i==0 else hashlib.sha256((base+f':tenant-{i}').encode()).hexdigest() for i in range(config['tenants'])}
         self.clients={tenant:Client(f'http://127.0.0.1:{args.coordinator_port}',token,timeout=180) for tenant,token in self.tokens.items()}
@@ -97,6 +101,7 @@ class Trial:
             '--model-url',self.native.front,'--dynamo-control-url',self.native.control,
             '--dynamo-tenant-tokens-file',str(self.native.runtime_dir/'tenant-tokens.json'),'--enable-experiment-controls']
         if self.policy=='agentcloud': command+=['--enable-autonomous-scheduler']
+        self.coordinator_command=command;self.coordinator_env=env
         self.coordinator=subprocess.Popen(command,cwd=ROOT,env=env,stdout=self.log('coordinator.log'),stderr=subprocess.STDOUT,start_new_session=True)
         for _ in range(200):
             self.guard()
@@ -112,11 +117,22 @@ class Trial:
         self.probe=subprocess.Popen([str(ROOT/'artifacts/substrate/bench-worker-probe'),'--client-dir',str(self.args.client_dir)],
             stdout=subprocess.PIPE,stderr=self.log('probe.log'),text=True,start_new_session=True)
         def consume():
+            last_process_sample=0.
             for line in self.probe.stdout:
                 try: sample=json.loads(line)
                 except ValueError: self.event('worker_probe_invalid_json');continue
                 with self.lock: self.samples.append(sample)
                 self.event('worker_assignment',sample=sample)
+                if time.time()-last_process_sample>=1:
+                    last_process_sample=time.time()
+                    for name,process in [('coordinator',self.coordinator)]+list(zip(('native_frontend','native_mocker'),self.native.processes)):
+                        try:
+                            fields=(Path('/proc')/str(process.pid)/'stat').read_text().rsplit(')',1)[1].split()
+                            row=dict(at=last_process_sample,component=name,pid=process.pid,
+                                cpu_seconds=(int(fields[11])+int(fields[12]))/os.sysconf('SC_CLK_TCK'),
+                                resident_bytes=int(fields[21])*os.sysconf('SC_PAGE_SIZE'))
+                            self.service_samples.append(row);self.event('service_process_observation',sample=row)
+                        except (OSError,ValueError,IndexError): pass
         self.probe_thread=threading.Thread(target=consume,daemon=True);self.probe_thread.start()
         deadline=time.monotonic()+30
         while time.monotonic()<deadline:
@@ -212,9 +228,7 @@ class Trial:
         self.suspend(entry,'initial-memory');return entry
     def session_run(self,entry):
         history=[f'token{5+(self.seed+entry["index"])%900}'];previous=None
-        rows=[dict(session_id=entry['id'],tenant=entry['tenant'],workspace_index=entry['index'],workload=entry['kind'],round=turn,
-            status='NOT_OFFERED',context_tokens=tokens,logical_request_id=f'{entry["id"]}-r{turn}') for turn,tokens in enumerate(self.config['context_tokens'])]
-        self.rows.extend(rows)
+        rows=[row for row in self.rows if row['workspace_index']==entry['index']]
         try:
             for turn,row in enumerate(rows):
                 row.update(status='FAILED',arrival_at=self.started if turn==0 else entry['next_arrival'])
@@ -283,6 +297,14 @@ class Trial:
             cached_tokens=sum(r.get('cached_tokens') or 0 for r in complete),
             native_pause_events=max((s.get('pause_events',0) for s in self.native_snapshots),default=0),
             native_final_events=max((s.get('final_events',0) for s in self.native_snapshots),default=0))
+        result['service_process_resources']={}
+        for component in ('coordinator','native_frontend','native_mocker'):
+            rows=[row for row in self.service_samples if row['component']==component and self.started<=row['at']<=self.finished]
+            if len(rows)>=2:
+                elapsed=rows[-1]['at']-rows[0]['at'];cpu=rows[-1]['cpu_seconds']-rows[0]['cpu_seconds']
+                result['service_process_resources'][component]=dict(cpu_seconds=cpu,mean_cpu_cores=cpu/elapsed,
+                    peak_resident_bytes=max(row['resident_bytes'] for row in rows),sampled_seconds=elapsed,
+                    sampling_interval_seconds=1,source='Linux /proc/<pid>/stat process CPU and resident pages')
         return result
     def cleanup(self):
         objects={};states=[];diagnostics={};journal={}
@@ -307,10 +329,16 @@ class Trial:
             if result.returncode: raise RuntimeError('experiment resource cleanup failed')
         return states,diagnostics
     def run(self):
+        def interrupted(signum,_frame):
+            self.stopped.set()
+            raise KeyboardInterrupt(f'signal {signum}')
+        prior_handlers={sig:signal.signal(sig,interrupted) for sig in (signal.SIGINT,signal.SIGTERM)}
+        attempted_at=time.time()
         source={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [ROOT/'bench/scale.py',ROOT/'bench/workloads/actor_mix.py',ROOT/'bench/analysis/resources.py',ROOT/'integrations/dynamo/manifest.json',ROOT/'integrations/substrate/manifest.json']}
         report=dict(schema_version=1,trial_id=self.id,seed=self.seed,concurrency=self.n,policy=self.policy,order=self.order,status='failed',config=self.config,
             gpu_execution=False,execution_kind='real-substrate-memory-native-dynamo-cpu-mocker',source_sha256=source,
             source_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
+            attempted_at=attempted_at,runner=dict(os=os.getenv('RUNNER_OS'),arch=os.getenv('RUNNER_ARCH'),name=os.getenv('RUNNER_NAME')),
             github_run_id=os.getenv('GITHUB_RUN_ID'),github_run_attempt=os.getenv('GITHUB_RUN_ATTEMPT'),
             arrival_pattern='closed-loop workspace trajectories with paired seeds and fixed think intervals',
             scheduler_inputs='server_observed' if self.policy=='agentcloud' else 'static_ttl')
@@ -325,8 +353,18 @@ class Trial:
             if report['metrics']['resource_coverage_fraction']<.9: raise RuntimeError('resource sampling coverage below 90 percent')
             if report['metrics']['max_assigned_actors']>self.config['worker_slots']: raise RuntimeError('observed placement exceeded frozen slots')
             report['status']='passed'
-        except Exception as exc: report['error']=str(exc)
+        except (Exception,KeyboardInterrupt) as exc:
+            self.stopped.set();report['error']=str(exc)
         finally:
+            for sig in prior_handlers: signal.signal(sig,signal.SIG_IGN)
+            if 'metrics' not in report:
+                if self.started is not None:
+                    self.finished=time.time();report['metrics']=self.metrics()
+                else:
+                    report['metrics']=dict(offered=len(self.rows),completed=0,interactive_slo_successes=0,
+                        interactive_offered=sum(r['workload']=='interactive' for r in self.rows),
+                        duration_seconds=time.time()-attempted_at,goodput_per_second=0,
+                        actor_reserved_gb_s=None,stranded_worker_gb_s=None,resource_coverage_fraction=0,cached_tokens=0)
             report.update(requests=self.rows,resumes=self.resumes,sessions=[dict(id=e['id'],tenant=e['tenant'],status=e.get('status'),error=e.get('error')) for e in self.sessions])
             try:
                 states,traces=self.cleanup()
@@ -334,7 +372,10 @@ class Trial:
                 report['autonomous_decisions']=dict(total=len(decisions),suspend=sum(d['decision']['action']=='SUSPEND' for d in decisions),all_server_observed=all(d.get('estimate_source')=='server_observed' for d in decisions))
                 if self.policy=='agentcloud' and (not decisions or not report['autonomous_decisions']['all_server_observed']):
                     report['status']='failed';report['error']='autonomous decisions lack server observation evidence'
-                if self.native: report['final_native_capabilities']=self.native.control_call('capabilities')[1]
+                if self.native:
+                    report['final_native_capabilities']=self.native.control_call('capabilities')[1]
+                    if report['final_native_capabilities'].get('active_bindings')!=0:
+                        report['status']='failed';report['error']='native binding capacity remains allocated after terminal turns'
             except Exception as exc: report['cleanup_error']=str(exc);report['status']='failed'
             for process in (self.probe,self.coordinator):
                 if process and process.poll() is None:
@@ -354,6 +395,7 @@ class Trial:
                 except Exception as exc: report['database_cleanup_error']=str(exc);report['status']='failed'
             report['disk_after']=inspect('/',6)
             write_json(self.output/'result.json',report);self.ev.close()
+            for sig,handler in prior_handlers.items(): signal.signal(sig,handler)
         return report
 
 

@@ -1,0 +1,278 @@
+[
+  {
+    "idle_since": "2026-11-09T18:36:28.927273301Z",
+    "running_since": "2026-11-09T18:36:05.048839789Z",
+    "last_resumed_at": "2026-11-09T18:36:05.048839789Z",
+    "tenant_id": "tenant-a",
+    "workspace_id": "deerflow-3d4f00afbffc9cb609558340",
+    "session_id": "deerflow-3d4f00afbffc9cb609558340",
+    "mode": "external",
+    "profile": "io-research",
+    "state": "SUSPENDED",
+    "gate": "CLOSED",
+    "epoch": 2,
+    "barrier_generation": 3,
+    "receipt_watermark": 9,
+    "next_receipt": 9,
+    "signal_sequence": 0,
+    "actor": {
+      "assigned_worker": "0bbeafc6-0f07-4890-89e4-a9dbfc3bfb70",
+      "assigned_memory_bytes": 805306368,
+      "name": "ac-5ef083cd292812317a66838d",
+      "uid": "11c3e623-2f69-4723-add2-05416761a7c3",
+      "version": 11,
+      "snapshot_uuid": "50a8a2a3-e3ba-4ac0-841a-6a669de5e286",
+      "snapshot_generation": 2,
+      "actual_fidelity": "MEMORY",
+      "boot_id": "718d9edb3089641eea0c0e173b492d07",
+      "retained_tag": "ac-snapshot-4cd8de4978ba9cbcef0cf963",
+      "retained_tag_uid": "202d641f-5f74-4b80-986b-8f9a4b58754d",
+      "snapshot_fidelity": "MEMORY"
+    },
+    "actor_uid": "11c3e623-2f69-4723-add2-05416761a7c3",
+    "backend": "substrate",
+    "actual_fidelity": "MEMORY",
+    "active_tools": 0,
+    "tools": {
+      "217c734cef2ce7d25d1fb1a5c6e6426e": {
+        "tool_op_id": "217c734cef2ce7d25d1fb1a5c6e6426e",
+        "epoch": 1,
+        "status": "COMPLETED",
+        "payload_hash": "ef4460813cbdc186fbf59eb057e4cd5aba2abba3a86653a0dbe49bcccc024e9b",
+        "receipt_seq": 1,
+        "result": {
+          "content": "5LiK5Lyg6LWE5paZ77ya5a+55Y235LiO5YaF5a2Y5oGi5aSN5YiG5Yir5a6h5qC45paH5Lu25LiA6Ie05oCn44CB5oyB5LmF5qOA5p+l54K55ZKM5YWo5bGA5a6J5YWo54K544CC",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-09T18:36:09.292797151Z",
+        "started_at": "2026-11-09T18:35:39.292797121Z",
+        "finished_at": "2026-11-09T18:35:39.311482677Z"
+      },
+      "2a48d66c826d45da2c5ed4e78bc6de02": {
+        "tool_op_id": "2a48d66c826d45da2c5ed4e78bc6de02",
+        "epoch": 2,
+        "status": "COMPLETED",
+        "payload_hash": "5084832fcb61b817d2a48d8f8045cd6a55604eedd79b155aeacc48d2559e781f",
+        "receipt_seq": 9,
+        "result": {
+          "stdout": "{\"path\": \"/workspace/report.txt\", \"report\": \"# 卷恢复与内存恢复审核研究报告\\n\\n## 研究范围与审核状态\\n本报告依据上传资料及两个恢复接口返回的源文档，分别审视文件一致性、持久检查点与全局安全点。上传资料原样保存于 `/workspace/uploaded-notes.txt`，文件 SHA-256：`b359864928a47ceffd8544c63d37303b911266748620dc93c1fed7fa40ffe9c8`。来源 a 的真实引用路径为 `/workspace/source-a.json`，来源哈希为 `bb087945dc54efbd66bc6eb1b728afe3d22c4d4c712893b0329ba2cec423954a`；其文档指出“持久卷保存工作文件”，标记为 `VOLUMES`。来源 b 的真实引用路径为 `/workspace/source-b.json`，来源哈希为 `891f4d02afb8a4cb625158b5cf7388668cfe1235c79ded48c0203ce07f7f9321`；其文档指出“内存恢复需要运行时与硬件兼容”，标记为 `MEMORY`。\\n\\n## 分项审核\\n\\n| 审核项 | 卷恢复 | 内存恢复 |\\n|---|---|---|\\n| 文件一致性 | 资料说明持久卷保存工作文件，支持文件可持久化这一判断；但没有提供恢复前后校验和、版本/事务一致性或实际恢复验证，故不能据此确认一致性审核通过。 | 来源只说明恢复依赖运行时与硬件兼容；没有说明文件保存机制或一致性校验，文件一致性未获证明。 |\\n| 持久检查点 | 持久卷保存工作文件，意味着文件持久性有资料依据；但未提供检查点创建、提交、原子性或崩溃恢复语义，不能认定检查点机制完整。 | 未提供内存快照或持久检查点说明；不能确认检查点持久性。运行时/硬件兼容是必要条件提示，不等于检查点保证。 |\\n| 全局安全点 | 来源没有给出安全点协议、参与者协调、屏障/确认或恢复边界证据。 | 来源同样没有给出全局安全点协议或协调证据。 |\\n\\n## 全局安全点审核结论\\n两项抓取任务和上传资料保存均已完成后进行汇总审核。按现有材料，不能确认卷恢复或内存恢复已达到全局安全点：缺少可验证的安全点建立与确认记录，也缺少崩溃边界下各参与者状态一致的证据。因此审核状态为“证据不足，未能判定通过”，而不是推断系统必然失败。\\n\\n## 研究结论\\n卷恢复与内存恢复的保障侧重点不同：卷恢复的材料支持“工作文件可由持久卷保存”，内存恢复的材料提示“恢复依赖运行时和硬件兼容”。这些信息不足以单独证明文件一致性、持久检查点完整性或全局安全点正确性。要完成通过性审核，建议补充恢复前后文件校验/版本记录、检查点提交与原子性证据，以及安全点协议的协调与确认日志，并在一致的故障场景下验证恢复结果。\\n\\n## 引用来源与文件\\n- 上传资料：`/workspace/uploaded-notes.txt`（SHA-256：`b359864928a47ceffd8544c63d37303b911266748620dc93c1fed7fa40ffe9c8`）\\n- 来源 a：`/workspace/source-a.json`（SHA-256：`bb087945dc54efbd66bc6eb1b728afe3d22c4d4c712893b0329ba2cec423954a`）\\n- 来源 b：`/workspace/source-b.json`（SHA-256：`891f4d02afb8a4cb625158b5cf7388668cfe1235c79ded48c0203ce07f7f9321`）\", \"sha256\": {\"source-a.json\": \"bb087945dc54efbd66bc6eb1b728afe3d22c4d4c712893b0329ba2cec423954a\", \"source-b.json\": \"891f4d02afb8a4cb625158b5cf7388668cfe1235c79ded48c0203ce07f7f9321\", \"report.txt\": \"2e3ffb8558ed3c50da37eded79de30c1a51bc0ff5dd10577b3ddffaa2d10a117\", \"uploaded-notes.txt\": \"b359864928a47ceffd8544c63d37303b911266748620dc93c1fed7fa40ffe9c8\"}, \"citations\": {\"source-a.json\": {\"url\": \"http://127.0.0.1:43766/a\", \"document\": {\"title\": \"卷恢复接口\", \"fact\": \"持久卷保存工作文件\", \"fidelity\": \"VOLUMES\"}}, \"source-b.json\": {\"url\": \"http://127.0.0.1:43766/b\", \"document\": {\"title\": \"内存恢复接口\", \"fact\": \"内存恢复需要运行时与硬件兼容\", \"fidelity\": \"MEMORY\"}}}}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-09T18:36:38.816970049Z",
+        "started_at": "2026-11-09T18:36:28.816970019Z",
+        "finished_at": "2026-11-09T18:36:28.927273562Z"
+      },
+      "2f24c6d6e8cad5cf4c93fea00eb73eb3": {
+        "tool_op_id": "2f24c6d6e8cad5cf4c93fea00eb73eb3",
+        "epoch": 1,
+        "status": "COMPLETED",
+        "payload_hash": "8671b68d814bc5ff851cb86f424df29928207bbe32db8bfd9016001c4bd93c45",
+        "receipt_seq": 7,
+        "result": {
+          "stdout": "{\"document\": {\"title\": \"卷恢复接口\", \"fact\": \"持久卷保存工作文件\", \"fidelity\": \"VOLUMES\"}, \"citation_sha256\": \"bb087945dc54efbd66bc6eb1b728afe3d22c4d4c712893b0329ba2cec423954a\", \"citation_path\": \"/workspace/source-a.json\"}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-09T18:36:02.359714554Z",
+        "started_at": "2026-11-09T18:35:52.359714514Z",
+        "finished_at": "2026-11-09T18:35:52.770883573Z"
+      },
+      "48434cde06ced60901364ce96c833c9f": {
+        "tool_op_id": "48434cde06ced60901364ce96c833c9f",
+        "epoch": 1,
+        "status": "COMPLETED",
+        "payload_hash": "8cfcd23ed9118e41072c6d3ae7de510655b9ff4036ac54bd4ff1c8419b111ba7",
+        "receipt_seq": 5,
+        "result": {
+          "stdout": "{\"document\": {\"title\": \"内存恢复接口\", \"fact\": \"内存恢复需要运行时与硬件兼容\", \"fidelity\": \"MEMORY\"}, \"citation_sha256\": \"891f4d02afb8a4cb625158b5cf7388668cfe1235c79ded48c0203ce07f7f9321\", \"citation_path\": \"/workspace/source-b.json\"}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-09T18:36:02.036835383Z",
+        "started_at": "2026-11-09T18:35:52.036835353Z",
+        "finished_at": "2026-11-09T18:35:52.44109458Z"
+      },
+      "5f4f5a3cfe431571894d4ee3c11f2ef8": {
+        "tool_op_id": "5f4f5a3cfe431571894d4ee3c11f2ef8",
+        "epoch": 1,
+        "status": "COMPLETED",
+        "payload_hash": "7e7df4f8cda0b7afd14c85b20af536fe61d65f3aec7be3ab9a4637cf10870072",
+        "receipt_seq": 3,
+        "result": {
+          "stdout": "{\"upload_path\": \"/workspace/uploaded-notes.txt\", \"upload_sha256\": \"b359864928a47ceffd8544c63d37303b911266748620dc93c1fed7fa40ffe9c8\", \"content\": \"上传资料：对卷与内存恢复分别审核文件一致性、持久检查点和全局安全点。\"}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-09T18:35:49.505610902Z",
+        "started_at": "2026-11-09T18:35:39.505610862Z",
+        "finished_at": "2026-11-09T18:35:39.615644896Z"
+      },
+      "892d9f057d8d719a45ffe5c8c0d55e4a": {
+        "tool_op_id": "892d9f057d8d719a45ffe5c8c0d55e4a",
+        "epoch": 2,
+        "status": "COMPLETED",
+        "payload_hash": "fbfb46ffe36ed9b8cc0a8eabc8fe15a368727e10d7847f8a102c45701b5983e8",
+        "receipt_seq": 8,
+        "result": {
+          "content": "# 卷恢复与内存恢复审核研究报告\n\n## 研究范围与审核状态\n本报告依据上传资料及两个恢复接口返回的源文档，分别审视文件一致性、持久检查点与全局安全点。上传资料原样保存于 `/workspace/uploaded-notes.txt`，文件 SHA-256：`b359864928a47ceffd8544c63d37303b911266748620dc93c1fed7fa40ffe9c8`。来源 a 的真实引用路径为 `/workspace/source-a.json`，来源哈希为 `bb087945dc54efbd66bc6eb1b728afe3d22c4d4c712893b0329ba2cec423954a`；其文档指出“持久卷保存工作文件”，标记为 `VOLUMES`。来源 b 的真实引用路径为 `/workspace/source-b.json`，来源哈希为 `891f4d02afb8a4cb625158b5cf7388668cfe1235c79ded48c0203ce07f7f9321`；其文档指出“内存恢复需要运行时与硬件兼容”，标记为 `MEMORY`。\n\n## 分项审核\n\n| 审核项 | 卷恢复 | 内存恢复 |\n|---|---|---|\n| 文件一致性 | 资料说明持久卷保存工作文件，支持文件可持久化这一判断；但没有提供恢复前后校验和、版本/事务一致性或实际恢复验证，故不能据此确认一致性审核通过。 | 来源只说明恢复依赖运行时与硬件兼容；没有说明文件保存机制或一致性校验，文件一致性未获证明。 |\n| 持久检查点 | 持久卷保存工作文件，意味着文件持久性有资料依据；但未提供检查点创建、提交、原子性或崩溃恢复语义，不能认定检查点机制完整。 | 未提供内存快照或持久检查点说明；不能确认检查点持久性。运行时/硬件兼容是必要条件提示，不等于检查点保证。 |\n| 全局安全点 | 来源没有给出安全点协议、参与者协调、屏障/确认或恢复边界证据。 | 来源同样没有给出全局安全点协议或协调证据。 |\n\n## 全局安全点审核结论\n两项抓取任务和上传资料保存均已完成后进行汇总审核。按现有材料，不能确认卷恢复或内存恢复已达到全局安全点：缺少可验证的安全点建立与确认记录，也缺少崩溃边界下各参与者状态一致的证据。因此审核状态为“证据不足，未能判定通过”，而不是推断系统必然失败。\n\n## 研究结论\n卷恢复与内存恢复的保障侧重点不同：卷恢复的材料支持“工作文件可由持久卷保存”，内存恢复的材料提示“恢复依赖运行时和硬件兼容”。这些信息不足以单独证明文件一致性、持久检查点完整性或全局安全点正确性。要完成通过性审核，建议补充恢复前后文件校验/版本记录、检查点提交与原子性证据，以及安全点协议的协调与确认日志，并在一致的故障场景下验证恢复结果。\n\n## 引用来源与文件\n- 上传资料：`/workspace/uploaded-notes.txt`（SHA-256：`b359864928a47ceffd8544c63d37303b911266748620dc93c1fed7fa40ffe9c8`）\n- 来源 a：`/workspace/source-a.json`（SHA-256：`bb087945dc54efbd66bc6eb1b728afe3d22c4d4c712893b0329ba2cec423954a`）\n- 来源 b：`/workspace/source-b.json`（SHA-256：`891f4d02afb8a4cb625158b5cf7388668cfe1235c79ded48c0203ce07f7f9321`）",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-09T18:36:58.789043569Z",
+        "started_at": "2026-11-09T18:36:28.789043529Z",
+        "finished_at": "2026-11-09T18:36:28.811651671Z"
+      },
+      "ce681d2dfab36f395629c0358f15c877": {
+        "tool_op_id": "ce681d2dfab36f395629c0358f15c877",
+        "epoch": 1,
+        "status": "COMPLETED",
+        "payload_hash": "174e3ee11a105f8a1647a176f1a33faec72acc7a4e57cb5ef568370f326dc9dd",
+        "receipt_seq": 4,
+        "result": {
+          "content": "{\"url\": \"http://127.0.0.1:43766/b\", \"document\": {\"title\": \"内存恢复接口\", \"fact\": \"内存恢复需要运行时与硬件兼容\", \"fidelity\": \"MEMORY\"}}",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-09T18:36:22.012418187Z",
+        "started_at": "2026-11-09T18:35:52.012418147Z",
+        "finished_at": "2026-11-09T18:35:52.033032013Z"
+      },
+      "deffb19b2ba66e8bbe2be93697254f68": {
+        "tool_op_id": "deffb19b2ba66e8bbe2be93697254f68",
+        "epoch": 1,
+        "status": "COMPLETED",
+        "payload_hash": "8aff40d10f7b932cdb8f209a90e96b7d2c3daa0d9e70386c1835ee311223ff50",
+        "receipt_seq": 6,
+        "result": {
+          "content": "{\"url\": \"http://127.0.0.1:43766/a\", \"document\": {\"title\": \"卷恢复接口\", \"fact\": \"持久卷保存工作文件\", \"fidelity\": \"VOLUMES\"}}",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-09T18:36:22.338445619Z",
+        "started_at": "2026-11-09T18:35:52.338445589Z",
+        "finished_at": "2026-11-09T18:35:52.356149561Z"
+      },
+      "f5fe95b92b884ab2e7a7400edd47ecd7": {
+        "tool_op_id": "f5fe95b92b884ab2e7a7400edd47ecd7",
+        "epoch": 1,
+        "status": "COMPLETED",
+        "payload_hash": "a010625e75c0673265ff82eb4113d683bb3847ba4c0945d9aeb25d076da292e8",
+        "receipt_seq": 2,
+        "result": {
+          "exit_code": 0
+        },
+        "deadline": "2026-11-09T18:35:49.316505605Z",
+        "started_at": "2026-11-09T18:35:39.316505575Z",
+        "finished_at": "2026-11-09T18:35:39.501089804Z"
+      }
+    },
+    "lifecycle": {
+      "9a359ed2a9824c32ad73f2806b095b52": {
+        "operation_id": "9a359ed2a9824c32ad73f2806b095b52",
+        "action": "resume",
+        "epoch": 1,
+        "payload_hash": "96d550050b472988ea3d9c4aae54ab76cc62c45eed70e91396dab59c424deaa9",
+        "status": "COMPLETED"
+      },
+      "research-complete-realmodel-74bd7470d2c7": {
+        "operation_id": "research-complete-realmodel-74bd7470d2c7",
+        "action": "checkpoint",
+        "epoch": 2,
+        "payload_hash": "290146aa3ca98f7c4d95d18460fd4871eef70298059166de780766a4bd21b57d",
+        "status": "COMPLETED",
+        "manifest": {
+          "manifest_id": "377829482464ab2d699c82e633427c31",
+          "state": "COMMITTED",
+          "epoch": 2,
+          "barrier_generation": 3,
+          "receipt_watermark": 9,
+          "actor_uid": "11c3e623-2f69-4723-add2-05416761a7c3",
+          "snapshot_uuid": "50a8a2a3-e3ba-4ac0-841a-6a669de5e286",
+          "snapshot_generation": 2,
+          "fidelity": "MEMORY",
+          "checkpoint_id": "1f1dc6c8-0fc6-6fa3-8044-3afa36d0fb34",
+          "retained_tag": "ac-snapshot-4cd8de4978ba9cbcef0cf963",
+          "retained_tag_uid": "202d641f-5f74-4b80-986b-8f9a4b58754d",
+          "created_at": "2026-11-09T18:36:42.510000521Z"
+        }
+      },
+      "research-prepare-realmodel-74bd7470d2c7": {
+        "operation_id": "research-prepare-realmodel-74bd7470d2c7",
+        "action": "checkpoint",
+        "epoch": 1,
+        "payload_hash": "7809f74bb2e78a1a4da936af2bb3659439e28780383ea1705df0bf18980dc8e5",
+        "status": "COMPLETED",
+        "manifest": {
+          "manifest_id": "3d3ae4d4cf6db2b8af569b664bb29b0d",
+          "state": "COMMITTED",
+          "epoch": 1,
+          "barrier_generation": 1,
+          "receipt_watermark": 7,
+          "actor_uid": "11c3e623-2f69-4723-add2-05416761a7c3",
+          "snapshot_uuid": "535672a8-4de4-4579-86e3-d337bf2637b1",
+          "snapshot_generation": 1,
+          "fidelity": "MEMORY",
+          "checkpoint_id": "1f1dc6c6-adff-68a0-8027-61764943cfba",
+          "retained_tag": "ac-snapshot-f85c126bb5e342a15758670d",
+          "retained_tag_uid": "a6bc6e68-7794-450f-b6b2-e9ab964b2c43",
+          "created_at": "2026-11-09T18:36:04.818889458Z"
+        }
+      },
+      "research-release-realmodel-74bd7470d2c7": {
+        "operation_id": "research-release-realmodel-74bd7470d2c7",
+        "action": "suspend",
+        "epoch": 2,
+        "payload_hash": "4e42f385682697a2788f21d95abf02d72624fecad7183d1dbfe28bac6594dfc2",
+        "status": "COMPLETED",
+        "manifest": {
+          "manifest_id": "377829482464ab2d699c82e633427c31",
+          "state": "COMMITTED",
+          "epoch": 2,
+          "barrier_generation": 3,
+          "receipt_watermark": 9,
+          "actor_uid": "11c3e623-2f69-4723-add2-05416761a7c3",
+          "snapshot_uuid": "50a8a2a3-e3ba-4ac0-841a-6a669de5e286",
+          "snapshot_generation": 2,
+          "fidelity": "MEMORY",
+          "checkpoint_id": "1f1dc6c8-0fc6-6fa3-8044-3afa36d0fb34",
+          "retained_tag": "ac-snapshot-4cd8de4978ba9cbcef0cf963",
+          "retained_tag_uid": "202d641f-5f74-4b80-986b-8f9a4b58754d",
+          "created_at": "2026-11-09T18:36:42.510000521Z"
+        }
+      },
+      "research-suspend-realmodel-74bd7470d2c7": {
+        "operation_id": "research-suspend-realmodel-74bd7470d2c7",
+        "action": "suspend",
+        "epoch": 1,
+        "payload_hash": "a2150fff00bf0356cd2a492d37acb73ab709ade6e53ea53b7e28c6d54067b031",
+        "status": "COMPLETED",
+        "manifest": {
+          "manifest_id": "3d3ae4d4cf6db2b8af569b664bb29b0d",
+          "state": "COMMITTED",
+          "epoch": 1,
+          "barrier_generation": 1,
+          "receipt_watermark": 7,
+          "actor_uid": "11c3e623-2f69-4723-add2-05416761a7c3",
+          "snapshot_uuid": "535672a8-4de4-4579-86e3-d337bf2637b1",
+          "snapshot_generation": 1,
+          "fidelity": "MEMORY",
+          "checkpoint_id": "1f1dc6c6-adff-68a0-8027-61764943cfba",
+          "retained_tag": "ac-snapshot-f85c126bb5e342a15758670d",
+          "retained_tag_uid": "a6bc6e68-7794-450f-b6b2-e9ab964b2c43",
+          "created_at": "2026-11-09T18:36:04.818889458Z"
+        }
+      }
+    },
+    "manifest": {
+      "manifest_id": "377829482464ab2d699c82e633427c31",
+      "state": "COMMITTED",
+      "epoch": 2,
+      "barrier_generation": 3,
+      "receipt_watermark": 9,
+      "actor_uid": "11c3e623-2f69-4723-add2-05416761a7c3",
+      "snapshot_uuid": "50a8a2a3-e3ba-4ac0-841a-6a669de5e286",
+      "snapshot_generation": 2,
+      "fidelity": "MEMORY",
+      "checkpoint_id": "1f1dc6c8-0fc6-6fa3-8044-3afa36d0fb34",
+      "retained_tag": "ac-snapshot-4cd8de4978ba9cbcef0cf963",
+      "retained_tag_uid": "202d641f-5f74-4b80-986b-8f9a4b58754d",
+      "created_at": "2026-11-09T18:36:42.510000521Z"
+    },
+    "created_at": "2026-11-09T18:35:34.296278153Z",
+    "updated_at": "2026-11-09T18:36:42.548085964Z"
+  }
+]

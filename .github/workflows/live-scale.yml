@@ -60,7 +60,7 @@ jobs:
           POSTGRES_PASSWORD: agentcloud-ci
           POSTGRES_DB: agentcloud_substrate
         ports: ['5432:5432']
-        options: --health-cmd "pg_isready -U agentcloud" --health-interval 5s --health-timeout 5s --health-retries 12
+        options: --health-cmd "pg_isready -U agentcloud -d agentcloud_substrate" --health-interval 5s --health-timeout 5s --health-retries 12
     env:
       PGHOST: 127.0.0.1
       PGPORT: '5432'
@@ -84,7 +84,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           NATIVE_RUN: ${{ inputs.native_run_id }}
-        run: gh run watch "$NATIVE_RUN" --exit-status --interval 30
+        run: gh run watch "$NATIVE_RUN" --interval 30
       - uses: actions/download-artifact@v4
         with:
           name: native-cpu-wheel

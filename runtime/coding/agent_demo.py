@@ -20,7 +20,8 @@ def execute(args):
         cert_file=args.runtime_cert,key_file=args.runtime_key,server_name=args.runtime_server_name)
     repository=json.loads(Path(args.repository_json).read_text()) if args.repository_json else None
     runtime.call('POST','/runtime/v1/agents/start',dict(run_id=run_id,trajectory_id='autonomous-'+run_id,session_id=sid,
-        agent_kind='model-tools',model_name=args.model_name,task=args.task,max_turns=args.max_turns,repository=repository,test_command=args.test_command))
+        agent_kind='model-tools',model_name=args.model_name,task=args.task,max_turns=args.max_turns,repository=repository,test_command=args.test_command,
+        require_memory_resume=True))
     lifecycle=[];epoch=session['epoch'];last_request=None;deadline=time.monotonic()+args.timeout
     while time.monotonic()<deadline:
         state=runtime.call('GET','/runtime/v1/agents/'+run_id)

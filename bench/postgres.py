@@ -1,5 +1,6 @@
 """Private environment-based PostgreSQL credentials for isolated experiment databases."""
 import os
+import re
 import subprocess
 import urllib.parse
 
@@ -8,7 +9,12 @@ def connection(admin_url, database):
     url=urllib.parse.urlsplit(admin_url)
     if url.scheme not in ('postgres','postgresql'):
         raise ValueError('PostgreSQL URI required')
-    return urllib.parse.urlunsplit(url._replace(path='/'+database))
+    if not re.fullmatch(r'[a-z_][a-z0-9_]{0,62}', database):
+        raise ValueError('isolated database name must be a lowercase SQL identifier')
+    value=urllib.parse.urlunsplit(url._replace(path='/'+database))
+    if not url.netloc:
+        value=url.scheme+'://'+value[len(url.scheme)+1:]
+    return value
 
 
 def execute(admin_url, sql):
