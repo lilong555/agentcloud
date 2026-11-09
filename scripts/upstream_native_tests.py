@@ -31,10 +31,44 @@ def run_logged(command,cwd,env,path):
                     progress=lines[-1][-200:] if lines else 'waiting for native output')),flush=True)
 
 
-def summarize_logs() -> dict:
+def rust_results(text: str) -> dict:
+    inventory = re.findall(r"^test (.+?) \.\.\. ([^\n]*)$", text, re.M)
+    outcomes = {}
+    for name, tail in inventory:
+        name = name.removesuffix(" - should panic")
+        status = re.match(r"(ok|FAILED|ignored)\b", tail)
+        outcomes[name] = status[1] if status else None
+    matches = re.findall(r"^test result: (\w+)\. (\d+) passed; (\d+) failed; (\d+) ignored", text, re.M)
+    errors, reconstructed = [], []
+    if len(matches) != 1:
+        errors.append("one complete native Rust result is required")
+    else:
+        result, passed, failed, ignored = matches[0]
+        passed, failed, ignored = int(passed), int(failed), int(ignored)
+        if len(outcomes) != len(inventory) or len(inventory) != passed + failed + ignored:
+            errors.append("native Rust test inventory differs from its final result")
+        if result != "ok" or failed or "FAILED" in outcomes.values():
+            errors.append("native Rust tests failed")
+        if sum(status == "ignored" for status in outcomes.values()) != ignored:
+            errors.append("native Rust ignored test inventory is incomplete")
+        # libtest can interleave a passing result with another test's uncaptured stdout.
+        # A complete, unique inventory and all ignored results plus zero failures identify
+        # every remaining test as passed. Partial or failing logs stay unverified.
+        if not errors:
+            reconstructed = [name for name, status in outcomes.items() if status is None]
+            for name in reconstructed:
+                outcomes[name] = "ok"
+            if sum(status == "ok" for status in outcomes.values()) != passed:
+                errors.append("native Rust passing test count differs from its final result")
+    return dict(passed=[name for name, status in outcomes.items() if status == "ok"],
+                results=matches, failed=errors, reconstructed_passed=reconstructed)
+
+
+def summarize_logs(root=ROOT, directory=None, write=True) -> dict:
+    directory = Path(directory) if directory is not None else root / "docs/evidence"
     results = []
     tests = set()
-    for path in sorted((ROOT / "docs/evidence").glob("upstream-patches-*.jsonl")):
+    for path in sorted(directory.glob("upstream-patches-*.jsonl")):
         count = 0
         failed = []
         skipped = []
@@ -50,22 +84,19 @@ def summarize_logs() -> dict:
                 failed.append(row.get("Test", row.get("Package")))
             if row.get("Action") == "skip":
                 skipped.append(row.get("Test", row.get("Package")))
-        results.append({"log": str(path.relative_to(ROOT)), "passed_events": count, "failed": failed, "skipped": skipped,
+        results.append({"log": "docs/evidence/" + path.name, "passed_events": count, "failed": failed, "skipped": skipped,
                         "sha256": hashlib.sha256(path.read_bytes()).hexdigest()})
-    for path in sorted((ROOT / "docs/evidence").glob("upstream-patches-*-native.log")):
+    for path in sorted(directory.glob("upstream-patches-*-native.log")):
         text = path.read_text(errors="replace")
-        for name, status in re.findall(r"^test (.+?) \.\.\. (ok|FAILED|ignored)", text, re.M):
-            if status == "ok":
-                package = "dynamo-runtime" if "runtime" in path.name else ("dynamo-llm" if "llm" in path.name else "dynamo-router-policies")
-                tests.add(("rust", package, name))
-        matches = re.findall(r"test result: (\w+)\. (\d+) passed; (\d+) failed; (\d+) ignored", text)
-        results.append({"log": str(path.relative_to(ROOT)), "results": matches,
-                        "failed": [] if matches and all(result[0] == "ok" and result[2] == "0" for result in matches) else ["native Rust result missing or failed"],
+        parsed = rust_results(text)
+        package = "dynamo-runtime" if "runtime" in path.name else ("dynamo-llm" if "llm" in path.name else "dynamo-router-policies")
+        tests.update(("rust", package, name) for name in parsed.pop("passed"))
+        results.append({"log": "docs/evidence/" + path.name, **parsed,
                         "sha256": hashlib.sha256(path.read_bytes()).hexdigest()})
     missing = []
     mapping = []
     for repository in ("substrate", "dynamo"):
-        source = json.loads((ROOT / "integrations" / repository / "test-map.json").read_text())
+        source = json.loads((root / "integrations" / repository / "test-map.json").read_text())
         for row in source["files"]:
             required = [(t["language"], t["package"], t["test"]) for t in row["tests"]]
             absent = [test for test in required if test not in tests]
@@ -75,7 +106,8 @@ def summarize_logs() -> dict:
     report = {"schema_version": 1, "recorded_at": dt.datetime.now(dt.timezone.utc).isoformat(),
               "execution_kind": "native-go-rust-upstream-regression-map", "status": "passed" if not missing and all(not r.get("failed") and not r.get("skipped") for r in results) else "incomplete",
               "files_mapped": len(mapping), "native_tests_observed": len(tests), "missing": missing, "files": mapping, "logs": results}
-    (ROOT / "docs/evidence/upstream-patches-native-tests.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+    if write:
+        (directory / "upstream-patches-native-tests.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
     return report
 
 
@@ -104,7 +136,7 @@ def main() -> None:
                 command = [args.cargo, "test", "--locked", "-p", package]
                 if package == "dynamo-llm":
                     command.append("--no-default-features")
-                command.extend([filter_name, "--lib", "--", "--nocapture"])
+                command.extend([filter_name, "--lib", "--", "--color", "never"])
                 run_logged(command,ROOT / "upstream/dynamo",env,ROOT / f"docs/evidence/upstream-patches-{filename}-native.log")
         subprocess.run(["python3", str(ROOT / "scripts/disk_guard.py")], check=True)
     report = summarize_logs()

@@ -58,6 +58,35 @@ class NativeProofTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, '64-cycle'):
             verify(self.proof, self.root, require_runtime=True)
 
+    def test_rebuild_requires_original_source_and_log_digests(self):
+        self.report.update(status='incomplete', missing=['interleaved result'], logs=[])
+        go = json.dumps(dict(Action='pass', Package='go.ate.dev/substrate/native', Test='TestFence'))+'\n'
+        rust = ('test protocols::lease ... counter: 38\nokdelta: payload\n'
+                'test result: ok. 1 passed; 0 failed; 0 ignored\n')
+        for name, content in [('upstream-patches-substrate-native.jsonl', go),
+                              ('upstream-patches-dynamo-llm-native.log', rust)]:
+            (self.proof/name).write_text(content)
+            self.report['logs'].append(dict(log='docs/evidence/'+name, sha256=hashlib.sha256(content.encode()).hexdigest()))
+        for repository, language, package, test in [('substrate', 'go', 'native', 'TestFence'),
+                ('dynamo', 'rust', 'dynamo-llm', 'protocols::lease')]:
+            row=dict(path='source', kind='source', sha256=repository+'-digest', symbols=['entry'],
+                tests=[dict(language=language, package=package, test=test)])
+            (self.root/'integrations'/repository/'test-map.json').write_text(json.dumps(dict(files=[row])))
+        self.write('upstream-patches-native-tests.json', self.report)
+        result=verify(self.proof, self.root, rebuild_map=True)
+        self.assertEqual((result['status'], result['native_tests_observed']), ('passed', 2))
+        self.assertIn('derived_from', result)
+        self.assertEqual(json.loads((self.proof/'upstream-patches-native-tests.json').read_text()), self.report)
+        target=self.proof/'upstream-patches-dynamo-llm-native.log'
+        target.write_text(rust+'tampered\n')
+        with self.assertRaisesRegex(ValueError, 'log digests'):
+            verify(self.proof, self.root, rebuild_map=True)
+        target.write_text(rust)
+        self.report['files'][1]['sha256']='another-source'
+        self.write('upstream-patches-native-tests.json', self.report)
+        with self.assertRaisesRegex(ValueError, 'source differs'):
+            verify(self.proof, self.root, rebuild_map=True)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -96,7 +96,7 @@ jobs:
       - name: Verify reused regression coverage
         if: inputs.native_run_id != ''
         run: |
-          python3 scripts/verify_native_proof.py artifacts/native-proof
+          python3 scripts/verify_native_proof.py artifacts/native-proof --rebuild-map
           python3 - <<'PY'
           import pathlib,shutil
           for path in pathlib.Path('artifacts/native-proof').glob('upstream-patches-*'):

@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "recorded_at": "2026-11-09T19:26:41.511231+00:00",
+  "recorded_at": "2026-11-09T20:34:59.783736+00:00",
   "execution_kind": "native-go-rust-upstream-regression-map",
   "status": "passed",
-  "files_mapped": 46,
-  "native_tests_observed": 1313,
+  "files_mapped": 47,
+  "native_tests_observed": 1318,
   "missing": [],
   "files": [
     {
@@ -781,6 +781,28 @@
     },
     {
       "repository": "dynamo",
+      "path": ".cargo/config.toml",
+      "kind": "build-configuration",
+      "sha256": "f2ce86af38251d862cadd0792c6869655bdc20ccada88eb97999418cbdac5699",
+      "symbols": [
+        "Linux ZeroMQ command queue aligned allocation"
+      ],
+      "tests": [
+        {
+          "language": "rust",
+          "package": "dynamo-runtime",
+          "test": "transports::event_plane::zmq_transport::tests::test_zmq_pubsub_basic"
+        },
+        {
+          "language": "rust",
+          "package": "dynamo-runtime",
+          "test": "transports::event_plane::zmq_transport::tests::test_zmq_multiple_messages"
+        }
+      ],
+      "status": "passed"
+    },
+    {
+      "repository": "dynamo",
       "path": "Cargo.lock",
       "kind": "dependency",
       "sha256": "b187e42294be16429c929949da553c261c13b49c23848dd1cd39ea90436f70f2",
@@ -1073,7 +1095,7 @@
       "passed_events": 441,
       "failed": [],
       "skipped": [],
-      "sha256": "550b9cc2f4e8c86f7586277228465699ae749be4d3a323037828da385aab81ba"
+      "sha256": "373b4f26ddf6b2fe29cb9f68d7520c92a63468642f3a3dd8013173b8b3edc809"
     },
     {
       "log": "docs/evidence/upstream-patches-dynamo-llm-native.log",
@@ -1086,7 +1108,11 @@
         ]
       ],
       "failed": [],
-      "sha256": "59f21790b81bb1669178f09708b9a3fe748dad6cf2fffcf91815afcdb2e62812"
+      "reconstructed_passed": [
+        "protocols::common::extensions::tests::agent_context_serialization_preserves_public_headers_and_redacts_inference_lease",
+        "protocols::common::extensions::tests::agent_hints_strict_priority_serde"
+      ],
+      "sha256": "96239363c7ca239d26032973185f3950117e5364cd254a417be6a82cfb7f9811"
     },
     {
       "log": "docs/evidence/upstream-patches-dynamo-native.log",
@@ -1099,7 +1125,31 @@
         ]
       ],
       "failed": [],
-      "sha256": "99492b25174307efe39cc101fc79bec7c90e1abb3b641f685d37fbd4623dcd57"
+      "reconstructed_passed": [],
+      "sha256": "219facd07242a0ac98ce7fc42c6772c3c31b29b22e67cac571768b63c1efa19c"
+    },
+    {
+      "log": "docs/evidence/upstream-patches-dynamo-runtime-native.log",
+      "results": [
+        [
+          "ok",
+          "5",
+          "0",
+          "0"
+        ]
+      ],
+      "failed": [],
+      "reconstructed_passed": [],
+      "sha256": "f2a7981447217665f978ec5e189f2c72f2256fcb01a6dc9222c2fecf9e49fb70"
     }
-  ]
+  ],
+  "derived_from": {
+    "report_sha256": "d07ac08deea357cd724862f704c08894355773b6b0f88119d14466691aae08b9",
+    "method": "raw log SHA256 verification; complete Rust inventory, explicit ignored tests and final zero-failure totals"
+  },
+  "source_artifact": {
+    "github_run_id": 42688751369,
+    "artifact_id": 13707573072,
+    "archive_sha256": "0e39efb506c11f002ffd97d39fc33fdaa94e00fdca3f7fec7848620bf1f4571c"
+  }
 }

@@ -23,7 +23,7 @@ WSL2 / Linux x86_64，Kind Kubernetes v1.37.0，Go 1.27.3，Rust 1.96.1，Postgr
 
 [部署记录](evidence/substrate-deployment.json)包含镜像 digest、运行节点和实际组件状态。[平台实验](evidence/substrate-gvisor-platform.json)记录同一 OCI 下 systrap 的 seccomp notify 初始化错误，以及 ptrace 成功运行的对照。[存储记录](evidence/substrate-storage.json)记录 RustFS 的容量条件。
 
-原生 Router 配对实验确认逻辑预算按画像变化；本次竞争请求时延的置信区间覆盖零。GPU 吞吐与物理 KV 收益由独立硬件实验测量。Dynamo 终结回收释放 binding、feedback 与 inference lease，并保留有界 generation 墓碑。[原生测试映射](evidence/upstream-patches-native-tests.json)已覆盖 46 个上游修改文件、1,313 项测试，包括 64 项 Rust Router、1,102 项 Rust LLM 和 147 项 Substrate 测试。当前连续 64 轮真实 Frontend 回收仍在验收，独立 wheel 环境的 Mocker 启动触发 SIGSEGV，原生诊断与运行记录由独立 Actions 保存。
+原生 Router 配对实验确认逻辑预算按画像变化；本次竞争请求时延的置信区间覆盖零。GPU 吞吐与物理 KV 收益由独立硬件实验测量。Dynamo 终结回收释放 binding、feedback 与 inference lease，并保留有界 generation 墓碑。[原生测试映射](evidence/upstream-patches-native-tests.json)覆盖 47 个上游修改文件、1,318 项测试，包括 64 项 Rust Router、1,102 项 Rust LLM、5 项 ZeroMQ Runtime 和 147 项 Substrate 测试。ZeroMQ 命令队列使用 64 字节对齐分配，[C++ 分配探针](evidence/dynamo-zmq-alignment.json)与原生 PUB/SUB 回归均通过。连续 64 轮真实 Frontend 回收使用独立 wheel 环境执行，当前等待进程级结果。
 
 ## 复现
 
