@@ -73,7 +73,7 @@ if "0" in sys.argv[1:]:
 if available < required:
     raise SystemExit(f"Deployment requires {required / 2**30:.1f} GiB available; current {available / 2**30:.1f} GiB")
 PY
-gateway="$(docker network inspect kind --format '{{(index .IPAM.Config 0).Gateway}}')"
+gateway="$(python3 deploy/substrate/host_gateway.py)"
 if [[ -n "${AGENTCLOUD_NODE_PROXY_URL:-}" ]]; then
   proxy_dir="$project_root/artifacts/substrate/proxy"
   mkdir -p "$proxy_dir"

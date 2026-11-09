@@ -38,3 +38,17 @@ class ScaleAnalysisTests(unittest.TestCase):
         b['source_sha256']={'workload':'changed'}
         with self.assertRaisesRegex(ValueError,'source digests differ'):
             summarize([a,b],samples=10)
+
+    def test_capacity_changes_cannot_enter_a_paired_comparison(self):
+        a,b=trial('a',1),trial('b',2,policy='static-5')
+        a['config']['worker_slots']=4
+        b['config']['worker_slots']=8
+        with self.assertRaisesRegex(ValueError,'configurations differ'):
+            summarize([a,b],samples=10)
+
+    def test_coordinator_revision_changes_require_explicit_source_selection(self):
+        a,b=trial('a',1),trial('b',2)
+        a['source_commit']='coordinator-a'
+        b['source_commit']='coordinator-b'
+        with self.assertRaisesRegex(ValueError,'source commits differ'):
+            summarize([a,b],samples=10)

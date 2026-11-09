@@ -57,6 +57,12 @@ def summarize(trials, samples=2000, seed=9031):
     provenance = {json.dumps(t.get('source_sha256', {}), sort_keys=True) for t in trials}
     if len(provenance) != 1:
         raise ValueError('source digests differ; select one frozen experiment source with --source-commit')
+    if len({t.get('source_commit') for t in trials}) != 1:
+        raise ValueError('source commits differ; select one frozen experiment source with --source-commit')
+    selectors={'concurrency','paired_seeds','policies'}
+    configurations={json.dumps({k:v for k,v in t['config'].items() if k not in selectors},sort_keys=True) for t in trials}
+    if len(configurations) != 1:
+        raise ValueError('resource or workload configurations differ; select a common frozen configuration')
     primary, audit = primary_attempts(trials)
     rng, groups = random.Random(seed), []
     for concurrency, policy in sorted({(t['concurrency'], t['policy']) for t in primary}):
@@ -179,9 +185,10 @@ def main():
     p.add_argument('--skip-figures', action='store_true')
     args = p.parse_args()
     paths = sorted(args.input_dir.rglob('result.json'))
-    trials = [json.loads(path.read_text()) for path in paths]
+    selected = [(path,json.loads(path.read_text())) for path in paths]
     if args.source_commit:
-        trials = [t for t in trials if t.get('source_commit') == args.source_commit]
+        selected = [(path,t) for path,t in selected if t.get('source_commit') == args.source_commit]
+    paths,trials=zip(*selected) if selected else ([],[])
     result = summarize(trials, args.bootstrap_samples)
     result.update(schema_version=2, execution_kind='real-substrate-memory-native-dynamo-cpu-mocker',
         upstream_execution=True, gpu_execution=False, source_commit_filter=args.source_commit, sources=[str(path) for path in paths])

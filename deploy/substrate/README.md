@@ -69,7 +69,7 @@ bash deploy/substrate/setup.sh --cluster-only
 export PATH="$HOME/.local/share/agentcloud/go/bin:$HOME/.local/bin:$PATH"
 export DOCKER_CONFIG="$PWD/artifacts/docker-client"
 export KUBECONFIG="$PWD/artifacts/substrate/kubeconfig"
-gateway="$(docker network inspect kind --format '{{(index .IPAM.Config 0).Gateway}}')"
+gateway="$(python3 deploy/substrate/host_gateway.py)"
 python3 deploy/substrate/tcp-forward.py --bind "$gateway" --port 24718 \
   --target-host 127.0.0.1 --target-port "${AGENTCLOUD_HOST_PROXY_PORT:?设置本机代理端口}"
 ```
@@ -77,7 +77,7 @@ python3 deploy/substrate/tcp-forward.py --bind "$gateway" --port 24718 \
 另一终端设置实际网桥代理地址后运行准备：
 
 ```bash
-gateway="$(docker network inspect kind --format '{{(index .IPAM.Config 0).Gateway}}')"
+gateway="$(python3 deploy/substrate/host_gateway.py)"
 export AGENTCLOUD_NODE_PROXY_URL="http://$gateway:24718"
 bash deploy/substrate/setup.sh
 ```

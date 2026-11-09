@@ -13,6 +13,8 @@ def summarize(trials,samples=2000):
         raise ValueError('measured trials and a positive bootstrap count are required')
     if len({json.dumps(t.get('source_sha256',{}),sort_keys=True) for t in trials})!=1:
         raise ValueError('source digests differ; select one frozen experiment source with --source-commit')
+    if len({t.get('source_commit') for t in trials})!=1:
+        raise ValueError('source commits differ; select one frozen experiment source with --source-commit')
     primary={};audit=[]
     for trial in sorted(trials,key=lambda t:(t.get('generated_at',''),int(t.get('github_run_id') or 0),t['trial_id'])):
         first=primary.setdefault((trial['heap_mib'],trial['seed']),trial)

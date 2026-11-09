@@ -258,8 +258,9 @@ class Trial:
                             row['first_token_observed_at']=time.time()
                         if receipt['status']=='OUTCOME_UNKNOWN': raise RuntimeError('model outcome unknown; original attempt retained')
                         if receipt['status']=='COMPLETED':
-                            result=receipt;row.update(status='COMPLETED',completed_at=timestamp(receipt['updated_at']),usage=receipt.get('result',{}).get('usage',{}),attempt_id=receipt.get('attempt_id'))
+                            result=receipt;row.update(completed_at=timestamp(receipt['updated_at']),usage=receipt.get('result',{}).get('usage',{}),attempt_id=receipt.get('attempt_id'))
                             if 'ttft_seconds' not in row or row['usage'].get('prompt_tokens')!=row['context_tokens'] or row['usage'].get('completion_tokens')!=self.config['output_tokens']: raise RuntimeError('actual model token trace differs from frozen workload')
+                            row.update(status='COMPLETED',token_trace_validated=True)
                             row['cached_tokens']=(row['usage'].get('prompt_tokens_details') or {}).get('cached_tokens')
                             self.snapshot(entry,'model_complete')
                             # This describes a window that has already begun. Its deadline is a fixed safety TTL.
@@ -334,7 +335,7 @@ class Trial:
             raise KeyboardInterrupt(f'signal {signum}')
         prior_handlers={sig:signal.signal(sig,interrupted) for sig in (signal.SIGINT,signal.SIGTERM)}
         attempted_at=time.time()
-        source={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [ROOT/'bench/scale.py',ROOT/'bench/workloads/actor_mix.py',ROOT/'bench/analysis/resources.py',ROOT/'integrations/dynamo/manifest.json',ROOT/'integrations/substrate/manifest.json']}
+        source={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [ROOT/'bench/scale.py',ROOT/'bench/configs/scale-live.json',ROOT/'bench/workloads/actor_mix.py',ROOT/'bench/analysis/resources.py',ROOT/'experiments/dynamo/native_mocker.py',ROOT/'integrations/dynamo/manifest.json',ROOT/'integrations/substrate/manifest.json']}
         report=dict(schema_version=1,trial_id=self.id,seed=self.seed,concurrency=self.n,policy=self.policy,order=self.order,status='failed',config=self.config,
             gpu_execution=False,execution_kind='real-substrate-memory-native-dynamo-cpu-mocker',source_sha256=source,
             source_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
