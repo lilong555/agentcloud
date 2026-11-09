@@ -2,10 +2,21 @@ name: Native upstream validation
 
 on:
   workflow_dispatch:
+    inputs:
+      native_run_id:
+        description: 'Reuse a source-matched native wheel and regression map; empty rebuilds sources'
+        type: string
+        default: ''
   workflow_call:
+    inputs:
+      native_run_id:
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   native:
@@ -28,6 +39,8 @@ jobs:
       GOMAXPROCS: '2'
       SUBSTRATE_TEST_DATABASE_URL: postgresql://agentcloud:agentcloud-ci@127.0.0.1:5432/substrate_native?sslmode=disable
       PROTOC: ${{ github.workspace }}/experiments/dynamo/tools/protoc/bin/protoc
+      PYTHONFAULTHANDLER: '1'
+      RUST_BACKTRACE: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v6
@@ -42,9 +55,12 @@ jobs:
           df -h /
           python3 scripts/disk_guard.py
           python3 scripts/upstream.py --fetch substrate dynamo
-          rustup toolchain install 1.96.1 --profile minimal
+      - name: Install locked Rust toolchain
+        if: inputs.native_run_id == ''
+        run: rustup toolchain install 1.96.1 --profile minimal
       - uses: actions/cache/restore@v4
         id: native_cache
+        if: inputs.native_run_id == ''
         with:
           path: |
             ~/.cargo/registry
@@ -53,21 +69,73 @@ jobs:
           key: native-cpu-${{ runner.os }}-${{ hashFiles('integrations/dynamo/manifest.json') }}
           restore-keys: native-cpu-${{ runner.os }}-
       - name: Build native Rust Frontend bindings
+        if: inputs.native_run_id == ''
         run: python3 scripts/resource_guard.py --min-available-mib 1536 --max-rss-mib 12000 --timeout 5400 -- python3 experiments/dynamo/build_cpu.py
       - name: Package reusable native Python wheel
+        if: inputs.native_run_id == ''
         working-directory: upstream/dynamo
         run: ../../.venv-dynamo/bin/maturin build --locked --manifest-path lib/bindings/python/Cargo.toml --no-default-features --features custom-policy --out ../../artifacts/native-wheels
+      - uses: actions/download-artifact@v4
+        if: inputs.native_run_id != ''
+        with:
+          name: native-cpu-wheel
+          path: artifacts/native-wheels
+          run-id: ${{ inputs.native_run_id }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        if: inputs.native_run_id != ''
+        with:
+          name: native-validation-evidence
+          path: artifacts/native-proof
+          run-id: ${{ inputs.native_run_id }}
+          github-token: ${{ github.token }}
+      - name: Verify reused regression coverage
+        if: inputs.native_run_id != ''
+        run: |
+          python3 scripts/verify_native_proof.py artifacts/native-proof
+          python3 - <<'PY'
+          import pathlib,shutil
+          for path in pathlib.Path('artifacts/native-proof').glob('upstream-patches-*'):
+              if path.is_file() and 'binding-churn' not in path.name:
+                  shutil.copy2(path,pathlib.Path('docs/evidence')/path.name)
+          PY
       - uses: actions/upload-artifact@v4
         with:
           name: native-cpu-wheel
           path: artifacts/native-wheels/*.whl
           retention-days: 14
       - name: Run mapped native Go and Rust tests
+        if: inputs.native_run_id == ''
         run: python3 scripts/resource_guard.py --min-available-mib 1536 --max-rss-mib 12000 --timeout 5400 -- python3 scripts/upstream_native_tests.py --go go --cargo cargo
       - name: Apply format-patch series on clean locked sources
         run: python3 scripts/upstream_patches.py verify
+      - name: Install wheel into a clean locked runtime
+        env:
+          NATIVE_SOURCE_RUN: ${{ inputs.native_run_id || github.run_id }}
+        run: |
+          uv venv --clear --python 3.12 .venv-dynamo
+          uv pip install --python .venv-dynamo/bin/python -r experiments/dynamo/requirements-cpu.lock artifacts/native-wheels/*.whl
+          uv pip check --python .venv-dynamo/bin/python
+          .venv-dynamo/bin/python scripts/verify_cpu_environment.py
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,subprocess
+          root=pathlib.Path('.')
+          files=[*root.glob('artifacts/native-wheels/*.whl'),root/'experiments/dynamo/requirements-cpu.lock',root/'docs/evidence/upstream-patches-native-tests.json']
+          report=dict(schema_version=1,source_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),native_source_run=os.environ['NATIVE_SOURCE_RUN'],runtime_run=os.environ['GITHUB_RUN_ID'],files={str(p):hashlib.sha256(p.read_bytes()).hexdigest() for p in files})
+          (root/'docs/evidence/native-runtime-provenance.json').write_text(json.dumps(report,indent=2)+'\n')
+          PY
       - name: Reclaim native binding capacity and reject retired leases
+        id: churn
         run: python3 scripts/ci_native_churn.py
+      - name: Capture a native startup backtrace
+        if: failure() && steps.churn.outcome == 'failure'
+        timeout-minutes: 5
+        env:
+          AGENTCLOUD_NATIVE_GDB: mocker
+        run: |
+          cp -a docs/evidence/logs/native-binding-churn docs/evidence/logs/native-binding-churn-first-attempt
+          cp docs/evidence/upstream-patches-binding-churn.json docs/evidence/upstream-patches-binding-churn-first-attempt.json
+          python3 scripts/ci_native_churn.py
       - name: Verify native pause, feedback, cancellation and FINAL
         run: python3 experiments/dynamo/native_mocker.py verify
       - name: Check cache archive disk headroom
@@ -107,7 +175,9 @@ jobs:
             docs/evidence/upstream-patches-*-native.log
             docs/evidence/dynamo-cpu-build.json
             docs/evidence/dynamo-native-mocker.json
+            docs/evidence/native-runtime-provenance.json
             docs/evidence/logs/dynamo-cpu-build-*/
             docs/evidence/logs/dynamo-native-*/
             docs/evidence/logs/native-binding-churn/
+            docs/evidence/logs/native-binding-churn-first-attempt/
           retention-days: 30

@@ -1,10 +1,5 @@
 name: Real Actor scale experiments
 on:
-  push:
-    paths:
-      - .github/workflows/live-scale.yml
-      - bench/scale.py
-      - scripts/ci_live_prepare.sh
   workflow_dispatch:
     inputs:
       scope:
@@ -77,14 +72,12 @@ jobs:
       - uses: astral-sh/setup-uv@v7
       - name: Prepare locked source
         run: python3 scripts/upstream.py --fetch substrate dynamo
-      - name: Prepare Kind, gVisor MEMORY, durable storage and two Workers
-        run: bash scripts/ci_live_prepare.sh
       - name: Await selected native validation
         if: inputs.native_run_id != ''
         env:
           GH_TOKEN: ${{ github.token }}
           NATIVE_RUN: ${{ inputs.native_run_id }}
-        run: gh run watch "$NATIVE_RUN" --interval 30
+        run: gh run watch "$NATIVE_RUN" --interval 30 --exit-status
       - uses: actions/download-artifact@v4
         with:
           name: native-cpu-wheel
@@ -99,16 +92,13 @@ jobs:
           github-token: ${{ github.token }}
       - name: Validate reused native source and install runtime
         run: |
-          python3 - <<'PY'
-          import json,pathlib
-          root=pathlib.Path('.')
-          report=json.loads((root/'artifacts/native-proof/upstream-patches-native-tests.json').read_text())
-          expected={row['path']:row['sha256'] for row in json.loads((root/'integrations/dynamo/manifest.json').read_text())['files']}
-          observed={row['path']:row['sha256'] for row in report['files'] if row['repository']=='dynamo' and row['status']=='passed'}
-          assert report['status']=='passed' and observed==expected,'native artifact source differs from current delivery'
-          PY
+          python3 scripts/verify_native_proof.py artifacts/native-proof --require-runtime
           uv venv --python 3.12 .venv-dynamo
           uv pip install --python .venv-dynamo/bin/python -r experiments/dynamo/requirements-cpu.lock artifacts/native-wheels/*.whl
+          uv pip check --python .venv-dynamo/bin/python
+          .venv-dynamo/bin/python scripts/verify_cpu_environment.py
+      - name: Prepare Kind, gVisor MEMORY, durable storage and two Workers
+        run: bash scripts/ci_live_prepare.sh
       - name: Run six-round growing-context trial
         run: python3 -m bench.scale --concurrency '${{ matrix.n }}' --policies '${{ matrix.policy }}' --seeds '${{ matrix.seed }}'
       - name: Collect runtime and resource evidence

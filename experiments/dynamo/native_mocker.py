@@ -101,12 +101,14 @@ class Stack:
         self.tenant_tokens=json.loads((self.runtime_dir/'tenant-tokens.json').read_text())
         self.front=f'http://127.0.0.1:{self.args.port}';self.control=f'http://127.0.0.1:{self.args.control_port}'
         instance=f'{os.getpid()}-{uuid.uuid4().hex[:12]}'
-        env=os.environ.copy();env.update(PYTHONPATH=str(UPSTREAM/'components/src'),DYN_FILE_KV=str(self.runtime_dir/f'discovery-{instance}'),DYN_NAMESPACE=f'agentcloud-{instance}',DYN_LOG='info',DYN_COMPUTE_THREADS='2',DYN_SYSTEM_THREADS='2',HF_HUB_OFFLINE='1',TRANSFORMERS_OFFLINE='1')
+        env=os.environ.copy();env.update(PYTHONPATH=str(UPSTREAM/'components/src'),DYN_FILE_KV=str(self.runtime_dir/f'discovery-{instance}'),DYN_NAMESPACE=f'agentcloud-{instance}',DYN_LOG='info',DYN_COMPUTE_THREADS='2',DYN_SYSTEM_THREADS='2',HF_HUB_OFFLINE='1',TRANSFORMERS_OFFLINE='1',PYTHONFAULTHANDLER='1',RUST_BACKTRACE='1')
         common=['--discovery-backend','file','--request-plane','tcp','--event-plane','zmq']
         frontend=[str(PYTHON),'-m','dynamo.frontend','--http-host','127.0.0.1','--http-port',str(self.args.port),'--router-mode','kv','--router-policy-config',str(self.runtime_dir/'thunderagent.yaml'),'--kv-cache-block-size','16',*common]
         mocker=[str(PYTHON),'-m','dynamo.mocker','--model-path',str(model),'--model-name','agentcloud-tiny','--block-size','16','--num-gpu-blocks-override',str(getattr(self.args,'num_gpu_blocks',64)),'--max-model-len',str(getattr(self.args,'max_model_len',8192)),'--kv-bytes-per-token','512','--num-workers',str(getattr(self.args,'num_workers',1)),'--speedup-ratio',str(getattr(self.args,'speedup_ratio',1)),*common]
         self.logdir.mkdir(parents=True,exist_ok=True)
         for name,command in [('frontend',frontend),('mocker',mocker)]:
+            if os.environ.get('AGENTCLOUD_NATIVE_GDB')==name:
+                command=['gdb','--batch','--return-child-result','-ex','set pagination off','-ex','run','-ex','thread apply all bt','--args',*command]
             out=(self.logdir/(name+'.log')).open('w');self.files.append(out)
             current=env.copy()
             if name=='frontend':current['DYN_EXECUTION_CONTROL_CONFIG']=str(self.runtime_dir/'control.json')
@@ -115,8 +117,8 @@ class Stack:
         deadline=time.monotonic()+120
         last=None
         while time.monotonic()<deadline:
-            for p in self.processes:
-                if p.poll() is not None:raise RuntimeError(f'native process {p.pid} exited with {p.returncode}; logs: {self.logdir}')
+            for p,command in zip(self.processes,self.commands):
+                if p.poll() is not None:raise RuntimeError(f"native {command['name']} process {p.pid} exited with {p.returncode}; logs: {self.logdir}")
             try:
                 status,models=request(self.front,'/v1/models')
                 cap_status,cap=request(self.control,'/v1/execution/capabilities',token=self.token)

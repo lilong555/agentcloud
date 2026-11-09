@@ -152,6 +152,7 @@ patch = {"endpoints": [{"addresses": [sys.argv[1]], "conditions": {"ready": True
 subprocess.run(["kubectl", "--context=kind-agentcloud", "-n", "agentcloud", "patch", "endpointslice", "coordinator-host", "--type=merge", "--patch", json.dumps(patch)], check=True)
 PY
 kubectl --context=kind-agentcloud apply -f artifacts/substrate/runtime-spec/workerpool.json
+kubectl --context=kind-agentcloud -n agentcloud wait --for=create deployment/agentcloud --timeout=120s
 kubectl --context=kind-agentcloud -n agentcloud rollout status deployment/agentcloud --timeout=300s
 bash deploy/substrate/export-client.sh
 api_pid=''

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Native frontend capacity reclamation with owned-process cleanup."""
 import json
+import datetime as dt
 from pathlib import Path
 import signal
 import subprocess
@@ -18,6 +19,10 @@ def main():
     signal.signal(signal.SIGTERM, interrupted)
     args = SimpleNamespace(port=18080, control_port=18081, runtime_dir=ROOT/'artifacts/native-churn', max_sessions=2)
     stack = Stack(args, ROOT/'docs/evidence/logs/native-binding-churn')
+    path = ROOT/'docs/evidence/upstream-patches-binding-churn.json'
+    report = dict(schema_version=1, status='failed',
+                  execution_kind='native-rust-frontend-mocker-binding-finalization',
+                  recorded_at=dt.datetime.now(dt.timezone.utc).isoformat())
     try:
         stack.start()
         subprocess.run([sys.executable, str(ROOT/'scripts/upstream_binding_churn.py'),
@@ -27,12 +32,18 @@ def main():
         code, capabilities = stack.control_call('capabilities')
         if code != 200 or capabilities['active_bindings'] != 0 or capabilities['retired_bindings_retained'] > 2:
             raise AssertionError('native capacity or bounded replay state was not reclaimed')
-        path = ROOT/'docs/evidence/upstream-patches-binding-churn.json'
         report = json.loads(path.read_text())
         report['final_capabilities'] = capabilities
-        path.write_text(json.dumps(report, indent=2)+'\n')
+    except BaseException as error:
+        report['status'] = 'failed'
+        report['error'] = str(error) or type(error).__name__
+        raise
     finally:
         stack.close()
+        report['processes'] = [{**command, 'exit_code': process.returncode}
+                               for command, process in zip(stack.commands, stack.processes)]
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(report, indent=2)+'\n')
 
 
 if __name__ == '__main__':

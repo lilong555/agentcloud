@@ -70,13 +70,11 @@ jobs:
       - uses: astral-sh/setup-uv@v7
       - name: Restore locked sources
         run: python3 scripts/upstream.py --fetch substrate dynamo
-      - name: Prepare Kind, gVisor, storage and WorkerPool
-        run: bash scripts/ci_live_prepare.sh
       - name: Await native artifact publication
         env:
           GH_TOKEN: ${{ github.token }}
           NATIVE_RUN: ${{ inputs.native_run_id }}
-        run: gh run watch "$NATIVE_RUN" --interval 30
+        run: gh run watch "$NATIVE_RUN" --interval 30 --exit-status
       - uses: actions/download-artifact@v4
         with:
           name: native-cpu-wheel
@@ -91,18 +89,15 @@ jobs:
           github-token: ${{ github.token }}
       - name: Verify native provenance and install locked dependencies
         run: |
-          python3 - <<'PY'
-          import json,pathlib
-          root=pathlib.Path('.')
-          report=json.loads((root/'artifacts/native-proof/upstream-patches-native-tests.json').read_text())
-          assert report['status']=='passed','native test map must pass'
-          for repository in ('substrate','dynamo'):
-              expected={row['path']:row['sha256'] for row in json.loads((root/f'integrations/{repository}/manifest.json').read_text())['files']}
-              observed={row['path']:row['sha256'] for row in report['files'] if row['repository']==repository and row['status']=='passed'}
-              assert expected==observed,'native source digests differ'
-          PY
+          python3 scripts/verify_native_proof.py artifacts/native-proof --require-runtime
           uv venv --python 3.12 .venv-dynamo
           uv pip install --python .venv-dynamo/bin/python -r experiments/dynamo/requirements-cpu.lock artifacts/native-wheels/*.whl
+          uv pip check --python .venv-dynamo/bin/python
+          .venv-dynamo/bin/python scripts/verify_cpu_environment.py
+      - name: Prepare Kind, gVisor, storage and WorkerPool
+        run: bash scripts/ci_live_prepare.sh
+      - name: Build real fault probe
+        run: |
           "$HOME/.local/share/agentcloud/go/bin/go" build -p 2 -o artifacts/substrate/fault-probe ./tests/faults/probe
       - name: Inject and reconcile real fault windows
         if: matrix.suite == 'faults'
