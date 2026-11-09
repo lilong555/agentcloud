@@ -6,6 +6,7 @@ import sys
 
 from check import source_digest
 from source_overlay import apply
+from import_live_artifact import verify_archive
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -34,6 +35,11 @@ def main() -> int:
             continue
         report = json.loads(path.read_text())
         inspect_links(report, errors, name)
+        if isinstance(report, dict) and report.get('execution_kind') == 'github-actions-evidence-archive':
+            try:
+                verify_archive(report)
+            except (OSError, ValueError, KeyError) as exc:
+                errors.append(f'{name}: {exc}')
         if name == "local-contract.json" and report.get("source_sha256") != source_digest():
             errors.append("本地 Go 源码与验证报告不一致，请运行 make check")
         repo = name.split("-")[0]

@@ -6,6 +6,7 @@ import random
 import statistics
 
 from bench.substrate_live import quantile, write_json
+from bench.analysis.hosted import with_cleanup
 
 
 def summarize(trials,samples=2000):
@@ -27,7 +28,7 @@ def summarize(trials,samples=2000):
         for wait in (1,2,5,10,20,40,60):
             pairs=[]
             for trial in group:
-                by_policy={r['policy']:r for r in trial['measurements'] if r['wait_seconds']==wait and r['status']=='passed'}
+                by_policy={r['policy']:r for r in trial['measurements'] if r['wait_seconds']==wait and r['status']=='passed' and trial['status']=='passed'}
                 if set(by_policy)!= {'keep','suspend'}: continue
                 keep,suspend=by_policy['keep'],by_policy['suspend']
                 pairs.append(dict(seed=trial['seed'],reserved_gb_s_saved=keep['resources']['actor_reserved_gb_s']-suspend['resources']['actor_reserved_gb_s'],
@@ -42,6 +43,7 @@ def summarize(trials,samples=2000):
             cells.append(cell)
     return dict(cells=cells,planned_windows=sum(len(t['measurements']) for t in selected),
         passed_windows=sum(r['status']=='passed' for t in selected for r in t['measurements']),
+        accepted_windows=sum(r['status']=='passed' and t['status']=='passed' for t in selected for r in t['measurements']),
         attempt_audit=audit,all_attempts=dict(trials=len(trials),
             planned_windows=sum(len(t['measurements']) for t in trials),
             passed_windows=sum(r['status']=='passed' for t in trials for r in t['measurements'])),
@@ -80,10 +82,18 @@ def main():
     p.add_argument('--output',type=Path,default=Path('docs/evidence/heatmap-summary.json'))
     p.add_argument('--source-commit')
     args=p.parse_args()
-    trials=[json.loads(path.read_text()) for path in sorted(args.input_dir.rglob('heatmap.json'))]
-    if args.source_commit: trials=[t for t in trials if t['source_commit']==args.source_commit]
+    selected=[(path,json.loads(path.read_text())) for path in sorted(args.input_dir.rglob('heatmap.json'))]
+    if args.source_commit: selected=[(path,t) for path,t in selected if t['source_commit']==args.source_commit]
+    trials=[with_cleanup(path,t) for path,t in selected]
     if not trials: raise SystemExit('no measured heatmap artifacts')
     result=summarize(trials)
+    expected={(heap,seed) for heap in (16,64,128) for seed in (7101,7102,7103)}
+    observed={(t['heap_mib'],t['seed']) for t in trials}
+    if observed-expected: raise ValueError('heatmap trials differ from the frozen planned matrix')
+    result['matrix']=dict(planned_trials=len(expected),observed_trials=len(observed),planned_windows=126,
+        completed_windows=result['accepted_windows'],failed_or_unexecuted_windows=126-result['accepted_windows'],
+        status='passed' if observed==expected and result['accepted_windows']==126 else 'incomplete',
+        missing_trials=[dict(heap_mib=h,seed=s) for h,s in sorted(expected-observed)])
     result.update(schema_version=1,execution_kind='real-substrate-memory-wait-working-set-sweep',gpu_execution=False,source_commit_filter=args.source_commit)
     write_json(args.output,result);figures(result,args.output.with_name('suspend-break-even'))
     print(json.dumps(dict(cells=len(result['cells']),passed_windows=result['passed_windows'],output=str(args.output))))

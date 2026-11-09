@@ -7,6 +7,7 @@ import random
 import statistics
 
 from bench.substrate_live import quantile, write_json
+from bench.analysis.hosted import with_cleanup
 
 PERCENTILES = (50, 95, 99)
 SCALARS = ('goodput_per_second', 'stranded_worker_gb_s', 'actor_reserved_gb_s')
@@ -49,6 +50,21 @@ def primary_attempts(trials):
             primary=first is trial, planned_requests=planned(trial), completed_requests=len(completed(trial)),
             error=trial.get('error'), github_run_id=trial.get('github_run_id')))
     return list(selected.values()), audit
+
+
+def matrix_coverage(trials, config):
+    primary, _ = primary_attempts(trials)
+    expected = {(n, policy, seed) for n in config['concurrency'] for policy in config['policies'] for seed in config['paired_seeds']}
+    observed = {(t['concurrency'], t['policy'], t['seed']) for t in primary}
+    if observed - expected:
+        raise ValueError('observed trials differ from the frozen planned matrix')
+    offered = sum(n * len(config['context_tokens']) for n, _, _ in expected)
+    done = sum(len(completed(t)) for t in primary)
+    return dict(planned_trials=len(expected), observed_trials=len(primary),
+        passed_trials=sum(t['status']=='passed' for t in primary),
+        planned_requests=offered, completed_requests=done, failed_or_unoffered_requests=offered-done,
+        missing_trials=[dict(concurrency=n,policy=p,seed=s) for n,p,s in sorted(expected-observed)],
+        status='passed' if expected==observed and all(t['status']=='passed' for t in primary) and done==offered else 'incomplete')
 
 
 def summarize(trials, samples=2000, seed=9031):
@@ -181,6 +197,7 @@ def main():
     p.add_argument('--input-dir', type=Path, default=Path('docs/evidence/scale'))
     p.add_argument('--output', type=Path, default=Path('docs/evidence/scale-summary.json'))
     p.add_argument('--source-commit')
+    p.add_argument('--matrix-config', type=Path, default=Path('bench/configs/scale-live.json'))
     p.add_argument('--bootstrap-samples', type=int, default=2000)
     p.add_argument('--skip-figures', action='store_true')
     args = p.parse_args()
@@ -188,8 +205,10 @@ def main():
     selected = [(path,json.loads(path.read_text())) for path in paths]
     if args.source_commit:
         selected = [(path,t) for path,t in selected if t.get('source_commit') == args.source_commit]
+    selected = [(path,with_cleanup(path,t)) for path,t in selected]
     paths,trials=zip(*selected) if selected else ([],[])
     result = summarize(trials, args.bootstrap_samples)
+    result['matrix'] = matrix_coverage(trials, json.loads(args.matrix_config.read_text()))
     result.update(schema_version=2, execution_kind='real-substrate-memory-native-dynamo-cpu-mocker',
         upstream_execution=True, gpu_execution=False, source_commit_filter=args.source_commit, sources=[str(path) for path in paths])
     write_json(args.output, result)

@@ -32,3 +32,23 @@ python3 -m bench.native
 ```
 
 `bench.native` 使用锁定 Dynamo 的真实 native Router 与官方 Mocker，保存逻辑反馈与竞争请求的原始观测。该报告与 `core` 的离散事件模型分别记录执行类型。真实 Actor 生命周期和文件一致性见 Substrate 与 Agent 证据。
+
+## 真实多租户矩阵
+
+GitHub Actions 的 `Real Actor scale experiments` 执行 N=8/16/32/64、五种策略、三个配对种子的 60 个 trial，共 10,800 个模型请求。每个 Workspace 连续六轮，前缀从 1K 增至 16K tokens。四类工具任务在真实 gVisor MEMORY Actor 内运行，两个 Worker 共享四个可分配槽位；Dynamo 使用受限 KV 块的官方 CPU Mocker。预检核验当前 Worker 注册 epoch、gVisor 默认运行时、运行时内存开销及可分配容量。
+
+`Live fault and break-even acceptance` 执行 15 类故障以及 16/64/128 MiB 随机工作集、1～60 秒返回等待的 126 个测量窗口。每项任务结束后核验 Actor、Tag、临时数据库、端口转发与 Kind 容器清理结果。
+
+下载并校验 Actions artifact ZIP 后，将解压目录归档至仓库：
+
+```bash
+python3 scripts/import_live_artifact.py \
+  --source-dir artifacts/downloaded-trial --kind scale \
+  --run-id RUN_ID --artifact-id ARTIFACT_ID --archive-sha256 VERIFIED_ZIP_SHA256
+python3 -m bench.analysis.scale --source-commit SOURCE_COMMIT
+python3 -m bench.analysis.heatmap --source-commit SOURCE_COMMIT
+python3 -m bench.analysis.faults --source-commit SOURCE_COMMIT
+make evidence-audit
+```
+
+`--kind faults` 与 `--kind heatmap` 归档对应验收产物。`docs/evidence/live-runs/` 保存运行环境、清理记录、GitHub 来源和每份文件的摘要。完整时序、回执、日志以确定性 gzip 保存，`gzip -dc FILE.gz` 可直接查看；证据审计同时验证压缩前后的 SHA256。分析固定首轮样本，保留重跑记录、失败请求及尚未执行的矩阵分母；清理失败进入验收失败状态。延迟采用 Workspace 轨迹的分层 bootstrap，策略差值使用配对种子区间。

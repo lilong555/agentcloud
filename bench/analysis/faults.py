@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 
 from bench.substrate_live import write_json
+from bench.analysis.hosted import with_cleanup
 
 CASE_LABELS = {
     'return_during_suspend': '挂起途中返回需求与 MEMORY 恢复',
@@ -104,7 +105,7 @@ def main():
         report = json.loads(path.read_text())
         if args.source_commit and report.get('source_commit') != args.source_commit:
             continue
-        reports.append(dict(report, source=str(path)))
+        reports.append(dict(with_cleanup(path,report), source=str(path)))
     result = summarize(reports)
     write_json(args.output, result)
     columns = ['case', 'label', 'status', 'check_status', 'run_status', 'seconds', 'attempts', 'github_run_id', 'source', 'error']

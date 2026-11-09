@@ -1,6 +1,6 @@
 import unittest
 
-from bench.analysis.scale import summarize
+from bench.analysis.scale import summarize, matrix_coverage
 
 
 def trial(identity, at, status='passed', policy='agentcloud', seed=7101):
@@ -13,6 +13,13 @@ def trial(identity, at, status='passed', policy='agentcloud', seed=7101):
 
 
 class ScaleAnalysisTests(unittest.TestCase):
+    def test_unstarted_trials_remain_in_the_frozen_matrix_denominator(self):
+        config=dict(concurrency=[2,4],policies=['agentcloud','static-2'],paired_seeds=[7101],context_tokens=[1024])
+        report=matrix_coverage([trial('one',1)],config)
+        self.assertEqual((report['planned_trials'],report['observed_trials']),(4,1))
+        self.assertEqual((report['planned_requests'],report['completed_requests'],report['failed_or_unoffered_requests']),(12,2,10))
+        self.assertEqual(len(report['missing_trials']),3)
+        self.assertEqual(report['status'],'incomplete')
     def test_failed_first_attempt_remains_primary_and_every_attempt_counts(self):
         report=summarize([trial('retry',2),trial('initial',1,'failed')],samples=20)
         row=report['groups'][0]
