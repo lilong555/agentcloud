@@ -40,7 +40,7 @@ jobs:
     uses: ./.github/workflows/native-validation.yml
   experiment:
     needs: [plan,native]
-    if: always() && needs.plan.result == 'success' && (needs.native.result == 'success' || needs.native.result == 'skipped')
+    if: ${{ !cancelled() && needs.plan.result == 'success' && (needs.native.result == 'success' || needs.native.result == 'skipped') }}
     strategy:
       fail-fast: false
       max-parallel: ${{ fromJSON(format('{0}', inputs.max_parallel || 8)) }}

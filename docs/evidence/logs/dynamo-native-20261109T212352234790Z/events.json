@@ -1,0 +1,448 @@
+[
+  {
+    "name": "official_native_processes_ready",
+    "passed": true,
+    "detail": {
+      "protocol_version": 1,
+      "binding_finalization": true,
+      "active_bindings": 0,
+      "retired_bindings_retained": 0,
+      "execution_feedback": true,
+      "trusted_bindings": true,
+      "opaque_routing_sessions": true,
+      "admission_history": true,
+      "admission_attempt_header": "x-agentcloud-attempt-id",
+      "inference_lease_header": "x-agentcloud-inference-lease",
+      "classifier_count": 1,
+      "max_body_bytes": 8192,
+      "requests_per_second": 1000,
+      "ttl_ms": {
+        "min": 100,
+        "max": 60000
+      },
+      "native_frontend": true,
+      "gpu_execution": false
+    }
+  },
+  {
+    "name": "trusted_pre_registration",
+    "passed": true,
+    "detail": {
+      "protocol_version": 1,
+      "accepted": true,
+      "applied": false,
+      "reconciled": true,
+      "binding": {
+        "source_id": "coordinator-local",
+        "tenant_id": "tenant-a",
+        "workspace_id": "workspace-a",
+        "session_id": "session-a",
+        "actor_uid": "actor-session-a",
+        "epoch": 1
+      },
+      "routing_session_id": "ac:cce650981a3445c7b6d52f19b627a4b0",
+      "classifier_id": 0,
+      "binding_generation": "89e30e85a46840a39351cd92090348c8",
+      "sequence": 0,
+      "received_at": "2026-11-09T21:23:52.790224926Z",
+      "snapshot": {
+        "program_present": false,
+        "admission_history": [],
+        "last_admission_wait_ms": null,
+        "released_acting_tokens": 0,
+        "phase": null,
+        "lifecycle": null,
+        "baseline_tokens": null,
+        "logical_budget_tokens": null,
+        "execution_multiplier": 1.0,
+        "state": null,
+        "sequence": 0,
+        "fresh": false,
+        "session_waiting_requests": 0,
+        "session_active_requests": 0,
+        "waiting_requests": 0,
+        "paused_programs": 0,
+        "completed_events": 0,
+        "aborted_events": 0,
+        "pause_events": 0,
+        "final_events": 0
+      }
+    }
+  },
+  {
+    "name": "ordinary_session_cannot_inject_trusted_program",
+    "passed": true,
+    "detail": {
+      "status": 401,
+      "response": {
+        "message": "A current inference lease is required",
+        "type": "Unauthorized",
+        "code": 401
+      }
+    }
+  },
+  {
+    "name": "real_mocker_first_turn",
+    "passed": true,
+    "detail": {
+      "status": 200,
+      "usage": {
+        "prompt_tokens": 700,
+        "completion_tokens": 8,
+        "total_tokens": 708,
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cached_tokens": 0
+        }
+      }
+    }
+  },
+  {
+    "name": "native_acting_budget",
+    "passed": true,
+    "detail": {
+      "program_present": true,
+      "admission_history": [
+        {
+          "request_id": "fb2c6a96-6d86-4ab0-9709-792d2c02a2e0",
+          "client_request_id": null,
+          "queued_at": "2026-11-09T21:23:52.805136457Z",
+          "admitted_at": "2026-11-09T21:23:52.805290405Z",
+          "wait_ms": 0.153948
+        }
+      ],
+      "last_admission_wait_ms": 0.153948,
+      "released_acting_tokens": 0,
+      "phase": "Acting",
+      "lifecycle": "Active",
+      "baseline_tokens": 708,
+      "logical_budget_tokens": 708,
+      "execution_multiplier": 1.0,
+      "state": null,
+      "sequence": 0,
+      "fresh": false,
+      "session_waiting_requests": 0,
+      "session_active_requests": 0,
+      "waiting_requests": 0,
+      "paused_programs": 0,
+      "completed_events": 1,
+      "aborted_events": 0,
+      "pause_events": 0,
+      "final_events": 0
+    }
+  },
+  {
+    "name": "state_applied_to_native_classifier",
+    "passed": true,
+    "detail": {
+      "protocol_version": 1,
+      "accepted": true,
+      "applied": true,
+      "reconciled": true,
+      "binding": {
+        "source_id": "coordinator-local",
+        "tenant_id": "tenant-a",
+        "workspace_id": "workspace-a",
+        "session_id": "session-a",
+        "actor_uid": "actor-session-a",
+        "epoch": 1
+      },
+      "routing_session_id": "ac:cce650981a3445c7b6d52f19b627a4b0",
+      "classifier_id": 0,
+      "binding_generation": "89e30e85a46840a39351cd92090348c8",
+      "sequence": 1,
+      "received_at": "2026-11-09T21:23:53.057400149Z",
+      "snapshot": {
+        "program_present": true,
+        "admission_history": [
+          {
+            "request_id": "fb2c6a96-6d86-4ab0-9709-792d2c02a2e0",
+            "client_request_id": null,
+            "queued_at": "2026-11-09T21:23:52.805136457Z",
+            "admitted_at": "2026-11-09T21:23:52.805290405Z",
+            "wait_ms": 0.153948
+          }
+        ],
+        "last_admission_wait_ms": 0.153948,
+        "released_acting_tokens": 0,
+        "phase": "Acting",
+        "lifecycle": "Active",
+        "baseline_tokens": 708,
+        "logical_budget_tokens": 708,
+        "execution_multiplier": 1.0,
+        "state": "SUSPENDED",
+        "sequence": 1,
+        "fresh": true,
+        "session_waiting_requests": 0,
+        "session_active_requests": 0,
+        "waiting_requests": 0,
+        "paused_programs": 0,
+        "completed_events": 1,
+        "aborted_events": 0,
+        "pause_events": 0,
+        "final_events": 0
+      }
+    }
+  },
+  {
+    "name": "suspended_native_budget_zero",
+    "passed": true,
+    "detail": {
+      "program_present": true,
+      "admission_history": [
+        {
+          "request_id": "fb2c6a96-6d86-4ab0-9709-792d2c02a2e0",
+          "client_request_id": null,
+          "queued_at": "2026-11-09T21:23:52.805136457Z",
+          "admitted_at": "2026-11-09T21:23:52.805290405Z",
+          "wait_ms": 0.153948
+        }
+      ],
+      "last_admission_wait_ms": 0.153948,
+      "released_acting_tokens": 708,
+      "phase": "Acting",
+      "lifecycle": "Active",
+      "baseline_tokens": 708,
+      "logical_budget_tokens": 0,
+      "execution_multiplier": 0.0,
+      "state": "SUSPENDED",
+      "sequence": 1,
+      "fresh": true,
+      "session_waiting_requests": 0,
+      "session_active_requests": 0,
+      "waiting_requests": 0,
+      "paused_programs": 0,
+      "completed_events": 1,
+      "aborted_events": 0,
+      "pause_events": 0,
+      "final_events": 0
+    }
+  },
+  {
+    "name": "second_real_session_admitted",
+    "passed": true,
+    "detail": {
+      "status": 200,
+      "usage": {
+        "prompt_tokens": 400,
+        "completion_tokens": 8,
+        "total_tokens": 408,
+        "prompt_tokens_details": {
+          "audio_tokens": null,
+          "cached_tokens": 384
+        }
+      }
+    }
+  },
+  {
+    "name": "replay_rejected",
+    "passed": true,
+    "detail": {
+      "protocol_version": 1,
+      "accepted": false,
+      "applied": false,
+      "error": "replay"
+    }
+  },
+  {
+    "name": "cross_tenant_rejected",
+    "passed": true,
+    "detail": {
+      "protocol_version": 1,
+      "accepted": false,
+      "applied": false,
+      "error": "scope_mismatch"
+    }
+  },
+  {
+    "name": "ttl_restores_default_weight",
+    "passed": true,
+    "detail": {
+      "program_present": true,
+      "admission_history": [
+        {
+          "request_id": "fb2c6a96-6d86-4ab0-9709-792d2c02a2e0",
+          "client_request_id": null,
+          "queued_at": "2026-11-09T21:23:52.805136457Z",
+          "admitted_at": "2026-11-09T21:23:52.805290405Z",
+          "wait_ms": 0.153948
+        }
+      ],
+      "last_admission_wait_ms": 0.153948,
+      "released_acting_tokens": 0,
+      "phase": "Acting",
+      "lifecycle": "Active",
+      "baseline_tokens": 708,
+      "logical_budget_tokens": 708,
+      "execution_multiplier": 1.0,
+      "state": "SUSPENDED",
+      "sequence": 1,
+      "fresh": false,
+      "session_waiting_requests": 0,
+      "session_active_requests": 0,
+      "waiting_requests": 0,
+      "paused_programs": 1,
+      "completed_events": 2,
+      "aborted_events": 0,
+      "pause_events": 1,
+      "final_events": 0
+    }
+  },
+  {
+    "name": "resuming_restores_budget",
+    "passed": true,
+    "detail": {
+      "program_present": true,
+      "admission_history": [
+        {
+          "request_id": "fb2c6a96-6d86-4ab0-9709-792d2c02a2e0",
+          "client_request_id": null,
+          "queued_at": "2026-11-09T21:23:52.805136457Z",
+          "admitted_at": "2026-11-09T21:23:52.805290405Z",
+          "wait_ms": 0.153948
+        }
+      ],
+      "last_admission_wait_ms": 0.153948,
+      "released_acting_tokens": 0,
+      "phase": "Acting",
+      "lifecycle": "Active",
+      "baseline_tokens": 708,
+      "logical_budget_tokens": 708,
+      "execution_multiplier": 1.0,
+      "state": "RESUMING",
+      "sequence": 2,
+      "fresh": true,
+      "session_waiting_requests": 0,
+      "session_active_requests": 0,
+      "waiting_requests": 0,
+      "paused_programs": 1,
+      "completed_events": 2,
+      "aborted_events": 0,
+      "pause_events": 1,
+      "final_events": 0
+    }
+  },
+  {
+    "name": "real_stream_received",
+    "passed": true,
+    "detail": {
+      "first_line": "data: {\"id\":\"cmpl-eeaaf0da-4806-4e91-b1dd-c22630557559\",\"choices\":[{\"text\":\" token1854\",\"index\":0}],\"created\":1794259435,\"model\":\"agentcloud-tiny\",\"system_fingerprint\":null,\"object\":\"text_completion\","
+    }
+  },
+  {
+    "name": "native_cancel_lifecycle",
+    "passed": true,
+    "detail": {
+      "program_present": false,
+      "admission_history": [
+        {
+          "request_id": "eeaaf0da-4806-4e91-b1dd-c22630557559",
+          "client_request_id": null,
+          "queued_at": "2026-11-09T21:23:55.035320441Z",
+          "admitted_at": "2026-11-09T21:23:55.035414150Z",
+          "wait_ms": 0.09370899999999999
+        }
+      ],
+      "last_admission_wait_ms": 0.09370899999999999,
+      "released_acting_tokens": 0,
+      "phase": null,
+      "lifecycle": null,
+      "baseline_tokens": null,
+      "logical_budget_tokens": null,
+      "execution_multiplier": 1.0,
+      "state": null,
+      "sequence": 0,
+      "fresh": false,
+      "session_waiting_requests": 0,
+      "session_active_requests": 0,
+      "waiting_requests": 0,
+      "paused_programs": 0,
+      "completed_events": 3,
+      "aborted_events": 1,
+      "pause_events": 1,
+      "final_events": 1
+    }
+  },
+  {
+    "name": "native_final_releases_program",
+    "passed": true,
+    "detail": {
+      "program_present": false,
+      "admission_history": [
+        {
+          "request_id": "fb2c6a96-6d86-4ab0-9709-792d2c02a2e0",
+          "client_request_id": null,
+          "queued_at": "2026-11-09T21:23:52.805136457Z",
+          "admitted_at": "2026-11-09T21:23:52.805290405Z",
+          "wait_ms": 0.153948
+        },
+        {
+          "request_id": "cb12b111-e91a-412f-9f31-526cbe99ab96",
+          "client_request_id": null,
+          "queued_at": "2026-11-09T21:23:55.061725647Z",
+          "admitted_at": "2026-11-09T21:23:55.061797523Z",
+          "wait_ms": 0.071876
+        }
+      ],
+      "last_admission_wait_ms": 0.071876,
+      "released_acting_tokens": 0,
+      "phase": null,
+      "lifecycle": null,
+      "baseline_tokens": null,
+      "logical_budget_tokens": null,
+      "execution_multiplier": 1.0,
+      "state": "SUSPENDED",
+      "sequence": 3,
+      "fresh": true,
+      "session_waiting_requests": 0,
+      "session_active_requests": 0,
+      "waiting_requests": 0,
+      "paused_programs": 0,
+      "completed_events": 4,
+      "aborted_events": 1,
+      "pause_events": 1,
+      "final_events": 2
+    }
+  },
+  {
+    "name": "native_pause_observed",
+    "passed": true,
+    "detail": {
+      "program_present": false,
+      "admission_history": [
+        {
+          "request_id": "fb2c6a96-6d86-4ab0-9709-792d2c02a2e0",
+          "client_request_id": null,
+          "queued_at": "2026-11-09T21:23:52.805136457Z",
+          "admitted_at": "2026-11-09T21:23:52.805290405Z",
+          "wait_ms": 0.153948
+        },
+        {
+          "request_id": "cb12b111-e91a-412f-9f31-526cbe99ab96",
+          "client_request_id": null,
+          "queued_at": "2026-11-09T21:23:55.061725647Z",
+          "admitted_at": "2026-11-09T21:23:55.061797523Z",
+          "wait_ms": 0.071876
+        }
+      ],
+      "last_admission_wait_ms": 0.071876,
+      "released_acting_tokens": 0,
+      "phase": null,
+      "lifecycle": null,
+      "baseline_tokens": null,
+      "logical_budget_tokens": null,
+      "execution_multiplier": 1.0,
+      "state": "SUSPENDED",
+      "sequence": 3,
+      "fresh": true,
+      "session_waiting_requests": 0,
+      "session_active_requests": 0,
+      "waiting_requests": 0,
+      "paused_programs": 0,
+      "completed_events": 4,
+      "aborted_events": 1,
+      "pause_events": 1,
+      "final_events": 2
+    }
+  }
+]

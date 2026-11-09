@@ -44,7 +44,7 @@ AgentCloud 的核心是执行层与推理准入层的协同：Agent 等待模型
 
 最近墓碑数量受 `max_sessions` 限制；带旧 generation 的状态、查询和注册在墓碑淘汰后仍失效。授权调用者省略 generation 的显式新注册创建新身份。FrontEnd 重启后，新的持久模型尝试可以重新登记，原请求结果由协调器持久回执保护。
 
-原生回收测试用 `max_sessions=2` 连续创建和结束 64 个会话，并验证旧 lease 与旧 generation。真实 Frontend 的对应验收入口是 [`upstream_binding_churn.py`](../scripts/upstream_binding_churn.py)，运行结果见 [STATUS](STATUS.md)。
+原生回收验收用 `max_sessions=2` 连续完成 64 轮创建／终结、128 个模型请求；结束时 active bindings 为零，墓碑保留两个。64 次旧 lease 均返回 HTTP 401，旧 generation 均返回 409。入口为 [`upstream_binding_churn.py`](../scripts/upstream_binding_churn.py)，[Actions 原始结果](evidence/native-run-42698285379.json)记录 wheel 来源、退出码和完整状态。
 
 ## PostgreSQL 的吞吐与一致性取舍
 

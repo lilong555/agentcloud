@@ -5,7 +5,7 @@ AgentCloud 提供持久协调器、Dynamo 原生反馈、Substrate 生命周期�
 | 组件 | 已验证能力 | 证据 |
 | --- | --- | --- |
 | Go 协调器 | PostgreSQL 增量实体事务、revision CAS、提交读隔离、幂等回执、UNKNOWN 保留、服务端观测与迟滞调度 | [Go、PostgreSQL、竞态与静态检查](evidence/local-contract.json) |
-| Dynamo Rust | 认证控制通道、opaque session / inference lease、原生 ACTING 预算、TTL 回退、暂停、取消、final | [59 项 Rust 测试](evidence/dynamo-control.json)、[16 项真实进程验收](evidence/dynamo-native-mocker.json) |
+| Dynamo Rust | 认证控制通道、opaque session / inference lease、原生 ACTING 预算、TTL 回退、暂停、取消、final；有界回收与 HTTP 401 拒收旧 lease | [65 项原生 Router 测试](evidence/upstream-patches-native-tests.json)、[16 项真实进程验收](evidence/dynamo-native-mocker.json)、[64 轮回收](evidence/native-run-42698285379.json) |
 | Substrate | 同 lease UID/version fencing、指定快照 durable、Tag 来源核验、实际恢复 fidelity | [PostgreSQL 与运行时测试矩阵](evidence/substrate-test-matrix.json) |
 | 真实 In-Actor | 真实模型 8 轮推理、11 次工具调用，修改两个源码文件，原有 4 项测试通过，8 次 MEMORY 恢复保持 AST／上下文对象身份 | [真实模型完整记录](evidence/real-model/realmodel-51e68254a65c/coding.json) |
 | 真实外置客户端 | HTTP 写入、安全点、挂起期间推理完成、MEMORY 恢复、跨 epoch 原回执读取，最终释放 Worker | [完整服务验收](evidence/service-substrate.json) |
@@ -23,7 +23,9 @@ WSL2 / Linux x86_64，Kind Kubernetes v1.37.0，Go 1.27.3，Rust 1.96.1，Postgr
 
 [部署记录](evidence/substrate-deployment.json)包含镜像 digest、运行节点和实际组件状态。[平台实验](evidence/substrate-gvisor-platform.json)记录同一 OCI 下 systrap 的 seccomp notify 初始化错误，以及 ptrace 成功运行的对照。[存储记录](evidence/substrate-storage.json)记录 RustFS 的容量条件。
 
-原生 Router 配对实验确认逻辑预算按画像变化；本次竞争请求时延的置信区间覆盖零。GPU 吞吐与物理 KV 收益由独立硬件实验测量。Dynamo 终结回收释放 binding、feedback 与 inference lease，并保留有界 generation 墓碑。[原生测试映射](evidence/upstream-patches-native-tests.json)覆盖 47 个上游修改文件、1,318 项测试，包括 64 项 Rust Router、1,102 项 Rust LLM、5 项 ZeroMQ Runtime 和 147 项 Substrate 测试。ZeroMQ 命令队列使用 64 字节对齐分配，[C++ 分配探针](evidence/dynamo-zmq-alignment.json)与原生 PUB/SUB 回归均通过。连续 64 轮真实 Frontend 回收使用独立 wheel 环境执行，当前等待进程级结果。
+原生 Router 配对实验确认逻辑预算按画像变化；该组竞争请求时延的置信区间覆盖零。GPU 吞吐与物理 KV 收益由独立硬件实验测量。Dynamo 终结回收释放 binding、feedback 与 inference lease，并保留有界 generation 墓碑。[原生测试映射](evidence/upstream-patches-native-tests.json)覆盖 47 个上游修改文件、1,319 项测试，包括 65 项 Rust Router、1,102 项 Rust LLM、5 项 ZeroMQ Runtime 和 147 项 Substrate 测试。ZeroMQ 命令队列使用 64 字节对齐分配，[C++ 分配探针](evidence/dynamo-zmq-alignment.json)与原生 PUB/SUB 回归均通过。
+
+[原生回收验收](evidence/native-run-42698285379.json)在 `max_sessions=2` 下连续完成 64 轮创建／终结和 128 个模型请求，结束时 active bindings 为零、保留墓碑为两个；64 次旧 lease 均返回 HTTP 401，旧 generation 均被拒收。新 wheel 在独立 Python 环境运行，Router Clippy 与 16 项原生进程验收通过，Frontend 与 Mocker 正常退出。AR-003 已完成实机验证。
 
 ## 复现
 

@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "recorded_at": "2026-11-09T20:37:48.495239+00:00",
+  "recorded_at": "2026-11-09T21:22:29.386708+00:00",
   "execution_kind": "native-go-rust-upstream-regression-map",
   "status": "passed",
   "files_mapped": 47,
-  "native_tests_observed": 1318,
+  "native_tests_observed": 1319,
   "missing": [],
   "files": [
     {
@@ -805,15 +805,21 @@
       "repository": "dynamo",
       "path": "Cargo.lock",
       "kind": "dependency",
-      "sha256": "b187e42294be16429c929949da553c261c13b49c23848dd1cd39ea90436f70f2",
+      "sha256": "25aa727e4aac9da4df6adc5faecedcb291bb8e145131575fc2ffcde97ec4f929",
       "symbols": [
-        "native frontend router-policy dependencies/features"
+        "native frontend router-policy dependencies/features",
+        "canonical unauthenticated inference lease rejection"
       ],
       "tests": [
         {
           "package": "dynamo-router-policies",
           "test": "thunderagent::execution_control::tests::finalization_reclaims_binding_capacity_and_rejects_retired_generation_after_churn",
           "language": "rust"
+        },
+        {
+          "language": "rust",
+          "package": "dynamo-router-policies",
+          "test": "thunderagent::request_classifier::tests::lease_rejections_preserve_authentication_semantics_across_rotation_and_retirement"
         }
       ],
       "status": "passed"
@@ -822,15 +828,21 @@
       "repository": "dynamo",
       "path": "lib/bindings/python/Cargo.lock",
       "kind": "dependency",
-      "sha256": "aa8547d3bbbf565284d4c029abc745e4d24681ee16c1ed16c3fb59595cb3d5c4",
+      "sha256": "8b6146de6f2088813c7a1a57e38b0c0577c8ccfacaedc55b9e5667ad05ee0a72",
       "symbols": [
-        "native frontend router-policy dependencies/features"
+        "native frontend router-policy dependencies/features",
+        "canonical unauthenticated inference lease rejection"
       ],
       "tests": [
         {
           "package": "dynamo-router-policies",
           "test": "thunderagent::execution_control::tests::finalization_reclaims_binding_capacity_and_rejects_retired_generation_after_churn",
           "language": "rust"
+        },
+        {
+          "language": "rust",
+          "package": "dynamo-router-policies",
+          "test": "thunderagent::request_classifier::tests::lease_rejections_preserve_authentication_semantics_across_rotation_and_retirement"
         }
       ],
       "status": "passed"
@@ -892,15 +904,21 @@
       "repository": "dynamo",
       "path": "lib/router-plugins/builtin/Cargo.toml",
       "kind": "dependency",
-      "sha256": "1b1b35d79e077017eaebcd3c8b00ef8e87264ba12f612e95d44a46f63d41dc30",
+      "sha256": "9ca17d093020bd9d4df331e1ea5c6011d709bf4e4423e01b5e065bccc2b9b08d",
       "symbols": [
-        "native frontend router-policy dependencies/features"
+        "native frontend router-policy dependencies/features",
+        "canonical unauthenticated inference lease rejection"
       ],
       "tests": [
         {
           "package": "dynamo-router-policies",
           "test": "thunderagent::execution_control::tests::finalization_reclaims_binding_capacity_and_rejects_retired_generation_after_churn",
           "language": "rust"
+        },
+        {
+          "language": "rust",
+          "package": "dynamo-router-policies",
+          "test": "thunderagent::request_classifier::tests::lease_rejections_preserve_authentication_semantics_across_rotation_and_retirement"
         }
       ],
       "status": "passed"
@@ -1020,12 +1038,13 @@
       "repository": "dynamo",
       "path": "lib/router-plugins/builtin/src/thunderagent/request_classifier/mod.rs",
       "kind": "source",
-      "sha256": "482297fe17df96e6f84e89c2dcd63b740d4755b3dc70d0798ab6ef30d95a507a",
+      "sha256": "f02645c4f89fbfcb7577dd32460646b20bbb888bff08a4bd8718a8674ca2ecdf",
       "symbols": [
         "ExecutionFeedbackControl",
         "ThunderAgentClassifier::classify",
         "await_release",
-        "ExecutionFeedbackControl::retire_binding"
+        "ExecutionFeedbackControl::retire_binding",
+        "canonical unauthenticated inference lease rejection"
       ],
       "tests": [
         {
@@ -1047,6 +1066,11 @@
           "package": "dynamo-router-policies",
           "test": "thunderagent::request_classifier::tests::retirement_rejects_active_inference_and_reclaims_finalized_bindings_and_leases",
           "language": "rust"
+        },
+        {
+          "language": "rust",
+          "package": "dynamo-router-policies",
+          "test": "thunderagent::request_classifier::tests::lease_rejections_preserve_authentication_semantics_across_rotation_and_retirement"
         }
       ],
       "status": "passed"
@@ -1095,7 +1119,7 @@
       "passed_events": 441,
       "failed": [],
       "skipped": [],
-      "sha256": "373b4f26ddf6b2fe29cb9f68d7520c92a63468642f3a3dd8013173b8b3edc809"
+      "sha256": "5d340324cb0aa02c9957ee8588b0421a4fabf9295bc87d780680040f5fd475e4"
     },
     {
       "log": "docs/evidence/upstream-patches-dynamo-llm-native.log",
@@ -1108,25 +1132,22 @@
         ]
       ],
       "failed": [],
-      "reconstructed_passed": [
-        "protocols::common::extensions::tests::agent_context_serialization_preserves_public_headers_and_redacts_inference_lease",
-        "protocols::common::extensions::tests::agent_hints_strict_priority_serde"
-      ],
-      "sha256": "96239363c7ca239d26032973185f3950117e5364cd254a417be6a82cfb7f9811"
+      "reconstructed_passed": [],
+      "sha256": "07db60517f12f1a0fea9b427989f6a37a4e1afd5dc8379636b5625956216104f"
     },
     {
       "log": "docs/evidence/upstream-patches-dynamo-native.log",
       "results": [
         [
           "ok",
-          "64",
+          "65",
           "0",
           "2"
         ]
       ],
       "failed": [],
       "reconstructed_passed": [],
-      "sha256": "219facd07242a0ac98ce7fc42c6772c3c31b29b22e67cac571768b63c1efa19c"
+      "sha256": "13e133213b8e8f7bd475a480c7ef7aed46ec895f59bfe0961b9eb710f5cc0e63"
     },
     {
       "log": "docs/evidence/upstream-patches-dynamo-runtime-native.log",
@@ -1140,11 +1161,7 @@
       ],
       "failed": [],
       "reconstructed_passed": [],
-      "sha256": "f2a7981447217665f978ec5e189f2c72f2256fcb01a6dc9222c2fecf9e49fb70"
+      "sha256": "4f1fefaa8972a31dee097a2504e739fb2e84772987c7e32ec237937510dc9c7a"
     }
-  ],
-  "derived_from": {
-    "report_sha256": "d07ac08deea357cd724862f704c08894355773b6b0f88119d14466691aae08b9",
-    "method": "raw log SHA256 verification; complete Rust inventory, explicit ignored tests and final zero-failure totals"
-  }
+  ]
 }
