@@ -9,6 +9,10 @@ export GOMAXPROCS=2
 export GOFLAGS=-p=2
 df -h /
 python3 scripts/disk_guard.py
+if ! command -v rg >/dev/null; then
+  sudo apt-get update -qq
+  sudo apt-get install -y --no-install-recommends ripgrep
+fi
 python3 scripts/resource_guard.py --min-available-mib 1536 --max-rss-mib 10000 --timeout 3600 -- bash deploy/substrate/setup.sh
 kubectl --context=kind-agentcloud -n ate-system port-forward service/api 9443:443 > artifacts/substrate/ci-api.log 2>&1 &
 echo "$!" > artifacts/substrate/ci-api.pid
