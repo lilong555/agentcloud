@@ -84,7 +84,7 @@ def main():
         aggregation='individual stage observations; end-to-end latency quantiles remain in scale-summary.json')
     write_json(args.output, report)
     with args.output.with_suffix('.csv').open('w', newline='') as handle:
-        writer = csv.DictWriter(handle, ['concurrency', 'policy', 'stage', 'observations', 'p50', 'p95', 'p99'])
+        writer = csv.DictWriter(handle, ['concurrency', 'policy', 'stage', 'observations', 'p50', 'p95', 'p99'], lineterminator='\n')
         writer.writeheader()
         for group in report['groups']:
             for name, values in group['stages'].items():

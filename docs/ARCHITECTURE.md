@@ -21,6 +21,33 @@ flowchart LR
     H --> G[(PostgreSQL / SQLite Graph Checkpoints)]
 ```
 
+## 实测拓扑
+
+每个规模 trial 使用独立 GitHub hosted runner，4 vCPU、约 16 GiB 内存。一个 Kind 节点运行两个 Substrate Worker，四个 FIFO Actor permits 限制同时占用的沙箱；四租户持有 8～64 个连续六轮交互的 Workspace。协调器日志与 Substrate 元数据各自持久化，Dynamo 原生 Frontend 连接 CPU Mocker 的 2,048 块逻辑 KV 容量。
+
+```mermaid
+flowchart TB
+    L[四租户 / 8～64 Workspaces] -->|持久请求与工具| C[Go Coordinator]
+    L -->|Actor 准入| P[4 FIFO Actor permits]
+    P --> C
+    C --> J[(协调器 PostgreSQL)]
+    C <--> D[Dynamo Rust Frontend / ThunderAgent]
+    D --> M[CPU Mocker / 2048 逻辑 KV 块]
+    subgraph K[单个 Kind 节点]
+        S[Substrate Control] --> W1[Worker 1 / gVisor]
+        S --> W2[Worker 2 / gVisor]
+        S --> SJ[(Substrate PostgreSQL)]
+        W1 --> O[(RustFS Snapshot / Retained Tag)]
+        W2 --> O
+    end
+    C <--> S
+    W1 --> E[逐 Worker assignment / CPU / RSS 采样]
+    W2 --> E
+    C --> E
+```
+
+[规模矩阵](evidence/scale-summary.json)保存首轮 60 组及两个补充重跑，[故障矩阵](evidence/faults-summary.json)验证 15 个窗口，[阶段测量](evidence/control-plane-summary.json)记录持久化、准入和恢复开销。当前容量证据覆盖同节点两个 Worker 的多租户竞争，跨节点扩展与物理 GPU 资源使用独立配置验收。
+
 ## 控制面事务
 
 PostgreSQL 按 sessions、requests、tools、lifecycle、scheduling、events 和 observations 保存实体。提交只序列化变更实体，以单个事务更新 revision 和相关行。数据库 I/O 期间释放协调器互斥锁，提交闸门维护读可见性；提交失败后保留 durable revision 并要求重启对账。事件与测量按有界序列保留。

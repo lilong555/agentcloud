@@ -11,7 +11,7 @@ AgentCloud 提供持久协调器、Dynamo 原生反馈、Substrate 生命周期�
 | 真实外置客户端 | HTTP 写入、安全点、挂起期间推理完成、MEMORY 恢复、跨 epoch 原回执读取，最终释放 Worker | [完整服务验收](evidence/service-substrate.json) |
 | 独立快照副本 | Tag UID、源 Actor UID、源 snapshot UUID/generation 与 manifest 一致，独立存储对象 COMPLETED | [原生 GetTag 核验](evidence/substrate-retained-tag.json) |
 | DeerFlow | 真实模型、两个并发子任务、文件上传、70 个 PostgreSQL 图检查点、两阶段 manifest、新进程恢复与 MEMORY | [真实研究 Agent](evidence/real-model/realmodel-74bd7470d2c7/deerflow.json) |
-| Python Runtime | 27 项契约测试、UID 投影、闭闸、持久回执、进程组清理；mTLS 与重定向凭据保护 | [Python 测试](evidence/agents-tests.json)、[TLS](evidence/agents-runtime-tls.json) |
+| Python Runtime | 通用运行时 29 项通过；锁定 DeerFlow 环境 20 项全部通过，含 PostgreSQL、新连接恢复、并发子任务与上传 | [通用契约](evidence/local-contract.json)、[DeerFlow 契约](evidence/deerflow-contracts-final.json)、[TLS](evidence/agents-runtime-tls.json) |
 | 成本协调 | 原生 classifier 排队观测、等待与快照成本估计、最小驻留、恢复冷却、并发操作排他 | [真实 HTTP 策略验收](evidence/service-scheduling.json) |
 | 规模实验 | 四租户、两 Worker、N=8/16/32/64，60 组首轮中 58 组通过，10,765/10,800 请求；AgentCloud 12/12 组通过 | [完整矩阵与区间](evidence/scale-summary.json) |
 | 故障矩阵 | 15/15 类真实注入通过；PENDING、UID/epoch、lease、未知结果与事务失败保持安全状态，全部分片清理通过 | [逐项审计](evidence/faults-summary.json) |
@@ -25,7 +25,8 @@ AgentCloud 提供持久协调器、Dynamo 原生反馈、Substrate 生命周期�
 | 验收 | 冻结源码 | 结果 |
 | --- | --- | --- |
 | [原生上游与回收](https://github.com/lilong555/agentcloud/actions/runs/42698285379) | `e5ea8eb` | 47 个上游文件、1,319 项原生测试；64 轮回收、128 个模型请求；旧 lease 64/64 返回 401 |
-| [规模矩阵首轮](https://github.com/lilong555/agentcloud/actions/runs/42694974426/attempts/1) | `dc9081f` | 58/60 trial、10,765/10,800 请求；两次基础设施失败保留在分母；N=8 补充重跑 48/48 通过 |
+| [规模矩阵首轮](https://github.com/lilong555/agentcloud/actions/runs/42694974426/attempts/1) | `dc9081f` | 58/60 trial、10,765/10,800 请求；两次基础设施失败保留在分母 |
+| [两组定向重跑](https://github.com/lilong555/agentcloud/actions/runs/42694974426/attempts/2) | `dc9081f` | 2/2 trial、432/432 请求及资源清理通过；主统计保留首轮失败 |
 | [等待／内存热力图](https://github.com/lilong555/agentcloud/actions/runs/42694984376) | `dc9081f` | 热力图 126/126 窗口通过；同一历史 workflow 的故障分片保留失败状态 |
 | [15 类实机故障](https://github.com/lilong555/agentcloud/actions/runs/42706024235) | `d1223e3` | 15/15 通过，四个分片资源清理通过 |
 | [当前运行时烟雾测试](https://github.com/lilong555/agentcloud/actions/runs/42701929437) | `717d0ea` | 48/48 请求完成，两个 Worker，清理通过 |
@@ -56,6 +57,8 @@ make verify-delivery
 make evidence-audit
 ```
 
-真实入口见 [Dynamo](../experiments/dynamo/README.md)、[Substrate](../deploy/substrate/README.md)、[DeerFlow](../adapters/deerflow/README.md)与 [Actor Runtime](../runtime/README.md)。规模、热力图和故障复现命令见[实验报告](EXPERIMENTS.md)。普通 CI 执行契约、竞态、构建与源码还原；独立重型工作流执行实际 Kind/gVisor 与原生 Dynamo。
+真实入口见 [Dynamo](../experiments/dynamo/README.md)、[Substrate](../deploy/substrate/README.md)、[DeerFlow](../adapters/deerflow/README.md)与 [Actor Runtime](../runtime/README.md)。规模、热力图和故障复现命令见[实验报告](EXPERIMENTS.md)。普通 CI 执行契约、竞态、构建、源码还原及独立的锁定 DeerFlow／PostgreSQL 契约任务；独立重型工作流执行实际 Kind/gVisor 与原生 Dynamo。
 
 [真实模型汇总](evidence/deep-agents-summary.json)保存所有功能验收尝试和清理结果，[故障历史](evidence/faults-regression-history.json)保存历史源码中的失败。每个 hosted artifact 的 ZIP 与文件摘要位于 [归档索引](evidence/live-runs/)，主报告原文及压缩日志由 `make evidence-audit` 核验。失败、未投递请求、未执行窗口和清理失败保留在统计分母，重跑拥有独立试验身份。
+
+[本机清理记录](evidence/local-resource-cleanup.json)确认项目容器与运行进程已释放；[公开文件审计](evidence/publication-audit.json)包含凭据扫描、文件大小和文档链接检查。

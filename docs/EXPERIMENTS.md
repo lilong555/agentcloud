@@ -13,7 +13,7 @@
 
 ## 多租户规模与静态 TTL 对照
 
-[正式运行](https://github.com/lilong555/agentcloud/actions/runs/42694974426/attempts/1)冻结源码 `dc9081f42359b53bd50d2ca7c90fc09723980024`，完成全部 60 组计划，首轮 58/60 组通过，10,765/10,800 请求完成。AgentCloud 的 12/12 组、2,160/2,160 请求通过。N=8／TTL0／7101 在 PostgreSQL 读取超时后留下 30 个失败或未投递请求；N=64／TTL2／7102 的运行时 HTTP 503 留下 5 个。原始失败、清理结果和重跑均保存在独立证据中，主统计固定选择最早尝试。N=8／TTL0／7101 的第二次尝试完成 48/48 请求，原首轮失败继续保留。
+[正式运行](https://github.com/lilong555/agentcloud/actions/runs/42694974426/attempts/1)冻结源码 `dc9081f42359b53bd50d2ca7c90fc09723980024`，完成全部 60 组计划，首轮 58/60 组通过，10,765/10,800 请求完成。AgentCloud 的 12/12 组、2,160/2,160 请求通过。N=8／TTL0／7101 在 PostgreSQL 读取超时后留下 30 个失败或未投递请求；N=64／TTL2／7102 的运行时 HTTP 503 留下 5 个。原始失败、清理结果和重跑均保存在独立证据中，主统计固定选择最早尝试。[两组定向重跑](evidence/scale-run-42694974426-attempt-2.json)分别完成 48/48、384/384 请求，清理通过；全部 62 次实际 trial 共完成 11,197/11,232 请求。主统计继续保留首轮的 35 个失败或未投递请求。
 
 [固定配置](../bench/configs/scale-live.json)包含四租户、两 Worker、四个 FIFO Actor permits、N=8/16/32/64，以及六轮 1K、2K、4K、8K、12K、16K 上下文。每个 Actor 配置 256 MiB，实际 Worker 预留包含运行时开销。Dynamo 使用原生 Rust Frontend、ThunderAgent 和官方 CPU Mocker，逻辑缓存容量为 2,048 个块；GPU 硬件执行字段为 `false`。三个配对种子为 7101、7102、7103，五种策略共享工作内容、种子和容量规则。
 
@@ -42,7 +42,7 @@
 | 64 | TTL 15s | 1152/1152 | 513.473 | 0.1029 | 280.397 |
 | 64 | AgentCloud | 1152/1152 | 256.325 | 0.1149 | 237.983 |
 
-表中资源与 Goodput 为三次 trial 的平均值，交互 p95 来自该组全部已完成交互请求。失败或未投递请求保留在完成率分母。TTL2 在这组负载下具有较低资源占用和较高 Goodput；N=64 的 TTL2 首轮失败使该组完整配对验收不足。AgentCloud 相比 TTL15 的联合收益在 N=32、N=64 成立：Stranded 分别下降 53.52%、50.08%，Goodput 分别提高 24.81%、11.68%，合并样本的交互 p95 分别下降 7.54%、15.13%。较短 TTL 和 Eager 的结果展示了资源、频繁恢复与交互 SLO 之间的取舍。
+表中资源与 Goodput 为三次 trial 的平均值，交互 p95 来自该组全部已完成交互请求。失败或未投递请求保留在完成率分母。部分执行组的性能值用于失败审计，联合比较采用完整配对。TTL2 在这组负载下具有较低资源占用和较高 Goodput；N=64 的 TTL2 首轮失败使该组完整配对验收不足。AgentCloud 相比 TTL15 的联合收益在 N=32、N=64 成立：Stranded 分别下降 53.52%、50.08%，Goodput 分别提高 24.81%、11.68%，合并样本的交互 p95 分别下降 7.54%、15.13%。较短 TTL 和 Eager 的结果展示了资源、频繁恢复与交互 SLO 之间的取舍。
 
 联合收益采用预声明判据：三个完整种子对中，Stranded 配对差异的 95% 区间上界小于零，Goodput 下界至少为零，交互 p95 上界至多为零。下表先在每个 trial 内计算 p95，再对种子差异取平均；它与上表合并请求后的分位数各自保留统计定义。
 
@@ -54,6 +54,13 @@
 ![完整规模矩阵](evidence/scale-metrics.png)
 
 [JSON 与逐次审计](evidence/scale-summary.json) · [CSV](evidence/scale-summary.csv) · [SVG](evidence/scale-metrics.svg) · [PDF](evidence/scale-metrics.pdf) · [60 组首轮作业与 ZIP 摘要](evidence/scale-run-42694974426-attempt-1.json)
+
+定向重验结果单独保存，主表继续使用原首轮记录。
+
+| 补充重跑 | 完成／计划 | Stranded GB·s | Goodput 请求／秒 | 交互 p95 秒 |
+| --- | ---: | ---: | ---: | ---: |
+| N=8，eager-0，种子 7101 | 48/48 | 7.916 | 0.0926 | 12.971 |
+| N=64，static-2，种子 7102 | 384/384 | 162.444 | 0.1528 | 140.043 |
 
 ## 时延分位数与控制面开销
 
@@ -234,3 +241,7 @@ Substrate PostgreSQL 生命周期测试、实际 gVisor 部署与恢复结果由
 [In-Actor 运行记录](evidence/agents-in-actor-substrate.json)使用真实 gVisor ptrace Actor、原生 Dynamo Mocker 和 PostgreSQL 协调器。RAM nonce、boot ID 与 PID 在挂起恢复前后一致，`application_restart=false`，epoch 从 1 升至 2，原逻辑请求认领后编程测试输出 `coding-task-ok 55`。
 
 [外置服务验收](evidence/service-substrate.json)在同一真实后端完成写入、checkpoint、独立保留、挂起、恢复和文件读取，最终将 Actor 挂起释放 Worker。[保留 Tag 回执](evidence/substrate-retained-tag.json)独立核验了副本的来源与 COMPLETED 状态。
+
+## 独立框架契约
+
+[锁定 DeerFlow 环境的 20 项契约](evidence/deerflow-contracts-final.json)全部通过，跳过 0 项，包含真实上游 ABC、工具重试身份、并发子任务与上传、SQLite／PostgreSQL durable interrupt、新连接恢复和检查点篡改拒绝。模型与工具传输使用受控夹具。临时 PostgreSQL 数据库已删除，运行峰值 RSS 约 215 MiB。普通 CI 为这组测试配置独立 Python 3.12 与 PostgreSQL 任务，并将跳过用例判为失败。真实 CPA 模型、gVisor MEMORY 与两阶段 manifest 的功能证据见本页开头。

@@ -53,3 +53,49 @@ jobs:
             docs/evidence/upstream-patches-reproduction.json
             docs/evidence/logs/local-*/
           retention-days: 7
+  deerflow-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: agentcloud
+          POSTGRES_PASSWORD: agentcloud-ci
+          POSTGRES_DB: deerflow_contracts
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U agentcloud -d deerflow_contracts" --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      AGENTCLOUD_GRAPH_TEST_DSN: postgresql://agentcloud:agentcloud-ci@127.0.0.1:5432/deerflow_contracts?sslmode=disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v7
+      - name: Install locked upstream DeerFlow contracts
+        run: bash adapters/deerflow/setup.sh
+      - name: Verify upstream graph, tool lifecycle and PostgreSQL checkpoints
+        shell: bash
+        run: |
+          mkdir -p artifacts/deerflow-ci
+          adapters/deerflow/.venv/bin/python - <<'PY' 2>&1 | tee artifacts/deerflow-ci/tests.log
+          import json,os,sys,unittest
+          from pathlib import Path
+          suite=unittest.defaultTestLoader.discover('tests/python',pattern='test_deerflow*.py')
+          result=unittest.TextTestRunner(verbosity=2).run(suite)
+          passed=result.wasSuccessful() and result.testsRun>0 and not result.skipped
+          report=dict(status='passed' if passed else 'failed',tests=result.testsRun,
+              failures=len(result.failures),errors=len(result.errors),skipped=len(result.skipped),
+              execution_kind='real-upstream-deerflow-contract-tests',model='controlled fixture',
+              postgresql_executed=True,source_commit=os.environ['GITHUB_SHA'],
+              github_run_id=os.environ['GITHUB_RUN_ID'],github_run_attempt=os.environ['GITHUB_RUN_ATTEMPT'])
+          Path('artifacts/deerflow-ci/result.json').write_text(json.dumps(report,indent=2)+'\n')
+          sys.exit(0 if passed else 1)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deerflow-contract-evidence
+          path: artifacts/deerflow-ci/
+          retention-days: 7

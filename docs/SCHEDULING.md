@@ -70,7 +70,7 @@ effective_min_residence_ms = ceil(min_residence_ms × pressure_factor)
 threshold_ms = break_even_ms + effective_margin_ms
 ```
 
-快照成本优先取 `checkpoint_ready_ms` 的 p75，也可由挂起与持久化等待相加；恢复成本来自 `resume_ready_ms`，事务成本来自 `journal_commit_ms`。无观测时采用 500／500／50 毫秒的启动成本先验。默认安全余量 500 毫秒、最小驻留 1000 毫秒、恢复冷却 5000 毫秒。
+快照成本优先取 `checkpoint_total_ms` 的 p75，也可由挂起与持久化等待相加；恢复成本来自 `resume_ready_ms`，事务成本来自 `journal_commit_ms`。无观测时采用 500／500／50 毫秒的启动成本先验。默认安全余量 500 毫秒、最小驻留 1000 毫秒、恢复冷却 5000 毫秒。
 
 预计等待超过阈值、驻留与冷却满足条件、工具安全点成立且候选状态稳定至少 500 毫秒后，执行 SUSPEND。实际生命周期耗时与估计分别保存，用于检查预测误差和恢复代价。
 

@@ -110,7 +110,7 @@ def main():
     write_json(args.output, result)
     columns = ['case', 'label', 'status', 'check_status', 'run_status', 'seconds', 'attempts', 'github_run_id', 'source', 'error']
     with args.output.with_suffix('.csv').open('w', newline='') as handle:
-        writer = csv.DictWriter(handle, columns, extrasaction='ignore')
+        writer = csv.DictWriter(handle, columns, extrasaction='ignore', lineterminator='\n')
         writer.writeheader()
         writer.writerows(result['cases'])
     print(json.dumps(dict(status=result['status'], planned=result['planned_cases'],

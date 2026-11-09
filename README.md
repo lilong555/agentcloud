@@ -4,7 +4,7 @@ AgentCloud 将 Agent 执行生命周期与 LLM 准入调度连接起来。Go 协
 
 Azure CPA 的真实 `gpt-6-luna` 已完成多文件 Coding 修复与 DeerFlow 研究任务。Coding Agent 经过 8 轮推理和 11 次工具调用修改两个源码文件，原有 4 项测试通过，8 次 gVisor MEMORY 恢复保持内存状态连续。DeerFlow 完成两个并发子任务、文件上传、70 个 PostgreSQL 图检查点与新进程恢复。[完整真实模型证据](docs/evidence/deep-agents-summary.json)保留全部验收尝试和清理结果。
 
-规模验收已完成 60 组首轮运行、10,765/10,800 请求；AgentCloud 的 12/12 组全部通过，15/15 类实机故障和等待／内存热力图 126/126 窗口均通过。N=32/64 时，相比 TTL=15 秒，闲置预留分别减少 53.5%/50.1%，Goodput 提高 24.8%/11.7%，交互 p95 同时改善。TTL=2 秒在当前负载下仍有较低资源占用和较高 Goodput。[完整对照与置信区间](docs/EXPERIMENTS.md)保留全部策略、首轮失败和重跑。
+规模验收已完成 60 组首轮运行、10,765/10,800 请求；两个失败配置经定向重跑完成 432/432 请求；AgentCloud 的 12/12 组全部通过，15/15 类实机故障和等待／内存热力图 126/126 窗口均通过。N=32/64 时，相比 TTL=15 秒，闲置预留分别减少 53.5%/50.1%，Goodput 提高 24.8%/11.7%，交互 p95 同时改善。TTL=2 秒在当前负载下仍有较低资源占用和较高 Goodput。[完整对照与置信区间](docs/EXPERIMENTS.md)保留全部策略、首轮失败和重跑。
 
 ## 快速运行
 
@@ -95,7 +95,7 @@ make live-suite
 
 大规模验收使用 GitHub Actions 的 `Real Actor scale experiments` 和 `Live fault and break-even acceptance`：四租户、两 Worker、N=8/16/32/64、六轮 1K～16K 上下文、TTL=0/2/5/15s 与自主调度，以及 15 类真实故障和等待／内存热力图。工作流复用经过源码摘要核验的原生 wheel；每个 runner 独立创建和清理数据库、Actor、Tag 与 Kind 集群。最新完成状态见[交付状态](docs/STATUS.md)。
 
-普通 CI 执行契约、构建、竞态和源码还原；重型工作流提供真实 Kind/gVisor、Rust Frontend 与 CPU Mocker 的运行证据。
+普通 CI 执行契约、构建、竞态、源码还原以及锁定 DeerFlow／PostgreSQL 契约；重型工作流提供真实 Kind/gVisor、Rust Frontend 与 CPU Mocker 的运行证据。
 
 PostgreSQL 验证可设置 `AGENTCLOUD_TEST_PG_ADMIN`；测试会创建独立临时数据库并在结束时清理。DeerFlow 的真实上游契约使用 `adapters/deerflow/setup.sh` 安装的独立环境运行。
 

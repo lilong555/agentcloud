@@ -225,7 +225,7 @@ def main():
     write_json(args.output, result)
     with args.output.with_suffix('.csv').open('w', newline='') as handle:
         columns = ['concurrency','policy','trials','offered','completed','failed_or_unoffered','ttft_p50','ttft_p95','ttft_p99','resume_p50','resume_p95','resume_p99','interactive_p95_seconds'] + list(SCALARS) + ['cached_tokens']
-        writer = csv.DictWriter(handle, columns)
+        writer = csv.DictWriter(handle, columns, lineterminator='\n')
         writer.writeheader()
         for row in result['groups']:
             flattened = {key: row.get(key) for key in columns}
