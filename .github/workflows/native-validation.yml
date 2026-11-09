@@ -36,6 +36,7 @@ jobs:
       CARGO_PROFILE_DEV_DEBUG: '0'
       CARGO_PROFILE_TEST_DEBUG: '0'
       CARGO_INCREMENTAL: '0'
+      CARGO_TARGET_DIR: ${{ github.workspace }}/upstream/dynamo/target
       GOMAXPROCS: '2'
       SUBSTRATE_TEST_DATABASE_URL: postgresql://agentcloud:agentcloud-ci@127.0.0.1:5432/substrate_native?sslmode=disable
       PROTOC: ${{ github.workspace }}/experiments/dynamo/tools/protoc/bin/protoc
@@ -71,6 +72,9 @@ jobs:
       - name: Build native Rust Frontend bindings
         if: inputs.native_run_id == ''
         run: python3 scripts/resource_guard.py --min-available-mib 1536 --max-rss-mib 12000 --timeout 5400 -- python3 experiments/dynamo/build_cpu.py
+      - name: Verify native ZeroMQ queue allocation alignment
+        if: inputs.native_run_id == ''
+        run: python3 scripts/verify_zmq_alignment.py
       - name: Package reusable native Python wheel
         if: inputs.native_run_id == ''
         working-directory: upstream/dynamo
@@ -178,6 +182,7 @@ jobs:
             docs/evidence/upstream-patches-*.jsonl
             docs/evidence/upstream-patches-*-native.log
             docs/evidence/dynamo-cpu-build.json
+            docs/evidence/dynamo-zmq-alignment.json
             docs/evidence/dynamo-native-mocker.json
             docs/evidence/native-runtime-provenance.json
             docs/evidence/logs/dynamo-cpu-build-*/

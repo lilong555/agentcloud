@@ -56,7 +56,7 @@ def summarize_logs() -> dict:
         text = path.read_text(errors="replace")
         for name, status in re.findall(r"^test (.+?) \.\.\. (ok|FAILED|ignored)", text, re.M):
             if status == "ok":
-                package = "dynamo-llm" if "llm" in path.name else "dynamo-router-policies"
+                package = "dynamo-runtime" if "runtime" in path.name else ("dynamo-llm" if "llm" in path.name else "dynamo-router-policies")
                 tests.add(("rust", package, name))
         matches = re.findall(r"test result: (\w+)\. (\d+) passed; (\d+) failed; (\d+) ignored", text)
         results.append({"log": str(path.relative_to(ROOT)), "results": matches,
@@ -100,7 +100,7 @@ def main() -> None:
             run_logged(command,ROOT / "upstream/substrate",env,ROOT / "docs/evidence/upstream-patches-substrate-native.jsonl")
         if args.repository in ("dynamo", "all"):
             env = dict(os.environ, CARGO_BUILD_JOBS=os.getenv("CARGO_BUILD_JOBS", "1"), CARGO_PROFILE_DEV_DEBUG="0", CARGO_PROFILE_TEST_DEBUG="0", CARGO_INCREMENTAL="0")
-            for package, filter_name, filename in [("dynamo-router-policies", "thunderagent", "dynamo"), ("dynamo-llm", "protocols::", "dynamo-llm")]:
+            for package, filter_name, filename in [("dynamo-router-policies", "thunderagent", "dynamo"), ("dynamo-llm", "protocols::", "dynamo-llm"), ("dynamo-runtime", "transports::event_plane::zmq_transport::tests::test_zmq_", "dynamo-runtime")]:
                 command = [args.cargo, "test", "--locked", "-p", package]
                 if package == "dynamo-llm":
                     command.append("--no-default-features")

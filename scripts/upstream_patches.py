@@ -17,7 +17,7 @@ import source_overlay
 ROOT = Path(__file__).resolve().parents[1]
 SUBJECTS = {
     "substrate": ["Fence actor lifecycle operations and report snapshot restore results", "Export router client certificates"],
-    "dynamo": ["Accept authenticated execution feedback and retire final sessions", "Make Python block manager support selectable"],
+    "dynamo": ["Accept authenticated execution feedback and retire final sessions", "Make Python block manager support selectable", "Align native ZeroMQ command queues for SIMD builds"],
 }
 
 
@@ -83,6 +83,9 @@ def groups(name: str, entries: list[dict]) -> list[list[dict]]:
         second = lambda e: e["path"].startswith("cmd/agentcloud-credentials/")
     else:
         second = lambda e: e["path"] == "lib/bindings/python/Cargo.toml"
+        third = lambda e: e["path"] == ".cargo/config.toml"
+        return [[entry for entry in entries if not second(entry) and not third(entry)],
+                [entry for entry in entries if second(entry)], [entry for entry in entries if third(entry)]]
     return [[entry for entry in entries if not second(entry)], [entry for entry in entries if second(entry)]]
 
 

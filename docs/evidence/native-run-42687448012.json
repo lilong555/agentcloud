@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "execution_kind": "github-actions-native-wheel-runtime-diagnosis",
+  "status": "failed",
+  "github_run_id": 42687448012,
+  "job_id": 129397961897,
+  "source_commit": "555329837a447a1047acdf7b180e2b49a2c892c3",
+  "native_source_run_id": 42677784069,
+  "url": "https://github.com/lilong555/agentcloud/actions/runs/42687448012",
+  "upstream_execution": true,
+  "gpu_execution": false,
+  "signal": "SIGSEGV",
+  "fault_function": "zmq::ypipe_t<zmq::command_t, 16>::write",
+  "instruction": "vmovdqa %ymm0,(%rax)",
+  "destination_address": "0x7fffc000be10",
+  "destination_modulo_32": 16,
+  "required_command_alignment_bytes": 64,
+  "allocator_observed": "malloc",
+  "cause": "zeromq-src defaults to malloc without HAVE_POSIX_MEMALIGN; command_t is over-aligned and the AVX2 store requires aligned storage",
+  "alignment_probe": "docs/evidence/dynamo-zmq-alignment.json",
+  "log_path": "docs/evidence/logs/native-runtime-42687448012/gdb-mocker.log"
+}

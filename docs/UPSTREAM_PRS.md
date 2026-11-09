@@ -1,11 +1,11 @@
 # 上游 PR 交付
 
-Substrate 固定基线为 `94e0a26ac90151886a76410568aaac2664a54d90`，Dynamo 固定基线为 `c5680e573b86623df3b6b017a408373aeba93469`。两套交付各包含两个标准 `git format-patch` 邮件补丁、按顺序排列的 `series`、补丁 SHA256 manifest、完整源码文件 SHA256 manifest 与原生测试映射。
+Substrate 固定基线为 `94e0a26ac90151886a76410568aaac2664a54d90`，Dynamo 固定基线为 `c5680e573b86623df3b6b017a408373aeba93469`。Substrate 包含两个、Dynamo 包含三个标准 `git format-patch` 邮件补丁，配套按顺序排列的 `series`、补丁 SHA256 manifest、完整源码文件 SHA256 manifest 与原生测试映射。
 
 | 上游 | 补丁目录 | 完整文件 | 原生测试映射 |
 |---|---|---:|---|
 | Substrate | `integrations/substrate/patches/` | 34 | `integrations/substrate/test-map.json` |
-| Dynamo | `integrations/dynamo/patches/` | 12 | `integrations/dynamo/test-map.json` |
+| Dynamo | `integrations/dynamo/patches/` | 13 | `integrations/dynamo/test-map.json` |
 
 `python3 scripts/upstream_patches.py verify` 在独立的锁定基线 checkout 执行 `git am`，逐文件校验内容 SHA256，并比较完整 Git tree 与独立构造的完整源码覆盖 tree。Git tree 比较覆盖所有基线文件，交付文件的执行位按 Git 的 `100644` / `100755` 表示。完整源码 manifest 另外保存文件权限。
 
@@ -50,6 +50,14 @@ ThunderAgent 通过独立鉴权控制端口注册可信 Actor 绑定、接收有
 **Title:** Make Python block manager support selectable
 
 Python binding 将 `block-manager` 暴露为默认 feature，并通过 `default-features = false` 与显式 feature forwarding 保持默认能力、支持 CPU-only frontend 构建。Cargo lock 的新增依赖对应原生 execution control listener 与测试入口。CPU frontend 的绑定构建及 native frontend/mocker 验收覆盖该依赖入口。
+
+## Dynamo：ZeroMQ SIMD 命令队列对齐
+
+**Title:** Align native ZeroMQ command queues for SIMD builds
+
+Linux x86_64 和 aarch64 的原生 C++ 构建使用 `HAVE_POSIX_MEMALIGN=1` 与 `ZMQ_CACHELINE_SIZE=64`。锁定的 `zeromq-src 0.2.6+4.3.4` 定义了 64 字节对齐的 `command_t`；启用该分配路径后，队列块通过 `posix_memalign` 满足命令 ABI。该配置覆盖所有 C++ 翻译单元，保持统一布局。
+
+真实 wheel 的 GDB 堆栈定位到 `ypipe_t<command_t,16>::write` 内的 AVX2 `vmovdqa`，目标地址以 `0x10` 结尾。`scripts/verify_zmq_alignment.py` 使用锁定的 ZeroMQ 头文件检测 8,448 个队列元素：默认分配的 6,336 个地址对齐不足，配置分配的全部地址满足 64 字节对齐。原生 PUB/SUB 与多消息回归覆盖通信路径，64 轮 Frontend 回收覆盖实际 Python/Rust 进程。
 
 ## 原生验证与复现
 
