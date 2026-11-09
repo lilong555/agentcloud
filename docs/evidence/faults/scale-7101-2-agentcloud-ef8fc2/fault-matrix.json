@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "execution_kind": "real-substrate-memory-postgresql-native-dynamo-faults",
+  "generated_at": "2026-11-09T21:33:29.061056+00:00",
+  "source_commit": "717d0eadd8ae13d33811520fd04816aad78dba98",
+  "github_run_id": "42701793385",
+  "gpu_execution": false,
+  "planned": [
+    "stale_substrate_suspend",
+    "frontend_restart",
+    "concurrent_duplicate_tool",
+    "postgres_commit_failure"
+  ],
+  "checks": [
+    {
+      "case": "stale_substrate_suspend",
+      "status": "passed",
+      "started_at": 1794260010.5313306,
+      "evidence": {
+        "action": "stale-suspend",
+        "actor": {
+          "assigned_worker": "e227e285-7bef-431e-8cee-7b4506d69a16",
+          "name": "ac-scale-7101-2-agentcloud-ef8fc2-w0",
+          "uid": "49e47bbc-4a8a-4740-a899-0a62243e31dd",
+          "version": 13,
+          "state": "RUNNING",
+          "snapshot_uuid": "324c6b49-0160-4c4c-8bd0-922417076d67",
+          "snapshot_generation": 2,
+          "snapshot_fidelity": "MEMORY",
+          "durable": true,
+          "resumed": false,
+          "cold_started": false,
+          "actual_fidelity": "MEMORY",
+          "restored_snapshot_uuid": "324c6b49-0160-4c4c-8bd0-922417076d67",
+          "restored_snapshot_generation": 2
+        },
+        "grpc_code": "FailedPrecondition",
+        "wrong_snapshot": {
+          "action": "wrong-snapshot",
+          "actor": {
+            "assigned_worker": "e227e285-7bef-431e-8cee-7b4506d69a16",
+            "name": "ac-scale-7101-2-agentcloud-ef8fc2-w0",
+            "uid": "49e47bbc-4a8a-4740-a899-0a62243e31dd",
+            "version": 13,
+            "state": "RUNNING",
+            "snapshot_uuid": "324c6b49-0160-4c4c-8bd0-922417076d67",
+            "snapshot_generation": 2,
+            "snapshot_fidelity": "MEMORY",
+            "durable": true,
+            "resumed": false,
+            "cold_started": false,
+            "actual_fidelity": "MEMORY",
+            "restored_snapshot_uuid": "324c6b49-0160-4c4c-8bd0-922417076d67",
+            "restored_snapshot_generation": 2
+          },
+          "grpc_code": "NotFound"
+        }
+      },
+      "seconds": 19.699501037597656
+    },
+    {
+      "case": "frontend_restart",
+      "status": "passed",
+      "started_at": 1794260030.6869073,
+      "evidence": {
+        "original_claim": {
+          "trace_parent": "00-8e29744a904c75195417d365ff5e92b1-439adf506d1d802d-01",
+          "dispatched_at": "2026-11-09T21:34:07.215838905Z",
+          "logical_request_id": "scale-7101-2-agentcloud-ef8fc2-w1-before-restart",
+          "tenant_id": "tenant-b",
+          "session_id": "scale-7101-2-agentcloud-ef8fc2-w1",
+          "payload_hash": "73b709413d6d49de7843125d9098a2761b74040fc3fb39d5ea2b8ebe677c30f4",
+          "payload": {
+            "ignore_eos": true,
+            "max_tokens": 8,
+            "messages": [
+              {
+                "content": "x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x ",
+                "role": "user"
+              }
+            ],
+            "min_tokens": 8,
+            "model": "agentcloud-tiny",
+            "stream": true
+          },
+          "status": "COMPLETED",
+          "attempt_id": "1d00e8e2620d9db0cac6cfc765aa3121",
+          "result": {
+            "choices": [
+              {
+                "finish_reason": "length",
+                "index": 0,
+                "message": {
+                  "content": " token1604 token1421 token1085 token1360 token1407 token1640 token1253 token1292",
+                  "role": "assistant"
+                }
+              }
+            ],
+            "created": 1794260047,
+            "id": "chatcmpl-36033dd0-237a-4cb9-b23d-ab90c1ed18d1",
+            "model": "agentcloud-tiny",
+            "object": "chat.completion"
+          },
+          "first_token": " token1604",
+          "first_token_kind": "content",
+          "first_token_at": "2026-11-09T21:34:07.288254502Z",
+          "created_at": "2026-11-09T21:34:07.20787985Z",
+          "updated_at": "2026-11-09T21:34:07.344772718Z",
+          "claimed_epoch": 2
+        },
+        "original_attempt": "1d00e8e2620d9db0cac6cfc765aa3121",
+        "new_attempt": "5734f9d70a5bc870fca190195b1b98d7",
+        "new_request": "scale-7101-2-agentcloud-ef8fc2-w1-after-restart"
+      },
+      "seconds": 18.03461503982544
+    },
+    {
+      "case": "concurrent_duplicate_tool",
+      "status": "passed",
+      "started_at": 1794260049.1146388,
+      "evidence": {
+        "concurrent_requests": 12,
+        "physical_effects": 1,
+        "receipt_seq": 3
+      },
+      "seconds": 16.004704475402832
+    },
+    {
+      "case": "postgres_commit_failure",
+      "status": "passed",
+      "started_at": 1794260065.49141,
+      "evidence": {
+        "rejection": {
+          "status": 500,
+          "code": "internal_error"
+        },
+        "uncommitted_effect_absent": true
+      },
+      "seconds": 14.09018850326538
+    }
+  ],
+  "passed": 4,
+  "attempted": 4,
+  "planned_count": 4,
+  "status": "passed"
+}

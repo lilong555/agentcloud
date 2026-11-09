@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "execution_kind": "real-substrate-memory-postgresql-native-dynamo-faults",
+  "generated_at": "2026-11-09T21:58:36.988851+00:00",
+  "source_commit": "d1223e31f032738374f4cc287e0580373f0bd8b5",
+  "github_run_id": "42706024235",
+  "github_run_attempt": "1",
+  "gpu_execution": false,
+  "planned": [
+    "return_during_suspend",
+    "rootfs_downgrade",
+    "concurrent_duplicate_model",
+    "cross_tenant_identity"
+  ],
+  "checks": [
+    {
+      "case": "return_during_suspend",
+      "status": "passed",
+      "started_at": 1794261518.422586,
+      "evidence": {
+        "observed_state": "QUIESCING",
+        "return_demand": {
+          "operation_id": "race-return",
+          "expected_epoch": 2,
+          "status": "PENDING",
+          "requested_at": "2026-11-09T21:58:53.402995616Z"
+        },
+        "suspended": "SUSPENDED",
+        "restored_epoch": 3
+      },
+      "seconds": 17.33942413330078
+    },
+    {
+      "case": "rootfs_downgrade",
+      "status": "passed",
+      "started_at": 1794261536.2161658,
+      "evidence": {
+        "rejection": {
+          "status": 409,
+          "code": "recovery_required"
+        },
+        "state": "RECOVERY_REQUIRED",
+        "manifest": null,
+        "native": {
+          "action": "inspect",
+          "actor": {
+            "name": "ac-scale-7101-2-agentcloud-67e1f5-w1-rootfs",
+            "uid": "da8d6004-56c9-473d-a07d-afa1930768da",
+            "version": 6,
+            "state": "SUSPENDED",
+            "snapshot_uuid": "f8307b6b-0e90-4c08-81e9-8541496852a0",
+            "snapshot_generation": 1,
+            "snapshot_fidelity": "ROOTFS",
+            "durable": true,
+            "resumed": false,
+            "cold_started": true,
+            "actual_fidelity": "UNSPECIFIED"
+          }
+        }
+      },
+      "seconds": 21.192920684814453
+    },
+    {
+      "case": "concurrent_duplicate_model",
+      "status": "passed",
+      "started_at": 1794261557.915078,
+      "evidence": {
+        "registrations": 12,
+        "unique_attempts": [
+          "cb5c922727df2030997fe1f627be8a64"
+        ],
+        "claims_equal": true
+      },
+      "seconds": 13.330637693405151
+    },
+    {
+      "case": "cross_tenant_identity",
+      "status": "passed",
+      "started_at": 1794261571.6256144,
+      "evidence": {
+        "session": {
+          "status": 404,
+          "code": "session_not_found"
+        },
+        "request": {
+          "status": 404,
+          "code": "session_not_found"
+        },
+        "trace": {
+          "status": 404,
+          "code": "workspace_not_found"
+        }
+      },
+      "seconds": 14.501245021820068
+    }
+  ],
+  "passed": 4,
+  "attempted": 4,
+  "planned_count": 4,
+  "status": "passed"
+}

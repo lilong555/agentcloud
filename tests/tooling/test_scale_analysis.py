@@ -59,3 +59,12 @@ class ScaleAnalysisTests(unittest.TestCase):
         b['source_commit']='coordinator-b'
         with self.assertRaisesRegex(ValueError,'source commits differ'):
             summarize([a,b],samples=10)
+
+    def test_partial_process_observations_keep_missing_cpu_explicit(self):
+        a,b=trial('a',1),trial('b',2,seed=7102)
+        a['metrics']['service_process_resources']={'coordinator':dict(mean_cpu_cores=.2,cpu_seconds=5,peak_resident_bytes=64*2**20)}
+        report=summarize([a,b],samples=10)['groups'][0]['service_process_resources']['coordinator']
+        self.assertEqual((report['observed_trials'],report['planned_trials']),(1,2))
+        self.assertIsNone(report['mean_cpu_cores'])
+        self.assertIsNone(report['cpu_seconds_total'])
+        self.assertEqual(report['peak_resident_bytes'],64*2**20)

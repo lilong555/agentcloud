@@ -39,3 +39,10 @@ class HeatmapAnalysisTests(unittest.TestCase):
         b['source_sha256']={'experiment':'changed'}
         with self.assertRaisesRegex(ValueError,'source digests differ'):
             summarize([a,b],samples=10)
+
+    def test_actor_limits_are_part_of_the_working_set_comparison(self):
+        a,b=trial('a'),trial('b',seed=7102)
+        a['actor_memory_limit_mib']=128
+        b['actor_memory_limit_mib']=256
+        with self.assertRaisesRegex(ValueError,'Actor memory limits differ'):
+            summarize([a,b],samples=10)

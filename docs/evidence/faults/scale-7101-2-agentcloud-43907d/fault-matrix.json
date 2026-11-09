@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "execution_kind": "real-substrate-memory-postgresql-native-dynamo-faults",
+  "generated_at": "2026-11-09T21:33:19.339509+00:00",
+  "source_commit": "717d0eadd8ae13d33811520fd04816aad78dba98",
+  "github_run_id": "42701793385",
+  "gpu_execution": false,
+  "planned": [
+    "pending_snapshot_tag",
+    "retired_lease_generation",
+    "tool_payload_conflict"
+  ],
+  "checks": [
+    {
+      "case": "pending_snapshot_tag",
+      "status": "failed",
+      "started_at": 1794260000.8143802,
+      "error": "expected PENDING tag rejection, got rpc error: code = DeadlineExceeded desc = stream terminated by RST_STREAM with error code: CANCEL\n",
+      "seconds": 109.14044141769409
+    },
+    {
+      "case": "retired_lease_generation",
+      "status": "passed",
+      "started_at": 1794260110.5522294,
+      "evidence": {
+        "old_lease_rejection": 401,
+        "old_generation_rejection": 409,
+        "finalized": {
+          "protocol_version": 1,
+          "accepted": true,
+          "finalized": true,
+          "binding_generation": "9a29d75f71fb493eb26cf63fc9f6bef7",
+          "snapshot": {
+            "program_present": false,
+            "admission_history": [
+              {
+                "request_id": "719e65c6-2e5d-4b8f-8d80-32c65c4e8472",
+                "client_request_id": null,
+                "queued_at": "2026-11-09T21:35:24.408380039Z",
+                "admitted_at": "2026-11-09T21:35:24.408530018Z",
+                "wait_ms": 0.149979
+              }
+            ],
+            "last_admission_wait_ms": 0.149979,
+            "released_acting_tokens": 0,
+            "phase": null,
+            "lifecycle": null,
+            "baseline_tokens": null,
+            "logical_budget_tokens": null,
+            "execution_multiplier": 1.0,
+            "state": null,
+            "sequence": 0,
+            "fresh": false,
+            "session_waiting_requests": 0,
+            "session_active_requests": 0,
+            "waiting_requests": 0,
+            "paused_programs": 0,
+            "completed_events": 1,
+            "aborted_events": 0,
+            "pause_events": 0,
+            "final_events": 1
+          }
+        },
+        "stale": {
+          "protocol_version": 1,
+          "accepted": false,
+          "applied": false,
+          "error": "stale_generation"
+        }
+      },
+      "seconds": 13.8959481716156
+    },
+    {
+      "case": "tool_payload_conflict",
+      "status": "passed",
+      "started_at": 1794260124.769554,
+      "evidence": {
+        "status": 409,
+        "code": "payload_conflict"
+      },
+      "seconds": 16.147061109542847
+    }
+  ],
+  "passed": 2,
+  "attempted": 3,
+  "planned_count": 3,
+  "status": "failed"
+}

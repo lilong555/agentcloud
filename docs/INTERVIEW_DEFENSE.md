@@ -6,9 +6,10 @@ AgentCloud 的核心是执行层与推理准入层的协同：Agent 等待模型
 
 - 实现 Go／PostgreSQL 协调器与 Substrate、Dynamo 原生扩展，串联模型请求持久化、工具准入、MEMORY 快照恢复和执行状态反馈；完整文件与标准 format-patch 交付覆盖 47 个上游文件。
 - 接入 Azure CPA 的真实 `gpt-6-luna`，Coding Agent 经过 8 轮推理、11 次工具调用修复两个源码文件，原有 4 项测试通过，8 次 MEMORY 恢复保持 AST、上下文与内存身份连续；DeerFlow 验证两个并发子任务、上传、70 个 PostgreSQL 检查点和新进程恢复。
-- 建立具有配对种子、失败分母、原始事件及资源积分的实验链路；已归档的五组真实混合负载完成 120 个业务请求与 45 次响应丢失恢复，并提供 p50／p95 时延、Goodput 和恢复开销。
+- 在四租户、两 Worker、N=8/16/32/64 的真实 gVisor／Dynamo 环境执行 60 组、10,800 个计划请求，首轮完成 10,765 个；AgentCloud 12/12 组通过。N=32/64 相比 TTL15，闲置预留降低 53.5%/50.1%，Goodput 提高 24.8%/11.7%，交互 p95 同时改善，并保留 TTL2 的强基线结果。
+- 完成 15/15 类实机故障和 126/126 个等待／内存窗口，提供 p50/p95/p99、95% 配对区间、原始压缩证据与退出清理审计；N=64 协调器平均使用 0.173 CPU 核，RSS 峰值 71.71 MiB。
 
-证据：[真实模型](evidence/deep-agents-summary.json)、[上游交付](UPSTREAM_PRS.md)、[真实混合负载](evidence/bench-substrate.json)、[验收状态](STATUS.md)。规模、故障及热力图使用独立 Actions 执行，以对应原始产物中的状态为准。
+证据：[真实模型](evidence/deep-agents-summary.json)、[上游交付](UPSTREAM_PRS.md)、[规模矩阵](evidence/scale-summary.json)、[故障审计](evidence/faults-summary.json)、[收益热力图](evidence/heatmap-summary.json)、[验收状态](STATUS.md)。每个数值均关联冻结源码、配对种子及独立 Actions 产物。
 
 ## 自主调度如何形成闭环
 
@@ -38,6 +39,12 @@ AgentCloud 的核心是执行层与推理准入层的协同：Agent 等待模型
 
 真实模型证据中，8 次挂起恢复保留相同内存身份，模型实际改动 `shop/pricing.py` 与 `shop/cart.py`，原有测试保持原样。
 
+## PENDING 快照如何保护恢复状态
+
+[`WaitActorSnapshotDurable`](../integrations/substrate/files/cmd/ateapi/internal/controlapi/snapshot_durability.go#L32)按 Actor UID 和指定 snapshot UUID/generation 观察上传。原生 Tag 创建会先提升本地快照，随后预留名字并复制；对象存储失联时，提升操作可持续等待直到期限结束。
+
+[实机故障](evidence/faults-summary.json)关闭 RustFS 后发起真实协调器检查点，核验 PENDING MEMORY 快照身份和 Tag 缺席。短期限 Tag 请求结束后，独立上下文再次读取确认。检查点 HTTP 超时使生命周期进入 OUTCOME_UNKNOWN，gate 保持 CLOSED，原 Manifest 保持原值。该案例与其余 14 类故障在同一源码矩阵中全部通过。
+
 ## Dynamo 回收怎样同时保护额度和身份
 
 [`finalize`](../integrations/dynamo/files/lib/router-plugins/builtin/src/thunderagent/execution_control.rs#L409)要求原生 program 已结束、活动请求为零，再撤销绑定、feedback 和 inference lease。新的注册获得随机 generation、opaque routing session 和 lease。
@@ -52,7 +59,7 @@ AgentCloud 的核心是执行层与推理准入层的协同：Agent 等待模型
 
 [`persistContext`](../internal/control/controller.go#L220)在数据库 I/O 期间释放状态互斥锁，提交闸门控制新操作的可见性。revision 冲突或提交失败会使写者进入待重启对账状态。每个数据库采用 advisory lock 保证单写者，当前一致性模型建立在单写者提交顺序上。
 
-该设计减少整份历史反复编码的开销。控制面的可承载范围由多租户实验中的请求完成率、CPU、RSS、事务耗时和调度开销共同评估；更高规模可按租户或 Workspace 将所有权划分到独立日志分片。
+在 N=64、四个可运行 Actor 槽位的实测中，协调器平均 CPU 为 0.173 核，采样 RSS 峰值为 71.71 MiB；PostgreSQL 提交 p95 为 19.037 ms、p99 为 97.197 ms。N=8 的提交 p95/p99 为 4.374/6.337 ms，显示密度增长带来的尾部开销。[阶段测量](evidence/control-plane-summary.json)记录样本数和有界历史范围。更高规模与高可用容量可按租户或 Workspace 将所有权划分到独立日志分片。
 
 ## DeerFlow 怎样协调外部图与沙箱快照
 
@@ -68,14 +75,18 @@ PostgreSQL 保存不可变图 checkpoint，沙箱保存独立 Tag；两阶段 ma
 
 ## 实验怎样支持性能结论
 
-已归档的小规模真实实验中，E 相比 TTL 基线 B 的 Stranded 均值降低 17.4%，交互 TTFT p95 降低 20.5%；Goodput 为 E 0.158、B 0.175 请求／秒，E 的恢复开销更高。这组数据体现资源与时延的取舍。
+规模矩阵固定 N=8/16/32/64、四租户、两 Worker、六轮 1K～16K 上下文和三组配对种子，对比 TTL=0/2/5/15s。最早尝试决定主样本；58/60 组通过，10,765/10,800 请求完成。两组基础设施失败及重跑分别归档。AgentCloud 12/12 组、2,160/2,160 请求完成。
 
-规模矩阵固定 N=8/16/32/64、四租户、两 Worker、六轮 1K～16K 上下文和三组配对种子，对比 TTL=0/2/5/15s。统计使用 seed trial 与完整 Workspace 轨迹的分层 bootstrap，并单列每个基线的配对差异。首次运行按时间选定，失败、未投递请求和重跑全部进入审计记录。
+N=32/64 时，相比 TTL15，AgentCloud 的 Stranded 减少 53.52%/50.08%，Goodput 提高 24.81%/11.68%，合并请求的交互 p95 降低 7.54%/15.13%。按种子计算的差异同时满足预声明的资源下降、Goodput 保持或提高、交互 p95 保持或降低的 95% 区间判据。TTL2 在当前负载下仍有较低资源占用与较高 Goodput，这个取舍保留在[完整对照表](EXPERIMENTS.md)。
 
-CPU Mocker 提供原生 Router、缓存块和推理竞争的受控实验。物理 GPU KV 占用、显存回收与吞吐结论需要对应硬件测量；真实模型 Agent 功能证据来自 Azure CPA。
+[126 个实测窗口](evidence/heatmap-summary.json)给出挂起的收益边界：触达 128 MiB RAM、Actor 上限 512 MiB、等待 1 秒时，净预留收益为 -0.734 GB·s，增加返回延迟 3.804 秒；等待 10 秒时，节省 4.355 GB·s，增加返回延迟 0.897 秒。系统需要同时使用真实等待、恢复成本和延迟预算决定释放时机。
+
+统计采用 2,000 次 seed trial／完整 Workspace 轨迹分层 bootstrap，配对差异按三个独立种子计算。主表的 p95 使用合并请求，配对表先计算每个 trial 的 p95。N=64 的四槽位饱和配置交互 p95 为 237.983 秒，面向业务 SLO 的容量配置需要更充足的 Worker 槽位或更低并发。
+
+CPU Mocker 提供原生 Router、缓存块和推理竞争的受控实验。物理 GPU KV 占用、显存回收与吞吐结论使用独立 CUDA 硬件测量；真实模型 Agent 功能证据来自 Azure CPA。
 
 ## 复现与生产验收
 
-`make check`、`make verify-delivery` 与 `make evidence-audit` 验证契约、竞态、原始日志和源码还原。独立重型工作流运行真实 Kind/gVisor、PostgreSQL 与原生 Dynamo；15 类故障覆盖并发返回、旧 epoch、PENDING、ROOTFS 降级、未知模型结果、Frontend 重启、重复提交、租户隔离及事务失败。
+`make check`、`make verify-delivery` 与 `make evidence-audit` 验证契约、竞态、原始日志和源码还原。独立重型工作流运行真实 Kind/gVisor、PostgreSQL 与原生 Dynamo；15/15 类故障通过，覆盖并发返回、旧 epoch、PENDING、ROOTFS 降级、未知模型结果、Frontend 重启、重复提交、租户隔离及事务失败，四个分片均完成资源清理。
 
 部署与容量结论应关联实际运行 SHA、样本规模、故障通过项、清理记录和后端类型。[交付状态](STATUS.md)与[实验报告](EXPERIMENTS.md)是这些事实的统一入口。

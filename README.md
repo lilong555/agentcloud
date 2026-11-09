@@ -4,6 +4,8 @@ AgentCloud 将 Agent 执行生命周期与 LLM 准入调度连接起来。Go 协
 
 Azure CPA 的真实 `gpt-6-luna` 已完成多文件 Coding 修复与 DeerFlow 研究任务。Coding Agent 经过 8 轮推理和 11 次工具调用修改两个源码文件，原有 4 项测试通过，8 次 gVisor MEMORY 恢复保持内存状态连续。DeerFlow 完成两个并发子任务、文件上传、70 个 PostgreSQL 图检查点与新进程恢复。[完整真实模型证据](docs/evidence/deep-agents-summary.json)保留全部验收尝试和清理结果。
 
+规模验收已完成 60 组首轮运行、10,765/10,800 请求；AgentCloud 的 12/12 组全部通过，15/15 类实机故障和等待／内存热力图 126/126 窗口均通过。N=32/64 时，相比 TTL=15 秒，闲置预留分别减少 53.5%/50.1%，Goodput 提高 24.8%/11.7%，交互 p95 同时改善。TTL=2 秒在当前负载下仍有较低资源占用和较高 Goodput。[完整对照与置信区间](docs/EXPERIMENTS.md)保留全部策略、首轮失败和重跑。
+
 ## 快速运行
 
 需要 Linux x86_64、Python 3.10+、Git、Make 和 C 编译器。工具链脚本下载 Go 并校验官方 SHA256，上游依赖固定到精确提交。
@@ -97,9 +99,9 @@ make live-suite
 
 PostgreSQL 验证可设置 `AGENTCLOUD_TEST_PG_ADMIN`；测试会创建独立临时数据库并在结束时清理。DeerFlow 的真实上游契约使用 `adapters/deerflow/setup.sh` 安装的独立环境运行。
 
-[验证状态](docs/STATUS.md)索引真实测试、端到端案例和原始日志。[实验报告](docs/EXPERIMENTS.md)包含真实 Substrate / Dynamo 五组消融的 15 次配对运行：120/120 业务请求与 45/45 故障恢复通过；另有 280 组离散事件对照和 40 组原生 Router 配对实验。所有失败和未完成请求进入实验分母，逻辑预算与物理 GPU/KV 指标分别报告。
+[验证状态](docs/STATUS.md)索引真实测试、端到端案例和原始日志。[实验报告](docs/EXPERIMENTS.md)提供 60 组规模矩阵、126 个等待／内存窗口、p50/p95/p99 与 95% 置信区间，以及协调器 CPU／RSS 和 PostgreSQL 提交开销。历史五组消融包含 120/120 业务请求与 45/45 响应丢失恢复；另有 280 组离散事件对照和 40 组原生 Router 配对实验。所有失败和未完成请求进入实验分母，逻辑预算与物理 GPU/KV 指标分别报告。
 
-![真实五组消融](docs/evidence/bench-substrate-metrics.png)
+![规模、时延与资源对照](docs/evidence/scale-metrics.png)
 
 ## 源码交付
 

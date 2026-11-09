@@ -25,6 +25,8 @@ def summarize(trials,samples=2000):
     rng=random.Random(9031);cells=[]
     for heap in sorted({t['heap_mib'] for t in selected}):
         group=[t for t in selected if t['heap_mib']==heap]
+        limits={t.get('actor_memory_limit_mib') for t in group}
+        if len(limits)!=1: raise ValueError('Actor memory limits differ within a working-set group')
         for wait in (1,2,5,10,20,40,60):
             pairs=[]
             for trial in group:
@@ -34,7 +36,8 @@ def summarize(trials,samples=2000):
                 pairs.append(dict(seed=trial['seed'],reserved_gb_s_saved=keep['resources']['actor_reserved_gb_s']-suspend['resources']['actor_reserved_gb_s'],
                     return_latency_delta_seconds=suspend['return_latency_seconds']-keep['return_latency_seconds'],
                     checkpoint_seconds=suspend['checkpoint_seconds'],resume_seconds=suspend['resume_seconds']))
-            cell=dict(heap_mib=heap,wait_seconds=wait,paired_trials=len(pairs),planned_trials=len(group),pairs=pairs)
+            cell=dict(heap_mib=heap,actor_memory_limit_mib=next(iter(limits)),wait_seconds=wait,
+                paired_trials=len(pairs),planned_trials=len(group),pairs=pairs)
             for metric in ('reserved_gb_s_saved','return_latency_delta_seconds','checkpoint_seconds','resume_seconds'):
                 values=[p[metric] for p in pairs]
                 distribution=[statistics.mean(rng.choices(values,k=len(values))) for _ in range(samples)] if values else []
@@ -57,21 +60,28 @@ def figures(report,path):
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
+    from matplotlib.patches import Rectangle
     import numpy as np
     heaps=sorted({c['heap_mib'] for c in report['cells']});waits=[1,2,5,10,20,40,60]
-    fig,axes=plt.subplots(1,2,figsize=(12,4),constrained_layout=True)
+    plt.rcParams.update({'font.family':'DejaVu Sans','font.size':9,'svg.fonttype':'none'})
+    fig,axes=plt.subplots(1,2,figsize=(12,4.1),constrained_layout=True)
+    labels=[str(heap)+' / '+str(next(c['actor_memory_limit_mib'] for c in report['cells'] if c['heap_mib']==heap)) for heap in heaps]
     for ax,metric,title in zip(axes,('reserved_gb_s_saved','return_latency_delta_seconds'),('Worker reservation saved (GB s)','Additional return latency (s)')):
         lookup={(c['heap_mib'],c['wait_seconds']):c[metric]['mean'] for c in report['cells']}
         data=np.array([[lookup.get((heap,wait)) if lookup.get((heap,wait)) is not None else np.nan for wait in waits] for heap in heaps])
         limit=float(np.nanmax(np.abs(data))) if np.isfinite(data).any() else 1
         img=ax.imshow(data,aspect='auto',cmap='RdBu' if metric=='reserved_gb_s_saved' else 'RdBu_r',vmin=-max(limit,1e-6),vmax=max(limit,1e-6))
-        ax.set(xticks=range(len(waits)),xticklabels=waits,yticks=range(len(heaps)),yticklabels=heaps,
-            xlabel='Wait until caller returns (s)',ylabel='Touched random RAM (MiB)',title=title)
+        ax.set(xticks=range(len(waits)),xticklabels=waits,yticks=range(len(heaps)),yticklabels=labels,
+            xlabel='Wait until caller returns (s)',ylabel='Touched RAM / Actor limit (MiB)',title=title)
         for y in range(len(heaps)):
             for x in range(len(waits)):
-                ax.text(x,y,f'{data[y,x]:.2f}' if np.isfinite(data[y,x]) else 'missing',ha='center',va='center',fontsize=8)
+                ax.text(x,y,f'{data[y,x]:.2f}' if np.isfinite(data[y,x]) else 'missing',ha='center',va='center',fontsize=8,
+                    color='white' if abs(data[y,x])>limit*.65 else 'black')
+                cell=next((c for c in report['cells'] if c['heap_mib']==heaps[y] and c['wait_seconds']==waits[x]),None)
+                if metric=='reserved_gb_s_saved' and cell and cell[metric]['ci95'][1] is not None and cell[metric]['ci95'][1]<0:
+                    ax.add_patch(Rectangle((x-.48,y-.48),.96,.96,fill=False,edgecolor='#b2182b',linewidth=2,linestyle='--'))
         fig.colorbar(img,ax=ax,shrink=.85)
-    fig.suptitle('Measured gVisor MEMORY suspension: resource savings and return latency')
+    fig.suptitle('gVisor MEMORY: three paired seeds per cell; dashed outline = negative savings at 95% CI')
     for extension in ('svg','png','pdf'): fig.savefig(path.with_suffix('.'+extension),dpi=180)
     plt.close(fig)
 

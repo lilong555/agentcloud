@@ -126,7 +126,7 @@ def main():
             destination = ROOT/'docs/evidence'/folder/trial_id/(original.name+('.gz' if compress else ''))
             files.append(archive_file(original, destination, compress))
     artifact_dir = ROOT/'docs/evidence/live-runs'/str(args.run_id)/str(args.artifact_id)
-    for name in ('ci-live-runtime.json', 'ci-live-cleanup.json'):
+    for name in ('ci-live-runtime.json', 'ci-live-cleanup.json', 'staging.json'):
         original = source/name
         if original.is_file():
             files.append(archive_file(original, artifact_dir/name, False))

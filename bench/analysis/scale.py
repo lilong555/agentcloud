@@ -124,6 +124,17 @@ def summarize(trials, samples=2000, seed=9031):
             trials_with_resource_observation=sum(t.get('metrics', {}).get('resource_coverage_fraction', 0) >= .9 for t in group),
             ci95={key: interval(values) for key, values in bootstrap.items()})
         row.update({key: mean_complete([trial_metric(t, key) for t in group]) for key in SCALARS})
+        row['native_pause_events'] = sum(t.get('metrics', {}).get('native_pause_events', 0) for t in group)
+        row['autonomous_decisions'] = sum(t.get('autonomous_decisions', {}).get('total', 0) for t in group)
+        row['service_process_resources'] = {}
+        for service in ('coordinator', 'native_frontend', 'native_mocker'):
+            observed = [t.get('metrics', {}).get('service_process_resources', {}).get(service) for t in group]
+            measurements = [m for m in observed if m is not None]
+            row['service_process_resources'][service] = dict(observed_trials=len(measurements), planned_trials=len(group),
+                mean_cpu_cores=mean_complete([m.get('mean_cpu_cores') if m else None for m in observed]),
+                cpu_seconds_total=sum(m['cpu_seconds'] for m in measurements) if len(measurements)==len(group) else None,
+                peak_resident_bytes=max((m['peak_resident_bytes'] for m in measurements), default=None),
+                source='Linux /proc; CPU averaged across seed trials; peak RSS is the maximum observed sample')
         groups.append(row)
     comparisons = []
     for concurrency in sorted({t['concurrency'] for t in primary}):
