@@ -675,6 +675,11 @@ class Runner:
         self.evidence=Evidence(self.raw)
         self.client=ObservedClient(args.base_url,self.token,evidence=self.evidence)
         self.runs=[]
+        self.journal_seen=set()
+        self.journal_path=self.output.with_name(self.output.stem+'-coordinator-events.jsonl')
+        self.journal_metadata_path=self.output.with_name(self.output.stem+'-coordinator-events-metadata.json')
+        self.journal_path.parent.mkdir(parents=True,exist_ok=True)
+        self.journal_path.write_text('')
         self.worker_samples=[];self.worker_lock=threading.Lock();self.worker_process=None;self.worker_thread=None
 
     def start_probe(self):
@@ -706,6 +711,20 @@ class Runner:
             try:self.worker_process.wait(timeout=10)
             except subprocess.TimeoutExpired:self.worker_process.kill();self.worker_process.wait()
         if self.worker_thread:self.worker_thread.join(timeout=5)
+
+    def capture_journal(self):
+        result=Client(self.args.base_url,self.token).call('GET','/v1/events?after_seq=0')
+        selected=[event for event in result['events'] if event['session_id'].startswith(self.run_id)
+                  and event['sequence'] not in self.journal_seen]
+        with self.journal_path.open('a') as output:
+            for event in selected:
+                output.write(json.dumps(event,ensure_ascii=False)+'\n')
+                self.journal_seen.add(event['sequence'])
+        self.evidence.event('durable_journal_capture',events_added=len(selected),events_total=len(self.journal_seen),
+                            last_sequence=result['last_sequence'])
+        write_json(self.journal_metadata_path,dict(schema_version=1,run_id=self.run_id,
+            event_source='PostgreSQL-backed authenticated coordinator event API',events=len(self.journal_seen),
+            last_sequence=result['last_sequence'],capture_strategy='per-trial retained-history union'))
 
     def control(self,path,body=None):
         request=urllib.request.Request(self.args.control_url+'/v1/execution/'+path,
@@ -759,6 +778,7 @@ class Runner:
             print(json.dumps(dict(status='running',seed=seed,group=group,randomized_order=index),ensure_ascii=False),flush=True)
             result=Trial(self,seed,group,index).run();self.runs.append(result)
             self.disk_sample('after',seed,group)
+            self.capture_journal()
             self.save(caps,native,order)
             print(json.dumps(dict(status=result['status'],seed=seed,group=group,completed=result['completed'],
                 offered=result['offered'],output=str(self.output)),ensure_ascii=False),flush=True)
@@ -782,10 +802,13 @@ class Runner:
             inference_backend='official dynamo.mocker process / native ThunderAgent CPU',
             run_id=self.run_id,config=self.config,capabilities=caps,native_capabilities=native,
             raw_events=str(self.raw),paired_seeds=self.config['paired_seeds'],randomized_schedule=order,
+            coordinator_journal_events=str(self.journal_path),
+            coordinator_journal_metadata=str(self.journal_metadata_path),
             ttft_definition='client workload arrival to first observed persisted upstream SSE nonempty content/reasoning_content; includes create/Actor queue/Resume/admission and HTTP polling',
             server_first_token_definition='coordinator observation timestamp of first upstream SSE nonempty generated piece; clock-shared localhost server',
             complete_response_definition='arrival to durable COMPLETED observation, separately from TTFT',
             polling_interval_seconds=self.config['poll_interval_seconds'],
+            observation_lag_definition='client observation time minus persisted first_token_at; includes journal persistence, polling and HTTP transport',
             experiment_scope='two real sessions, one allocatable Actor slot; external driver queues fixed Actor demand using real Substrate Worker actorAssignments.resources, then creates on available capacity; mixed CPU compile, controlled actor-local HTTP research, file batch and interactive requests',
             group_semantics={'A':'resident through model wait + fixed think gap; final each turn',
                 'B':'A + idle-think TTL suspend','C':'B + retained cross-turn ThunderAgent Acting logical program budget',
@@ -846,6 +869,23 @@ def export_artifacts(output,report):
     if samples:
         with prefix.with_name(prefix.name+'-requests.csv').open('w',newline='') as f:
             writer=csv.DictWriter(f,fieldnames=list(samples[0]));writer.writeheader();writer.writerows(samples)
+    trial_fields=['seed','group','randomized_order','status','offered','completed','failed','duration_seconds',
+                  'driver_worker_queue_seconds','stranded_worker_reserved_memory_gb_seconds','actor_reserved_memory_gb_seconds',
+                  'non_tool_reserved_memory_gb_seconds','transition_and_cleanup_reserved_memory_gb_seconds',
+                  'ttft_p50_seconds','ttft_p95_seconds','interactive_ttft_p50_seconds','interactive_ttft_p95_seconds',
+                  'resume_p50_seconds','resume_p95_seconds','interactive_offered','interactive_slo_successes',
+                  'interactive_goodput_per_second','fault_planned','fault_injections','fault_recovered','fault_skipped',
+                  'assignment_sample_count','assignment_sample_max_gap_seconds','assignment_uncovered_seconds',
+                  'assignment_observed_transition_uncertainty_estimate_gb_seconds','max_observed_assigned_actors','error']
+    with prefix.with_name(prefix.name+'-trials.csv').open('w',newline='') as f:
+        writer=csv.DictWriter(f,fieldnames=trial_fields);writer.writeheader()
+        writer.writerows({field:trial.get(field) for field in trial_fields} for trial in report['runs'])
+    for section in ('resumes','faults'):
+        records=[dict(seed=trial['seed'],group=trial['group'],**entry) for trial in report['runs'] for entry in trial[section]]
+        if records:
+            fields=list(dict.fromkeys(key for record in records for key in record))
+            with prefix.with_name(prefix.name+'-'+section+'.csv').open('w',newline='') as f:
+                writer=csv.DictWriter(f,fieldnames=fields);writer.writeheader();writer.writerows(records)
     # 标准绘图工具产出独立图表，数值来自同一原始 JSON。
     charts=[('mean_stranded_worker_reserved_memory_gb_seconds','Stranded reserved memory / trial (GB·s)'),
             ('interactive_ttft_p95_seconds','Interactive TTFT p95 (s)'),

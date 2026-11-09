@@ -13,7 +13,7 @@ AgentCloud 已完成协调器、Dynamo 原生反馈、Substrate 生命周期、�
 | DeerFlow | 真实 Substrate Provider、研究中断点、图/工具回执/独立 Tag 两阶段对账、新进程恢复研究、MEMORY 与 epoch 1→2 | [研究 Agent](evidence/agents-deerflow-substrate.json) |
 | Python Runtime | 27 项契约测试、UID 投影、闭闸、持久回执、进程组清理；mTLS 与重定向凭据保护 | [Python 测试](evidence/agents-tests.json)、[TLS](evidence/agents-runtime-tls.json) |
 | 成本协调 | 原生 classifier 排队观测、等待与快照成本估计、最小驻留、恢复冷却、并发操作排他 | [真实 HTTP 策略验收](evidence/service-scheduling.json) |
-| 实验 | 四画像、两模式、280 组仿真消融；40 组原生 Router 配对测量、80 个业务请求完成 | [实验报告](EXPERIMENTS.md) |
+| 实验 | 真实 A～E 混合负载 15 组、120/120 业务请求、45/45 故障恢复；补充 280 组仿真与 40 组原生 Router 配对测量 | [实验报告](EXPERIMENTS.md) |
 | 源码复现 | 固定上游 SHA、完整修改文件与摘要，在全新 checkout 还原并核验 | [源码复现](evidence/source-reproduction.json) |
 | 独立审查 | 生命周期与认证审查；成本路径竞争条件回归；源码与公开凭据扫描 | [协议审查](evidence/adversarial-review.json)、[交付审查](evidence/delivery-review.json) |
 

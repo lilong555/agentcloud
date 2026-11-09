@@ -91,7 +91,9 @@ make live-suite
 
 PostgreSQL 验证可设置 `AGENTCLOUD_TEST_PG_ADMIN`；测试会创建独立临时数据库并在结束时清理。DeerFlow 的真实上游契约使用 `adapters/deerflow/setup.sh` 安装的独立环境运行。
 
-[验证状态](docs/STATUS.md)索引真实测试、端到端案例和原始日志。[实验报告](docs/EXPERIMENTS.md)区分 280 组离散事件对照、40 组原生 Router 配对实验及真实 Actor 验收。所有失败和未完成请求进入实验分母，逻辑预算与物理 GPU/KV 指标分别报告。
+[验证状态](docs/STATUS.md)索引真实测试、端到端案例和原始日志。[实验报告](docs/EXPERIMENTS.md)包含真实 Substrate / Dynamo 五组消融的 15 次配对运行：120/120 业务请求与 45/45 故障恢复通过；另有 280 组离散事件对照和 40 组原生 Router 配对实验。所有失败和未完成请求进入实验分母，逻辑预算与物理 GPU/KV 指标分别报告。
+
+![真实五组消融](docs/evidence/bench-substrate-metrics.png)
 
 ## 源码交付
 

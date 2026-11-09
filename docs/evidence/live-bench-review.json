@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "reviewed_at_utc": "2026-11-09T15:41:08.600731+00:00",
+  "reviewed_at_utc": "2026-11-09T15:55:48.753271+00:00",
   "review_kind": "read-only source and recorded-event audit",
-  "status": "source_review_complete_formal_execution_pending",
+  "status": "passed",
   "scope": [
     "TTFT",
     "Worker reservation integration",
@@ -13,7 +13,7 @@
     "performance statement scope"
   ],
   "source_sha256": {
-    "bench/substrate_live.py": "27e1b498fad5e380f29d25c8cde57d537936760724f1ce17a12cf61f974952e2",
+    "bench/substrate_live.py": "08417cb9136a7d994f4a316d6a654ed3f2e9bdfc67652e5a96de5d1a171346ab",
     "bench/live.py": "2457e68d250dd61d9162dc13a1e1ea7d330bc3e03f217d209af96e6991a26771",
     "bench/worker_probe/main.go": "482956cd35b1cbe8065606478fdaa2e99e15b8f61c4701535fe37d2d7dd6a63b",
     "bench/configs/substrate-mixed-live.json": "a50e522ea0b1b6a480c35f632021f722851d3033bae8d3a0c96b26262d71219e",
@@ -24,7 +24,7 @@
     {
       "id": "ttft",
       "status": "passed",
-      "fact": "模型首 token 取自协调器持久化的上游 SSE 非空生成片段；客户端到达至首次观察使用单调时钟，排队请求保存 Actor 创建前的原始到达时间，服务端首片段时间与轮询延迟独立记录。D/E 后台模型观察与 model-boundary 调用并发。"
+      "fact": "模型首 token 取自协调器持久化的上游 SSE 非空生成片段；客户端到达至首次观察使用单调时钟，排队请求保存 Actor 创建前的原始到达时间，服务端首片段时间与轮询延迟独立记录。D/E 后台模型观察与 model-boundary 调用并发。 当前驱动根据真实 WorkerAssignment 容量等待后创建 contender，原始交互到达时间包含这段驱动排队。"
     },
     {
       "id": "timeout",
@@ -54,7 +54,7 @@
     {
       "id": "ablation_controls",
       "status": "passed",
-      "fact": "A/B 通过原生 Final 消除跨轮 ACTING 程序保留；全部组保留原生推理准入，C/D/E 保留程序，D/E 调用真实 model-boundary，E 从协调器实际状态派生反馈。配对种子、同组参数和随机顺序来自冻结配置。失败试验终止后续组。"
+      "fact": "A/B 通过原生 Final 消除跨轮 ACTING 程序保留；全部组保留原生推理准入，C/D/E 保留程序，D/E 调用真实 model-boundary，E 从协调器实际状态派生反馈。配对种子、同组参数和随机顺序来自冻结配置。失败试验终止后续组。 正式结果核对 30 次收尾 Final 快照，program_present=false、waiting_requests=0。"
     },
     {
       "id": "cleanup",
@@ -75,27 +75,126 @@
   "observations": [],
   "execution_evidence": [
     {
-      "path": "docs/evidence/bench-substrate-failed-rfc3339nano.json",
-      "status": "failed",
-      "run_id": "live-4585610bdf",
-      "trials": []
+      "path": "docs/evidence/bench-substrate.json",
+      "sha256": "2b7c862a1a709d4c5e6b46461ee4797da78d7484c83114025d81f5198d159936"
     },
     {
-      "path": "docs/evidence/bench-substrate-failed-empty-content.json",
-      "status": "incomplete",
-      "run_id": "live-c3fceef850",
-      "trials": [
-        {
-          "seed": 7101,
-          "group": "B",
-          "status": "failed",
-          "offered": 8,
-          "completed": 1,
-          "error": "模型缺少成功首 token: COMPLETED"
-        }
-      ]
+      "path": "docs/evidence/bench-substrate-events.jsonl",
+      "sha256": "673fa4929009b6ddbbf8ee579d8e0d6d7c0f7b9eb72c7f300ce406199214bf4b"
+    },
+    {
+      "path": "docs/evidence/bench-substrate-coordinator-events.jsonl",
+      "sha256": "911266a2f1eb8671871bbde703669225e93f9d161e2881942443d3b4bbc0d23a"
+    },
+    {
+      "path": "docs/evidence/bench-substrate-coordinator-events-metadata.json",
+      "sha256": "817eba57b8abd3571963c1b111ffa47298e794b7fe9c0ecfe462060b7016f000"
+    },
+    {
+      "path": "docs/evidence/bench-substrate-summary.csv",
+      "sha256": "79f2cef694bb0201ab133df8512d6f772fb1e393599a173ddcedf9df7d221d13"
+    },
+    {
+      "path": "docs/evidence/bench-substrate-requests.csv",
+      "sha256": "cf289ebb3ebbfe72057d23ab4d0bdfe6a72fb3b39c6c3afc6b1c259d6c25a36d"
+    },
+    {
+      "path": "docs/evidence/bench-substrate-trials.csv",
+      "sha256": "3044bc5a3dc122dda23ad343f62eccd57987751f7b2fb5599e3d7001639168aa"
+    },
+    {
+      "path": "docs/evidence/bench-substrate-resumes.csv",
+      "sha256": "cc6797d271a66682a2c2b055661ba867c3b3f7c23d790a05e6dc81820fdcd500"
+    },
+    {
+      "path": "docs/evidence/bench-substrate-faults.csv",
+      "sha256": "5c0b6f7d7916bed9f651607d8af694bfbcf2b7b4bdc2165f1bf3c986bab41cad"
     }
   ],
-  "execution_validation": "正式三种子全组运行需以最终 bench-substrate.json 完整状态与逐试验记录验收；已归档空输出轨迹中上游确实返回 content=null，首 token 为空，试验保持失败状态。",
-  "performance_conclusion": "本审查确认测量口径与实现对应关系；完整正式运行结果决定各组性能数值。"
+  "execution_validation": "正式三种子 A～E 共 15 试验完成；模型首 token、真实 COMPLETED、收尾 Final、挂起清理、assignment 单槽与采样覆盖已通过原始事件核验。",
+  "performance_conclusion": "上述性能数值来自本次真实 Substrate、PostgreSQL、原生 ThunderAgent 和官方 CPU Mocker 的固定混合负载。E 与 B 展现延迟、Stranded、恢复成本及 goodput 的实测权衡。",
+  "formal_execution": {
+    "run_id": "live-2632c869ce",
+    "status": "passed",
+    "paired_seeds": [
+      7101,
+      7102,
+      7103
+    ],
+    "trials_passed": 15,
+    "business_model_requests_completed": 120,
+    "business_model_requests_offered": 120,
+    "interactive_requests_offered": 60,
+    "faults_recovered": 45,
+    "faults_injected": 45,
+    "faults_skipped": 0,
+    "raw_unique_completed_requests_including_terminal": 150,
+    "terminal_completed_requests": 30,
+    "terminal_snapshots_program_absent": 30,
+    "cleanup_observations_suspended": 75,
+    "first_token_observations": 120,
+    "worker_assignment_samples": 4120,
+    "last_worker_assignments": 0,
+    "all_trials_sampling_uncovered_seconds": 0,
+    "maximum_sample_gap_seconds": 0.11606287956237793,
+    "all_trials_estimated_missing_samples": 0,
+    "maximum_observed_assigned_actors": 1,
+    "worker_allocated_crosscheck_mismatches": [
+      {
+        "at": "2026-11-09T15:50:03.315319375Z",
+        "assignment_memory_bytes": 0,
+        "worker_allocated_memory_bytes": 805306368
+      },
+      {
+        "at": "2026-11-09T15:52:24.315946545Z",
+        "assignment_memory_bytes": 0,
+        "worker_allocated_memory_bytes": 805306368
+      }
+    ],
+    "crosscheck_interpretation": "ListWorkers 的 allocated 与 ListWorkerActorAssignments 由顺序独立读取取得，资源转换期间两次瞬时差异如实记录；主积分使用 assignment.resources。",
+    "coordinator_journal_events": 1992,
+    "coordinator_journal_observed_gaps": [],
+    "csv_rows": {
+      "summary": 5,
+      "requests": 120,
+      "trials": 15,
+      "resumes": 30,
+      "faults": 45
+    },
+    "aggregate_reconciliation": "逐组 3 种子、24/24 模型请求、12 交互请求、9/9 故障恢复；各组计数、资源积分与逐试验求和一致，goodput 等于 SLO 成功数除以试验持续时间之和。"
+  },
+  "e_vs_b": {
+    "metrics": {
+      "mean_stranded_worker_reserved_memory_gb_seconds": {
+        "B": 7.320396370532228,
+        "E": 6.0499043775488275,
+        "relative_change": -0.17355508208512882
+      },
+      "interactive_ttft_p95_seconds": {
+        "B": 7.398344514599921,
+        "E": 5.879935325448605,
+        "relative_change": -0.20523634526006218
+      },
+      "resume_p95_seconds": {
+        "B": 0.2797518819988909,
+        "E": 0.6569277305016861,
+        "relative_change": 1.348251335461223
+      },
+      "interactive_goodput_per_second": {
+        "B": 0.17503467306290255,
+        "E": 0.15788975478670547,
+        "relative_change": -0.09795155426168434
+      },
+      "actor_reserved_memory_gb_seconds": {
+        "B": 43.16243001599999,
+        "E": 48.31242623999999,
+        "relative_change": 0.11931664232275474
+      }
+    },
+    "interactive_slo_fraction": {
+      "B": 1.0,
+      "E": 1.0
+    },
+    "fact": "本次配对实测 E 相比 B：每试验 Stranded 降低 17.36%，交互 TTFT p95 降低 20.52%；Resume p95 增加 134.83%，交互 goodput 降低 9.80%，总 Actor 预留 GB·s 增加 11.93%。B 与 E 的交互 SLO 成功率均为 100%。"
+  }
 }
