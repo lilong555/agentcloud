@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "execution_kind": "github-actions-native-wheel-runtime",
+  "status": "failed",
+  "github_run_id": 42685443878,
+  "job_id": 129390896796,
+  "source_commit": "8a87f26af41c94025023332d75e1429e870d398d",
+  "native_source_run_id": 42677784069,
+  "url": "https://github.com/lilong555/agentcloud/actions/runs/42685443878",
+  "upstream_execution": true,
+  "gpu_execution": false,
+  "python_version": "3.12.16",
+  "native_regression_map": "passed",
+  "installed_dependency_compatibility": "passed",
+  "startup": {
+    "schema_version": 1,
+    "status": "failed",
+    "execution_kind": "native-rust-frontend-mocker-binding-finalization",
+    "recorded_at": "2026-11-09T19:41:11.051533+00:00",
+    "error": "native mocker process 3701 exited with -11; logs: /home/runner/work/agentcloud/agentcloud/docs/evidence/logs/native-binding-churn",
+    "processes": [
+      {
+        "name": "frontend",
+        "command": [
+          "/home/runner/work/agentcloud/agentcloud/.venv-dynamo/bin/python",
+          "-m",
+          "dynamo.frontend",
+          "--http-host",
+          "127.0.0.1",
+          "--http-port",
+          "18080",
+          "--router-mode",
+          "kv",
+          "--router-policy-config",
+          "/home/runner/work/agentcloud/agentcloud/artifacts/native-churn/thunderagent.yaml",
+          "--kv-cache-block-size",
+          "16",
+          "--discovery-backend",
+          "file",
+          "--request-plane",
+          "tcp",
+          "--event-plane",
+          "zmq"
+        ],
+        "pid": 3700,
+        "exit_code": 0
+      },
+      {
+        "name": "mocker",
+        "command": [
+          "/home/runner/work/agentcloud/agentcloud/.venv-dynamo/bin/python",
+          "-m",
+          "dynamo.mocker",
+          "--model-path",
+          "/home/runner/work/agentcloud/agentcloud/artifacts/native-churn/tokenizer",
+          "--model-name",
+          "agentcloud-tiny",
+          "--block-size",
+          "16",
+          "--num-gpu-blocks-override",
+          "64",
+          "--max-model-len",
+          "8192",
+          "--kv-bytes-per-token",
+          "512",
+          "--num-workers",
+          "1",
+          "--speedup-ratio",
+          "1",
+          "--discovery-backend",
+          "file",
+          "--request-plane",
+          "tcp",
+          "--event-plane",
+          "zmq"
+        ],
+        "pid": 3701,
+        "exit_code": -11
+      }
+    ]
+  },
+  "diagnostic": {
+    "schema_version": 1,
+    "status": "failed",
+    "execution_kind": "native-rust-frontend-mocker-binding-finalization",
+    "recorded_at": "2026-11-09T19:41:27.490284+00:00",
+    "error": "[Errno 2] No such file or directory: 'gdb'",
+    "processes": [
+      {
+        "name": "frontend",
+        "command": [
+          "/home/runner/work/agentcloud/agentcloud/.venv-dynamo/bin/python",
+          "-m",
+          "dynamo.frontend",
+          "--http-host",
+          "127.0.0.1",
+          "--http-port",
+          "18080",
+          "--router-mode",
+          "kv",
+          "--router-policy-config",
+          "/home/runner/work/agentcloud/agentcloud/artifacts/native-churn/thunderagent.yaml",
+          "--kv-cache-block-size",
+          "16",
+          "--discovery-backend",
+          "file",
+          "--request-plane",
+          "tcp",
+          "--event-plane",
+          "zmq"
+        ],
+        "pid": 3827,
+        "exit_code": -15
+      }
+    ]
+  },
+  "provenance": {
+    "schema_version": 1,
+    "source_commit": "8a87f26af41c94025023332d75e1429e870d398d",
+    "native_source_run": "42677784069",
+    "runtime_run": "42685443878",
+    "files": {
+      "artifacts/native-wheels/ai_dynamo_runtime-1.7.0-cp311-abi3-linux_x86_64.whl": "c8601f61b651108f9b2044b11ed94cc58ffcba9ae1ba97f13e4c20df6acb4d94",
+      "experiments/dynamo/requirements-cpu.lock": "35dcbeeac115f073067271286995b444fdeb0bb04beb9cb45554e62d89fce2eb",
+      "docs/evidence/upstream-patches-native-tests.json": "cc78e52524ae4c6cee3eadd812036e844c0932baef682bd699099974c75f4e55"
+    }
+  },
+  "logs": [
+    {
+      "log_path": "docs/evidence/logs/native-runtime-42685443878/frontend.log"
+    },
+    {
+      "log_path": "docs/evidence/logs/native-runtime-42685443878/mocker.log"
+    }
+  ]
+}

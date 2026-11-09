@@ -108,7 +108,9 @@ class Stack:
         self.logdir.mkdir(parents=True,exist_ok=True)
         for name,command in [('frontend',frontend),('mocker',mocker)]:
             if os.environ.get('AGENTCLOUD_NATIVE_GDB')==name:
-                command=['gdb','--batch','--return-child-result','-ex','set pagination off','-ex','run','-ex','thread apply all bt','--args',*command]
+                command=['gdb','--batch','--return-child-result','-ex','set pagination off','-ex','run',
+                    '-ex','info registers','-ex','x/12i $pc-24','-ex','info sharedlibrary',
+                    '-ex','thread apply all bt','--args',*command]
             out=(self.logdir/(name+'.log')).open('w');self.files.append(out)
             current=env.copy()
             if name=='frontend':current['DYN_EXECUTION_CONTROL_CONFIG']=str(self.runtime_dir/'control.json')

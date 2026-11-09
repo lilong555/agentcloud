@@ -1,0 +1,22 @@
+[2m2026-11-09T19:41:11.418247Z[0m [32m INFO[0m [2mmain.worker[0m[2m:[0m Created canonical engine config from CLI arguments
+[2m2026-11-09T19:41:11.418836Z[0m [32m INFO[0m [2mmain.worker[0m[2m:[0m Launching 1 mocker worker(s) with isolated DistributedRuntime instances
+[2m2026-11-09T19:41:11.418899Z[0m [32m INFO[0m [2mmain.launch_workers[0m[2m:[0m Creating mocker worker 1/1
+[2m2026-11-09T19:41:11.419682Z[0m [32m INFO[0m [2mdynamo_runtime::worker[0m[2m:[0m dynamo runtime configuration: num_worker_threads=4, max_blocking_threads=4, system_host=0.0.0.0, system_port=-1, use_endpoint_health_status=[]starting_health_status=NotReady, system_health_path=/health, system_live_path=/live, health_check_enabled=false, canary_wait_time_secs=10, health_check_request_timeout_secs=3
+[2m2026-11-09T19:41:11.421067Z[0m [32m INFO[0m [2mdynamo_runtime::distributed[0m[2m:[0m Initializing KV store discovery backend: File(/home/runner/work/agentcloud/agentcloud/artifacts/native-churn/discovery-3698-6393b6e31eec)
+[2m2026-11-09T19:41:11.421251Z[0m [32m INFO[0m [2mdynamo_runtime::pipeline::network::manager[0m[2m:[0m Initializing NetworkManager with TCP request plane [3mmode[0m[2m=[0mtcp [3mhost[0m[2m=[0m"auto" [3mport[0m[2m=[0mOS-assigned
+[2m2026-11-09T19:41:11.426817Z[0m [32m INFO[0m [2mdynamo_llm::mocker[0m[2m:[0m Creating mocker engine with config: MockerConfig { engine: EngineLaunchConfig { engine: EngineConfig { backend: Vllm, num_gpu_blocks: 64, block_size: 16, max_model_len: Some(8192), max_num_seqs: 256, max_num_batched_tokens: 8192, prefill_schedule_interval: 1, prefill_decode_interval: 0, enable_prefix_caching: true, enable_chunked_prefill: true, speedup_ratio: 1.0, decode_speedup_ratio: 1.0, aic_nextn: None, aic_nextn_accept_rates: None, aic_mtp_seed: 42, worker_type: Aggregated, preemption_mode: Lifo, emit_kv_events: false, emit_kv_token_ids: false, kv_transfer_bytes_per_token: Some(512), kv_cache_bytes_per_token: None, kv_cache_groups: [], kv_cache_capacity_bytes: None, native_host_offload: None, g3_offload: None, kvcr: None, state_cache: None, prefix_match_unit: None, kv_transfer_bandwidth: None, kv_transfer_timing_mode: FullPrompt, timing_model: Polynomial, sglang: SglangConfig { schedule_policy: Fifo, max_prefill_tokens: 16384, chunked_prefill_size: 8192, clip_max_new_tokens: 4096, schedule_conservativeness: 1.0, vlm_cache_bytes: 104857600, host_loop: false }, trtllm: TrtllmConfig { capacity_scheduler_policy: GuaranteedNoEvict }, frontend: None, vision: false }, dp_size: 1, tensor_parallel_size: 1, startup_time: None, num_gpu_blocks_is_explicit: true, gpu_memory_utilization: None, mem_fraction_static: None, free_gpu_memory_fraction: None, cuda_graph_reserved_bytes: None }, runtime: MockerRuntimeOptions { enable_local_indexer: true, bootstrap_port: None, handoff_session_timeout_ms: 300000, reasoning: None, response_replay_trace_path: None, zmq_kv_events_port: None, zmq_replay_port: None, router_queue_policy: None }, perf_model: PerfModel::Polynomial }
+[2m2026-11-09T19:41:11.427948Z[0m [32m INFO[0m [2mmain.launch_workers[0m[2m:[0m All 1 mocker worker(s) created and running
+[2m2026-11-09T19:41:11.428105Z[0m [32m INFO[0m [2mmain.launch_workers[0m[2m:[0m Signal handlers set up for graceful shutdown
+[2m2026-11-09T19:41:11.432838Z[0m [32m INFO[0m [2mdynamo_runtime::transports::event_plane::zmq_transport[0m[2m:[0m Configured shared event-plane ZMQ context [3mio_threads[0m[2m=[0m4
+Fatal Python error: Segmentation fault
+
+Thread 0x000079ddd7158bc0 (most recent call first):
+  File "/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/asyncio/runners.py", line 118 in run
+  File "/opt/hostedtoolcache/Python/3.12.16/x64/lib/python3.12/asyncio/runners.py", line 195 in run
+  File "/home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/uvloop/__init__.py", line 96 in run
+  File "/home/runner/work/agentcloud/agentcloud/upstream/dynamo/components/src/dynamo/mocker/main.py", line 317 in main
+  File "/home/runner/work/agentcloud/agentcloud/upstream/dynamo/components/src/dynamo/mocker/__main__.py", line 7 in <module>
+  File "<frozen runpy>", line 88 in _run_code
+  File "<frozen runpy>", line 198 in _run_module_as_main
+
+Extension modules: uvloop.loop, yaml._yaml, msgspec._core (total: 3)

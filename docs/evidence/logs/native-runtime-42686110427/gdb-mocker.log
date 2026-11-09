@@ -1,0 +1,476 @@
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/usr/lib/x86_64-linux-gnu/libthread_db.so.1".
+[2m2026-11-09T19:45:58.652571Z[0m [32m INFO[0m [2mmain.worker[0m[2m:[0m Created canonical engine config from CLI arguments
+[2m2026-11-09T19:45:58.653116Z[0m [32m INFO[0m [2mmain.worker[0m[2m:[0m Launching 1 mocker worker(s) with isolated DistributedRuntime instances
+[2m2026-11-09T19:45:58.653175Z[0m [32m INFO[0m [2mmain.launch_workers[0m[2m:[0m Creating mocker worker 1/1
+[2m2026-11-09T19:45:58.653944Z[0m [32m INFO[0m [2mdynamo_runtime::worker[0m[2m:[0m dynamo runtime configuration: num_worker_threads=4, max_blocking_threads=4, system_host=0.0.0.0, system_port=-1, use_endpoint_health_status=[]starting_health_status=NotReady, system_health_path=/health, system_live_path=/live, health_check_enabled=false, canary_wait_time_secs=10, health_check_request_timeout_secs=3
+[New Thread 0x7fffe17ff6c0 (LWP 4006)]
+[New Thread 0x7fffd93ff6c0 (LWP 4007)]
+[New Thread 0x7fffe15fe6c0 (LWP 4008)]
+[New Thread 0x7fffe13fd6c0 (LWP 4009)]
+[New Thread 0x7fffe11fc6c0 (LWP 4010)]
+[New Thread 0x7fffe0ffb6c0 (LWP 4011)]
+[2m2026-11-09T19:45:58.656126Z[0m [32m INFO[0m [2mdynamo_runtime::distributed[0m[2m:[0m Initializing KV store discovery backend: File(/home/runner/work/agentcloud/agentcloud/artifacts/native-churn/discovery-3984-6d6cb99ca2bb)
+[New Thread 0x7fffe0dfa6c0 (LWP 4012)]
+[2m2026-11-09T19:45:58.656415Z[0m [32m INFO[0m [2mdynamo_runtime::pipeline::network::manager[0m[2m:[0m Initializing NetworkManager with TCP request plane [3mmode[0m[2m=[0mtcp [3mhost[0m[2m=[0m"auto" [3mport[0m[2m=[0mOS-assigned
+[2m2026-11-09T19:45:58.661336Z[0m [32m INFO[0m [2mdynamo_llm::mocker[0m[2m:[0m Creating mocker engine with config: MockerConfig { engine: EngineLaunchConfig { engine: EngineConfig { backend: Vllm, num_gpu_blocks: 64, block_size: 16, max_model_len: Some(8192), max_num_seqs: 256, max_num_batched_tokens: 8192, prefill_schedule_interval: 1, prefill_decode_interval: 0, enable_prefix_caching: true, enable_chunked_prefill: true, speedup_ratio: 1.0, decode_speedup_ratio: 1.0, aic_nextn: None, aic_nextn_accept_rates: None, aic_mtp_seed: 42, worker_type: Aggregated, preemption_mode: Lifo, emit_kv_events: false, emit_kv_token_ids: false, kv_transfer_bytes_per_token: Some(512), kv_cache_bytes_per_token: None, kv_cache_groups: [], kv_cache_capacity_bytes: None, native_host_offload: None, g3_offload: None, kvcr: None, state_cache: None, prefix_match_unit: None, kv_transfer_bandwidth: None, kv_transfer_timing_mode: FullPrompt, timing_model: Polynomial, sglang: SglangConfig { schedule_policy: Fifo, max_prefill_tokens: 16384, chunked_prefill_size: 8192, clip_max_new_tokens: 4096, schedule_conservativeness: 1.0, vlm_cache_bytes: 104857600, host_loop: false }, trtllm: TrtllmConfig { capacity_scheduler_policy: GuaranteedNoEvict }, frontend: None, vision: false }, dp_size: 1, tensor_parallel_size: 1, startup_time: None, num_gpu_blocks_is_explicit: true, gpu_memory_utilization: None, mem_fraction_static: None, free_gpu_memory_fraction: None, cuda_graph_reserved_bytes: None }, runtime: MockerRuntimeOptions { enable_local_indexer: true, bootstrap_port: None, handoff_session_timeout_ms: 300000, reasoning: None, response_replay_trace_path: None, zmq_kv_events_port: None, zmq_replay_port: None, router_queue_policy: None }, perf_model: PerfModel::Polynomial }
+[2m2026-11-09T19:45:58.661972Z[0m [32m INFO[0m [2mmain.launch_workers[0m[2m:[0m All 1 mocker worker(s) created and running
+[2m2026-11-09T19:45:58.662078Z[0m [32m INFO[0m [2mmain.launch_workers[0m[2m:[0m Signal handlers set up for graceful shutdown
+[New Thread 0x7fffe0bf96c0 (LWP 4013)]
+[Thread 0x7fffe0bf96c0 (LWP 4013) exited]
+[New Thread 0x7fffe09f86c0 (LWP 4014)]
+[Thread 0x7fffe09f86c0 (LWP 4014) exited]
+[New Thread 0x7fffe0bf96c0 (LWP 4015)]
+[2m2026-11-09T19:45:58.666169Z[0m [32m INFO[0m [2mdynamo_runtime::transports::event_plane::zmq_transport[0m[2m:[0m Configured shared event-plane ZMQ context [3mio_threads[0m[2m=[0m4
+[New Thread 0x7fffdbfff6c0 (LWP 4016)]
+[New Thread 0x7fffdaffe6c0 (LWP 4017)]
+[New Thread 0x7fffd91fe6c0 (LWP 4018)]
+[New Thread 0x7fffbbfff6c0 (LWP 4019)]
+[New Thread 0x7fffbaffe6c0 (LWP 4020)]
+
+Thread 11 "tokio-rt-worker" received signal SIGSEGV, Segmentation fault.
+[Switching to Thread 0x7fffe0bf96c0 (LWP 4015)]
+0x00007ffff40ba05e in zmq::ypipe_t<zmq::command_t, 16>::write(zmq::command_t const&, bool) () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+
+Thread 16 (Thread 0x7fffbaffe6c0 (LWP 4020) "tokio-rt-worker"):
+#0  0x00007ffff74b4792 in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#1  0x00007ffff74a838c in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#2  0x00007ffff753f835 in epoll_wait () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#3  0x00007ffff40b747a in zmq::epoll_t::loop() () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#4  0x00007ffff40b88ed in zmq::worker_poller_base_t::worker_routine(void*) () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#5  0x00007ffff409ed15 in thread_routine () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#6  0x00007ffff74abe6b in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#7  0x00007ffff753f55c in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+
+Thread 15 (Thread 0x7fffbbfff6c0 (LWP 4019) "tokio-rt-worker"):
+#0  0x00007ffff74b4792 in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#1  0x00007ffff74a838c in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#2  0x00007ffff753f835 in epoll_wait () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#3  0x00007ffff40b747a in zmq::epoll_t::loop() () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#4  0x00007ffff40b88ed in zmq::worker_poller_base_t::worker_routine(void*) () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#5  0x00007ffff409ed15 in thread_routine () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#6  0x00007ffff74abe6b in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#7  0x00007ffff753f55c in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+
+Thread 14 (Thread 0x7fffd91fe6c0 (LWP 4018) "tokio-rt-worker"):
+#0  0x00007ffff74b4792 in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#1  0x00007ffff74a838c in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#2  0x00007ffff753f835 in epoll_wait () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#3  0x00007ffff40b747a in zmq::epoll_t::loop() () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#4  0x00007ffff40b88ed in zmq::worker_poller_base_t::worker_routine(void*) () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#5  0x00007ffff409ed15 in thread_routine () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#6  0x00007ffff74abe6b in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#7  0x00007ffff753f55c in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+
+Thread 13 (Thread 0x7fffdaffe6c0 (LWP 4017) "tokio-rt-worker"):
+#0  0x00007ffff74b4792 in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#1  0x00007ffff74a838c in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#2  0x00007ffff753f835 in epoll_wait () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#3  0x00007ffff40b747a in zmq::epoll_t::loop() () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#4  0x00007ffff40b88ed in zmq::worker_poller_base_t::worker_routine(void*) () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#5  0x00007ffff409ed15 in thread_routine () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#6  0x00007ffff74abe6b in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#7  0x00007ffff753f55c in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+
+Thread 12 (Thread 0x7fffdbfff6c0 (LWP 4016) "tokio-rt-worker"):
+#0  0x00007ffff74b4792 in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#1  0x00007ffff74a838c in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#2  0x00007ffff753f835 in epoll_wait () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#3  0x00007ffff40b747a in zmq::epoll_t::loop() () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#4  0x00007ffff40b88ed in zmq::worker_poller_base_t::worker_routine(void*) () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#5  0x00007ffff409ed15 in thread_routine () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#6  0x00007ffff74abe6b in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#7  0x00007ffff753f55c in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+
+Thread 11 (Thread 0x7fffe0bf96c0 (LWP 4015) "tokio-rt-worker"):
+#0  0x00007ffff40ba05e in zmq::ypipe_t<zmq::command_t, 16>::write(zmq::command_t const&, bool) () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#1  0x00007ffff40b9ab2 in zmq::mailbox_t::send(zmq::command_t const&) () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#2  0x00007ffff40a9b5f in zmq::ctx_t::send_command(unsigned int, zmq::command_t const&) () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#3  0x00007ffff40bd861 in zmq::object_t::send_command(zmq::command_t const&) () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#4  0x00007ffff40bc5d1 in zmq::object_t::send_plug(zmq::own_t*, bool) () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#5  0x00007ffff40bdc5b in zmq::own_t::launch_child(zmq::own_t*) () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#6  0x00007ffff40c90a3 in zmq::socket_base_t::add_endpoint(zmq::endpoint_uri_pair_t const&, zmq::own_t*, zmq::pipe_t*) () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#7  0x00007ffff40c70ed in zmq::socket_base_t::bind(char const*) () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#8  0x00007ffff40a009c in zmq_bind () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#9  0x00007ffff409a84a in zmq::Socket::bind () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#10 0x00007ffff33c2ea1 in tmq::socket_builder::SocketBuilder<T>::bind () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#11 0x00007ffff34ffad0 in dynamo_runtime::transports::event_plane::zmq_transport::bind_tmq_socket () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#12 0x00007ffff34fa758 in dynamo_runtime::transports::event_plane::zmq_transport::ZmqPubTransport::bind::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#13 0x00007ffff383d6a6 in tokio::runtime::scheduler::current_thread::CoreGuard::block_on::{{closure}}::{{closure}}::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#14 0x00007ffff383d3c7 in tokio::runtime::scheduler::current_thread::CoreGuard::block_on::{{closure}}::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#15 0x00007ffff383a649 in tokio::runtime::scheduler::current_thread::Context::enter () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#16 0x00007ffff383b897 in tokio::runtime::scheduler::current_thread::CoreGuard::block_on::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#17 0x00007ffff383b503 in tokio::runtime::scheduler::current_thread::CoreGuard::enter::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#18 0x00007ffff377cc14 in tokio::runtime::context::scoped::Scoped<T>::set () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#19 0x00007ffff3a4f6d3 in tokio::runtime::context::set_scheduler::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#20 0x00007ffff3f7fd43 in std::thread::local::LocalKey<T>::try_with () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#21 0x00007ffff3f7758a in std::thread::local::LocalKey<T>::with () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#22 0x00007ffff3a4f63b in tokio::runtime::context::set_scheduler () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#23 0x00007ffff383b2b8 in tokio::runtime::scheduler::current_thread::CoreGuard::enter () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#24 0x00007ffff383b57a in tokio::runtime::scheduler::current_thread::CoreGuard::block_on () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#25 0x00007ffff382fe63 in tokio::runtime::scheduler::current_thread::CurrentThread::block_on::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#26 0x00007ffff377ce46 in tokio::runtime::context::runtime::enter_runtime () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#27 0x00007ffff382f666 in tokio::runtime::scheduler::current_thread::CurrentThread::block_on () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#28 0x00007ffff33f363b in tokio::runtime::runtime::Runtime::block_on_inner () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#29 0x00007ffff33f3dea in tokio::runtime::runtime::Runtime::block_on () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#30 0x00007ffff35cdc77 in dynamo_runtime::transports::event_plane::bind_direct_zmq_publisher::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#31 0x00007ffff36e4684 in std::sys::backtrace::__rust_begin_short_backtrace () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#32 0x00007ffff39e133b in std::thread::lifecycle::spawn_unchecked::{{closure}}::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#33 0x00007ffff33777ff in <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#34 0x00007ffff3efa807 in std::panicking::catch_unwind::do_call () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#35 0x00007ffff3a8641d in __rust_try () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#36 0x00007ffff39e085b in std::thread::lifecycle::spawn_unchecked::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#37 0x00007ffff36e7dde in core::ops::function::FnOnce::call_once{{vtable.shim}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#38 0x00007ffff5e14cef in <std::sys::thread::unix::Thread>::new::thread_start () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#39 0x00007ffff74abe6b in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#40 0x00007ffff753f55c in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+
+Thread 8 (Thread 0x7fffe0dfa6c0 (LWP 4012) "python"):
+#0  0x00007ffff74b4792 in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#1  0x00007ffff74a82fc in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#2  0x00007ffff74f7c82 in clock_nanosleep () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#3  0x00007ffff5e0eef7 in std::thread::functions::sleep () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#4  0x00007ffff338eaab in dynamo_runtime::storage::kv::file::FileStore::expiry_thread () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#5  0x00007ffff338f8e5 in dynamo_runtime::storage::kv::file::FileStore::new::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#6  0x00007ffff36e470a in std::sys::backtrace::__rust_begin_short_backtrace () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#7  0x00007ffff39e1a10 in std::thread::lifecycle::spawn_unchecked::{{closure}}::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#8  0x00007ffff3376903 in <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#9  0x00007ffff3ef6da3 in std::panicking::catch_unwind::do_call () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#10 0x00007ffff3a8641d in __rust_try () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#11 0x00007ffff39dfc4b in std::thread::lifecycle::spawn_unchecked::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#12 0x00007ffff36e7f3e in core::ops::function::FnOnce::call_once{{vtable.shim}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#13 0x00007ffff5e14cef in <std::sys::thread::unix::Thread>::new::thread_start () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#14 0x00007ffff74abe6b in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#15 0x00007ffff753f55c in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+
+Thread 7 (Thread 0x7fffe0ffb6c0 (LWP 4011) "compute-1"):
+#0  0x00007ffff753ca2d in syscall () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#1  0x00007ffff5df2945 in <std::sys::sync::condvar::futex::Condvar>::wait () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#2  0x00007ffff5157303 in std::sync::poison::condvar::Condvar::wait () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#3  0x00007ffff515c53a in rayon_core::sleep::Sleep::sleep () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#4  0x00007ffff515bbfd in rayon_core::sleep::Sleep::no_work_found () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#5  0x00007ffff5147233 in rayon_core::registry::WorkerThread::wait_until_cold () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#6  0x00007ffff5146e5a in rayon_core::registry::WorkerThread::wait_until () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#7  0x00007ffff514738a in rayon_core::registry::WorkerThread::wait_until_out_of_work () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#8  0x00007ffff5149a26 in rayon_core::registry::main_loop () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#9  0x00007ffff51477d2 in rayon_core::registry::ThreadBuilder::run () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#10 0x00007ffff514b1d3 in <rayon_core::registry::DefaultSpawn as rayon_core::registry::ThreadSpawn>::spawn::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#11 0x00007ffff514f5d9 in std::sys::backtrace::__rust_begin_short_backtrace () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#12 0x00007ffff5155c5e in std::thread::lifecycle::spawn_unchecked::{{closure}}::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#13 0x00007ffff5156dac in <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#14 0x00007ffff5155d2c in std::panicking::catch_unwind::do_call () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#15 0x00007ffff515656d in __rust_try () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#16 0x00007ffff515584d in std::thread::lifecycle::spawn_unchecked::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#17 0x00007ffff515ce3e in core::ops::function::FnOnce::call_once{{vtable.shim}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#18 0x00007ffff5e14cef in <std::sys::thread::unix::Thread>::new::thread_start () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#19 0x00007ffff74abe6b in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#20 0x00007ffff753f55c in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+
+Thread 6 (Thread 0x7fffe11fc6c0 (LWP 4010) "compute-0"):
+#0  0x00007ffff753ca2d in syscall () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#1  0x00007ffff5df2945 in <std::sys::sync::condvar::futex::Condvar>::wait () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#2  0x00007ffff5157303 in std::sync::poison::condvar::Condvar::wait () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#3  0x00007ffff515c53a in rayon_core::sleep::Sleep::sleep () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#4  0x00007ffff515bbfd in rayon_core::sleep::Sleep::no_work_found () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#5  0x00007ffff5147233 in rayon_core::registry::WorkerThread::wait_until_cold () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#6  0x00007ffff5146e5a in rayon_core::registry::WorkerThread::wait_until () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#7  0x00007ffff514738a in rayon_core::registry::WorkerThread::wait_until_out_of_work () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#8  0x00007ffff5149a26 in rayon_core::registry::main_loop () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#9  0x00007ffff51477d2 in rayon_core::registry::ThreadBuilder::run () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#10 0x00007ffff514b1d3 in <rayon_core::registry::DefaultSpawn as rayon_core::registry::ThreadSpawn>::spawn::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#11 0x00007ffff514f5d9 in std::sys::backtrace::__rust_begin_short_backtrace () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#12 0x00007ffff5155c5e in std::thread::lifecycle::spawn_unchecked::{{closure}}::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#13 0x00007ffff5156dac in <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#14 0x00007ffff5155d2c in std::panicking::catch_unwind::do_call () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#15 0x00007ffff515656d in __rust_try () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#16 0x00007ffff515584d in std::thread::lifecycle::spawn_unchecked::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#17 0x00007ffff515ce3e in core::ops::function::FnOnce::call_once{{vtable.shim}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#18 0x00007ffff5e14cef in <std::sys::thread::unix::Thread>::new::thread_start () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#19 0x00007ffff74abe6b in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#20 0x00007ffff753f55c in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+
+Thread 5 (Thread 0x7fffe13fd6c0 (LWP 4009) "tokio-rt-worker"):
+#0  0x00007ffff753ca2d in syscall () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#1  0x00007ffff5d963f8 in parking_lot_core::thread_parker::imp::ThreadParker::futex_wait () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#2  0x00007ffff5d962aa in <parking_lot_core::thread_parker::imp::ThreadParker as parking_lot_core::thread_parker::ThreadParkerT>::park () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#3  0x00007ffff5d949c0 in parking_lot_core::parking_lot::park::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#4  0x00007ffff5d92e57 in parking_lot_core::parking_lot::park () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#5  0x00007ffff5d8a23a in parking_lot::condvar::Condvar::wait_until_internal () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#6  0x00007ffff58d18e8 in parking_lot::condvar::Condvar::wait () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#7  0x00007ffff58ea3f9 in tokio::loom::std::parking_lot::Condvar::wait () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#8  0x00007ffff58bfb67 in tokio::runtime::scheduler::multi_thread::park::Inner::park_condvar () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#9  0x00007ffff58c032c in tokio::runtime::scheduler::multi_thread::park::Inner::park () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#10 0x00007ffff58c083e in tokio::runtime::scheduler::multi_thread::park::Parker::park () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#11 0x00007ffff58891d3 in tokio::runtime::scheduler::multi_thread::worker::Context::park_internal () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#12 0x00007ffff588ae57 in tokio::runtime::scheduler::multi_thread::worker::Context::park () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#13 0x00007ffff588a73f in tokio::runtime::scheduler::multi_thread::worker::Context::run () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#14 0x00007ffff5886285 in tokio::runtime::scheduler::multi_thread::worker::run::{{closure}}::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#15 0x00007ffff58840bd in tokio::runtime::context::scoped::Scoped<T>::set () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#16 0x00007ffff589cd08 in tokio::runtime::context::set_scheduler::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#17 0x00007ffff591d018 in std::thread::local::LocalKey<T>::try_with () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#18 0x00007ffff591c13e in std::thread::local::LocalKey<T>::with () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#19 0x00007ffff589cc45 in tokio::runtime::context::set_scheduler () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#20 0x00007ffff58861b5 in tokio::runtime::scheduler::multi_thread::worker::run::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#21 0x00007ffff589e74e in tokio::runtime::context::runtime::enter_runtime () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#22 0x00007ffff5886021 in tokio::runtime::scheduler::multi_thread::worker::run () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#23 0x00007ffff5887069 in tokio::runtime::scheduler::multi_thread::worker::Launch::launch::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#24 0x00007ffff589110e in <tokio::runtime::blocking::task::BlockingTask<T> as core::future::future::Future>::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#25 0x00007ffff58b7ec6 in tokio::runtime::task::core::Core<T,S>::poll::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#26 0x00007ffff58b7648 in tokio::runtime::task::core::Core<T,S>::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#27 0x00007ffff58ee2c8 in tokio::runtime::task::harness::poll_future::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#28 0x00007ffff58dc023 in <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#29 0x00007ffff58dd777 in std::panicking::catch_unwind::do_call () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#30 0x00007ffff58cbabd in __rust_try () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#31 0x00007ffff58c4608 in std::panic::catch_unwind () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#32 0x00007ffff58ed530 in tokio::runtime::task::harness::poll_future () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#33 0x00007ffff58eebbe in tokio::runtime::task::harness::Harness<T,S>::poll_inner () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#34 0x00007ffff58f0799 in tokio::runtime::task::harness::Harness<T,S>::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#35 0x00007ffff58bdb83 in tokio::runtime::task::raw::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#36 0x00007ffff58be843 in tokio::runtime::task::raw::RawTask::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#37 0x00007ffff58fa7da in tokio::runtime::task::UnownedTask<S>::run () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#38 0x00007ffff58a0c59 in tokio::runtime::blocking::pool::Task::run () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#39 0x00007ffff589ec3c in tokio::runtime::blocking::pool::LockedImpl::run_worker () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#40 0x00007ffff58a46a1 in tokio::runtime::blocking::pool::InnerImpl::run_worker () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#41 0x00007ffff58a0cfb in tokio::runtime::blocking::pool::Inner::run () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#42 0x00007ffff58a164a in tokio::runtime::blocking::pool::Spawner::spawn_thread::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#43 0x00007ffff58eb529 in std::sys::backtrace::__rust_begin_short_backtrace () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#44 0x00007ffff58dd413 in std::thread::lifecycle::spawn_unchecked::{{closure}}::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#45 0x00007ffff58dbd23 in <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#46 0x00007ffff58ddf83 in std::panicking::catch_unwind::do_call () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#47 0x00007ffff58e510d in __rust_try () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#48 0x00007ffff58dd254 in std::thread::lifecycle::spawn_unchecked::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#49 0x00007ffff5900c8e in core::ops::function::FnOnce::call_once{{vtable.shim}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#50 0x00007ffff5e14cef in <std::sys::thread::unix::Thread>::new::thread_start () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#51 0x00007ffff74abe6b in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#52 0x00007ffff753f55c in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+
+Thread 4 (Thread 0x7fffe15fe6c0 (LWP 4008) "tokio-rt-worker"):
+#0  0x00007ffff753ca2d in syscall () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#1  0x00007ffff5d963f8 in parking_lot_core::thread_parker::imp::ThreadParker::futex_wait () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#2  0x00007ffff5d962aa in <parking_lot_core::thread_parker::imp::ThreadParker as parking_lot_core::thread_parker::ThreadParkerT>::park () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#3  0x00007ffff5d949c0 in parking_lot_core::parking_lot::park::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#4  0x00007ffff5d92e57 in parking_lot_core::parking_lot::park () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#5  0x00007ffff5d8a23a in parking_lot::condvar::Condvar::wait_until_internal () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#6  0x00007ffff58d18e8 in parking_lot::condvar::Condvar::wait () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#7  0x00007ffff58ea3f9 in tokio::loom::std::parking_lot::Condvar::wait () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#8  0x00007ffff58bfb67 in tokio::runtime::scheduler::multi_thread::park::Inner::park_condvar () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#9  0x00007ffff58c032c in tokio::runtime::scheduler::multi_thread::park::Inner::park () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#10 0x00007ffff58c083e in tokio::runtime::scheduler::multi_thread::park::Parker::park () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#11 0x00007ffff58891d3 in tokio::runtime::scheduler::multi_thread::worker::Context::park_internal () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#12 0x00007ffff588ae57 in tokio::runtime::scheduler::multi_thread::worker::Context::park () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#13 0x00007ffff588a73f in tokio::runtime::scheduler::multi_thread::worker::Context::run () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#14 0x00007ffff5886285 in tokio::runtime::scheduler::multi_thread::worker::run::{{closure}}::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#15 0x00007ffff58840bd in tokio::runtime::context::scoped::Scoped<T>::set () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#16 0x00007ffff589cd08 in tokio::runtime::context::set_scheduler::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#17 0x00007ffff591d018 in std::thread::local::LocalKey<T>::try_with () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#18 0x00007ffff591c13e in std::thread::local::LocalKey<T>::with () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#19 0x00007ffff589cc45 in tokio::runtime::context::set_scheduler () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#20 0x00007ffff58861b5 in tokio::runtime::scheduler::multi_thread::worker::run::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#21 0x00007ffff589e74e in tokio::runtime::context::runtime::enter_runtime () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#22 0x00007ffff5886021 in tokio::runtime::scheduler::multi_thread::worker::run () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#23 0x00007ffff5887069 in tokio::runtime::scheduler::multi_thread::worker::Launch::launch::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#24 0x00007ffff589110e in <tokio::runtime::blocking::task::BlockingTask<T> as core::future::future::Future>::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#25 0x00007ffff58b7ec6 in tokio::runtime::task::core::Core<T,S>::poll::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#26 0x00007ffff58b7648 in tokio::runtime::task::core::Core<T,S>::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#27 0x00007ffff58ee2c8 in tokio::runtime::task::harness::poll_future::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#28 0x00007ffff58dc023 in <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#29 0x00007ffff58dd777 in std::panicking::catch_unwind::do_call () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#30 0x00007ffff58cbabd in __rust_try () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#31 0x00007ffff58c4608 in std::panic::catch_unwind () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#32 0x00007ffff58ed530 in tokio::runtime::task::harness::poll_future () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#33 0x00007ffff58eebbe in tokio::runtime::task::harness::Harness<T,S>::poll_inner () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#34 0x00007ffff58f0799 in tokio::runtime::task::harness::Harness<T,S>::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#35 0x00007ffff58bdb83 in tokio::runtime::task::raw::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#36 0x00007ffff58be843 in tokio::runtime::task::raw::RawTask::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#37 0x00007ffff58fa7da in tokio::runtime::task::UnownedTask<S>::run () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#38 0x00007ffff58a0c59 in tokio::runtime::blocking::pool::Task::run () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#39 0x00007ffff589ec3c in tokio::runtime::blocking::pool::LockedImpl::run_worker () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#40 0x00007ffff58a46a1 in tokio::runtime::blocking::pool::InnerImpl::run_worker () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#41 0x00007ffff58a0cfb in tokio::runtime::blocking::pool::Inner::run () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#42 0x00007ffff58a164a in tokio::runtime::blocking::pool::Spawner::spawn_thread::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#43 0x00007ffff58eb529 in std::sys::backtrace::__rust_begin_short_backtrace () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#44 0x00007ffff58dd413 in std::thread::lifecycle::spawn_unchecked::{{closure}}::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#45 0x00007ffff58dbd23 in <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#46 0x00007ffff58ddf83 in std::panicking::catch_unwind::do_call () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#47 0x00007ffff58e510d in __rust_try () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#48 0x00007ffff58dd254 in std::thread::lifecycle::spawn_unchecked::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#49 0x00007ffff5900c8e in core::ops::function::FnOnce::call_once{{vtable.shim}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#50 0x00007ffff5e14cef in <std::sys::thread::unix::Thread>::new::thread_start () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#51 0x00007ffff74abe6b in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#52 0x00007ffff753f55c in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+
+Thread 3 (Thread 0x7fffd93ff6c0 (LWP 4007) "tokio-rt-worker"):
+#0  0x00007ffff74b4792 in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#1  0x00007ffff74a82fc in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#2  0x00007ffff74a86d7 in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#3  0x00007ffff74add79 in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#4  0x00007ffff5df4a01 in <std::sys::thread::unix::Thread>::join () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#5  0x00007ffff39e212d in std::thread::lifecycle::JoinInner<T>::join () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#6  0x00007ffff32af170 in std::thread::join_handle::JoinHandle<T>::join () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#7  0x00007ffff35cd006 in dynamo_runtime::transports::event_plane::bind_direct_zmq_publisher () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#8  0x00007fffea8ddfd0 in dynamo_runtime::transports::event_plane::EventPublisher::new_on_transport::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#9  0x00007fffea8dc86f in dynamo_runtime::transports::event_plane::EventPublisher::new_internal::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#10 0x00007fffea8e2089 in dynamo_runtime::transports::event_plane::EventPublisher::for_endpoint_with_transport::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#11 0x00007fffea87f2dc in dynamo_llm::kv_router::sequence::ActiveSequenceEventPublisher::for_endpoint::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#12 0x00007fffeac220a9 in dynamo_llm::first_token::FirstTokenSource::for_endpoint::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#13 0x00007fffeb396356 in dynamo_llm::entrypoint::input::endpoint::run::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#14 0x00007fffeb382f4b in dynamo_llm::entrypoint::input::run_input_with_frontend_route_extensions::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#15 0x00007fffe953f964 in _core::llm::entrypoint::run_input::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#16 0x00007fffe8e6fbd6 in <pyo3_async_runtimes::generic::Cancellable<F> as core::future::future::Future>::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#17 0x00007fffe92cb4b2 in <tokio::task::task_local::TaskLocalFuture<T,F> as core::future::future::Future>::poll::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#18 0x00007fffe934a088 in tokio::task::task_local::LocalKey<T>::scope_inner () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#19 0x00007fffe92c787e in <tokio::task::task_local::TaskLocalFuture<T,F> as core::future::future::Future>::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#20 0x00007fffe8ac47ab in <tokio::task::task_local::TaskLocalFuture<T,F> as core::future::future::Future>::poll{{reify.shim}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#21 0x00007fffe9c76696 in <core::pin::Pin<P> as core::future::future::Future>::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#22 0x00007fffe8e18443 in pyo3_async_runtimes::generic::future_into_py_with_locals::{{closure}}::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#23 0x00007fffe8d6a293 in <pyo3_async_runtimes::tokio::TokioRuntime as pyo3_async_runtimes::generic::Runtime>::spawn::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#24 0x00007fffe95a0f8d in <core::pin::Pin<P> as core::future::future::Future>::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#25 0x00007fffe8c559d2 in tokio::runtime::task::core::Core<T,S>::poll::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#26 0x00007fffe8c3c9b4 in tokio::runtime::task::core::Core<T,S>::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#27 0x00007fffe89d2604 in tokio::runtime::task::harness::poll_future::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#28 0x00007fffe95fc072 in <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#29 0x00007fffe96d4af6 in std::panicking::catch_unwind::do_call () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#30 0x00007fffe8ac3fed in __rust_try () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#31 0x00007fffe8a89d18 in std::panic::catch_unwind () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#32 0x00007fffe89ad96f in tokio::runtime::task::harness::poll_future () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#33 0x00007fffe89d91b7 in tokio::runtime::task::harness::Harness<T,S>::poll_inner () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#34 0x00007fffe8a1ee05 in tokio::runtime::task::harness::Harness<T,S>::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#35 0x00007fffe912d021 in tokio::runtime::task::raw::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#36 0x00007ffff58be843 in tokio::runtime::task::raw::RawTask::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#37 0x00007ffff58fa94b in tokio::runtime::task::LocalNotified<S>::run () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#38 0x00007ffff588c46a in tokio::runtime::scheduler::multi_thread::worker::Context::run_task::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#39 0x00007ffff588b8a2 in tokio::runtime::scheduler::multi_thread::worker::Context::run_task () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#40 0x00007ffff588a493 in tokio::runtime::scheduler::multi_thread::worker::Context::run () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#41 0x00007ffff5886285 in tokio::runtime::scheduler::multi_thread::worker::run::{{closure}}::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#42 0x00007ffff58840bd in tokio::runtime::context::scoped::Scoped<T>::set () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#43 0x00007ffff589cd08 in tokio::runtime::context::set_scheduler::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#44 0x00007ffff591d018 in std::thread::local::LocalKey<T>::try_with () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#45 0x00007ffff591c13e in std::thread::local::LocalKey<T>::with () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#46 0x00007ffff589cc45 in tokio::runtime::context::set_scheduler () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#47 0x00007ffff58861b5 in tokio::runtime::scheduler::multi_thread::worker::run::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#48 0x00007ffff589e74e in tokio::runtime::context::runtime::enter_runtime () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#49 0x00007ffff5886021 in tokio::runtime::scheduler::multi_thread::worker::run () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#50 0x00007ffff5887069 in tokio::runtime::scheduler::multi_thread::worker::Launch::launch::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#51 0x00007ffff589110e in <tokio::runtime::blocking::task::BlockingTask<T> as core::future::future::Future>::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#52 0x00007ffff58b7ec6 in tokio::runtime::task::core::Core<T,S>::poll::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#53 0x00007ffff58b7648 in tokio::runtime::task::core::Core<T,S>::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#54 0x00007ffff58ee2c8 in tokio::runtime::task::harness::poll_future::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#55 0x00007ffff58dc023 in <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#56 0x00007ffff58dd777 in std::panicking::catch_unwind::do_call () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#57 0x00007ffff58cbabd in __rust_try () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#58 0x00007ffff58c4608 in std::panic::catch_unwind () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#59 0x00007ffff58ed530 in tokio::runtime::task::harness::poll_future () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#60 0x00007ffff58eebbe in tokio::runtime::task::harness::Harness<T,S>::poll_inner () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#61 0x00007ffff58f0799 in tokio::runtime::task::harness::Harness<T,S>::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#62 0x00007ffff58bdb83 in tokio::runtime::task::raw::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#63 0x00007ffff58be843 in tokio::runtime::task::raw::RawTask::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#64 0x00007ffff58fa7da in tokio::runtime::task::UnownedTask<S>::run () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#65 0x00007ffff58a0c59 in tokio::runtime::blocking::pool::Task::run () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#66 0x00007ffff589ec3c in tokio::runtime::blocking::pool::LockedImpl::run_worker () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#67 0x00007ffff58a46a1 in tokio::runtime::blocking::pool::InnerImpl::run_worker () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#68 0x00007ffff58a0cfb in tokio::runtime::blocking::pool::Inner::run () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#69 0x00007ffff58a164a in tokio::runtime::blocking::pool::Spawner::spawn_thread::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#70 0x00007ffff58eb529 in std::sys::backtrace::__rust_begin_short_backtrace () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#71 0x00007ffff58dd413 in std::thread::lifecycle::spawn_unchecked::{{closure}}::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#72 0x00007ffff58dbd23 in <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#73 0x00007ffff58ddf83 in std::panicking::catch_unwind::do_call () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#74 0x00007ffff58e510d in __rust_try () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#75 0x00007ffff58dd254 in std::thread::lifecycle::spawn_unchecked::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#76 0x00007ffff5900c8e in core::ops::function::FnOnce::call_once{{vtable.shim}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#77 0x00007ffff5e14cef in <std::sys::thread::unix::Thread>::new::thread_start () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#78 0x00007ffff74abe6b in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#79 0x00007ffff753f55c in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+
+Thread 2 (Thread 0x7fffe17ff6c0 (LWP 4006) "tokio-rt-worker"):
+#0  0x00007ffff74b4792 in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#1  0x00007ffff74a838c in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#2  0x00007ffff753f835 in epoll_wait () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#3  0x00007ffff5940050 in mio::sys::unix::selector::Selector::select () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#4  0x00007ffff593be6a in mio::poll::Poll::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#5  0x00007ffff591f74c in tokio::runtime::io::driver::Driver::turn () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#6  0x00007ffff591eece in tokio::runtime::io::driver::Driver::park_timeout () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#7  0x00007ffff589c5c1 in tokio::runtime::signal::Driver::park_timeout () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#8  0x00007ffff589e991 in tokio::runtime::process::Driver::park_timeout () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#9  0x00007ffff58aafc1 in tokio::runtime::driver::IoStack::park_timeout () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#10 0x00007ffff58c77e0 in tokio::runtime::time::Driver::park_thread_timeout () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#11 0x00007ffff58c76a9 in tokio::runtime::time::Driver::park_internal () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#12 0x00007ffff58c7a9e in tokio::runtime::time::Driver::park () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#13 0x00007ffff58a9bef in tokio::runtime::driver::TimeDriver::park () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#14 0x00007ffff58aab69 in tokio::runtime::driver::Driver::park () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#15 0x00007ffff58bf803 in tokio::runtime::scheduler::multi_thread::park::Inner::park_driver () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#16 0x00007ffff58c0366 in tokio::runtime::scheduler::multi_thread::park::Inner::park () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#17 0x00007ffff58c083e in tokio::runtime::scheduler::multi_thread::park::Parker::park () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#18 0x00007ffff58891d3 in tokio::runtime::scheduler::multi_thread::worker::Context::park_internal () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#19 0x00007ffff588ae57 in tokio::runtime::scheduler::multi_thread::worker::Context::park () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#20 0x00007ffff588a73f in tokio::runtime::scheduler::multi_thread::worker::Context::run () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#21 0x00007ffff5886285 in tokio::runtime::scheduler::multi_thread::worker::run::{{closure}}::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#22 0x00007ffff58840bd in tokio::runtime::context::scoped::Scoped<T>::set () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#23 0x00007ffff589cd08 in tokio::runtime::context::set_scheduler::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#24 0x00007ffff591d018 in std::thread::local::LocalKey<T>::try_with () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#25 0x00007ffff591c13e in std::thread::local::LocalKey<T>::with () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#26 0x00007ffff589cc45 in tokio::runtime::context::set_scheduler () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#27 0x00007ffff58861b5 in tokio::runtime::scheduler::multi_thread::worker::run::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#28 0x00007ffff589e74e in tokio::runtime::context::runtime::enter_runtime () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#29 0x00007ffff5886021 in tokio::runtime::scheduler::multi_thread::worker::run () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#30 0x00007ffff5887069 in tokio::runtime::scheduler::multi_thread::worker::Launch::launch::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#31 0x00007ffff589110e in <tokio::runtime::blocking::task::BlockingTask<T> as core::future::future::Future>::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#32 0x00007ffff58b7ec6 in tokio::runtime::task::core::Core<T,S>::poll::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#33 0x00007ffff58b7648 in tokio::runtime::task::core::Core<T,S>::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#34 0x00007ffff58ee2c8 in tokio::runtime::task::harness::poll_future::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#35 0x00007ffff58dc023 in <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#36 0x00007ffff58dd777 in std::panicking::catch_unwind::do_call () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#37 0x00007ffff58cbabd in __rust_try () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#38 0x00007ffff58c4608 in std::panic::catch_unwind () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#39 0x00007ffff58ed530 in tokio::runtime::task::harness::poll_future () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#40 0x00007ffff58eebbe in tokio::runtime::task::harness::Harness<T,S>::poll_inner () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#41 0x00007ffff58f0799 in tokio::runtime::task::harness::Harness<T,S>::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#42 0x00007ffff58bdb83 in tokio::runtime::task::raw::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#43 0x00007ffff58be843 in tokio::runtime::task::raw::RawTask::poll () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#44 0x00007ffff58fa7da in tokio::runtime::task::UnownedTask<S>::run () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#45 0x00007ffff58a0c59 in tokio::runtime::blocking::pool::Task::run () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#46 0x00007ffff589ec3c in tokio::runtime::blocking::pool::LockedImpl::run_worker () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#47 0x00007ffff58a46a1 in tokio::runtime::blocking::pool::InnerImpl::run_worker () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#48 0x00007ffff58a0cfb in tokio::runtime::blocking::pool::Inner::run () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#49 0x00007ffff58a164a in tokio::runtime::blocking::pool::Spawner::spawn_thread::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#50 0x00007ffff58eb529 in std::sys::backtrace::__rust_begin_short_backtrace () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#51 0x00007ffff58dd413 in std::thread::lifecycle::spawn_unchecked::{{closure}}::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#52 0x00007ffff58dbd23 in <core::panic::unwind_safe::AssertUnwindSafe<F> as core::ops::function::FnOnce<()>>::call_once () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#53 0x00007ffff58ddf83 in std::panicking::catch_unwind::do_call () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#54 0x00007ffff58e510d in __rust_try () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#55 0x00007ffff58dd254 in std::thread::lifecycle::spawn_unchecked::{{closure}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#56 0x00007ffff5900c8e in core::ops::function::FnOnce::call_once{{vtable.shim}} () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#57 0x00007ffff5e14cef in <std::sys::thread::unix::Thread>::new::thread_start () from /home/runner/work/agentcloud/agentcloud/.venv-dynamo/lib/python3.12/site-packages/dynamo/_core.abi3.so
+#58 0x00007ffff74abe6b in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#59 0x00007ffff753f55c in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+
+Thread 1 (Thread 0x7ffff7ec8bc0 (LWP 4002) "python"):
+#0  0x00007ffff74b4792 in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#1  0x00007ffff74a838c in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#2  0x00007ffff753f7d5 in epoll_pwait () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#3  0x00007fffe23a301c in uv__io_poll (loop=loop@entry=0x555555b5f930, timeout=-1) at src/unix/linux.c:1451
+#4  0x00007fffe2395086 in uv_run (loop=0x555555b5f930, mode=mode@entry=UV_RUN_DEFAULT) at src/unix/core.c:460
+#5  0x00007fffe22e7355 in __pyx_f_6uvloop_4loop_4Loop__Loop__run (__pyx_v_self=0x555555b91cf0, __pyx_v_mode=UV_RUN_DEFAULT) at uvloop/loop.c:19890
+#6  0x00007fffe232d7d0 in __pyx_f_6uvloop_4loop_4Loop__run (__pyx_v_self=0x555555b91cf0, __pyx_v_mode=UV_RUN_DEFAULT) at uvloop/loop.c:20313
+#7  0x00007fffe2332061 in __pyx_pf_6uvloop_4loop_4Loop_24run_forever (__pyx_v_self=0x555555b91cf0) at uvloop/loop.c:33397
+#8  __pyx_pw_6uvloop_4loop_4Loop_25run_forever (__pyx_v_self=0x555555b91cf0, __pyx_args=<optimized out>, __pyx_nargs=<optimized out>, __pyx_kwds=<optimized out>) at uvloop/loop.c:33192
+#9  0x00007ffff7a14c1a in _PyObject_VectorcallTstate (tstate=0x7ffff7e99710 <_PyRuntime+458992>, callable=0x7ffff6a07f50, args=0x7fffffffc590, nargsf=<optimized out>, kwnames=0x0) at ./Include/internal/pycore_call.h:92
+#10 PyObject_VectorcallMethod (name=<optimized out>, args=args@entry=0x7fffffffc590, nargsf=<optimized out>, nargsf@entry=9223372036854775809, kwnames=kwnames@entry=0x0) at Objects/call.c:887
+#11 0x00007fffe2322520 in __pyx_pf_6uvloop_4loop_4Loop_44run_until_complete (__pyx_v_self=__pyx_v_self@entry=0x555555b91cf0, __pyx_v_future=__pyx_v_future@entry=0x7fffe192ed40) at uvloop/loop.c:35885
+#12 0x00007fffe2323aa5 in __pyx_pw_6uvloop_4loop_4Loop_45run_until_complete (__pyx_v_self=0x555555b91cf0, __pyx_args=<optimized out>, __pyx_nargs=1, __pyx_kwds=<optimized out>) at uvloop/loop.c:35410
+#13 0x00007ffff7a1362d in _PyObject_VectorcallTstate (tstate=0x7ffff7e99710 <_PyRuntime+458992>, callable=0x7fffe245c710, args=0x7ffff7ea3450, nargsf=9223372036854775810, kwnames=0x0) at ./Include/internal/pycore_call.h:92
+#14 PyObject_Vectorcall (callable=0x7fffe245c710, args=0x7ffff7ea3450, nargsf=9223372036854775810, kwnames=0x0) at Objects/call.c:325
+#15 0x00007ffff7a627ba in _PyEval_EvalFrameDefault (tstate=<optimized out>, frame=<optimized out>, throwflag=<optimized out>) at Python/bytecodes.c:2715
+#16 0x00007ffff7afb7fa in PyEval_EvalCode (co=co@entry=0x7ffff76ed020, globals=globals@entry=0x7ffff779f5c0, locals=locals@entry=0x7ffff779f5c0) at Python/ceval.c:580
+#17 0x00007ffff7af9f57 in builtin_exec_impl (module=<optimized out>, source=0x7ffff76ed020, globals=0x7ffff779f5c0, locals=0x7ffff779f5c0, closure=<optimized out>) at Python/bltinmodule.c:1093
+#18 builtin_exec (module=<optimized out>, args=<optimized out>, nargs=<optimized out>, kwnames=<optimized out>) at Python/clinic/bltinmodule.c.h:543
+#19 0x00007ffff7a353c3 in cfunction_vectorcall_FASTCALL_KEYWORDS (func=0x7ffff7744770, args=0x7ffff7ea3180, nargsf=<optimized out>, kwnames=0x0) at ./Include/cpython/methodobject.h:50
+#20 0x00007ffff7a1362d in _PyObject_VectorcallTstate (tstate=0x7ffff7e99710 <_PyRuntime+458992>, callable=0x7ffff7744770, args=0x7ffff7ea3180, nargsf=9223372036854775810, kwnames=0x0) at ./Include/internal/pycore_call.h:92
+#21 PyObject_Vectorcall (callable=0x7ffff7744770, args=0x7ffff7ea3180, nargsf=9223372036854775810, kwnames=0x0) at Objects/call.c:325
+#22 0x00007ffff7a627ba in _PyEval_EvalFrameDefault (tstate=<optimized out>, frame=<optimized out>, throwflag=<optimized out>) at Python/bytecodes.c:2715
+#23 0x00007ffff7b25839 in pymain_run_module (modname=<optimized out>, set_argv0=set_argv0@entry=1) at Modules/main.c:300
+#24 0x00007ffff7b25484 in pymain_run_python (exitcode=0x7fffffffcba4) at Modules/main.c:628
+#25 Py_RunMain () at Modules/main.c:714
+#26 0x00007ffff7b25124 in Py_BytesMain (argc=<optimized out>, argv=<optimized out>) at Modules/main.c:768
+#27 0x00007ffff742a8c1 in ?? () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#28 0x00007ffff742a9d8 in __libc_start_main () from /usr/lib/x86_64-linux-gnu/libc.so.6
+#29 0x0000555555555095 in _start ()
