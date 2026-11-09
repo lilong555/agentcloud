@@ -45,31 +45,30 @@ class AgentCloudSandbox(Sandbox):
         return str(supplied)
 
     def _call(self,kind,**kwargs):
-        with self.lock:
-            logical=TOOL_LOGICAL_ID.get()
-            if logical:
-                subop=TOOL_SUBOP.get()
-                TOOL_SUBOP.set(subop+1)
-                op_id=hashlib.sha256(f'{self.id}:{logical}:{subop}'.encode()).hexdigest()[:32]
-            else:
-                op_id=uuid.uuid4().hex
-            try:
+        logical=TOOL_LOGICAL_ID.get()
+        if logical:
+            subop=TOOL_SUBOP.get()
+            TOOL_SUBOP.set(subop+1)
+            op_id=hashlib.sha256(f'{self.id}:{logical}:{subop}'.encode()).hexdigest()[:32]
+        else:
+            op_id=uuid.uuid4().hex
+        try:
+            receipt=self.client.tool(self.id,self.epoch,op_id,kind,**kwargs)
+            until=time.monotonic()+30
+            while receipt['status']=='RUNNING' and time.monotonic()<until:
+                time.sleep(.01)
                 receipt=self.client.tool(self.id,self.epoch,op_id,kind,**kwargs)
-                until=time.monotonic()+30
-                while receipt['status']=='RUNNING' and time.monotonic()<until:
-                    time.sleep(.01)
-                    receipt=self.client.tool(self.id,self.epoch,op_id,kind,**kwargs)
-                if receipt['status']!='COMPLETED':
-                    raise CloudError(receipt['status'],receipt.get('error','工具回执需要对账'),409)
-                self.receipts[receipt['tool_op_id']]=dict(tool_op_id=receipt['tool_op_id'],
-                    logical_tool_call_id=logical,kind=kind,epoch=receipt['epoch'],receipt_seq=receipt['receipt_seq'],
-                    status=receipt['status'],payload_hash=receipt.get('payload_hash'),
-                    result_sha256=hashlib.sha256(json.dumps(receipt['result'],sort_keys=True,ensure_ascii=False).encode()).hexdigest())
-                return receipt['result']
-            except CloudError as exc:
-                if exc.code in ('PATH_ESCAPE','RESERVED_PATH'):
-                    raise PermissionError(str(exc)) from exc
-                raise
+            if receipt['status']!='COMPLETED':
+                raise CloudError(receipt['status'],receipt.get('error','工具回执需要对账'),409)
+            self.receipts[receipt['tool_op_id']]=dict(tool_op_id=receipt['tool_op_id'],
+                logical_tool_call_id=logical,kind=kind,epoch=receipt['epoch'],receipt_seq=receipt['receipt_seq'],
+                status=receipt['status'],payload_hash=receipt.get('payload_hash'),
+                result_sha256=hashlib.sha256(json.dumps(receipt['result'],sort_keys=True,ensure_ascii=False).encode()).hexdigest())
+            return receipt['result']
+        except CloudError as exc:
+            if exc.code in ('PATH_ESCAPE','RESERVED_PATH'):
+                raise PermissionError(str(exc)) from exc
+            raise
 
     def execute_command(self,command,env=None,timeout=None):
         _validate_extra_env(env)
@@ -82,7 +81,10 @@ class AgentCloudSandbox(Sandbox):
         return output
 
     def read_file(self,path,start_line=None,end_line=None):
-        text=self._call('file_read',path=self._path(path)).get('content','')
+        result=self._call('file_read',path=self._path(path))
+        if result.get('error',{}).get('code')=='FILE_NOT_FOUND':
+            raise FileNotFoundError(path)
+        text=result.get('content','')
         if start_line is None and end_line is None:
             return text
         return ''.join(text.splitlines(keepends=True)[max(0,(start_line or 1)-1):end_line])

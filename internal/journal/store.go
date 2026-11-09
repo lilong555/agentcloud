@@ -17,13 +17,14 @@ import (
 // Store serializes a durable JSON document. A dedicated PostgreSQL connection
 // owns the process lock for its whole lifetime; transactions publish one revision.
 type Store struct {
-	mu       sync.Mutex
-	path     string
-	lock     *os.File
-	conn     *pgx.Conn
-	revision int64
-	data     []byte
-	poisoned bool
+	mu           sync.Mutex
+	path         string
+	lock         *os.File
+	conn         *pgx.Conn
+	revision     int64
+	data         []byte
+	poisoned     bool
+	entityFormat bool
 }
 
 func Open(ctx context.Context, path, databaseURL string) (*Store, error) {
@@ -42,7 +43,7 @@ func Open(ctx context.Context, path, databaseURL string) (*Store, error) {
 			}
 			return nil, errors.New("another coordinator owns the journal")
 		}
-		_, err = conn.Exec(ctx, `CREATE SCHEMA IF NOT EXISTS agentcloud; CREATE TABLE IF NOT EXISTS agentcloud.journal (id integer PRIMARY KEY CHECK(id=1), revision bigint NOT NULL, data jsonb NOT NULL); INSERT INTO agentcloud.journal VALUES(1,0,'{}') ON CONFLICT DO NOTHING`)
+		_, err = conn.Exec(ctx, `CREATE SCHEMA IF NOT EXISTS agentcloud; CREATE TABLE IF NOT EXISTS agentcloud.journal (id integer PRIMARY KEY CHECK(id=1), revision bigint NOT NULL, data jsonb NOT NULL); INSERT INTO agentcloud.journal VALUES(1,0,'{}') ON CONFLICT DO NOTHING; CREATE TABLE IF NOT EXISTS agentcloud.journal_entities(kind text NOT NULL,entity_key text NOT NULL,data jsonb NOT NULL,sequence bigint NOT NULL DEFAULT 0,updated_revision bigint NOT NULL,PRIMARY KEY(kind,entity_key)); CREATE INDEX IF NOT EXISTS journal_entities_sequence ON agentcloud.journal_entities(kind,sequence)`)
 		if err == nil {
 			err = conn.QueryRow(ctx, "SELECT revision,data FROM agentcloud.journal WHERE id=1").Scan(&s.revision, &s.data)
 		}
@@ -50,6 +51,11 @@ func Open(ctx context.Context, path, databaseURL string) (*Store, error) {
 			conn.Close(ctx)
 			return nil, err
 		}
+		var metadata struct {
+			Format int `json:"entity_format"`
+		}
+		_ = json.Unmarshal(s.data, &metadata)
+		s.entityFormat = metadata.Format == 1
 		return s, nil
 	}
 	if path == "" {
@@ -84,7 +90,15 @@ func Open(ctx context.Context, path, databaseURL string) (*Store, error) {
 func (s *Store) Load(out any) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	return json.Unmarshal(s.data, out)
+	data := s.data
+	if s.entityFormat {
+		var err error
+		data, err = s.loadEntities(context.Background())
+		if err != nil {
+			return err
+		}
+	}
+	return json.Unmarshal(data, out)
 }
 
 func (s *Store) Save(ctx context.Context, value any) error {
@@ -96,6 +110,9 @@ func (s *Store) Save(ctx context.Context, value any) error {
 	defer s.mu.Unlock()
 	if s.poisoned {
 		return errors.New("journal requires process restart and reconciliation")
+	}
+	if s.entityFormat {
+		return errors.New("coordinator entity journal requires SaveEntities")
 	}
 	if s.conn != nil {
 		tag, err := s.conn.Exec(ctx, "UPDATE agentcloud.journal SET revision=revision+1,data=$1 WHERE id=1 AND revision=$2", data, s.revision)

@@ -4,47 +4,59 @@ import (
 	"context"
 	"encoding/json"
 	"time"
+
+	"github.com/lilong555/agentcloud/internal/adapters/dynamo"
+	"github.com/lilong555/agentcloud/internal/observability"
 )
 
 type Actor struct {
-	Name               string `json:"name"`
-	UID                string `json:"uid"`
-	Version            int64  `json:"version"`
-	SnapshotUUID       string `json:"snapshot_uuid,omitempty"`
-	SnapshotGeneration int64  `json:"snapshot_generation,omitempty"`
-	ActualFidelity     string `json:"actual_fidelity"`
-	BootID             string `json:"boot_id"`
-	RetainedTag        string `json:"retained_tag,omitempty"`
-	RetainedTagUID     string `json:"retained_tag_uid,omitempty"`
-	SnapshotFidelity   string `json:"snapshot_fidelity,omitempty"`
+	AssignedWorker      string `json:"assigned_worker,omitempty"`
+	AssignedMemoryBytes int64  `json:"assigned_memory_bytes,omitempty"`
+	Name                string `json:"name"`
+	UID                 string `json:"uid"`
+	Version             int64  `json:"version"`
+	SnapshotUUID        string `json:"snapshot_uuid,omitempty"`
+	SnapshotGeneration  int64  `json:"snapshot_generation,omitempty"`
+	ActualFidelity      string `json:"actual_fidelity"`
+	BootID              string `json:"boot_id"`
+	RetainedTag         string `json:"retained_tag,omitempty"`
+	RetainedTagUID      string `json:"retained_tag_uid,omitempty"`
+	SnapshotFidelity    string `json:"snapshot_fidelity,omitempty"`
 }
 type Session struct {
-	Scheduling        map[string]*BoundaryDecision `json:"scheduling,omitempty"`
-	RunningSince      time.Time                    `json:"running_since,omitempty"`
-	LastResumedAt     time.Time                    `json:"last_resumed_at,omitempty"`
-	TenantID          string                       `json:"tenant_id"`
-	WorkspaceID       string                       `json:"workspace_id"`
-	SessionID         string                       `json:"session_id"`
-	Mode              string                       `json:"mode"`
-	Profile           string                       `json:"profile,omitempty"`
-	AblationGroup     string                       `json:"ablation_group,omitempty"`
-	State             string                       `json:"state"`
-	Gate              string                       `json:"gate"`
-	Epoch             uint64                       `json:"epoch"`
-	BarrierGeneration uint64                       `json:"barrier_generation"`
-	ReceiptWatermark  uint64                       `json:"receipt_watermark"`
-	NextReceipt       uint64                       `json:"next_receipt"`
-	SignalSequence    uint64                       `json:"signal_sequence"`
-	Actor             Actor                        `json:"actor"`
-	ActorUID          string                       `json:"actor_uid"`
-	Backend           string                       `json:"backend"`
-	ActualFidelity    string                       `json:"actual_fidelity"`
-	ActiveTools       int                          `json:"active_tools"`
-	Tools             map[string]*ToolReceipt      `json:"tools"`
-	Lifecycle         map[string]*LifecycleReceipt `json:"lifecycle"`
-	Manifest          *Manifest                    `json:"manifest,omitempty"`
-	CreatedAt         time.Time                    `json:"created_at"`
-	UpdatedAt         time.Time                    `json:"updated_at"`
+	DynamoFinalized         bool                            `json:"dynamo_finalized,omitempty"`
+	DynamoFinalizedEpoch    uint64                          `json:"dynamo_finalized_epoch,omitempty"`
+	DynamoFinalizedSnapshot *dynamo.Snapshot                `json:"dynamo_finalized_snapshot,omitempty"`
+	IdleSince               time.Time                       `json:"idle_since,omitempty"`
+	ReturnDemands           map[string]*ReturnDemandReceipt `json:"return_demands,omitempty"`
+	Autonomous              *AutonomousState                `json:"autonomous_scheduler,omitempty"`
+	IdleWindows             map[string]*IdleWindow          `json:"idle_windows,omitempty"`
+	Scheduling              map[string]*BoundaryDecision    `json:"scheduling,omitempty"`
+	RunningSince            time.Time                       `json:"running_since,omitempty"`
+	LastResumedAt           time.Time                       `json:"last_resumed_at,omitempty"`
+	TenantID                string                          `json:"tenant_id"`
+	WorkspaceID             string                          `json:"workspace_id"`
+	SessionID               string                          `json:"session_id"`
+	Mode                    string                          `json:"mode"`
+	Profile                 string                          `json:"profile,omitempty"`
+	AblationGroup           string                          `json:"ablation_group,omitempty"`
+	State                   string                          `json:"state"`
+	Gate                    string                          `json:"gate"`
+	Epoch                   uint64                          `json:"epoch"`
+	BarrierGeneration       uint64                          `json:"barrier_generation"`
+	ReceiptWatermark        uint64                          `json:"receipt_watermark"`
+	NextReceipt             uint64                          `json:"next_receipt"`
+	SignalSequence          uint64                          `json:"signal_sequence"`
+	Actor                   Actor                           `json:"actor"`
+	ActorUID                string                          `json:"actor_uid"`
+	Backend                 string                          `json:"backend"`
+	ActualFidelity          string                          `json:"actual_fidelity"`
+	ActiveTools             int                             `json:"active_tools"`
+	Tools                   map[string]*ToolReceipt         `json:"tools"`
+	Lifecycle               map[string]*LifecycleReceipt    `json:"lifecycle"`
+	Manifest                *Manifest                       `json:"manifest,omitempty"`
+	CreatedAt               time.Time                       `json:"created_at"`
+	UpdatedAt               time.Time                       `json:"updated_at"`
 }
 type Manifest struct {
 	ID                 string    `json:"manifest_id"`
@@ -104,6 +116,9 @@ type LifecycleReceipt struct {
 	Manifest    *Manifest `json:"manifest,omitempty"`
 }
 type ModelRequest struct {
+	TraceParent    string          `json:"trace_parent,omitempty"`
+	TraceState     string          `json:"trace_state,omitempty"`
+	DispatchedAt   *time.Time      `json:"dispatched_at,omitempty"`
 	TerminalTurn   bool            `json:"terminal_turn,omitempty"`
 	ID             string          `json:"logical_request_id"`
 	TenantID       string          `json:"tenant_id"`
@@ -122,19 +137,25 @@ type ModelRequest struct {
 	ClaimedEpoch   uint64          `json:"claimed_epoch,omitempty"`
 }
 type Event struct {
-	Sequence  uint64    `json:"sequence"`
-	At        time.Time `json:"at"`
-	TenantID  string    `json:"tenant_id"`
-	SessionID string    `json:"session_id"`
-	Kind      string    `json:"kind"`
-	Detail    string    `json:"detail,omitempty"`
+	State      string    `json:"state,omitempty"`
+	Gate       string    `json:"gate,omitempty"`
+	Epoch      uint64    `json:"epoch,omitempty"`
+	ManifestID string    `json:"manifest_id,omitempty"`
+	Sequence   uint64    `json:"sequence"`
+	At         time.Time `json:"at"`
+	TenantID   string    `json:"tenant_id"`
+	SessionID  string    `json:"session_id"`
+	Kind       string    `json:"kind"`
+	Detail     string    `json:"detail,omitempty"`
 }
 type State struct {
-	Version       int                      `json:"version"`
-	Sessions      map[string]*Session      `json:"sessions"`
-	Requests      map[string]*ModelRequest `json:"requests"`
-	Events        []Event                  `json:"events"`
-	EventSequence uint64                   `json:"event_sequence"`
+	ObservationSequence uint64                   `json:"observation_sequence,omitempty"`
+	Observations        []RecordedMeasurement    `json:"observations,omitempty"`
+	Version             int                      `json:"version"`
+	Sessions            map[string]*Session      `json:"sessions"`
+	Requests            map[string]*ModelRequest `json:"requests"`
+	Events              []Event                  `json:"events"`
+	EventSequence       uint64                   `json:"event_sequence"`
 }
 type CreateSession struct {
 	SessionID     string `json:"session_id"`
@@ -154,4 +175,11 @@ type Backend interface {
 }
 type SignalSink interface {
 	Send(context.Context, *Session, string) error
+}
+
+type RecordedMeasurement struct {
+	Sequence  uint64 `json:"sequence"`
+	TenantID  string `json:"tenant_id"`
+	SessionID string `json:"session_id"`
+	observability.Measurement
 }

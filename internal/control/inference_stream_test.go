@@ -346,7 +346,9 @@ func TestExperimentDefaultDisabledCapabilitiesAndTerminalIdentity(t *testing.T) 
 	assertCode(t, err, "invalid_ablation_group")
 	s := createTestSession(t, c, "tenant-a", "stream-session")
 	_, err = c.SubmitWithOptions("tenant-a", s.SessionID, "terminal", json.RawMessage(streamPayload), true)
-	assertCode(t, err, "experiment_controls_disabled")
+	if err != nil {
+		t.Fatal("production terminal turn rejected", err)
+	}
 	req := httptest.NewRequest(http.MethodGet, "/v1/capabilities", nil)
 	req.Header.Set("Authorization", "Bearer token-a")
 	w := httptest.NewRecorder()

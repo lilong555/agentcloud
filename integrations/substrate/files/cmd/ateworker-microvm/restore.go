@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"go.ate.dev/substrate/internal/apierror"
+	"go.ate.dev/substrate/internal/ateworker"
 	"go.ate.dev/substrate/internal/ateworker/phaselog"
 	"go.ate.dev/substrate/internal/workerstats"
 
@@ -237,7 +238,7 @@ func (s *AteWorkerService) RestoreWorkload(ctx context.Context, req *ateworkerpb
 	}
 
 	s.actorLogger.EmitLifecycleLog(ctx, "Actor restored", attribution)
-	return &ateworkerpb.RestoreWorkloadResponse{WorkerEpoch: epoch, RestoredFidelity: req.GetFidelity()}, nil
+	return ateworker.RestoreWorkloadResult(epoch, req.GetFidelity()), nil
 }
 
 // restoreMemoryFidelity restores a whole-guest snapshot: relaunch cloud-hypervisor

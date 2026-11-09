@@ -193,10 +193,13 @@ class ToolRuntime:
                         pass
             return {'content':content.decode()}
         if kind == 'file_read':
-            with self.parent_fd(body['path']) as (directory,name):
-                descriptor=os.open(name,os.O_RDONLY|os.O_NOFOLLOW,dir_fd=directory)
-                with os.fdopen(descriptor,'rb') as stream:
-                    data=stream.read(MAX_BYTES+1)
+            try:
+                with self.parent_fd(body['path']) as (directory,name):
+                    descriptor=os.open(name,os.O_RDONLY|os.O_NOFOLLOW,dir_fd=directory)
+                    with os.fdopen(descriptor,'rb') as stream:
+                        data=stream.read(MAX_BYTES+1)
+            except FileNotFoundError:
+                return {'error':{'code':'FILE_NOT_FOUND','path':body['path'],'message':'文件读取时路径不存在'}}
             if len(data) > MAX_BYTES:
                 raise ToolFailure('RESULT_TOO_LARGE','文件读取超过大小上限',413)
             return {'content':data.decode()}
@@ -258,6 +261,13 @@ def serve(root, port, host='0.0.0.0', token=None, snapshot_fidelity=('VOLUMES',)
             self.end_headers()
             self.wfile.write(data)
         def do_GET(self):
+            if self.path=='/runtime/v1/status':
+                if token and self.headers.get('Authorization') != 'Bearer '+token:
+                    return self.reply(401,{'error':{'code':'UNAUTHORIZED','message':'认证失败'}})
+                with runtime.condition:
+                    return self.reply(200,dict(epoch=runtime.epoch,gate='OPEN' if runtime.open else 'CLOSED',
+                        active_tools=runtime.active,runtime_memory=agents.memory_metrics(),
+                        active_agent_runs=sum(thread.is_alive() for thread in agents.threads.values())))
             if self.path.startswith('/runtime/v1/agents/'):
                 if token and self.headers.get('Authorization') != 'Bearer '+token:
                     return self.reply(401,{'error':{'code':'UNAUTHORIZED','message':'认证失败'}})
@@ -269,7 +279,8 @@ def serve(root, port, host='0.0.0.0', token=None, snapshot_fidelity=('VOLUMES',)
                 return self.reply(200,{'ready':True,'gate':'OPEN' if runtime.open else 'CLOSED'})
             if self.path == '/runtime/v1/capabilities':
                 return self.reply(200,dict(snapshot_fidelity=list(snapshot_fidelity),fidelity_authority='Substrate lifecycle receipt',background_process_policy='kill-owned-process-group',
-                    model_location='external-coordinator',agent_loop_location='in-actor',durable_agent_loop=agents.client is not None,application_checkpoint=True,physical_memory_restore=None))
+                    model_location='external-coordinator',agent_loop_location='in-actor',durable_agent_loop=agents.client is not None,application_checkpoint=True,physical_memory_restore=None,
+                    coding_agent_kinds=['controlled','model-tools'],model_tool_protocol='OpenAI chat.completions tool_calls'))
             self.reply(404,{'error':{'code':'NOT_FOUND','message':'路径未注册'}})
         def do_POST(self):
             try:

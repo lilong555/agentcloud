@@ -76,14 +76,17 @@ func main() {
 }
 
 func run(args []string, stdout, stderr io.Writer) error {
+	if len(args) > 0 && (args[0] == "status" || args[0] == "trace") {
+		return diagnostics(args[0], args[1:], stdout, stderr)
+	}
 	if len(args) > 0 && args[0] == "serve" {
 		return serve(args[1:], stdout, stderr)
 	}
 	if len(args) == 0 {
-		return fmt.Errorf("usage: agentcloud serve [flags] | replay --input TRACE.jsonl [--output REPORT.json]")
+		return fmt.Errorf("usage: agentcloud serve [flags] | status [flags] | trace <workspace-id> [flags] | replay --input TRACE.jsonl [--output REPORT.json]")
 	}
 	if args[0] == "help" || args[0] == "--help" || args[0] == "-h" {
-		_, err := fmt.Fprintln(stdout, "agentcloud serve [flags]                  Durable HTTP coordinator\nagentcloud replay --input TRACE.jsonl [--output REPORT.json]\nJSONL types: register, update, evaluate. Execution: CPU contract-replay.")
+		_, err := fmt.Fprintln(stdout, "agentcloud serve [flags]                  Durable HTTP coordinator\nagentcloud status [--url URL] [--json]\nagentcloud trace <workspace-id> [--url URL] [--json]\nagentcloud replay --input TRACE.jsonl [--output REPORT.json]\nJSONL types: register, update, evaluate. Execution: CPU contract-replay.")
 		return err
 	}
 	if args[0] != "replay" {

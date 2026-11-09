@@ -58,10 +58,11 @@ class ToolTraceMiddleware(TraceMiddleware):
         call=getattr(request,'tool_call',{})
         tool_id=call.get('id') or uuid.uuid4().hex
         token=TOOL_LOGICAL_ID.set(tool_id);subtoken=TOOL_SUBOP.set(0)
-        self.record('tool_start',tool_op_id=tool_id)
+        self.record('tool_start',tool_op_id=tool_id,tool_name=call.get('name'))
         try:
             result=handler(request)
-            self.record('tool_completed',tool_op_id=tool_id)
+            self.record('tool_completed',tool_op_id=tool_id,tool_name=call.get('name'),
+                output=getattr(result,'content',None))
             return result
         finally:
             TOOL_SUBOP.reset(subtoken);TOOL_LOGICAL_ID.reset(token)
@@ -70,10 +71,11 @@ class ToolTraceMiddleware(TraceMiddleware):
         call=getattr(request,'tool_call',{})
         tool_id=call.get('id') or uuid.uuid4().hex
         token=TOOL_LOGICAL_ID.set(tool_id);subtoken=TOOL_SUBOP.set(0)
-        self.record('tool_start',tool_op_id=tool_id)
+        self.record('tool_start',tool_op_id=tool_id,tool_name=call.get('name'))
         try:
             result=await handler(request)
-            self.record('tool_completed',tool_op_id=tool_id)
+            self.record('tool_completed',tool_op_id=tool_id,tool_name=call.get('name'),
+                output=getattr(result,'content',None))
             return result
         finally:
             TOOL_SUBOP.reset(subtoken);TOOL_LOGICAL_ID.reset(token)

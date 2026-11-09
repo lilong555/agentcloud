@@ -1,0 +1,195 @@
+From 3e896d9de0c4a9abfbaf601c186870a3ca7dd72d Mon Sep 17 00:00:00 2001
+From: lilong555 <173714821+lilong555@users.noreply.github.com>
+Date: Tue, 10 Nov 2026 00:00:00 +0000
+Subject: [PATCH 2/2] Export router client certificates
+
+
+diff --git a/cmd/agentcloud-credentials/main.go b/cmd/agentcloud-credentials/main.go
+new file mode 100644
+index 0000000000000000000000000000000000000000..432b009dcbcb4eff3aaa9e6ad287549aa71a97c0
+--- /dev/null
++++ b/cmd/agentcloud-credentials/main.go
+@@ -0,0 +1,90 @@
++// Copyright 2026 The Agent Substrate Authors
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++package main
++
++import (
++	"context"
++	"crypto/tls"
++	"crypto/x509"
++	"encoding/pem"
++	"flag"
++	"fmt"
++	"os"
++	"path/filepath"
++	"time"
++
++	"go.ate.dev/substrate/internal/podidentity"
++	"k8s.io/client-go/kubernetes"
++	"k8s.io/client-go/tools/clientcmd"
++)
++
++func main() {
++	kubeconfig := flag.String("kubeconfig", "", "Kubeconfig file")
++	kubeContext := flag.String("context", "kind-agentcloud", "Kubeconfig context")
++	out := flag.String("out", "", "Certificate output directory")
++	flag.Parse()
++	if *out == "" {
++		fmt.Fprintln(os.Stderr, "--out is required")
++		os.Exit(1)
++	}
++	if err := run(*kubeconfig, *kubeContext, *out); err != nil {
++		fmt.Fprintln(os.Stderr, err)
++		os.Exit(1)
++	}
++}
++func run(kubeconfig, kubeContext, out string) error {
++	rules := clientcmd.NewDefaultClientConfigLoadingRules()
++	rules.ExplicitPath = kubeconfig
++	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(rules, &clientcmd.ConfigOverrides{CurrentContext: kubeContext}).ClientConfig()
++	if err != nil {
++		return err
++	}
++	client, err := kubernetes.NewForConfig(config)
++	if err != nil {
++		return err
++	}
++	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
++	defer cancel()
++	cert, err := podidentity.RequestCertificate(ctx, client, "agentcloud", "ate-system", "ate-client", 2*time.Minute)
++	if err != nil {
++		return err
++	}
++	if err := writeCertificate(cert, out); err != nil {
++		return err
++	}
++	fmt.Printf("Router client certificate expires at %s\n", cert.Leaf.NotAfter.Format(time.RFC3339))
++	return nil
++}
++
++func writeCertificate(cert tls.Certificate, out string) error {
++	if err := os.MkdirAll(out, 0700); err != nil {
++		return err
++	}
++	var chain []byte
++	for _, der := range cert.Certificate {
++		chain = append(chain, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: der})...)
++	}
++	key, err := x509.MarshalPKCS8PrivateKey(cert.PrivateKey)
++	if err != nil {
++		return err
++	}
++	if err := os.WriteFile(filepath.Join(out, "router-key.pem"), pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: key}), 0600); err != nil {
++		return err
++	}
++	if err := os.WriteFile(filepath.Join(out, "router-cert.pem"), chain, 0600); err != nil {
++		return err
++	}
++	return nil
++}
+diff --git a/cmd/agentcloud-credentials/main_test.go b/cmd/agentcloud-credentials/main_test.go
+new file mode 100644
+index 0000000000000000000000000000000000000000..b49aad3bea32e02f76621481ff9f46f678ce84e4
+--- /dev/null
++++ b/cmd/agentcloud-credentials/main_test.go
+@@ -0,0 +1,87 @@
++// Copyright 2026 The Agent Substrate Authors
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++package main
++
++import (
++	"crypto/ed25519"
++	"crypto/rand"
++	"crypto/tls"
++	"crypto/x509"
++	"encoding/pem"
++	"os"
++	"path/filepath"
++	"testing"
++)
++
++func TestWriteCertificate(t *testing.T) {
++	_, private, err := ed25519.GenerateKey(rand.Reader)
++	if err != nil {
++		t.Fatal(err)
++	}
++	certificate := tls.Certificate{Certificate: [][]byte{[]byte("leaf-der"), []byte("ca-der")}, PrivateKey: private}
++	directory := filepath.Join(t.TempDir(), "credentials")
++	if err := writeCertificate(certificate, directory); err != nil {
++		t.Fatal(err)
++	}
++	for _, name := range []string{"router-key.pem", "router-cert.pem"} {
++		info, err := os.Stat(filepath.Join(directory, name))
++		if err != nil {
++			t.Fatal(err)
++		}
++		if info.Mode().Perm() != 0600 {
++			t.Fatalf("%s permissions=%o", name, info.Mode().Perm())
++		}
++	}
++	encoded, _ := os.ReadFile(filepath.Join(directory, "router-cert.pem"))
++	for _, want := range certificate.Certificate {
++		block, rest := pem.Decode(encoded)
++		if block == nil || block.Type != "CERTIFICATE" || string(block.Bytes) != string(want) {
++			t.Fatalf("certificate chain=%q", encoded)
++		}
++		encoded = rest
++	}
++	if len(encoded) != 0 {
++		t.Fatalf("unexpected chain suffix=%q", encoded)
++	}
++	encoded, _ = os.ReadFile(filepath.Join(directory, "router-key.pem"))
++	block, _ := pem.Decode(encoded)
++	if block == nil || block.Type != "PRIVATE KEY" {
++		t.Fatalf("private key PEM=%q", encoded)
++	}
++	decoded, err := x509.ParsePKCS8PrivateKey(block.Bytes)
++	if err != nil || !private.Equal(decoded) {
++		t.Fatalf("private key mismatch: %v", err)
++	}
++}
++
++func TestWriteCertificateErrors(t *testing.T) {
++	directory := t.TempDir()
++	obstruction := filepath.Join(directory, "file")
++	if err := os.WriteFile(obstruction, []byte("occupied"), 0600); err != nil {
++		t.Fatal(err)
++	}
++	if err := writeCertificate(tls.Certificate{}, filepath.Join(obstruction, "child")); err == nil {
++		t.Fatal("expected directory error")
++	}
++	if err := writeCertificate(tls.Certificate{PrivateKey: struct{}{}}, directory); err == nil {
++		t.Fatal("expected unsupported key error")
++	}
++}
++
++func TestRunRejectsMissingKubeconfig(t *testing.T) {
++	if err := run(filepath.Join(t.TempDir(), "missing"), "kind-agentcloud", t.TempDir()); err == nil {
++		t.Fatal("expected kubeconfig error")
++	}
++}

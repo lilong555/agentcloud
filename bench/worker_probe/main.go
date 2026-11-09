@@ -21,6 +21,10 @@ func main() {
 	dir := flag.String("client-dir", "artifacts/substrate/client", "private credentials")
 	interval := flag.Duration("interval", 100*time.Millisecond, "assignment sampling interval")
 	flag.Parse()
+	if *interval < 10*time.Millisecond || *interval > time.Minute {
+		fmt.Fprintln(os.Stderr, "sampling interval must be within 10ms..1m")
+		os.Exit(2)
+	}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 	client, err := substrate.New(ctx, substrate.Config{Address: "127.0.0.1:9443", Atespace: "agentcloud", ServerName: "api.ate-system.svc", CAFile: filepath.Join(*dir, "ca.pem"), TokenFile: filepath.Join(*dir, "token")})
@@ -41,6 +45,12 @@ func main() {
 				return
 			}
 			_ = encoder.Encode(map[string]any{"at": time.Now().UTC(), "error": err.Error()})
+			// Unavailable APIs still obey the poll cadence. This also bounds error logs.
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+			}
 			continue
 		}
 		for _, worker := range workers.GetWorkers() {

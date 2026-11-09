@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/lilong555/agentcloud/internal/observability"
 	ateapi "go.ate.dev/substrate/api/ateapi/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -26,6 +27,7 @@ type Config struct {
 }
 
 type Summary struct {
+	AssignedWorker             string `json:"assigned_worker,omitempty"`
 	Name                       string `json:"name"`
 	UID                        string `json:"uid"`
 	Version                    int64  `json:"version"`
@@ -82,7 +84,7 @@ func New(ctx context.Context, cfg Config) (*Client, error) {
 		}
 		creds = credentials.NewTLS(tc)
 	}
-	opts := []grpc.DialOption{grpc.WithTransportCredentials(creds)}
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(creds), grpc.WithChainUnaryInterceptor(observability.UnaryClientInterceptor)}
 	if cfg.TokenFile != "" {
 		opts = append(opts, grpc.WithPerRPCCredentials(fileToken(cfg.TokenFile)))
 	}
@@ -126,7 +128,7 @@ func (c *Client) AwaitDurable(ctx context.Context, name, uid, snapshotUUID strin
 }
 
 func summarize(actor *ateapi.Actor) Summary {
-	s := Summary{Name: actor.GetMetadata().GetName(), UID: actor.GetMetadata().GetUid(), Version: actor.GetMetadata().GetVersion(), State: strings.TrimPrefix(actor.GetStatus().GetState().String(), "ACTOR_STATE_")}
+	s := Summary{AssignedWorker: actor.GetStatus().GetWorkerAssignment().GetWorker().GetName(), Name: actor.GetMetadata().GetName(), UID: actor.GetMetadata().GetUid(), Version: actor.GetMetadata().GetVersion(), State: strings.TrimPrefix(actor.GetStatus().GetState().String(), "ACTOR_STATE_")}
 	var latest *ateapi.Snapshot
 	for _, snapshot := range actor.GetStatus().GetSnapshots() {
 		if latest == nil || snapshot.GetGeneration() > latest.GetGeneration() {

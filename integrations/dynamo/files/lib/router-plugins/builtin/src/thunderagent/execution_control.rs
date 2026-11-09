@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 //! Authenticated execution-feedback listener shared by native frontend classifiers.
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::net::SocketAddr;
 use std::sync::{Arc, OnceLock};
 use std::time::{Duration, Instant};
@@ -55,6 +55,7 @@ struct Session {
     routing_session_id: String,
     inference_lease: String,
     classifier_id: usize,
+    generation: String,
 }
 
 pub struct ControlServer {
@@ -62,6 +63,7 @@ pub struct ControlServer {
     classifiers: Mutex<Vec<ExecutionFeedbackControl>>,
     sessions: Mutex<HashMap<(String, String, String), Session>>,
     rate: Mutex<Vec<(Instant, u32)>>,
+    tombstones: Mutex<VecDeque<Value>>,
     concurrent: Arc<Semaphore>,
 }
 
@@ -75,6 +77,7 @@ impl ControlServer {
             .route("/v1/execution/bindings", post(register))
             .route("/v1/execution/state", post(update))
             .route("/v1/execution/session", post(session))
+            .route("/v1/execution/finalize", post(finalize))
             .layer(DefaultBodyLimit::max(8192))
             .layer(middleware::from_fn_with_state(self.clone(), authenticate))
             .with_state(self)
@@ -120,6 +123,7 @@ impl ControlServer {
             classifiers: Mutex::new(Vec::new()),
             sessions: Mutex::new(HashMap::new()),
             rate,
+            tombstones: Mutex::new(VecDeque::new()),
             concurrent: Arc::new(Semaphore::new(32)),
         }))
     }
@@ -204,6 +208,7 @@ impl From<ExecutionFeedbackError> for ApiError {
             ExecutionFeedbackError::Replay => "replay",
             ExecutionFeedbackError::InvalidUpdate => "invalid_update",
             ExecutionFeedbackError::Expired => "expired",
+            ExecutionFeedbackError::SessionActive => "session_active",
         };
         Self(StatusCode::CONFLICT, code)
     }
@@ -265,11 +270,11 @@ async fn authenticate(
 
 async fn capabilities(State(server): State<Arc<ControlServer>>) -> Json<Value> {
     Json(
-        json!({"protocol_version":1,"execution_feedback":true,"trusted_bindings":true,"opaque_routing_sessions":true,"inference_lease_header":"x-agentcloud-inference-lease","classifier_count":server.classifiers.lock().len(),"max_body_bytes":8192,"requests_per_second":server.config.requests_per_second,"ttl_ms":{"min":100,"max":60000},"native_frontend":true,"gpu_execution":false}),
+        json!({"protocol_version":1,"binding_finalization":true,"active_bindings":server.sessions.lock().len(),"retired_bindings_retained":server.tombstones.lock().len(),"execution_feedback":true,"trusted_bindings":true,"opaque_routing_sessions":true,"admission_history":true,"admission_attempt_header":"x-agentcloud-attempt-id","inference_lease_header":"x-agentcloud-inference-lease","classifier_count":server.classifiers.lock().len(),"max_body_bytes":8192,"requests_per_second":server.config.requests_per_second,"ttl_ms":{"min":100,"max":60000},"native_frontend":true,"gpu_execution":false}),
     )
 }
 
-fn binding(body: &[u8]) -> Result<(ExecutionBinding, usize), ApiError> {
+fn binding(body: &[u8]) -> Result<(ExecutionBinding, usize, Option<String>), ApiError> {
     let mut value: Value = serde_json::from_slice(body)
         .map_err(|_| ApiError(StatusCode::BAD_REQUEST, "invalid_json"))?;
     let obj = value
@@ -279,6 +284,15 @@ fn binding(body: &[u8]) -> Result<(ExecutionBinding, usize), ApiError> {
     if version != Some(1) {
         return Err(ApiError(StatusCode::BAD_REQUEST, "invalid_version"));
     }
+    let generation = obj
+        .remove("registration_generation")
+        .map(|v| {
+            v.as_str()
+                .filter(|s| !s.is_empty())
+                .map(str::to_owned)
+                .ok_or(ApiError(StatusCode::BAD_REQUEST, "invalid_generation"))
+        })
+        .transpose()?;
     let classifier_id = obj
         .remove("classifier_id")
         .map(|v| {
@@ -304,11 +318,11 @@ fn binding(body: &[u8]) -> Result<(ExecutionBinding, usize), ApiError> {
     let b: ExecutionBinding = serde_json::from_value(value)
         .map_err(|_| ApiError(StatusCode::BAD_REQUEST, "invalid_binding"))?;
     b.validate()?;
-    Ok((b, classifier_id))
+    Ok((b, classifier_id, generation))
 }
 
 fn receipt(s: &Session, snapshot: Value, include_lease: bool) -> Json<Value> {
-    let mut value = json!({"protocol_version":1,"accepted":true,"applied":snapshot["program_present"],"reconciled":true,"binding":s.binding,"routing_session_id":s.routing_session_id,"classifier_id":s.classifier_id,"sequence":snapshot["sequence"],"received_at":chrono::Utc::now(),"snapshot":snapshot});
+    let mut value = json!({"protocol_version":1,"accepted":true,"applied":snapshot["program_present"],"reconciled":true,"binding":s.binding,"routing_session_id":s.routing_session_id,"classifier_id":s.classifier_id,"binding_generation":s.generation,"sequence":snapshot["sequence"],"received_at":chrono::Utc::now(),"snapshot":snapshot});
     if include_lease {
         value["inference_lease"] = Value::String(s.inference_lease.clone());
     }
@@ -320,7 +334,7 @@ async fn register(
     Extension(c): Extension<Credential>,
     body: Bytes,
 ) -> Result<Json<Value>, ApiError> {
-    let (b, classifier_id) = binding(&body)?;
+    let (b, classifier_id, generation) = binding(&body)?;
     if !ControlServer::authorized(&c, &b) {
         return Err(ApiError(StatusCode::FORBIDDEN, "scope_mismatch"));
     }
@@ -329,12 +343,17 @@ async fn register(
     let key = ControlServer::key(&b);
     let existing = sessions.get(&key);
     if let Some(old) = existing {
+        if generation.as_ref().is_some_and(|g| g != &old.generation) {
+            return Err(ApiError(StatusCode::CONFLICT, "stale_generation"));
+        }
         if old.classifier_id != classifier_id {
             return Err(ApiError(StatusCode::CONFLICT, "classifier_mismatch"));
         }
         if old.binding != b && b.epoch <= old.binding.epoch {
             return Err(ApiError(StatusCode::CONFLICT, "stale_epoch"));
         }
+    } else if generation.is_some() {
+        return Err(ApiError(StatusCode::CONFLICT, "stale_generation"));
     } else if sessions.len() >= server.config.max_sessions {
         return Err(ApiError(StatusCode::TOO_MANY_REQUESTS, "session_limit"));
     }
@@ -343,8 +362,10 @@ async fn register(
         routing_session_id: format!("ac:{}", uuid::Uuid::new_v4().simple()),
         inference_lease: uuid::Uuid::new_v4().simple().to_string(),
         classifier_id,
+        generation: uuid::Uuid::new_v4().simple().to_string(),
     });
     if s.binding != b {
+        s.generation = uuid::Uuid::new_v4().simple().to_string();
         s.inference_lease = uuid::Uuid::new_v4().simple().to_string();
     }
     s.binding = b;
@@ -363,7 +384,7 @@ async fn session(
     Extension(c): Extension<Credential>,
     body: Bytes,
 ) -> Result<Json<Value>, ApiError> {
-    let (b, _) = binding(&body)?;
+    let (b, _, generation) = binding(&body)?;
     if !ControlServer::authorized(&c, &b) {
         return Err(ApiError(StatusCode::FORBIDDEN, "scope_mismatch"));
     }
@@ -373,6 +394,9 @@ async fn session(
         .get(&ControlServer::key(&b))
         .cloned()
         .ok_or(ApiError(StatusCode::NOT_FOUND, "unknown_session"))?;
+    if generation.as_deref() != Some(s.generation.as_str()) {
+        return Err(ApiError(StatusCode::CONFLICT, "stale_generation"));
+    }
     if s.binding != b {
         return Err(ApiError(StatusCode::CONFLICT, "identity_mismatch"));
     }
@@ -382,13 +406,55 @@ async fn session(
     Ok(receipt(&s, snapshot, false))
 }
 
+async fn finalize(
+    State(server): State<Arc<ControlServer>>,
+    Extension(c): Extension<Credential>,
+    body: Bytes,
+) -> Result<Json<Value>, ApiError> {
+    let (b, _, generation) = binding(&body)?;
+    if !ControlServer::authorized(&c, &b) {
+        return Err(ApiError(StatusCode::FORBIDDEN, "scope_mismatch"));
+    }
+    let mut sessions = server.sessions.lock();
+    let key = ControlServer::key(&b);
+    let s = sessions
+        .get(&key)
+        .ok_or(ApiError(StatusCode::NOT_FOUND, "unknown_session"))?;
+    if generation.as_deref() != Some(s.generation.as_str()) {
+        return Err(ApiError(StatusCode::CONFLICT, "stale_generation"));
+    }
+    if s.binding != b {
+        return Err(ApiError(StatusCode::CONFLICT, "identity_mismatch"));
+    }
+    let classifier = server.classifier(s.classifier_id)?;
+    let snapshot = classifier.session_snapshot(&s.routing_session_id);
+    classifier.retire_binding(&s.routing_session_id)?;
+    let mut tombstones = server.tombstones.lock();
+    if tombstones.len() == server.config.max_sessions {
+        tombstones.pop_front();
+    }
+    tombstones.push_back(
+        json!({"generation":s.generation,"binding":s.binding,"sequence":snapshot["sequence"]}),
+    );
+    sessions.remove(&key);
+    Ok(Json(
+        json!({"protocol_version":1,"accepted":true,"finalized":true,"binding_generation":generation,"snapshot":snapshot}),
+    ))
+}
+
 async fn update(
     State(server): State<Arc<ControlServer>>,
     Extension(c): Extension<Credential>,
     body: Bytes,
 ) -> Result<Json<Value>, ApiError> {
-    let value: Value = serde_json::from_slice(&body)
+    let mut value: Value = serde_json::from_slice(&body)
         .map_err(|_| ApiError(StatusCode::BAD_REQUEST, "invalid_json"))?;
+    let generation = value
+        .as_object_mut()
+        .and_then(|o| o.remove("registration_generation"))
+        .and_then(|v| v.as_str().map(str::to_owned))
+        .filter(|s| !s.is_empty())
+        .ok_or(ApiError(StatusCode::BAD_REQUEST, "missing_generation"))?;
     let obj = value
         .as_object()
         .ok_or(ApiError(StatusCode::BAD_REQUEST, "invalid_json"))?;
@@ -421,6 +487,9 @@ async fn update(
     let s = sessions
         .get(&ControlServer::key(&u.binding))
         .ok_or(ApiError(StatusCode::NOT_FOUND, "unknown_session"))?;
+    if generation != s.generation {
+        return Err(ApiError(StatusCode::CONFLICT, "stale_generation"));
+    }
     if s.binding != u.binding {
         return Err(ApiError(StatusCode::CONFLICT, "identity_mismatch"));
     }
@@ -467,9 +536,19 @@ mod tests {
     async fn call(
         server: Arc<ControlServer>,
         path: &str,
-        value: Value,
+        mut value: Value,
         token: &str,
     ) -> (StatusCode, Value) {
+        if path != "/v1/execution/bindings" && value.get("registration_generation").is_none() {
+            let key = (
+                value["tenant_id"].as_str().unwrap_or("").to_owned(),
+                value["workspace_id"].as_str().unwrap_or("").to_owned(),
+                value["session_id"].as_str().unwrap_or("").to_owned(),
+            );
+            if let Some(session) = server.sessions.lock().get(&key) {
+                value["registration_generation"] = json!(session.generation);
+            }
+        }
         let response = server
             .router()
             .oneshot(
@@ -490,6 +569,152 @@ mod tests {
             serde_json::from_slice(&bytes).unwrap_or(Value::Null),
         )
     }
+    #[tokio::test]
+    async fn finalization_reclaims_binding_capacity_and_rejects_retired_generation_after_churn() {
+        let server = server(10000);
+        let identity = bind("tenant-a", "retired", 1);
+        let (_, retired) = call(
+            server.clone(),
+            "/v1/execution/bindings",
+            identity.clone(),
+            TOKEN,
+        )
+        .await;
+        let mut stale = identity.clone();
+        stale["registration_generation"] = retired["binding_generation"].clone();
+        assert_eq!(
+            call(
+                server.clone(),
+                "/v1/execution/finalize",
+                stale.clone(),
+                TOKEN
+            )
+            .await
+            .0,
+            StatusCode::OK
+        );
+        for n in 0..64 {
+            let mut b = bind("tenant-a", &format!("workspace-{n}"), 1);
+            let (status, receipt) =
+                call(server.clone(), "/v1/execution/bindings", b.clone(), TOKEN).await;
+            assert_eq!(status, StatusCode::OK);
+            b["registration_generation"] = receipt["binding_generation"].clone();
+            assert_eq!(
+                call(server.clone(), "/v1/execution/finalize", b, TOKEN)
+                    .await
+                    .0,
+                StatusCode::OK
+            );
+            assert!(server.sessions.lock().is_empty());
+            assert!(server.tombstones.lock().len() <= 2);
+        }
+        assert_eq!(
+            call(
+                server.clone(),
+                "/v1/execution/bindings",
+                stale.clone(),
+                TOKEN
+            )
+            .await
+            .1["error"],
+            "stale_generation"
+        );
+        let (_, fresh) = call(
+            server.clone(),
+            "/v1/execution/bindings",
+            identity.clone(),
+            TOKEN,
+        )
+        .await;
+        assert_ne!(retired["binding_generation"], fresh["binding_generation"]);
+        assert_ne!(retired["routing_session_id"], fresh["routing_session_id"]);
+        assert_ne!(retired["inference_lease"], fresh["inference_lease"]);
+        assert_eq!(
+            call(
+                server.clone(),
+                "/v1/execution/session",
+                stale.clone(),
+                TOKEN
+            )
+            .await
+            .1["error"],
+            "stale_generation"
+        );
+        assert_eq!(
+            call(
+                server.clone(),
+                "/v1/execution/finalize",
+                stale.clone(),
+                TOKEN
+            )
+            .await
+            .1["error"],
+            "stale_generation"
+        );
+        stale["sequence"] = json!(1);
+        stale["state"] = json!("SUSPENDED");
+        stale["observed_at"] = json!(chrono::Utc::now());
+        stale["ttl_ms"] = json!(2000);
+        stale["estimated_return_ms"] = json!(1000);
+        assert_eq!(
+            call(server.clone(), "/v1/execution/state", stale, TOKEN)
+                .await
+                .1["error"],
+            "stale_generation"
+        );
+    }
+
+    #[tokio::test]
+    async fn concurrent_final_register_and_state_keep_one_generation_and_tenant_scope() {
+        let server = server(10000);
+        let identity = bind("tenant-a", "w1", 1);
+        let (_, receipt) = call(
+            server.clone(),
+            "/v1/execution/bindings",
+            identity.clone(),
+            TOKEN,
+        )
+        .await;
+        let mut old = identity.clone();
+        old["registration_generation"] = receipt["binding_generation"].clone();
+        let mut state = old.clone();
+        state["sequence"] = json!(1);
+        state["state"] = json!("SUSPENDED");
+        state["observed_at"] = json!(chrono::Utc::now());
+        state["ttl_ms"] = json!(2000);
+        state["estimated_return_ms"] = json!(1000);
+        let (finalized, registered, update) = tokio::join!(
+            call(server.clone(), "/v1/execution/finalize", old.clone(), TOKEN),
+            call(
+                server.clone(),
+                "/v1/execution/bindings",
+                identity.clone(),
+                TOKEN
+            ),
+            call(server.clone(), "/v1/execution/state", state, TOKEN),
+        );
+        assert_eq!(finalized.0, StatusCode::OK);
+        assert_eq!(registered.0, StatusCode::OK);
+        assert!([StatusCode::OK, StatusCode::NOT_FOUND, StatusCode::CONFLICT].contains(&update.0));
+        let (_, fresh) = call(server.clone(), "/v1/execution/bindings", identity, TOKEN).await;
+        assert_ne!(fresh["binding_generation"], receipt["binding_generation"]);
+        assert!(server.sessions.lock().len() <= 1);
+        let mut foreign = bind("tenant-b", "w1", 1);
+        foreign["registration_generation"] = fresh["binding_generation"].clone();
+        assert_eq!(
+            call(server.clone(), "/v1/execution/finalize", foreign, TOKEN)
+                .await
+                .0,
+            StatusCode::FORBIDDEN
+        );
+        assert_eq!(
+            call(server.clone(), "/v1/execution/session", old, TOKEN)
+                .await
+                .1["error"],
+            "stale_generation"
+        );
+    }
+
     #[tokio::test]
     async fn authenticated_bindings_isolate_same_session_across_workspaces_and_rotate_epoch_lease()
     {
@@ -594,6 +819,7 @@ mod tests {
             call(server.clone(), "/v1/execution/state", update.clone(), TOKEN).await;
         assert_eq!(status, StatusCode::OK);
         assert_eq!(receipt["sequence"], 1);
+        update["registration_generation"] = receipt["binding_generation"].clone();
         assert_eq!(receipt["snapshot"]["fresh"], true);
         assert_eq!(
             call(server.clone(), "/v1/execution/state", update.clone(), TOKEN)

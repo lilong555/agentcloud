@@ -17,6 +17,8 @@ import (
 	"time"
 
 	substrateapi "github.com/lilong555/agentcloud/internal/adapters/substrate"
+	"github.com/lilong555/agentcloud/internal/observability"
+	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -61,7 +63,9 @@ func NewSubstrateBackend(cfg SubstrateConfig) (*SubstrateBackend, error) {
 	return &SubstrateBackend{cfg: cfg, http: &http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}}, nil
 }
 func (b *SubstrateBackend) Name() string { return "substrate" }
-func (b *SubstrateBackend) call(ctx context.Context, name, path string, input, output any) error {
+func (b *SubstrateBackend) call(ctx context.Context, name, path string, input, output any) (err error) {
+	ctx, span := observability.Start(ctx, "substrate.runtime "+path, trace.SpanKindClient)
+	defer func() { observability.Finish(span, err) }()
 	var body io.Reader
 	if input != nil {
 		data, err := json.Marshal(input)
@@ -80,6 +84,7 @@ func (b *SubstrateBackend) call(ctx context.Context, name, path string, input, o
 	}
 	req.Header.Set("ate-target-actor", b.cfg.Atespace+"/"+name)
 	req.Header.Set("Content-Type", "application/json")
+	observability.Inject(ctx, req.Header)
 	if b.cfg.RuntimeToken != "" {
 		req.Header.Set("Authorization", "Bearer "+b.cfg.RuntimeToken)
 	}
@@ -104,7 +109,7 @@ func (b *SubstrateBackend) call(ctx context.Context, name, path string, input, o
 	return nil
 }
 func fromSubstrate(s substrateapi.Summary) Actor {
-	return Actor{Name: s.Name, UID: s.UID, Version: s.Version, SnapshotUUID: s.SnapshotUUID, SnapshotGeneration: int64(s.SnapshotGeneration), ActualFidelity: s.ActualFidelity, SnapshotFidelity: s.SnapshotFidelity}
+	return Actor{AssignedWorker: s.AssignedWorker, Name: s.Name, UID: s.UID, Version: s.Version, SnapshotUUID: s.SnapshotUUID, SnapshotGeneration: int64(s.SnapshotGeneration), ActualFidelity: s.ActualFidelity, SnapshotFidelity: s.SnapshotFidelity}
 }
 func (b *SubstrateBackend) attach(ctx context.Context, s *Session, a Actor, epoch uint64) error {
 	// The ready endpoint reports process readiness while the tool gate remains closed.
@@ -182,6 +187,11 @@ func (b *SubstrateBackend) Ensure(ctx context.Context, s *Session) (Actor, error
 	if err = b.attach(ctx, s, actor, s.Epoch); err != nil {
 		return Actor{}, err
 	}
+	if bytes, e := b.cfg.Client.AssignedMemory(ctx, actor.Name, actor.UID); e == nil {
+		actor.AssignedMemoryBytes = bytes
+	} else {
+		observability.Unavailable(ctx, "stranded_worker_gb_s")
+	}
 	return actor, nil
 }
 func (b *SubstrateBackend) Tool(ctx context.Context, s *Session, input ToolRequest) (ToolResult, error) {
@@ -228,6 +238,8 @@ func (b *SubstrateBackend) Checkpoint(ctx context.Context, s *Session, operation
 	actor.RetainedTagUID = retained.TagUID
 	actor.ActualFidelity = current.SnapshotFidelity
 	actor.BootID = s.Actor.BootID
+	actor.AssignedWorker = s.Actor.AssignedWorker
+	actor.AssignedMemoryBytes = s.Actor.AssignedMemoryBytes
 	if s.Mode == "in-actor" && actor.SnapshotFidelity != "MEMORY" {
 		return Actor{}, "", errors.New("in-actor safe points require MEMORY snapshots")
 	}
@@ -278,6 +290,11 @@ func (b *SubstrateBackend) Resume(ctx context.Context, s *Session) (Actor, error
 	actor.BootID = newID()
 	if err = b.attach(ctx, s, actor, s.Epoch+1); err != nil {
 		return Actor{}, err
+	}
+	if bytes, e := b.cfg.Client.AssignedMemory(ctx, actor.Name, actor.UID); e == nil {
+		actor.AssignedMemoryBytes = bytes
+	} else {
+		observability.Unavailable(ctx, "stranded_worker_gb_s")
 	}
 	return actor, nil
 }

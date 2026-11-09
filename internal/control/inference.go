@@ -12,6 +12,9 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/lilong555/agentcloud/internal/observability"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type InferenceIdentity interface {
@@ -23,6 +26,12 @@ func (c *Controller) Submit(tenant, id, logicalID string, payload json.RawMessag
 }
 
 func (c *Controller) SubmitWithOptions(tenant, id, logicalID string, payload json.RawMessage, terminalTurn bool) (*ModelRequest, error) {
+	return c.submitWithContext(context.Background(), tenant, id, logicalID, payload, terminalTurn)
+}
+func (c *Controller) submitWithContext(ctx context.Context, tenant, id, logicalID string, payload json.RawMessage, terminalTurn bool) (*ModelRequest, error) {
+	ctx = c.operationContext(ctx, tenant, id, logicalID)
+	ctx, span := observability.Start(ctx, "coordinator.model.register", trace.SpanKindInternal)
+	defer span.End()
 	if !validID(logicalID) {
 		return nil, problem(400, "invalid_request_id", "logical_request_id is required")
 	}
@@ -53,7 +62,7 @@ func (c *Controller) SubmitWithOptions(tenant, id, logicalID string, payload jso
 			TerminalTurn bool            `json:"terminal_turn"`
 		}{canonical, true})
 	}
-	c.mu.Lock()
+	c.lock()
 	defer c.mu.Unlock()
 	if err := c.ready(); err != nil {
 		return nil, err
@@ -61,9 +70,6 @@ func (c *Controller) SubmitWithOptions(tenant, id, logicalID string, payload jso
 	s, err := c.find(tenant, id)
 	if err != nil {
 		return nil, err
-	}
-	if terminalTurn && (!c.cfg.EnableExperimentControls || s.AblationGroup == "") {
-		return nil, problem(403, "experiment_controls_disabled", "terminal_turn requires an explicit enabled ablation group")
 	}
 	if r := c.state.Requests[key(tenant, logicalID)]; r != nil {
 		if r.PayloadHash != hash || r.SessionID != id {
@@ -88,16 +94,26 @@ func (c *Controller) SubmitWithOptions(tenant, id, logicalID string, payload jso
 	}
 	now := time.Now().UTC()
 	r := &ModelRequest{ID: logicalID, TenantID: tenant, SessionID: id, PayloadHash: hash, Payload: canonical, TerminalTurn: terminalTurn, Status: "PENDING", CreatedAt: now, UpdatedAt: now}
+	headers := make(http.Header)
+	observability.Inject(ctx, headers)
+	r.TraceParent = headers.Get("traceparent")
+	r.TraceState = headers.Get("tracestate")
+	s.IdleSince = time.Time{}
+	s.DynamoFinalized = false
+	s.DynamoFinalizedSnapshot = nil
 	c.state.Requests[key(tenant, logicalID)] = r
 	c.event(s, "model.registered", logicalID)
-	if err = c.persist(); err != nil {
+	if err = c.persistContext(ctx); err != nil {
 		return nil, err
 	}
 	return copyValue(r), nil
 }
 func (c *Controller) Request(tenant, id, requestID string, claimEpoch uint64) (*ModelRequest, error) {
-	c.mu.Lock()
+	c.lock()
 	defer c.mu.Unlock()
+	if err := c.ready(); err != nil {
+		return nil, err
+	}
 	s, err := c.find(tenant, id)
 	if err != nil {
 		return nil, err
@@ -114,7 +130,8 @@ func (c *Controller) Request(tenant, id, requestID string, claimEpoch uint64) (*
 			return nil, problem(409, "result_unavailable", "model outcome is not completed")
 		}
 		r.ClaimedEpoch = claimEpoch
-		if err = c.persist(); err != nil {
+		c.markEntity("requests", key(tenant, requestID))
+		if err = c.persistContext(c.operationContext(c.ctx, tenant, id, requestID)); err != nil {
 			return nil, err
 		}
 	}
@@ -134,7 +151,7 @@ func (c *Controller) dispatchLoop() {
 	}
 }
 func (c *Controller) dispatchOne() {
-	c.mu.Lock()
+	c.lock()
 	if c.unhealthy != nil || c.closing {
 		c.mu.Unlock()
 		return
@@ -151,22 +168,32 @@ func (c *Controller) dispatchOne() {
 	}
 	sort.Slice(pending, func(i, j int) bool { return pending[i].CreatedAt.Before(pending[j].CreatedAt) })
 	r := pending[0]
+	headers := make(http.Header)
+	headers.Set("traceparent", r.TraceParent)
+	headers.Set("tracestate", r.TraceState)
+	parent := observability.Extract(c.ctx, headers)
+	parent = c.operationContext(parent, r.TenantID, r.SessionID, r.ID)
+	parent, span := observability.Start(parent, "coordinator.model.dispatch", trace.SpanKindInternal)
+	defer span.End()
+	selectedAt := time.Now().UTC()
+	r.DispatchedAt = &selectedAt
+	c.observeLocked(parent, "gateway_queue_ms", float64(selectedAt.Sub(r.CreatedAt))/float64(time.Millisecond), "durable_pending_to_dispatch_selection")
 	s := c.state.Sessions[key(r.TenantID, r.SessionID)]
 	r.Status = "DISPATCHING"
 	r.AttemptID = newID()
 	r.UpdatedAt = time.Now().UTC()
 	c.event(s, "model.dispatching", r.ID)
-	if err := c.persist(); err != nil {
+	if err := c.persistContext(parent); err != nil {
 		c.mu.Unlock()
 		return
 	}
 	snapshot := copyValue(s)
 	request := copyValue(r)
 	c.mu.Unlock()
-	ctx, cancel := context.WithTimeout(c.ctx, c.cfg.ModelTimeout)
+	ctx, cancel := context.WithTimeout(parent, c.cfg.ModelTimeout)
 	result, err := c.infer(ctx, snapshot, request)
 	cancel()
-	c.mu.Lock()
+	c.lock()
 	r.UpdatedAt = time.Now().UTC()
 	if err != nil {
 		r.Status = "OUTCOME_UNKNOWN"
@@ -174,16 +201,28 @@ func (c *Controller) dispatchOne() {
 	} else {
 		r.Status = "COMPLETED"
 		r.Result = result
+		if s.ActiveTools == 0 {
+			s.IdleSince = time.Now().UTC()
+		}
+		if c.cfg.EnableAutonomousScheduler && s.Mode == "in-actor" {
+			if s.Autonomous == nil {
+				s.Autonomous = &AutonomousState{Epoch: s.Epoch}
+			}
+			s.Autonomous.ReturnDemand = true
+			s.Autonomous.ReturnRequestedAt = r.UpdatedAt
+		}
 	}
 	c.event(s, "model."+strings.ToLower(r.Status), r.ID)
-	_ = c.persist()
+	_ = c.persistContext(parent)
 	snapshot = copyValue(s)
 	c.mu.Unlock()
 	if err == nil {
-		c.signal(snapshot, "RUNNING_FAST")
+		c.signalContext(parent, snapshot, "RUNNING_FAST")
 	}
 }
-func (c *Controller) infer(ctx context.Context, s *Session, r *ModelRequest) (json.RawMessage, error) {
+func (c *Controller) infer(ctx context.Context, s *Session, r *ModelRequest) (output json.RawMessage, err error) {
+	ctx, span := observability.Start(ctx, "dynamo.inference", trace.SpanKindClient)
+	defer func() { observability.Finish(span, err) }()
 	if c.cfg.ModelURL == "mock://deterministic" {
 		select {
 		case <-ctx.Done():
@@ -218,6 +257,8 @@ func (c *Controller) infer(ctx context.Context, s *Session, r *ModelRequest) (js
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Dynamo-Session-ID", payloadHash([]string{s.TenantID, s.WorkspaceID, s.SessionID})[:32])
 	req.Header.Set("X-Request-ID", r.AttemptID)
+	req.Header.Set("X-AgentCloud-Attempt-ID", r.AttemptID)
+	observability.Inject(ctx, req.Header)
 	if c.cfg.ModelAPIKey != "" {
 		req.Header.Set("Authorization", "Bearer "+c.cfg.ModelAPIKey)
 	}
@@ -235,6 +276,11 @@ func (c *Controller) infer(ctx context.Context, s *Session, r *ModelRequest) (js
 	}
 	client := &http.Client{Transport: &http.Transport{Proxy: http.ProxyFromEnvironment, MaxIdleConns: 16, IdleConnTimeout: 30 * time.Second}, CheckRedirect: func(req *http.Request, via []*http.Request) error { return http.ErrUseLastResponse }}
 	defer client.CloseIdleConnections()
+	httpStart := time.Now()
+	defer func() {
+		observability.Observe(ctx, "model_http_ms", float64(time.Since(httpStart))/float64(time.Millisecond), "inference_http_roundtrip_and_body")
+		c.observeAdmission(context.WithoutCancel(ctx), s, r, err == nil && (r.TerminalTurn || s.AblationGroup == "A" || s.AblationGroup == "B"))
+	}()
 	response, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -269,7 +315,7 @@ func (c *Controller) recordFirstToken(request *ModelRequest, kind, token string)
 		return nil
 	}
 	now := time.Now().UTC()
-	c.mu.Lock()
+	c.lock()
 	defer c.mu.Unlock()
 	r := c.state.Requests[key(request.TenantID, request.ID)]
 	if r == nil || r.AttemptID != request.AttemptID || r.Status != "DISPATCHING" {
@@ -281,7 +327,7 @@ func (c *Controller) recordFirstToken(request *ModelRequest, kind, token string)
 	previousUpdatedAt := r.UpdatedAt
 	r.FirstToken, r.FirstTokenKind, r.FirstTokenAt, r.UpdatedAt = token, kind, &now, now
 	c.event(c.state.Sessions[key(r.TenantID, r.SessionID)], "model.first_token", r.ID)
-	if err := c.persist(); err != nil {
+	if err := c.persistContext(c.operationContext(c.ctx, request.TenantID, request.SessionID, request.ID)); err != nil {
 		r.FirstToken, r.FirstTokenKind, r.FirstTokenAt, r.UpdatedAt = "", "", nil, previousUpdatedAt
 		return err
 	}
@@ -659,4 +705,37 @@ func (c *Controller) readSSE(body io.Reader, request *ModelRequest) (json.RawMes
 		return completion.result()
 	}
 	return nil, errors.New("model stream ended before [DONE]")
+}
+
+func (c *Controller) observeAdmission(ctx context.Context, s *Session, r *ModelRequest, finalize bool) {
+	bridge, ok := c.cfg.Signals.(*DynamoBridge)
+	if !ok {
+		observability.Unavailable(ctx, "dynamo_admission_wait_ms")
+		return
+	}
+	probe, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	receipt, err := bridge.Session(probe, s)
+	if err != nil {
+		observability.Unavailable(ctx, "dynamo_admission_wait_ms")
+		return
+	}
+	observed := false
+	for _, item := range receipt.Snapshot.AdmissionHistory {
+		if item.ClientRequestID == r.AttemptID {
+			observability.Observe(ctx, "dynamo_admission_wait_ms", item.WaitMS, "native_classifier_admission_history")
+			observed = true
+			break
+		}
+	}
+	if !observed {
+		observability.Unavailable(ctx, "dynamo_admission_wait_ms")
+	}
+	if finalize {
+		if finalized, err := bridge.Finalize(probe, s); err == nil {
+			c.lock()
+			c.recordFinalizationLocked(s, finalized, r.ID)
+			c.mu.Unlock()
+		}
+	}
 }

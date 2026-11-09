@@ -1,0 +1,91 @@
+name: Native upstream validation
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: agentcloud
+          POSTGRES_PASSWORD: agentcloud-ci
+          POSTGRES_DB: substrate_native
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U agentcloud" --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      CARGO_BUILD_JOBS: '2'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+      CARGO_PROFILE_TEST_DEBUG: '0'
+      CARGO_INCREMENTAL: '0'
+      GOMAXPROCS: '2'
+      SUBSTRATE_TEST_DATABASE_URL: postgresql://agentcloud:agentcloud-ci@127.0.0.1:5432/substrate_native?sslmode=disable
+      PROTOC: ${{ github.workspace }}/experiments/dynamo/tools/protoc/bin/protoc
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v7
+      - name: Prepare locked upstream sources
+        run: |
+          df -h /
+          python3 scripts/disk_guard.py
+          python3 scripts/upstream.py --fetch substrate dynamo
+          rustup toolchain install 1.96.1 --profile minimal
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            upstream/dynamo/target
+          key: native-cpu-${{ runner.os }}-${{ hashFiles('integrations/dynamo/manifest.json') }}
+          restore-keys: native-cpu-${{ runner.os }}-
+      - name: Build native Rust Frontend bindings
+        run: python3 experiments/dynamo/build_cpu.py
+      - name: Run mapped native Go and Rust tests
+        run: python3 scripts/upstream_native_tests.py --go go --cargo cargo
+      - name: Apply format-patch series on clean locked sources
+        run: python3 scripts/upstream_patches.py verify
+      - name: Reclaim native binding capacity and reject retired leases
+        run: python3 scripts/ci_native_churn.py
+      - name: Verify native pause, feedback, cancellation and FINAL
+        run: python3 experiments/dynamo/native_mocker.py verify
+      - name: Package reusable native Python wheel
+        working-directory: upstream/dynamo
+        run: ../../.venv-dynamo/bin/maturin build --locked --manifest-path lib/bindings/python/Cargo.toml --no-default-features --features custom-policy --out ../../artifacts/native-wheels
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-cpu-wheel
+          path: artifacts/native-wheels/*.whl
+          retention-days: 14
+      - name: Resource report
+        if: always()
+        run: |
+          df -h /
+          free -m
+          python3 scripts/disk_guard.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: native-validation-evidence
+          path: |
+            docs/evidence/upstream-patches-*.json
+            docs/evidence/upstream-patches-*.jsonl
+            docs/evidence/upstream-patches-*-native.log
+            docs/evidence/dynamo-cpu-build.json
+            docs/evidence/dynamo-native-mocker.json
+            docs/evidence/logs/dynamo-cpu-build-*/
+            docs/evidence/logs/dynamo-native-*/
+            docs/evidence/logs/native-binding-churn/
+          retention-days: 30

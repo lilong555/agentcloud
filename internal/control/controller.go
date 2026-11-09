@@ -15,24 +15,33 @@ import (
 	"time"
 
 	"github.com/lilong555/agentcloud/internal/journal"
+	"github.com/lilong555/agentcloud/internal/observability"
 	"github.com/lilong555/agentcloud/internal/policy"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type Config struct {
-	DataDir                  string
-	DatabaseURL              string
-	Backend                  Backend
-	Signals                  SignalSink
-	ModelURL                 string
-	ModelAPIKey              string
-	ModelConcurrency         int
-	ModelTimeout             time.Duration
-	Tokens                   map[string]string
-	MaxSessions              int
-	MaxRequests              int
-	Scheduling               policy.LifecycleConfig
-	QueueObserver            QueueObserver
-	EnableExperimentControls bool
+	EnableAutonomousScheduler bool
+	SchedulerInterval         time.Duration
+	SchedulerStableFor        time.Duration
+	SchedulerIdlePrior        time.Duration
+	SchedulerConcurrency      int
+	CapacityObserver          CapacityObserver
+	Observability             *observability.Runtime
+	DataDir                   string
+	DatabaseURL               string
+	Backend                   Backend
+	Signals                   SignalSink
+	ModelURL                  string
+	ModelAPIKey               string
+	ModelConcurrency          int
+	ModelTimeout              time.Duration
+	Tokens                    map[string]string
+	MaxSessions               int
+	MaxRequests               int
+	Scheduling                policy.LifecycleConfig
+	QueueObserver             QueueObserver
+	EnableExperimentControls  bool
 }
 type APIError struct {
 	Code    string
@@ -44,17 +53,26 @@ func (e *APIError) Error() string                    { return e.Message }
 func problem(status int, code, message string) error { return &APIError{code, message, status} }
 
 type Controller struct {
-	mu         sync.Mutex
-	cfg        Config
-	store      *journal.Store
-	state      State
-	ctx        context.Context
-	cancel     context.CancelFunc
-	workers    sync.WaitGroup
-	operations sync.WaitGroup
-	closing    bool
-	signalMu   sync.Mutex
-	unhealthy  error
+	dirty               map[string]map[string]bool
+	pendingEvents       map[string]Event
+	pendingObservations map[string]RecordedMeasurement
+	commitCond          *sync.Cond
+	committing          bool
+	mu                  sync.Mutex
+	cfg                 Config
+	store               *journal.Store
+	state               State
+	ctx                 context.Context
+	cancel              context.CancelFunc
+	workers             sync.WaitGroup
+	operations          sync.WaitGroup
+	closing             bool
+	telemetry           *observability.Runtime
+	ownTelemetry        bool
+	stranded            map[string]*strandedInterval
+	schedulerBusy       map[string]bool
+	signalLocks         keyedMutex[string]
+	unhealthy           error
 }
 
 func New(ctx context.Context, cfg Config) (*Controller, error) {
@@ -70,6 +88,15 @@ func New(ctx context.Context, cfg Config) (*Controller, error) {
 	if cfg.ModelConcurrency == 0 {
 		cfg.ModelConcurrency = 4
 	}
+	if cfg.SchedulerInterval <= 0 {
+		cfg.SchedulerInterval = 250 * time.Millisecond
+	}
+	if cfg.SchedulerStableFor <= 0 {
+		cfg.SchedulerStableFor = 500 * time.Millisecond
+	}
+	if cfg.SchedulerConcurrency <= 0 {
+		cfg.SchedulerConcurrency = 4
+	}
 	if cfg.ModelTimeout == 0 {
 		cfg.ModelTimeout = 120 * time.Second
 	}
@@ -80,7 +107,17 @@ func New(ctx context.Context, cfg Config) (*Controller, error) {
 	if err != nil {
 		return nil, err
 	}
-	c := &Controller{cfg: cfg, store: store}
+	telemetry := cfg.Observability
+	ownTelemetry := telemetry == nil
+	if telemetry == nil {
+		telemetry, err = observability.New(ctx, observability.Config{})
+		if err != nil {
+			store.Close()
+			return nil, err
+		}
+	}
+	c := &Controller{cfg: cfg, store: store, telemetry: telemetry, ownTelemetry: ownTelemetry, stranded: map[string]*strandedInterval{}, schedulerBusy: map[string]bool{}}
+	c.commitCond = sync.NewCond(&c.mu)
 	c.ctx, c.cancel = context.WithCancel(ctx)
 	if err = store.Load(&c.state); err != nil {
 		store.Close()
@@ -132,9 +169,19 @@ func New(ctx context.Context, cfg Config) (*Controller, error) {
 			r.UpdatedAt = time.Now().UTC()
 		}
 	}
-	if err = c.persist(); err != nil {
+	c.lock()
+	err = c.persist()
+	c.mu.Unlock()
+	if err != nil {
 		store.Close()
 		return nil, err
+	}
+	c.registerGauges()
+	c.workers.Add(1)
+	go c.strandingLoop()
+	if cfg.EnableAutonomousScheduler {
+		c.workers.Add(1)
+		go c.autonomousLoop()
 	}
 	for i := 0; i < cfg.ModelConcurrency; i++ {
 		c.workers.Add(1)
@@ -147,18 +194,68 @@ func New(ctx context.Context, cfg Config) (*Controller, error) {
 	return c, nil
 }
 func (c *Controller) Close() error {
-	c.mu.Lock()
+	c.lock()
 	c.closing = true
 	c.mu.Unlock()
 	c.cancel()
 	c.workers.Wait()
 	c.operations.Wait()
-	return c.store.Close()
+	c.lock()
+	for _, s := range c.state.Sessions {
+		c.updateStrandingLocked(s, time.Now().UTC())
+	}
+	_ = c.persist()
+	c.mu.Unlock()
+	err := c.store.Close()
+	if c.ownTelemetry {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if e := c.telemetry.Close(ctx); err == nil {
+			err = e
+		}
+	}
+	return err
 }
-func (c *Controller) persist() error {
+func (c *Controller) persist() error { c.markAll(); return c.persistContext(c.ctx) }
+func (c *Controller) persistContext(parent context.Context) error {
+	parent, span := observability.Start(observability.WithRuntime(parent, c.telemetry), "journal.commit", trace.SpanKindInternal)
+	started := time.Now()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if err := c.store.Save(ctx, c.state); err != nil {
+	var err error
+	if c.store.SupportsEntities() {
+		changes, prepareErr := c.entityChanges()
+		if prepareErr != nil {
+			observability.Finish(span, prepareErr)
+			return prepareErr
+		}
+		c.committing = true
+		c.mu.Unlock()
+		err = c.store.SaveEntities(ctx, changes)
+		c.mu.Lock()
+		c.committing = false
+		c.commitCond.Broadcast()
+	} else {
+		data, prepareErr := json.Marshal(c.state)
+		if prepareErr != nil {
+			observability.Finish(span, prepareErr)
+			return prepareErr
+		}
+		c.committing = true
+		c.mu.Unlock()
+		err = c.store.Save(ctx, json.RawMessage(data))
+		c.mu.Lock()
+		c.committing = false
+		c.commitCond.Broadcast()
+	}
+	if err == nil {
+		c.dirty = map[string]map[string]bool{}
+		c.pendingEvents = map[string]Event{}
+		c.pendingObservations = map[string]RecordedMeasurement{}
+	}
+	c.observeLocked(parent, "journal_commit_ms", float64(time.Since(started))/float64(time.Millisecond), "journal_"+c.store.Backend())
+	observability.Finish(span, err)
+	if err != nil {
 		c.unhealthy = err
 		return err
 	}
@@ -204,8 +301,33 @@ func copyValue[T any](value T) T {
 	return out
 }
 func (c *Controller) event(s *Session, kind, detail string) {
+	c.updateStrandingLocked(s, time.Now().UTC())
+	c.markSession(s)
+	sessionKey := key(s.TenantID, s.SessionID)
+	if strings.HasPrefix(kind, "model.") && c.state.Requests[key(s.TenantID, detail)] != nil {
+		c.markEntity("requests", key(s.TenantID, detail))
+	}
+	if strings.HasPrefix(kind, "tool.") && s.Tools[detail] != nil {
+		c.markEntity("tools", sessionKey+"/"+detail)
+	}
+	if strings.HasPrefix(kind, "lifecycle.") && s.Lifecycle[detail] != nil {
+		c.markEntity("lifecycle", sessionKey+"/"+detail)
+	}
+	if strings.HasPrefix(kind, "scheduling.") && s.Scheduling[detail] != nil {
+		c.markEntity("scheduling", sessionKey+"/"+detail)
+	}
 	c.state.EventSequence++
-	c.state.Events = append(c.state.Events, Event{c.state.EventSequence, time.Now().UTC(), s.TenantID, s.SessionID, kind, detail})
+	event := Event{Sequence: c.state.EventSequence, At: time.Now().UTC(), TenantID: s.TenantID, SessionID: s.SessionID, Kind: kind, Detail: detail, State: s.State, Gate: s.Gate, Epoch: s.Epoch}
+	if s.Manifest != nil {
+		event.ManifestID = s.Manifest.ID
+	}
+	c.state.Events = append(c.state.Events, event)
+	eventKey := fmt.Sprintf("%020d", event.Sequence)
+	c.markEntity("events", eventKey)
+	if c.pendingEvents == nil {
+		c.pendingEvents = map[string]Event{}
+	}
+	c.pendingEvents[eventKey] = event
 	if len(c.state.Events) > 8192 {
 		c.state.Events = c.state.Events[len(c.state.Events)-8192:]
 	}
@@ -219,8 +341,11 @@ func (c *Controller) find(tenant, id string) (*Session, error) {
 	return s, nil
 }
 func (c *Controller) Get(tenant, id string) (*Session, error) {
-	c.mu.Lock()
+	c.lock()
 	defer c.mu.Unlock()
+	if err := c.ready(); err != nil {
+		return nil, err
+	}
 	s, err := c.find(tenant, id)
 	if err != nil {
 		return nil, err
@@ -228,8 +353,11 @@ func (c *Controller) Get(tenant, id string) (*Session, error) {
 	return copyValue(s), nil
 }
 func (c *Controller) List(tenant string) []*Session {
-	c.mu.Lock()
+	c.lock()
 	defer c.mu.Unlock()
+	if c.ready() != nil {
+		return []*Session{}
+	}
 	out := []*Session{}
 	for _, s := range c.state.Sessions {
 		if s.TenantID == tenant {
@@ -240,6 +368,9 @@ func (c *Controller) List(tenant string) []*Session {
 	return out
 }
 func (c *Controller) Create(ctx context.Context, tenant string, input CreateSession) (*Session, error) {
+	ctx = c.operationContext(ctx, tenant, input.SessionID, input.SessionID)
+	ctx, span := observability.Start(ctx, "coordinator.create", trace.SpanKindInternal)
+	defer span.End()
 	if input.AblationGroup != "" {
 		if len(input.AblationGroup) != 1 || input.AblationGroup < "A" || input.AblationGroup > "E" {
 			return nil, problem(400, "invalid_ablation_group", "ablation_group must be A..E")
@@ -257,7 +388,7 @@ func (c *Controller) Create(ctx context.Context, tenant string, input CreateSess
 	if input.Mode != "external" && input.Mode != "in-actor" {
 		return nil, problem(400, "invalid_mode", "mode must be external or in-actor")
 	}
-	c.mu.Lock()
+	c.lock()
 	if err := c.ready(); err != nil {
 		c.mu.Unlock()
 		return nil, err
@@ -285,7 +416,7 @@ func (c *Controller) Create(ctx context.Context, tenant string, input CreateSess
 	s := &Session{TenantID: tenant, WorkspaceID: input.WorkspaceID, SessionID: input.SessionID, Mode: input.Mode, Profile: input.Profile, AblationGroup: input.AblationGroup, State: "CREATING", Gate: "CLOSED", Epoch: 1, Backend: c.cfg.Backend.Name(), Actor: Actor{Name: input.ActorName}, Tools: map[string]*ToolReceipt{}, Lifecycle: map[string]*LifecycleReceipt{}, CreatedAt: now, UpdatedAt: now}
 	c.state.Sessions[key(tenant, input.SessionID)] = s
 	c.event(s, "session.creating", "")
-	if err := c.persist(); err != nil {
+	if err := c.persistContext(ctx); err != nil {
 		c.mu.Unlock()
 		return nil, err
 	}
@@ -294,28 +425,33 @@ func (c *Controller) Create(ctx context.Context, tenant string, input CreateSess
 	defer c.operations.Done()
 	c.mu.Unlock()
 	actor, err := c.cfg.Backend.Ensure(ctx, snapshot)
-	c.mu.Lock()
+	c.lock()
 	defer c.mu.Unlock()
 	if err != nil {
 		s.State = "RECOVERY_REQUIRED"
 		c.event(s, "session.create_unknown", err.Error())
-		_ = c.persist()
+		_ = c.persistContext(ctx)
 		return nil, problem(502, "create_unknown", err.Error())
 	}
 	s.Actor = actor
+	c.observeAllocationMissing(s)
 	s.ActorUID = actor.UID
 	s.ActualFidelity = actor.ActualFidelity
 	s.State = "RUNNING"
+	s.IdleSince = time.Now().UTC()
 	s.RunningSince = time.Now().UTC()
 	s.Gate = "OPEN"
 	c.event(s, "session.running", "")
-	if err = c.persist(); err != nil {
+	if err = c.persistContext(ctx); err != nil {
 		return nil, err
 	}
 	return copyValue(s), nil
 }
 
 func (c *Controller) Tool(ctx context.Context, tenant, id string, input ToolRequest) (*ToolReceipt, error) {
+	ctx = c.operationContext(ctx, tenant, id, input.ID)
+	ctx, span := observability.Start(ctx, "coordinator.tool", trace.SpanKindInternal)
+	defer span.End()
 	if !validID(input.ID) {
 		return nil, problem(400, "invalid_operation", "tool_op_id is required")
 	}
@@ -344,7 +480,7 @@ func (c *Controller) Tool(ctx context.Context, tenant, id string, input ToolRequ
 	business := input
 	business.Epoch = 0
 	hash := payloadHash(business)
-	c.mu.Lock()
+	c.lock()
 	if err := c.ready(); err != nil {
 		c.mu.Unlock()
 		return nil, err
@@ -368,8 +504,13 @@ func (c *Controller) Tool(ctx context.Context, tenant, id string, input ToolRequ
 		return nil, problem(409, "stale_epoch", "execution epoch differs")
 	}
 	if s.Gate != "OPEN" || s.State != "RUNNING" {
+		if c.cfg.EnableAutonomousScheduler && s.State != "RECOVERY_REQUIRED" {
+			if _, e := c.requestReturnLocked(s, LifecycleRequest{OperationID: input.ID, ExpectedEpoch: input.Epoch}); e == nil {
+				_ = c.persistContext(ctx)
+			}
+		}
 		c.mu.Unlock()
-		return nil, problem(423, "admission_closed", "workspace admission is closed")
+		return nil, problem(423, "admission_closed", "workspace admission is closed; explicit return demand can schedule resume")
 	}
 	if len(s.Tools) >= 4096 {
 		c.mu.Unlock()
@@ -378,9 +519,31 @@ func (c *Controller) Tool(ctx context.Context, tenant, id string, input ToolRequ
 	s.NextReceipt++
 	receipt := &ToolReceipt{ID: input.ID, Epoch: input.Epoch, Status: "RUNNING", PayloadHash: hash, Sequence: s.NextReceipt, StartedAt: time.Now().UTC(), Deadline: time.Now().UTC().Add(time.Duration(input.TimeoutMS) * time.Millisecond)}
 	s.Tools[input.ID] = receipt
+	if !s.IdleSince.IsZero() {
+		explicit := false
+		for _, window := range s.IdleWindows {
+			if window.FinishedAt == nil && time.Now().Before(window.ExpiresAt) {
+				explicit = true
+				break
+			}
+		}
+		if !explicit {
+			c.observeLocked(ctx, "idle_until_tool_ms", float64(time.Since(s.IdleSince))/float64(time.Millisecond), "model_terminal_or_last_tool_to_next_tool_admission")
+		}
+	}
+	s.IdleSince = time.Time{}
+	if s.Autonomous != nil {
+		s.Autonomous.ReturnDemand = false
+		for _, demand := range s.ReturnDemands {
+			if demand.Status == "PENDING" {
+				demand.Status = "COMPLETED"
+				demand.ResultEpoch = s.Epoch
+			}
+		}
+	}
 	s.ActiveTools++
 	c.event(s, "tool.started", input.ID)
-	if err = c.persist(); err != nil {
+	if err = c.persistContext(ctx); err != nil {
 		c.mu.Unlock()
 		return nil, err
 	}
@@ -388,12 +551,26 @@ func (c *Controller) Tool(ctx context.Context, tenant, id string, input ToolRequ
 	c.operations.Add(1)
 	defer c.operations.Done()
 	c.mu.Unlock()
-	c.signal(snapshot, "HEAVY_TOOL")
-	workCtx, cancel := context.WithTimeout(c.ctx, time.Duration(input.TimeoutMS)*time.Millisecond)
+	c.signalContext(ctx, snapshot, "HEAVY_TOOL")
+	workCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), time.Duration(input.TimeoutMS)*time.Millisecond)
+	stopShutdown := context.AfterFunc(c.ctx, cancel)
+	defer stopShutdown()
 	result, toolErr := c.cfg.Backend.Tool(workCtx, snapshot, input)
 	cancel()
-	c.mu.Lock()
+	c.lock()
 	s.ActiveTools--
+	if s.ActiveTools == 0 {
+		pending := false
+		for _, r := range c.state.Requests {
+			if r.TenantID == s.TenantID && r.SessionID == s.SessionID && (r.Status == "PENDING" || r.Status == "DISPATCHING") {
+				pending = true
+				break
+			}
+		}
+		if !pending {
+			s.IdleSince = time.Now().UTC()
+		}
+	}
 	receipt.Result = result
 	now := time.Now().UTC()
 	receipt.FinishedAt = &now
@@ -419,14 +596,14 @@ func (c *Controller) Tool(ctx context.Context, tenant, id string, input ToolRequ
 		s.ReceiptWatermark = next
 	}
 	c.event(s, "tool."+strings.ToLower(receipt.Status), input.ID)
-	err = c.persist()
+	err = c.persistContext(ctx)
 	out := copyValue(receipt)
 	snapshot = copyValue(s)
 	c.mu.Unlock()
 	if err != nil {
 		return nil, err
 	}
-	c.signal(snapshot, "RUNNING_FAST")
+	c.signalContext(ctx, snapshot, "RUNNING_FAST")
 	return out, nil
 }
 
@@ -434,6 +611,9 @@ func (c *Controller) Lifecycle(ctx context.Context, tenant, id, action string, i
 	return c.lifecycle(ctx, tenant, id, action, input, false)
 }
 func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, input LifecycleRequest, reservedBoundary bool) (*Session, *Manifest, error) {
+	ctx = c.operationContext(ctx, tenant, id, input.OperationID)
+	ctx, span := observability.Start(ctx, "coordinator.lifecycle", trace.SpanKindInternal)
+	defer span.End()
 	if action != "checkpoint" && action != "suspend" && action != "resume" {
 		return nil, nil, problem(400, "invalid_action", "unknown lifecycle action")
 	}
@@ -444,7 +624,7 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 		Action  string
 		Request LifecycleRequest
 	}{action, input})
-	c.mu.Lock()
+	c.lock()
 	if err := c.ready(); err != nil {
 		c.mu.Unlock()
 		return nil, nil, err
@@ -513,7 +693,7 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 		s.State = "QUIESCING"
 	}
 	c.event(s, "lifecycle."+action+".started", input.OperationID)
-	if err = c.persist(); err != nil {
+	if err = c.persistContext(ctx); err != nil {
 		c.mu.Unlock()
 		return nil, nil, err
 	}
@@ -522,10 +702,10 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 	defer c.operations.Done()
 	c.mu.Unlock()
 	if action == "resume" {
-		c.signal(snapshot, "RESUMING")
+		c.signalContext(ctx, snapshot, "RESUMING")
 	}
 	for action != "resume" {
-		c.mu.Lock()
+		c.lock()
 		active := s.ActiveTools
 		unknown := false
 		for _, r := range s.Tools {
@@ -554,18 +734,22 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 	var digest string
 	var manifest *Manifest
 	if err == nil {
-		c.mu.Lock()
+		c.lock()
 		snapshot = copyValue(s)
 		c.mu.Unlock()
 		switch action {
 		case "checkpoint":
+			started := time.Now()
 			actor, digest, err = c.cfg.Backend.Checkpoint(ctx, snapshot, input.OperationID)
+			observability.Observe(ctx, "checkpoint_total_ms", float64(time.Since(started))/float64(time.Millisecond), "backend_checkpoint_completion")
 		case "suspend":
 			if prepared {
 				actor = snapshot.Actor
 				digest = snapshot.Manifest.WorkspaceDigest
 			} else {
+				started := time.Now()
 				actor, digest, err = c.cfg.Backend.Checkpoint(ctx, snapshot, input.OperationID)
+				observability.Observe(ctx, "checkpoint_total_ms", float64(time.Since(started))/float64(time.Millisecond), "backend_checkpoint_completion")
 			}
 			if err == nil {
 				snapshot.Actor = actor
@@ -575,30 +759,35 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 			if snapshot.Manifest == nil || snapshot.Manifest.State != "COMMITTED" || snapshot.Manifest.ActorUID != snapshot.Actor.UID || snapshot.Manifest.ReceiptWatermark != snapshot.ReceiptWatermark || snapshot.Manifest.Epoch != snapshot.Epoch || snapshot.Manifest.SnapshotUUID != snapshot.Actor.SnapshotUUID || snapshot.Manifest.SnapshotGeneration != snapshot.Actor.SnapshotGeneration {
 				err = errors.New("committed manifest does not match Actor and receipt watermark")
 			} else {
+				started := time.Now()
 				actor, err = c.cfg.Backend.Resume(ctx, snapshot)
+				observability.Observe(ctx, "resume_ready_ms", float64(time.Since(started))/float64(time.Millisecond), "backend_resume_attach_completion")
 			}
 		default:
 			err = errors.New("unknown lifecycle action")
 		}
 	}
-	c.mu.Lock()
+	c.lock()
 	if err != nil {
 		receipt.Status = "OUTCOME_UNKNOWN"
+		c.markEntity("lifecycle", key(tenant, id)+"/"+input.OperationID)
 		receipt.Error = err.Error()
 		s.State = "RECOVERY_REQUIRED"
 		s.Gate = "CLOSED"
 		c.event(s, "lifecycle.unknown", err.Error())
-		_ = c.persist()
+		_ = c.persistContext(ctx)
 		c.mu.Unlock()
 		return nil, nil, problem(409, "recovery_required", err.Error())
 	}
 	s.Actor = actor
+	c.observeAllocationMissing(s)
 	s.ActorUID = actor.UID
 	s.ActualFidelity = actor.ActualFidelity
 	if action == "resume" {
 		s.Epoch++
 		s.RunningSince = time.Now().UTC()
 		s.LastResumedAt = s.RunningSince
+		s.IdleSince = time.Time{}
 		s.State = "RUNNING"
 		s.Gate = "OPEN"
 	} else {
@@ -618,7 +807,7 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 	receipt.Status = "COMPLETED"
 	receipt.Manifest = manifest
 	c.event(s, "lifecycle."+action+".completed", input.OperationID)
-	err = c.persist()
+	err = c.persistContext(ctx)
 	out := copyValue(s)
 	manifest = copyValue(manifest)
 	c.mu.Unlock()
@@ -629,17 +818,21 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 	if action == "suspend" {
 		state = "SUSPENDED"
 	}
-	c.signal(out, state)
+	c.signalContext(ctx, out, state)
 	return out, manifest, nil
 }
 
-func (c *Controller) signal(session *Session, state string) {
-	c.signalMu.Lock()
-	defer c.signalMu.Unlock()
+func (c *Controller) signal(session *Session, state string) { c.signalContext(c.ctx, session, state) }
+func (c *Controller) signalContext(parent context.Context, session *Session, state string) {
+	parent = c.operationContext(parent, session.TenantID, session.SessionID, "signal")
+	parent, span := observability.Start(parent, "coordinator.execution_feedback", trace.SpanKindInternal)
+	defer span.End()
+	unlock := c.signalLocks.lock(key(session.TenantID, session.SessionID))
+	defer unlock()
 	if c.cfg.Signals == nil {
 		return
 	}
-	c.mu.Lock()
+	c.lock()
 	live := c.state.Sessions[key(session.TenantID, session.SessionID)]
 	if live == nil || live.AblationGroup != "" && live.AblationGroup != "E" {
 		c.mu.Unlock()
@@ -661,23 +854,24 @@ func (c *Controller) signal(session *Session, state string) {
 		}
 	}
 	live.SignalSequence++
+	c.markSession(live)
 	snapshot := copyValue(live)
-	err := c.persist()
+	err := c.persistContext(parent)
 	c.mu.Unlock()
 	if err != nil {
 		return
 	}
-	ctx, cancel := context.WithTimeout(c.ctx, 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(parent), 3*time.Second)
 	defer cancel()
 	err = c.cfg.Signals.Send(ctx, snapshot, state)
-	c.mu.Lock()
+	c.lock()
 	defer c.mu.Unlock()
 	if err != nil {
 		c.event(live, "signal.pending", fmt.Sprintf("%s: %v", state, err))
 	} else {
 		c.event(live, "signal.applied", state)
 	}
-	_ = c.persist()
+	_ = c.persistContext(parent)
 }
 
 func (c *Controller) feedbackLoop() {
@@ -690,7 +884,7 @@ func (c *Controller) feedbackLoop() {
 			return
 		case <-ticker.C:
 		}
-		c.mu.Lock()
+		c.lock()
 		var sessions []*Session
 		for _, s := range c.state.Sessions {
 			if s.Actor.UID != "" {

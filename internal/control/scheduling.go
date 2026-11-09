@@ -5,7 +5,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/lilong555/agentcloud/internal/adapters/dynamo"
+	"github.com/lilong555/agentcloud/internal/observability"
 	"github.com/lilong555/agentcloud/internal/policy"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // QueueObserver reads a server-side queue snapshot for the bound session.
@@ -14,25 +17,29 @@ type QueueObserver interface {
 }
 
 type QueueObservation struct {
-	Source          string    `json:"source"`
-	Scope           string    `json:"scope"`
-	WaitingRequests uint64    `json:"waiting_requests"`
-	ObservedAt      time.Time `json:"observed_at"`
+	SessionWaitingRequests uint64                        `json:"session_waiting_requests,omitempty"`
+	AdmissionHistory       []dynamo.AdmissionObservation `json:"admission_history,omitempty"`
+	Source                 string                        `json:"source"`
+	Scope                  string                        `json:"scope"`
+	WaitingRequests        uint64                        `json:"waiting_requests"`
+	ObservedAt             time.Time                     `json:"observed_at"`
 }
 
 type ModelBoundaryRequest struct {
-	OperationID    string  `json:"operation_id"`
-	ExpectedEpoch  uint64  `json:"expected_epoch"`
-	CheckpointID   string  `json:"checkpoint_id,omitempty"`
-	ExpectedWaitMS int64   `json:"expected_wait_ms"`
-	SnapshotCostMS *int64  `json:"snapshot_cost_ms,omitempty"`
-	ResumeCostMS   *int64  `json:"resume_cost_ms,omitempty"`
-	JournalCostMS  *int64  `json:"journal_cost_ms,omitempty"`
-	MinResidenceMS *int64  `json:"min_residence_ms,omitempty"`
-	WorkerPressure float64 `json:"worker_pressure"`
+	ServerEvidence *ServerEstimateEvidence `json:"-"`
+	OperationID    string                  `json:"operation_id"`
+	ExpectedEpoch  uint64                  `json:"expected_epoch"`
+	CheckpointID   string                  `json:"checkpoint_id,omitempty"`
+	ExpectedWaitMS int64                   `json:"expected_wait_ms"`
+	SnapshotCostMS *int64                  `json:"snapshot_cost_ms,omitempty"`
+	ResumeCostMS   *int64                  `json:"resume_cost_ms,omitempty"`
+	JournalCostMS  *int64                  `json:"journal_cost_ms,omitempty"`
+	MinResidenceMS *int64                  `json:"min_residence_ms,omitempty"`
+	WorkerPressure float64                 `json:"worker_pressure"`
 }
 
 type BoundaryDecision struct {
+	ServerEvidence           *ServerEstimateEvidence  `json:"server_evidence,omitempty"`
 	OperationID              string                   `json:"operation_id"`
 	SessionID                string                   `json:"session_id"`
 	ExpectedEpoch            uint64                   `json:"expected_epoch"`
@@ -110,6 +117,9 @@ func boundaryInput(s *Session, request ModelBoundaryRequest, config policy.Lifec
 // ModelBoundary durably reserves an operation before closing admission and invoking
 // the fenced lifecycle actuator. Matching retries return the original receipt.
 func (c *Controller) ModelBoundary(ctx context.Context, tenant, id string, input ModelBoundaryRequest) (*BoundaryDecision, error) {
+	ctx = c.operationContext(ctx, tenant, id, input.OperationID)
+	ctx, span := observability.Start(ctx, "coordinator.model_boundary", trace.SpanKindInternal)
+	defer span.End()
 	if !validID(input.OperationID) || input.ExpectedEpoch == 0 {
 		return nil, problem(400, "invalid_operation", "operation_id and expected_epoch are required")
 	}
@@ -118,7 +128,7 @@ func (c *Controller) ModelBoundary(ctx context.Context, tenant, id string, input
 		return nil, problem(400, "invalid_scheduling_config", err.Error())
 	}
 	hash := payloadHash(input)
-	c.mu.Lock()
+	c.lock()
 	if err = c.ready(); err != nil {
 		c.mu.Unlock()
 		return nil, err
@@ -165,7 +175,7 @@ func (c *Controller) ModelBoundary(ctx context.Context, tenant, id string, input
 			observation = &value
 		}
 	}
-	c.mu.Lock()
+	c.lock()
 	if err = c.ready(); err != nil {
 		c.mu.Unlock()
 		return nil, err
@@ -189,12 +199,21 @@ func (c *Controller) ModelBoundary(ctx context.Context, tenant, id string, input
 		return nil, problem(409, "payload_conflict", "operation ID is already used by a lifecycle operation")
 	}
 	now := time.Now().UTC()
+	serverEvidence := input.ServerEvidence
+	estimateSource := "caller_estimate"
+	if serverEvidence != nil {
+		estimateSource = "server_observed"
+	}
+	if input.ExpectedWaitMS == 0 {
+		input, serverEvidence = c.serverEstimateLocked(s, input, observation, nil, p.Config(), now)
+		estimateSource = "server_observed"
+	}
 	d, err := p.Decide(boundaryInput(s, input, p.Config(), now))
 	if err != nil {
 		c.mu.Unlock()
 		return nil, problem(400, "invalid_cost_estimate", err.Error())
 	}
-	receipt := &BoundaryDecision{OperationID: input.OperationID, SessionID: id, ExpectedEpoch: input.ExpectedEpoch, ResultEpoch: s.Epoch, PayloadHash: hash, Status: "COMPLETED", SessionState: s.State, Decision: d, EstimateSource: "caller_estimate", QueueObservation: observation, StartedAt: now, FinishedAt: &now}
+	receipt := &BoundaryDecision{OperationID: input.OperationID, SessionID: id, ExpectedEpoch: input.ExpectedEpoch, ResultEpoch: s.Epoch, PayloadHash: hash, Status: "COMPLETED", SessionState: s.State, Decision: d, EstimateSource: estimateSource, ServerEvidence: serverEvidence, QueueObservation: observation, StartedAt: now, FinishedAt: &now}
 	if observeErr != nil {
 		receipt.QueueObservationError = observeErr.Error()
 		receipt.Decision.Action, receipt.Decision.Reason = "KEEP", "queue_observation_failed"
@@ -220,7 +239,7 @@ func (c *Controller) ModelBoundary(ctx context.Context, tenant, id string, input
 		receipt.Status, receipt.FinishedAt = "RUNNING", nil
 	}
 	c.event(s, "scheduling."+receipt.Decision.Action, input.OperationID)
-	if err = c.persist(); err != nil {
+	if err = c.persistContext(ctx); err != nil {
 		c.mu.Unlock()
 		return nil, err
 	}
@@ -233,7 +252,7 @@ func (c *Controller) ModelBoundary(ctx context.Context, tenant, id string, input
 	started := time.Now()
 	result, manifest, lifecycleErr := c.lifecycle(ctx, tenant, id, "suspend", LifecycleRequest{OperationID: input.OperationID, ExpectedEpoch: input.ExpectedEpoch, CheckpointID: input.CheckpointID}, true)
 	elapsed := time.Since(started).Milliseconds()
-	c.mu.Lock()
+	c.lock()
 	now = time.Now().UTC()
 	receipt.FinishedAt, receipt.ActualLifecycleElapsedMS = &now, &elapsed
 	if lifecycleErr != nil {
@@ -245,7 +264,7 @@ func (c *Controller) ModelBoundary(ctx context.Context, tenant, id string, input
 		receipt.Status, receipt.ResultEpoch, receipt.SessionState, receipt.Manifest = "COMPLETED", result.Epoch, result.State, manifest
 	}
 	c.event(s, "scheduling.completed", input.OperationID)
-	err = c.persist()
+	err = c.persistContext(ctx)
 	out := copyValue(receipt)
 	c.mu.Unlock()
 	if err != nil {

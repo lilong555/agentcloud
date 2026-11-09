@@ -995,6 +995,40 @@ mod tests {
     }
 
     #[test]
+    fn agent_context_serialization_preserves_public_headers_and_redacts_inference_lease() {
+        let context = AgentContext {
+            agent_headers: Arc::new(BTreeMap::from([
+                (
+                    "x-agentcloud-inference-lease".into(),
+                    vec!["lease-secret".into()],
+                ),
+                ("x-agentcloud-attempt-id".into(), vec!["attempt-42".into()]),
+                (
+                    "x-codex-future".into(),
+                    vec!["first".into(), "second".into()],
+                ),
+            ])),
+            ..Default::default()
+        };
+        let encoded = serde_json::to_value(&context).unwrap();
+        assert!(
+            encoded["agent_headers"]
+                .get("x-agentcloud-inference-lease")
+                .is_none()
+        );
+        assert_eq!(
+            encoded["agent_headers"]["x-agentcloud-attempt-id"],
+            serde_json::json!(["attempt-42"])
+        );
+        let decoded: AgentContext = serde_json::from_value(encoded).unwrap();
+        assert_eq!(decoded.agent_headers["x-codex-future"], ["first", "second"]);
+        assert_eq!(
+            context.agent_headers["x-agentcloud-inference-lease"],
+            ["lease-secret"]
+        );
+    }
+
+    #[test]
     fn agent_context_accepts_missing_input_trigger() {
         let context: AgentContext = serde_json::from_str(r#"{"session_id":"root"}"#).unwrap();
         assert_eq!(context.input_trigger, None);

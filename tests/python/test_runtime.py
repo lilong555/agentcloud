@@ -102,6 +102,13 @@ class ToolRuntimeTests(unittest.TestCase):
         with self.assertRaises(ToolFailure):
             self.execute(op='upload',path='upload.txt',content='late')
 
+    def test_missing_read_has_known_outcome_and_allows_safe_point(self):
+        result=self.execute(op='missing-read',kind='file_read',path='missing.py')
+        self.assertEqual(result['status'],'COMPLETED')
+        self.assertEqual(result['result']['error']['code'],'FILE_NOT_FOUND')
+        ack=self.runtime.quiesce(dict(operation_id='read-safe',expected_epoch=1,barrier_generation=1))
+        self.assertEqual(ack['receipt_watermark'],1)
+
     def test_timeout_preserves_unknown_and_kills_descendants(self):
         with self.assertRaises(ToolFailure) as context:
             self.execute(kind='shell',command='(sleep .25; printf late > late.txt) & sleep 2',timeout_ms=30)

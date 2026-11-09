@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def source_digest() -> str:
     files = [ROOT / "go.mod", ROOT / "go.sum", ROOT / "fixtures/signals/demo.jsonl"]
-    for directory in ["cmd", "internal", "tests", "experiments/substrate", "adapters/deerflow/tagverify", "bench/worker_probe"]:
+    for directory in ["cmd", "internal", "tests", "experiments/substrate", "adapters/deerflow/tagverify", "bench"]:
         files.extend((ROOT / directory).rglob("*.go"))
     digest = hashlib.sha256()
     for path in sorted(files):

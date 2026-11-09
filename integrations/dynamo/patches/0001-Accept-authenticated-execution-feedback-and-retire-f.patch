@@ -1,0 +1,2409 @@
+From 7fa669a0498249ba14bccbbd10ef13b38d70f9fa Mon Sep 17 00:00:00 2001
+From: lilong555 <173714821+lilong555@users.noreply.github.com>
+Date: Tue, 10 Nov 2026 00:00:00 +0000
+Subject: [PATCH 1/2] Accept authenticated execution feedback and retire final
+ sessions
+
+
+diff --git a/Cargo.lock b/Cargo.lock
+index 3134bb638ac9a45b44fbd77605f6f6ef2fa3a06e..22af3548c6f29788735c1a6078e49e38938bad14 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3094,6 +3094,8 @@ name = "dynamo-router-policies"
+ version = "1.7.0"
+ dependencies = [
+  "async-trait",
++ "axum 0.8.4",
++ "chrono",
+  "criterion",
+  "dynamo-kv-router",
+  "fastrand",
+@@ -3104,7 +3106,9 @@ dependencies = [
+  "tempfile",
+  "thiserror 2.0.18",
+  "tokio",
++ "tower 0.5.3",
+  "tracing",
++ "uuid",
+ ]
+ 
+ [[package]]
+diff --git a/lib/bindings/python/Cargo.lock b/lib/bindings/python/Cargo.lock
+index 994950eb94d97cbe1663abac345e4fa44626c70c..db93267d2f979ae880e78a97001f820997ab857d 100644
+--- a/lib/bindings/python/Cargo.lock
++++ b/lib/bindings/python/Cargo.lock
+@@ -2546,6 +2546,8 @@ name = "dynamo-router-policies"
+ version = "1.7.0"
+ dependencies = [
+  "async-trait",
++ "axum",
++ "chrono",
+  "dynamo-kv-router",
+  "fastrand",
+  "parking_lot",
+@@ -2554,6 +2556,7 @@ dependencies = [
+  "thiserror 2.0.18",
+  "tokio",
+  "tracing",
++ "uuid",
+ ]
+ 
+ [[package]]
+diff --git a/lib/llm/src/protocols/agents.rs b/lib/llm/src/protocols/agents.rs
+index 8c7a2ceb6cb7a03498e7b11f7367c8db0bccd2cc..b290a8ada702fe62f01b67002880bf0de95712dc 100644
+--- a/lib/llm/src/protocols/agents.rs
++++ b/lib/llm/src/protocols/agents.rs
+@@ -111,7 +111,9 @@ const MAX_AGENT_HEADER_VALUE_BYTES: usize = 16 * 1024;
+ const MAX_AGENT_HEADER_BYTES: usize = 32 * 1024;
+ 
+ fn is_agent_header(name: &str) -> bool {
+-    name.starts_with("x-claude-code-")
++    name == "x-agentcloud-inference-lease"
++        || name == "x-agentcloud-attempt-id"
++        || name.starts_with("x-claude-code-")
+         || name.starts_with("x-codex-")
+         || matches!(
+             name,
+@@ -184,6 +186,19 @@ mod tests {
+     use super::*;
+     use axum::http::{HeaderName, HeaderValue};
+ 
++    #[test]
++    fn captures_inference_lease_and_attempt_for_frontend_classification() {
++        let mut headers = HeaderMap::new();
++        headers.insert(
++            "x-agentcloud-inference-lease",
++            "lease-secret".parse().unwrap(),
++        );
++        headers.insert("x-agentcloud-attempt-id", "attempt-42".parse().unwrap());
++        let captured = capture_agent_headers(&headers);
++        assert_eq!(captured["x-agentcloud-inference-lease"], ["lease-secret"]);
++        assert_eq!(captured["x-agentcloud-attempt-id"], ["attempt-42"]);
++    }
++
+     #[test]
+     fn captures_open_families_and_repeated_values_verbatim() {
+         let mut headers = HeaderMap::new();
+diff --git a/lib/llm/src/protocols/common/extensions.rs b/lib/llm/src/protocols/common/extensions.rs
+index 28a7048ba1450dd89a30637ee28d6974268691ae..43097f2220eb519abe1b3a2c7a5c5afdf97520ed 100644
+--- a/lib/llm/src/protocols/common/extensions.rs
++++ b/lib/llm/src/protocols/common/extensions.rs
+@@ -85,7 +85,11 @@ pub struct AgentContext {
+     /// including compaction, unknown values, and malformed embedded JSON.
+     /// Shared across pipeline clones; serialized as a JSON object of arrays.
+     #[builder(default)]
+-    #[serde(default, skip_serializing_if = "agent_headers_empty")]
++    #[serde(
++        default,
++        skip_serializing_if = "agent_headers_empty",
++        serialize_with = "serialize_agent_headers"
++    )]
+     pub agent_headers: Arc<BTreeMap<String, Vec<String>>>,
+ 
+     /// Causal trigger that produced the request, derived from inbound request content.
+@@ -106,6 +110,19 @@ fn agent_headers_empty(headers: &Arc<BTreeMap<String, Vec<String>>>) -> bool {
+     headers.is_empty()
+ }
+ 
++// Inference leases are consumed inside the frontend classifier and omitted from
++// worker payloads and request-trace serialization.
++fn serialize_agent_headers<S: serde::Serializer>(
++    headers: &Arc<BTreeMap<String, Vec<String>>>,
++    serializer: S,
++) -> Result<S::Ok, S::Error> {
++    let public: BTreeMap<_, _> = headers
++        .iter()
++        .filter(|(name, _)| name.as_str() != "x-agentcloud-inference-lease")
++        .collect();
++    public.serialize(serializer)
++}
++
+ /// Hints from the agent/caller about request characteristics.
+ #[derive(Serialize, Deserialize, Builder, Debug, Clone, Default, PartialEq)]
+ #[serde(deny_unknown_fields)]
+@@ -977,6 +994,40 @@ mod tests {
+         }
+     }
+ 
++    #[test]
++    fn agent_context_serialization_preserves_public_headers_and_redacts_inference_lease() {
++        let context = AgentContext {
++            agent_headers: Arc::new(BTreeMap::from([
++                (
++                    "x-agentcloud-inference-lease".into(),
++                    vec!["lease-secret".into()],
++                ),
++                ("x-agentcloud-attempt-id".into(), vec!["attempt-42".into()]),
++                (
++                    "x-codex-future".into(),
++                    vec!["first".into(), "second".into()],
++                ),
++            ])),
++            ..Default::default()
++        };
++        let encoded = serde_json::to_value(&context).unwrap();
++        assert!(
++            encoded["agent_headers"]
++                .get("x-agentcloud-inference-lease")
++                .is_none()
++        );
++        assert_eq!(
++            encoded["agent_headers"]["x-agentcloud-attempt-id"],
++            serde_json::json!(["attempt-42"])
++        );
++        let decoded: AgentContext = serde_json::from_value(encoded).unwrap();
++        assert_eq!(decoded.agent_headers["x-codex-future"], ["first", "second"]);
++        assert_eq!(
++            context.agent_headers["x-agentcloud-inference-lease"],
++            ["lease-secret"]
++        );
++    }
++
+     #[test]
+     fn agent_context_accepts_missing_input_trigger() {
+         let context: AgentContext = serde_json::from_str(r#"{"session_id":"root"}"#).unwrap();
+diff --git a/lib/router-plugins/builtin/Cargo.toml b/lib/router-plugins/builtin/Cargo.toml
+index b29ae81b061e812deca063453170afdd2518f0b4..058ec5f3dfda1faf1ec53d350ed94c9794efb580 100644
+--- a/lib/router-plugins/builtin/Cargo.toml
++++ b/lib/router-plugins/builtin/Cargo.toml
+@@ -12,6 +12,9 @@ repository.workspace = true
+ description = "Router plugins shipped with Dynamo"
+ 
+ [dependencies]
++axum.workspace = true
++uuid.workspace = true
++chrono.workspace = true
+ fastrand = "2"
+ parking_lot.workspace = true
+ dynamo-kv-router = { workspace = true, features = ["standalone-selection"] }
+@@ -23,6 +26,7 @@ tokio.workspace = true
+ tracing.workspace = true
+ 
+ [dev-dependencies]
++tower.workspace = true
+ tokio = { workspace = true, features = ["macros", "rt", "time"] }
+ dynamo-kv-router = { workspace = true, features = ["bench"] }
+ rustc-hash = "2.1.1"
+diff --git a/lib/router-plugins/builtin/src/lib.rs b/lib/router-plugins/builtin/src/lib.rs
+index 865b26eee94f4eb8969aab98a321690444376cd6..3d04ec0cb03fc6eac4d8c0c970c07110fdaa812c 100644
+--- a/lib/router-plugins/builtin/src/lib.rs
++++ b/lib/router-plugins/builtin/src/lib.rs
+@@ -12,6 +12,10 @@ mod default;
+ pub mod router_modes;
+ mod sticky_min_load;
+ mod thunderagent;
++pub use thunderagent::{
++    ExecutionBinding, ExecutionFeedbackControl, ExecutionFeedbackError, ExecutionFeedbackPolicy,
++    SandboxState, SandboxStateUpdate, ThunderAgentClassifier, ThunderAgentConfig,
++};
+ mod two_tier_cost_fn;
+ pub use default::{
+     DefaultWorkerSelector, DefaultWorkerSelectorControl, default_factory, default_policy,
+diff --git a/lib/router-plugins/builtin/src/thunderagent/execution_control.rs b/lib/router-plugins/builtin/src/thunderagent/execution_control.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..002b7e79a49c2462e68d6f39cb3672d3b8166710
+--- /dev/null
++++ b/lib/router-plugins/builtin/src/thunderagent/execution_control.rs
+@@ -0,0 +1,886 @@
++// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
++// SPDX-License-Identifier: Apache-2.0
++
++//! Authenticated execution-feedback listener shared by native frontend classifiers.
++use std::collections::{HashMap, VecDeque};
++use std::net::SocketAddr;
++use std::sync::{Arc, OnceLock};
++use std::time::{Duration, Instant};
++
++use axum::body::Bytes;
++use axum::extract::{DefaultBodyLimit, Request, State};
++use axum::http::StatusCode;
++use axum::middleware::{self, Next};
++use axum::response::{IntoResponse, Response};
++use axum::routing::{get, post};
++use axum::{Extension, Json, Router};
++use parking_lot::Mutex;
++use serde::Deserialize;
++use serde_json::{Value, json};
++use tokio::sync::Semaphore;
++
++use super::{
++    ExecutionBinding, ExecutionFeedbackControl, ExecutionFeedbackError, SandboxStateUpdate,
++};
++
++#[derive(Clone, Deserialize)]
++#[serde(deny_unknown_fields)]
++pub struct Credential {
++    pub token: String,
++    pub source_id: String,
++    pub tenant_id: String,
++    pub workspace_id: String,
++}
++
++#[derive(Deserialize)]
++#[serde(deny_unknown_fields)]
++pub struct ControlConfig {
++    pub listen: SocketAddr,
++    pub credentials: Vec<Credential>,
++    #[serde(default = "default_rps")]
++    pub requests_per_second: u32,
++    #[serde(default = "default_sessions")]
++    pub max_sessions: usize,
++}
++fn default_rps() -> u32 {
++    100
++}
++fn default_sessions() -> usize {
++    10000
++}
++
++#[derive(Clone)]
++struct Session {
++    binding: ExecutionBinding,
++    routing_session_id: String,
++    inference_lease: String,
++    classifier_id: usize,
++    generation: String,
++}
++
++pub struct ControlServer {
++    config: ControlConfig,
++    classifiers: Mutex<Vec<ExecutionFeedbackControl>>,
++    sessions: Mutex<HashMap<(String, String, String), Session>>,
++    rate: Mutex<Vec<(Instant, u32)>>,
++    tombstones: Mutex<VecDeque<Value>>,
++    concurrent: Arc<Semaphore>,
++}
++
++impl ControlServer {
++    pub fn attach(&self, classifier: ExecutionFeedbackControl) {
++        self.classifiers.lock().push(classifier);
++    }
++    pub fn router(self: Arc<Self>) -> Router {
++        Router::new()
++            .route("/v1/execution/capabilities", get(capabilities))
++            .route("/v1/execution/bindings", post(register))
++            .route("/v1/execution/state", post(update))
++            .route("/v1/execution/session", post(session))
++            .route("/v1/execution/finalize", post(finalize))
++            .layer(DefaultBodyLimit::max(8192))
++            .layer(middleware::from_fn_with_state(self.clone(), authenticate))
++            .with_state(self)
++    }
++    fn create(config: ControlConfig) -> Result<Arc<Self>, String> {
++        if config.credentials.is_empty()
++            || config.credentials.len() > 256
++            || config.requests_per_second == 0
++            || config.max_sessions == 0
++            || config.max_sessions > 100000
++        {
++            return Err("invalid execution control capacity or credentials".into());
++        }
++        for (i, c) in config.credentials.iter().enumerate() {
++            if c.token.len() < 32
++                || c.token.len() > 512
++                || !c.token.bytes().all(|b| b.is_ascii_graphic())
++                || config.credentials[..i].iter().any(|p| p.token == c.token)
++            {
++                return Err(
++                    "execution control tokens must be unique printable strings of 32..512 bytes"
++                        .into(),
++                );
++            }
++            ExecutionBinding {
++                source_id: c.source_id.clone(),
++                tenant_id: c.tenant_id.clone(),
++                workspace_id: if c.workspace_id == "*" {
++                    "validate".into()
++                } else {
++                    c.workspace_id.clone()
++                },
++                session_id: "validate".into(),
++                actor_uid: "validate".into(),
++                epoch: 1,
++            }
++            .validate()
++            .map_err(|e| e.to_string())?;
++        }
++        let rate = Mutex::new(vec![(Instant::now(), 0); config.credentials.len()]);
++        Ok(Arc::new(Self {
++            config,
++            classifiers: Mutex::new(Vec::new()),
++            sessions: Mutex::new(HashMap::new()),
++            rate,
++            tombstones: Mutex::new(VecDeque::new()),
++            concurrent: Arc::new(Semaphore::new(32)),
++        }))
++    }
++    fn authorized(c: &Credential, b: &ExecutionBinding) -> bool {
++        c.source_id == b.source_id
++            && c.tenant_id == b.tenant_id
++            && (c.workspace_id == "*" || c.workspace_id == b.workspace_id)
++    }
++    fn key(b: &ExecutionBinding) -> (String, String, String) {
++        (
++            b.tenant_id.clone(),
++            b.workspace_id.clone(),
++            b.session_id.clone(),
++        )
++    }
++    fn classifier(&self, id: usize) -> Result<ExecutionFeedbackControl, ApiError> {
++        self.classifiers.lock().get(id).cloned().ok_or(ApiError(
++            StatusCode::SERVICE_UNAVAILABLE,
++            "classifier_unavailable",
++        ))
++    }
++}
++
++/// Loaded once per frontend process. Invalid configuration fails catalog resolution.
++pub fn from_environment() -> Result<Option<Arc<ControlServer>>, String> {
++    static SERVER: OnceLock<Result<Option<Arc<ControlServer>>, String>> = OnceLock::new();
++    SERVER
++        .get_or_init(|| {
++            let Some(path) = std::env::var_os("DYN_EXECUTION_CONTROL_CONFIG") else {
++                return Ok(None);
++            };
++            let bytes =
++                std::fs::read(path).map_err(|e| format!("execution control config: {e}"))?;
++            if bytes.len() > 262144 {
++                return Err("execution control config exceeds 256 KiB".into());
++            }
++            let config: ControlConfig = serde_json::from_slice(&bytes)
++                .map_err(|e| format!("execution control config: {e}"))?;
++            let listener = std::net::TcpListener::bind(config.listen)
++                .map_err(|e| format!("execution control listen: {e}"))?;
++            listener.set_nonblocking(true).map_err(|e| e.to_string())?;
++            let server = ControlServer::create(config)?;
++            let cloned = server.clone();
++            std::thread::Builder::new()
++                .name("execution-control".into())
++                .spawn(move || {
++                    let runtime = tokio::runtime::Builder::new_current_thread()
++                        .enable_all()
++                        .build()
++                        .expect("execution control runtime");
++                    runtime.block_on(async move {
++                        let listener = tokio::net::TcpListener::from_std(listener)
++                            .expect("execution control listener");
++                        if let Err(error) = axum::serve(listener, cloned.router()).await {
++                            tracing::error!(%error, "execution control listener stopped");
++                        }
++                    });
++                })
++                .map_err(|e| e.to_string())?;
++            Ok(Some(server))
++        })
++        .clone()
++}
++
++struct ApiError(StatusCode, &'static str);
++impl IntoResponse for ApiError {
++    fn into_response(self) -> Response {
++        (
++            self.0,
++            Json(json!({"protocol_version":1,"accepted":false,"applied":false,"error":self.1})),
++        )
++            .into_response()
++    }
++}
++impl From<ExecutionFeedbackError> for ApiError {
++    fn from(e: ExecutionFeedbackError) -> Self {
++        let code = match e {
++            ExecutionFeedbackError::InvalidBinding => "invalid_binding",
++            ExecutionFeedbackError::UnknownSession => "unknown_session",
++            ExecutionFeedbackError::StaleEpoch => "stale_epoch",
++            ExecutionFeedbackError::IdentityMismatch => "identity_mismatch",
++            ExecutionFeedbackError::Replay => "replay",
++            ExecutionFeedbackError::InvalidUpdate => "invalid_update",
++            ExecutionFeedbackError::Expired => "expired",
++            ExecutionFeedbackError::SessionActive => "session_active",
++        };
++        Self(StatusCode::CONFLICT, code)
++    }
++}
++
++pub(crate) fn constant_equal(a: &str, b: &str) -> bool {
++    let mut mismatch = a.len() ^ b.len();
++    for i in 0..a.len().max(b.len()) {
++        mismatch |= usize::from(
++            a.as_bytes().get(i).copied().unwrap_or(0) ^ b.as_bytes().get(i).copied().unwrap_or(0),
++        );
++    }
++    mismatch == 0
++}
++
++async fn authenticate(
++    State(server): State<Arc<ControlServer>>,
++    mut request: Request,
++    next: Next,
++) -> Response {
++    let token = request
++        .headers()
++        .get("authorization")
++        .and_then(|h| h.to_str().ok())
++        .and_then(|h| h.strip_prefix("Bearer "))
++        .unwrap_or("");
++    let mut found = None;
++    for (id, c) in server.config.credentials.iter().enumerate() {
++        if constant_equal(token, &c.token) {
++            found = Some(id);
++        }
++    }
++    let Some(id) = found else {
++        return ApiError(StatusCode::UNAUTHORIZED, "unauthorized").into_response();
++    };
++    {
++        let mut rates = server.rate.lock();
++        let (since, count) = &mut rates[id];
++        if since.elapsed() >= Duration::from_secs(1) {
++            *since = Instant::now();
++            *count = 0;
++        }
++        if *count >= server.config.requests_per_second {
++            return ApiError(StatusCode::TOO_MANY_REQUESTS, "rate_limited").into_response();
++        }
++        *count += 1;
++    }
++    let Ok(_permit) = server.concurrent.clone().try_acquire_owned() else {
++        return ApiError(StatusCode::TOO_MANY_REQUESTS, "concurrency_limited").into_response();
++    };
++    request
++        .extensions_mut()
++        .insert(server.config.credentials[id].clone());
++    match tokio::time::timeout(Duration::from_secs(3), next.run(request)).await {
++        Ok(response) => response,
++        Err(_) => ApiError(StatusCode::REQUEST_TIMEOUT, "request_timeout").into_response(),
++    }
++}
++
++async fn capabilities(State(server): State<Arc<ControlServer>>) -> Json<Value> {
++    Json(
++        json!({"protocol_version":1,"binding_finalization":true,"active_bindings":server.sessions.lock().len(),"retired_bindings_retained":server.tombstones.lock().len(),"execution_feedback":true,"trusted_bindings":true,"opaque_routing_sessions":true,"admission_history":true,"admission_attempt_header":"x-agentcloud-attempt-id","inference_lease_header":"x-agentcloud-inference-lease","classifier_count":server.classifiers.lock().len(),"max_body_bytes":8192,"requests_per_second":server.config.requests_per_second,"ttl_ms":{"min":100,"max":60000},"native_frontend":true,"gpu_execution":false}),
++    )
++}
++
++fn binding(body: &[u8]) -> Result<(ExecutionBinding, usize, Option<String>), ApiError> {
++    let mut value: Value = serde_json::from_slice(body)
++        .map_err(|_| ApiError(StatusCode::BAD_REQUEST, "invalid_json"))?;
++    let obj = value
++        .as_object_mut()
++        .ok_or(ApiError(StatusCode::BAD_REQUEST, "invalid_json"))?;
++    let version = obj.remove("protocol_version").and_then(|v| v.as_u64());
++    if version != Some(1) {
++        return Err(ApiError(StatusCode::BAD_REQUEST, "invalid_version"));
++    }
++    let generation = obj
++        .remove("registration_generation")
++        .map(|v| {
++            v.as_str()
++                .filter(|s| !s.is_empty())
++                .map(str::to_owned)
++                .ok_or(ApiError(StatusCode::BAD_REQUEST, "invalid_generation"))
++        })
++        .transpose()?;
++    let classifier_id = obj
++        .remove("classifier_id")
++        .map(|v| {
++            v.as_u64()
++                .and_then(|i| usize::try_from(i).ok())
++                .ok_or(ApiError(StatusCode::BAD_REQUEST, "invalid_classifier"))
++        })
++        .transpose()?
++        .unwrap_or(0);
++    if obj.keys().any(|key| {
++        ![
++            "source_id",
++            "tenant_id",
++            "workspace_id",
++            "session_id",
++            "actor_uid",
++            "epoch",
++        ]
++        .contains(&key.as_str())
++    }) {
++        return Err(ApiError(StatusCode::BAD_REQUEST, "unknown_field"));
++    }
++    let b: ExecutionBinding = serde_json::from_value(value)
++        .map_err(|_| ApiError(StatusCode::BAD_REQUEST, "invalid_binding"))?;
++    b.validate()?;
++    Ok((b, classifier_id, generation))
++}
++
++fn receipt(s: &Session, snapshot: Value, include_lease: bool) -> Json<Value> {
++    let mut value = json!({"protocol_version":1,"accepted":true,"applied":snapshot["program_present"],"reconciled":true,"binding":s.binding,"routing_session_id":s.routing_session_id,"classifier_id":s.classifier_id,"binding_generation":s.generation,"sequence":snapshot["sequence"],"received_at":chrono::Utc::now(),"snapshot":snapshot});
++    if include_lease {
++        value["inference_lease"] = Value::String(s.inference_lease.clone());
++    }
++    Json(value)
++}
++
++async fn register(
++    State(server): State<Arc<ControlServer>>,
++    Extension(c): Extension<Credential>,
++    body: Bytes,
++) -> Result<Json<Value>, ApiError> {
++    let (b, classifier_id, generation) = binding(&body)?;
++    if !ControlServer::authorized(&c, &b) {
++        return Err(ApiError(StatusCode::FORBIDDEN, "scope_mismatch"));
++    }
++    let classifier = server.classifier(classifier_id)?;
++    let mut sessions = server.sessions.lock();
++    let key = ControlServer::key(&b);
++    let existing = sessions.get(&key);
++    if let Some(old) = existing {
++        if generation.as_ref().is_some_and(|g| g != &old.generation) {
++            return Err(ApiError(StatusCode::CONFLICT, "stale_generation"));
++        }
++        if old.classifier_id != classifier_id {
++            return Err(ApiError(StatusCode::CONFLICT, "classifier_mismatch"));
++        }
++        if old.binding != b && b.epoch <= old.binding.epoch {
++            return Err(ApiError(StatusCode::CONFLICT, "stale_epoch"));
++        }
++    } else if generation.is_some() {
++        return Err(ApiError(StatusCode::CONFLICT, "stale_generation"));
++    } else if sessions.len() >= server.config.max_sessions {
++        return Err(ApiError(StatusCode::TOO_MANY_REQUESTS, "session_limit"));
++    }
++    let mut s = existing.cloned().unwrap_or_else(|| Session {
++        binding: b.clone(),
++        routing_session_id: format!("ac:{}", uuid::Uuid::new_v4().simple()),
++        inference_lease: uuid::Uuid::new_v4().simple().to_string(),
++        classifier_id,
++        generation: uuid::Uuid::new_v4().simple().to_string(),
++    });
++    if s.binding != b {
++        s.generation = uuid::Uuid::new_v4().simple().to_string();
++        s.inference_lease = uuid::Uuid::new_v4().simple().to_string();
++    }
++    s.binding = b;
++    let mut internal = s.binding.clone();
++    internal.session_id = s.routing_session_id.clone();
++    classifier.register_binding(internal)?;
++    classifier.authorize_session(&s.routing_session_id, &s.inference_lease);
++    let snapshot = classifier.session_snapshot(&s.routing_session_id);
++    let result = receipt(&s, snapshot, true);
++    sessions.insert(key, s);
++    Ok(result)
++}
++
++async fn session(
++    State(server): State<Arc<ControlServer>>,
++    Extension(c): Extension<Credential>,
++    body: Bytes,
++) -> Result<Json<Value>, ApiError> {
++    let (b, _, generation) = binding(&body)?;
++    if !ControlServer::authorized(&c, &b) {
++        return Err(ApiError(StatusCode::FORBIDDEN, "scope_mismatch"));
++    }
++    let s = server
++        .sessions
++        .lock()
++        .get(&ControlServer::key(&b))
++        .cloned()
++        .ok_or(ApiError(StatusCode::NOT_FOUND, "unknown_session"))?;
++    if generation.as_deref() != Some(s.generation.as_str()) {
++        return Err(ApiError(StatusCode::CONFLICT, "stale_generation"));
++    }
++    if s.binding != b {
++        return Err(ApiError(StatusCode::CONFLICT, "identity_mismatch"));
++    }
++    let snapshot = server
++        .classifier(s.classifier_id)?
++        .session_snapshot(&s.routing_session_id);
++    Ok(receipt(&s, snapshot, false))
++}
++
++async fn finalize(
++    State(server): State<Arc<ControlServer>>,
++    Extension(c): Extension<Credential>,
++    body: Bytes,
++) -> Result<Json<Value>, ApiError> {
++    let (b, _, generation) = binding(&body)?;
++    if !ControlServer::authorized(&c, &b) {
++        return Err(ApiError(StatusCode::FORBIDDEN, "scope_mismatch"));
++    }
++    let mut sessions = server.sessions.lock();
++    let key = ControlServer::key(&b);
++    let s = sessions
++        .get(&key)
++        .ok_or(ApiError(StatusCode::NOT_FOUND, "unknown_session"))?;
++    if generation.as_deref() != Some(s.generation.as_str()) {
++        return Err(ApiError(StatusCode::CONFLICT, "stale_generation"));
++    }
++    if s.binding != b {
++        return Err(ApiError(StatusCode::CONFLICT, "identity_mismatch"));
++    }
++    let classifier = server.classifier(s.classifier_id)?;
++    let snapshot = classifier.session_snapshot(&s.routing_session_id);
++    classifier.retire_binding(&s.routing_session_id)?;
++    let mut tombstones = server.tombstones.lock();
++    if tombstones.len() == server.config.max_sessions {
++        tombstones.pop_front();
++    }
++    tombstones.push_back(
++        json!({"generation":s.generation,"binding":s.binding,"sequence":snapshot["sequence"]}),
++    );
++    sessions.remove(&key);
++    Ok(Json(
++        json!({"protocol_version":1,"accepted":true,"finalized":true,"binding_generation":generation,"snapshot":snapshot}),
++    ))
++}
++
++async fn update(
++    State(server): State<Arc<ControlServer>>,
++    Extension(c): Extension<Credential>,
++    body: Bytes,
++) -> Result<Json<Value>, ApiError> {
++    let mut value: Value = serde_json::from_slice(&body)
++        .map_err(|_| ApiError(StatusCode::BAD_REQUEST, "invalid_json"))?;
++    let generation = value
++        .as_object_mut()
++        .and_then(|o| o.remove("registration_generation"))
++        .and_then(|v| v.as_str().map(str::to_owned))
++        .filter(|s| !s.is_empty())
++        .ok_or(ApiError(StatusCode::BAD_REQUEST, "missing_generation"))?;
++    let obj = value
++        .as_object()
++        .ok_or(ApiError(StatusCode::BAD_REQUEST, "invalid_json"))?;
++    if obj.keys().any(|key| {
++        ![
++            "protocol_version",
++            "source_id",
++            "tenant_id",
++            "workspace_id",
++            "session_id",
++            "actor_uid",
++            "epoch",
++            "sequence",
++            "observed_at",
++            "ttl_ms",
++            "state",
++            "estimated_return_ms",
++        ]
++        .contains(&key.as_str())
++    }) {
++        return Err(ApiError(StatusCode::BAD_REQUEST, "unknown_field"));
++    }
++    let mut u: SandboxStateUpdate = serde_json::from_value(value)
++        .map_err(|_| ApiError(StatusCode::BAD_REQUEST, "invalid_update"))?;
++    if !ControlServer::authorized(&c, &u.binding) {
++        return Err(ApiError(StatusCode::FORBIDDEN, "scope_mismatch"));
++    }
++    // Hold the mapping through validation and application so concurrent epoch rotation is fenced.
++    let sessions = server.sessions.lock();
++    let s = sessions
++        .get(&ControlServer::key(&u.binding))
++        .ok_or(ApiError(StatusCode::NOT_FOUND, "unknown_session"))?;
++    if generation != s.generation {
++        return Err(ApiError(StatusCode::CONFLICT, "stale_generation"));
++    }
++    if s.binding != u.binding {
++        return Err(ApiError(StatusCode::CONFLICT, "identity_mismatch"));
++    }
++    u.binding.session_id = s.routing_session_id.clone();
++    let classifier = server.classifier(s.classifier_id)?;
++    classifier.update_state(u)?;
++    let snapshot = classifier.session_snapshot(&s.routing_session_id);
++    Ok(receipt(s, snapshot, false))
++}
++
++#[cfg(test)]
++mod tests {
++    use super::super::request_classifier::WorkerCapacitySnapshot;
++    use super::super::{ThunderAgentClassifier, ThunderAgentConfig};
++    use super::*;
++    use axum::body::{Body, to_bytes};
++    use tower::ServiceExt;
++
++    const TOKEN: &str = "contract-test-token-0123456789abcdef";
++    fn server(rps: u32) -> Arc<ControlServer> {
++        let config = ControlConfig {
++            listen: "127.0.0.1:0".parse().unwrap(),
++            credentials: vec![Credential {
++                token: TOKEN.into(),
++                source_id: "coordinator".into(),
++                tenant_id: "tenant-a".into(),
++                workspace_id: "*".into(),
++            }],
++            requests_per_second: rps,
++            max_sessions: 2,
++        };
++        let server = ControlServer::create(config).unwrap();
++        let classifier = ThunderAgentClassifier::new(
++            ThunderAgentConfig::default(),
++            Arc::new(|| Arc::new(WorkerCapacitySnapshot::new([]))),
++        )
++        .unwrap();
++        server.attach(classifier.execution_feedback());
++        server
++    }
++    fn bind(tenant: &str, workspace: &str, epoch: u64) -> Value {
++        json!({"protocol_version":1,"source_id":"coordinator","tenant_id":tenant,"workspace_id":workspace,"session_id":"session","actor_uid":"actor","epoch":epoch})
++    }
++    async fn call(
++        server: Arc<ControlServer>,
++        path: &str,
++        mut value: Value,
++        token: &str,
++    ) -> (StatusCode, Value) {
++        if path != "/v1/execution/bindings" && value.get("registration_generation").is_none() {
++            let key = (
++                value["tenant_id"].as_str().unwrap_or("").to_owned(),
++                value["workspace_id"].as_str().unwrap_or("").to_owned(),
++                value["session_id"].as_str().unwrap_or("").to_owned(),
++            );
++            if let Some(session) = server.sessions.lock().get(&key) {
++                value["registration_generation"] = json!(session.generation);
++            }
++        }
++        let response = server
++            .router()
++            .oneshot(
++                Request::builder()
++                    .method("POST")
++                    .uri(path)
++                    .header("authorization", format!("Bearer {token}"))
++                    .header("content-type", "application/json")
++                    .body(Body::from(value.to_string()))
++                    .unwrap(),
++            )
++            .await
++            .unwrap();
++        let status = response.status();
++        let bytes = to_bytes(response.into_body(), 65536).await.unwrap();
++        (
++            status,
++            serde_json::from_slice(&bytes).unwrap_or(Value::Null),
++        )
++    }
++    #[tokio::test]
++    async fn finalization_reclaims_binding_capacity_and_rejects_retired_generation_after_churn() {
++        let server = server(10000);
++        let identity = bind("tenant-a", "retired", 1);
++        let (_, retired) = call(
++            server.clone(),
++            "/v1/execution/bindings",
++            identity.clone(),
++            TOKEN,
++        )
++        .await;
++        let mut stale = identity.clone();
++        stale["registration_generation"] = retired["binding_generation"].clone();
++        assert_eq!(
++            call(
++                server.clone(),
++                "/v1/execution/finalize",
++                stale.clone(),
++                TOKEN
++            )
++            .await
++            .0,
++            StatusCode::OK
++        );
++        for n in 0..64 {
++            let mut b = bind("tenant-a", &format!("workspace-{n}"), 1);
++            let (status, receipt) =
++                call(server.clone(), "/v1/execution/bindings", b.clone(), TOKEN).await;
++            assert_eq!(status, StatusCode::OK);
++            b["registration_generation"] = receipt["binding_generation"].clone();
++            assert_eq!(
++                call(server.clone(), "/v1/execution/finalize", b, TOKEN)
++                    .await
++                    .0,
++                StatusCode::OK
++            );
++            assert!(server.sessions.lock().is_empty());
++            assert!(server.tombstones.lock().len() <= 2);
++        }
++        assert_eq!(
++            call(
++                server.clone(),
++                "/v1/execution/bindings",
++                stale.clone(),
++                TOKEN
++            )
++            .await
++            .1["error"],
++            "stale_generation"
++        );
++        let (_, fresh) = call(
++            server.clone(),
++            "/v1/execution/bindings",
++            identity.clone(),
++            TOKEN,
++        )
++        .await;
++        assert_ne!(retired["binding_generation"], fresh["binding_generation"]);
++        assert_ne!(retired["routing_session_id"], fresh["routing_session_id"]);
++        assert_ne!(retired["inference_lease"], fresh["inference_lease"]);
++        assert_eq!(
++            call(
++                server.clone(),
++                "/v1/execution/session",
++                stale.clone(),
++                TOKEN
++            )
++            .await
++            .1["error"],
++            "stale_generation"
++        );
++        assert_eq!(
++            call(
++                server.clone(),
++                "/v1/execution/finalize",
++                stale.clone(),
++                TOKEN
++            )
++            .await
++            .1["error"],
++            "stale_generation"
++        );
++        stale["sequence"] = json!(1);
++        stale["state"] = json!("SUSPENDED");
++        stale["observed_at"] = json!(chrono::Utc::now());
++        stale["ttl_ms"] = json!(2000);
++        stale["estimated_return_ms"] = json!(1000);
++        assert_eq!(
++            call(server.clone(), "/v1/execution/state", stale, TOKEN)
++                .await
++                .1["error"],
++            "stale_generation"
++        );
++    }
++
++    #[tokio::test]
++    async fn concurrent_final_register_and_state_keep_one_generation_and_tenant_scope() {
++        let server = server(10000);
++        let identity = bind("tenant-a", "w1", 1);
++        let (_, receipt) = call(
++            server.clone(),
++            "/v1/execution/bindings",
++            identity.clone(),
++            TOKEN,
++        )
++        .await;
++        let mut old = identity.clone();
++        old["registration_generation"] = receipt["binding_generation"].clone();
++        let mut state = old.clone();
++        state["sequence"] = json!(1);
++        state["state"] = json!("SUSPENDED");
++        state["observed_at"] = json!(chrono::Utc::now());
++        state["ttl_ms"] = json!(2000);
++        state["estimated_return_ms"] = json!(1000);
++        let (finalized, registered, update) = tokio::join!(
++            call(server.clone(), "/v1/execution/finalize", old.clone(), TOKEN),
++            call(
++                server.clone(),
++                "/v1/execution/bindings",
++                identity.clone(),
++                TOKEN
++            ),
++            call(server.clone(), "/v1/execution/state", state, TOKEN),
++        );
++        assert_eq!(finalized.0, StatusCode::OK);
++        assert_eq!(registered.0, StatusCode::OK);
++        assert!([StatusCode::OK, StatusCode::NOT_FOUND, StatusCode::CONFLICT].contains(&update.0));
++        let (_, fresh) = call(server.clone(), "/v1/execution/bindings", identity, TOKEN).await;
++        assert_ne!(fresh["binding_generation"], receipt["binding_generation"]);
++        assert!(server.sessions.lock().len() <= 1);
++        let mut foreign = bind("tenant-b", "w1", 1);
++        foreign["registration_generation"] = fresh["binding_generation"].clone();
++        assert_eq!(
++            call(server.clone(), "/v1/execution/finalize", foreign, TOKEN)
++                .await
++                .0,
++            StatusCode::FORBIDDEN
++        );
++        assert_eq!(
++            call(server.clone(), "/v1/execution/session", old, TOKEN)
++                .await
++                .1["error"],
++            "stale_generation"
++        );
++    }
++
++    #[tokio::test]
++    async fn authenticated_bindings_isolate_same_session_across_workspaces_and_rotate_epoch_lease()
++    {
++        let server = server(100);
++        assert_eq!(
++            call(
++                server.clone(),
++                "/v1/execution/bindings",
++                bind("tenant-a", "w1", 1),
++                "bad"
++            )
++            .await
++            .0,
++            StatusCode::UNAUTHORIZED
++        );
++        assert_eq!(
++            call(
++                server.clone(),
++                "/v1/execution/bindings",
++                bind("tenant-b", "w1", 1),
++                TOKEN
++            )
++            .await
++            .0,
++            StatusCode::FORBIDDEN
++        );
++        let (status, first) = call(
++            server.clone(),
++            "/v1/execution/bindings",
++            bind("tenant-a", "w1", 1),
++            TOKEN,
++        )
++        .await;
++        assert_eq!(status, StatusCode::OK);
++        assert_eq!(first["applied"], false);
++        let (_, same) = call(
++            server.clone(),
++            "/v1/execution/bindings",
++            bind("tenant-a", "w1", 1),
++            TOKEN,
++        )
++        .await;
++        assert_eq!(first["inference_lease"], same["inference_lease"]);
++        let (_, other) = call(
++            server.clone(),
++            "/v1/execution/bindings",
++            bind("tenant-a", "w2", 1),
++            TOKEN,
++        )
++        .await;
++        assert_ne!(first["routing_session_id"], other["routing_session_id"]);
++        let (_, rotated) = call(
++            server.clone(),
++            "/v1/execution/bindings",
++            bind("tenant-a", "w1", 2),
++            TOKEN,
++        )
++        .await;
++        assert_ne!(first["inference_lease"], rotated["inference_lease"]);
++        assert_eq!(first["routing_session_id"], rotated["routing_session_id"]);
++        assert_eq!(
++            call(
++                server.clone(),
++                "/v1/execution/session",
++                bind("tenant-a", "w1", 1),
++                TOKEN
++            )
++            .await
++            .1["error"],
++            "identity_mismatch"
++        );
++        assert_eq!(
++            call(
++                server.clone(),
++                "/v1/execution/bindings",
++                bind("tenant-a", "w3", 1),
++                TOKEN
++            )
++            .await
++            .0,
++            StatusCode::TOO_MANY_REQUESTS
++        );
++    }
++    #[tokio::test]
++    async fn native_control_rejects_replay_expired_scope_and_unknown_fields() {
++        let server = server(100);
++        call(
++            server.clone(),
++            "/v1/execution/bindings",
++            bind("tenant-a", "w1", 1),
++            TOKEN,
++        )
++        .await;
++        let mut update = bind("tenant-a", "w1", 1);
++        let obj = update.as_object_mut().unwrap();
++        obj.insert("sequence".into(), json!(1));
++        obj.insert("observed_at".into(), json!(chrono::Utc::now()));
++        obj.insert("ttl_ms".into(), json!(2000));
++        obj.insert("state".into(), json!("SUSPENDED"));
++        obj.insert("estimated_return_ms".into(), json!(10000));
++        let (status, receipt) =
++            call(server.clone(), "/v1/execution/state", update.clone(), TOKEN).await;
++        assert_eq!(status, StatusCode::OK);
++        assert_eq!(receipt["sequence"], 1);
++        update["registration_generation"] = receipt["binding_generation"].clone();
++        assert_eq!(receipt["snapshot"]["fresh"], true);
++        assert_eq!(
++            call(server.clone(), "/v1/execution/state", update.clone(), TOKEN)
++                .await
++                .1["error"],
++            "replay"
++        );
++        update["sequence"] = json!(2);
++        update["observed_at"] = json!(chrono::Utc::now() - chrono::Duration::seconds(3));
++        assert_eq!(
++            call(server.clone(), "/v1/execution/state", update.clone(), TOKEN)
++                .await
++                .0,
++            StatusCode::CONFLICT
++        );
++        update["tenant_id"] = json!("tenant-b");
++        assert_eq!(
++            call(server.clone(), "/v1/execution/state", update.clone(), TOKEN)
++                .await
++                .1["error"],
++            "scope_mismatch"
++        );
++        update["extra"] = json!(true);
++        assert_eq!(
++            call(server.clone(), "/v1/execution/state", update, TOKEN)
++                .await
++                .1["error"],
++            "unknown_field"
++        );
++    }
++    #[tokio::test]
++    async fn body_size_and_per_credential_rate_are_bounded() {
++        let server = server(2);
++        assert_eq!(
++            call(
++                server.clone(),
++                "/v1/execution/bindings",
++                json!({"large":"x".repeat(9000)}),
++                TOKEN
++            )
++            .await
++            .0,
++            StatusCode::PAYLOAD_TOO_LARGE
++        );
++        call(
++            server.clone(),
++            "/v1/execution/bindings",
++            bind("tenant-a", "w1", 1),
++            TOKEN,
++        )
++        .await;
++        assert_eq!(
++            call(
++                server,
++                "/v1/execution/bindings",
++                bind("tenant-a", "w1", 1),
++                TOKEN
++            )
++            .await
++            .0,
++            StatusCode::TOO_MANY_REQUESTS
++        );
++    }
++}
+diff --git a/lib/router-plugins/builtin/src/thunderagent/mod.rs b/lib/router-plugins/builtin/src/thunderagent/mod.rs
+index b4a45621d0e35c766c17633817a90889362da3f6..94fdbda80798f9c9314b64dc74af658fe165261e 100644
+--- a/lib/router-plugins/builtin/src/thunderagent/mod.rs
++++ b/lib/router-plugins/builtin/src/thunderagent/mod.rs
+@@ -7,10 +7,15 @@
+ //! The classifier owns program state; the stateless selector executes its preferred placement.
+ 
+ mod config;
++pub mod execution_control;
+ mod request_classifier;
+ mod worker_selection;
+ 
+-use config::{ConfigError, ThunderAgentConfig};
++pub use config::{ConfigError, ThunderAgentConfig};
++pub use request_classifier::{
++    ExecutionBinding, ExecutionFeedbackControl, ExecutionFeedbackError, ExecutionFeedbackPolicy,
++    SandboxState, SandboxStateUpdate, ThunderAgentClassifier,
++};
+ 
+ use dynamo_kv_router::plugins::{RouterPluginRegistry, RouterPluginRegistryError};
+ 
+diff --git a/lib/router-plugins/builtin/src/thunderagent/request_classifier/execution_feedback.rs b/lib/router-plugins/builtin/src/thunderagent/request_classifier/execution_feedback.rs
+new file mode 100644
+index 0000000000000000000000000000000000000000..cd69e1927774e0b015cac08515033070c65bfbdf
+--- /dev/null
++++ b/lib/router-plugins/builtin/src/thunderagent/request_classifier/execution_feedback.rs
+@@ -0,0 +1,383 @@
++// SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
++// SPDX-License-Identifier: Apache-2.0
++
++use std::time::{Duration, Instant};
++
++use chrono::{DateTime, Utc};
++use serde::{Deserialize, Serialize};
++use thiserror::Error;
++
++#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
++pub struct ExecutionBinding {
++    pub source_id: String,
++    pub tenant_id: String,
++    pub workspace_id: String,
++    pub session_id: String,
++    pub actor_uid: String,
++    pub epoch: u64,
++}
++
++impl ExecutionBinding {
++    pub(crate) fn validate(&self) -> Result<(), ExecutionFeedbackError> {
++        let identifiers = [
++            &self.source_id,
++            &self.tenant_id,
++            &self.workspace_id,
++            &self.session_id,
++            &self.actor_uid,
++        ];
++        if self.epoch == 0
++            || identifiers.iter().any(|id| {
++                id.is_empty()
++                    || id.len() > 128
++                    || !id
++                        .bytes()
++                        .all(|c| c.is_ascii_alphanumeric() || b"._:-".contains(&c))
++            })
++        {
++            return Err(ExecutionFeedbackError::InvalidBinding);
++        }
++        Ok(())
++    }
++}
++
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
++#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
++pub enum SandboxState {
++    RunningFast,
++    HeavyTool,
++    Parked,
++    Suspended,
++    Resuming,
++}
++
++/// The trusted coordinator's version-1 execution signal. Durations are milliseconds.
++#[derive(Debug, Clone, Serialize, Deserialize)]
++pub struct SandboxStateUpdate {
++    pub protocol_version: u32,
++    #[serde(flatten)]
++    pub binding: ExecutionBinding,
++    pub sequence: u64,
++    pub observed_at: DateTime<Utc>,
++    pub ttl_ms: u64,
++    pub state: SandboxState,
++    pub estimated_return_ms: u64,
++}
++
++#[derive(Debug, Clone, Copy)]
++pub struct ExecutionFeedbackPolicy {
++    pub parked_multiplier: f64,
++    pub suspended_multiplier: f64,
++    pub heavy_tool_multiplier: f64,
++    pub heavy_tool_minimum_ms: u64,
++    pub minimum_residence: Duration,
++    pub recovery_hold: Duration,
++}
++
++impl Default for ExecutionFeedbackPolicy {
++    fn default() -> Self {
++        Self {
++            parked_multiplier: 0.1,
++            suspended_multiplier: 0.0,
++            heavy_tool_multiplier: 0.25,
++            heavy_tool_minimum_ms: 1_000,
++            minimum_residence: Duration::from_millis(250),
++            recovery_hold: Duration::from_secs(1),
++        }
++    }
++}
++
++impl ExecutionFeedbackPolicy {
++    pub(crate) fn validate(&self) -> Result<(), ExecutionFeedbackError> {
++        if [
++            self.parked_multiplier,
++            self.suspended_multiplier,
++            self.heavy_tool_multiplier,
++        ]
++        .into_iter()
++        .any(|n| !n.is_finite() || !(0.0..=1.0).contains(&n))
++            || self.minimum_residence > Duration::from_secs(60)
++            || self.recovery_hold > Duration::from_secs(60)
++            || self.heavy_tool_minimum_ms > 600_000
++        {
++            return Err(ExecutionFeedbackError::InvalidUpdate);
++        }
++        Ok(())
++    }
++}
++
++#[derive(Debug, Error, PartialEq, Eq)]
++pub enum ExecutionFeedbackError {
++    #[error("execution identity must contain valid identifiers and a positive epoch")]
++    InvalidBinding,
++    #[error("session has no active ThunderAgent program or trusted execution binding")]
++    UnknownSession,
++    #[error("binding replacement requires a strictly greater epoch")]
++    StaleEpoch,
++    #[error("signal identity or epoch differs from the registered binding")]
++    IdentityMismatch,
++    #[error("signal sequence and observation time must advance monotonically")]
++    Replay,
++    #[error("signal version, duration, sequence, or policy value is invalid")]
++    InvalidUpdate,
++    #[error("execution session still has a program or an active request")]
++    SessionActive,
++    #[error("signal observation exceeds allowed skew or has expired")]
++    Expired,
++}
++
++#[derive(Debug, Clone)]
++pub(crate) struct ExecutionFeedback {
++    pub(crate) binding: ExecutionBinding,
++    pub(crate) latest: Option<SandboxStateUpdate>,
++    pub(crate) expires_at: Instant,
++    pub(crate) admission_history: std::collections::VecDeque<serde_json::Value>,
++    state_since: Instant,
++    recovery_until: Instant,
++}
++
++impl ExecutionFeedback {
++    pub(crate) fn new(binding: ExecutionBinding, now: Instant) -> Self {
++        Self {
++            binding,
++            latest: None,
++            expires_at: now,
++            admission_history: std::collections::VecDeque::new(),
++            state_since: now,
++            recovery_until: now,
++        }
++    }
++
++    pub(crate) fn accept(
++        &mut self,
++        update: SandboxStateUpdate,
++        policy: ExecutionFeedbackPolicy,
++        now: Instant,
++        wall_now: DateTime<Utc>,
++    ) -> Result<(), ExecutionFeedbackError> {
++        if update.protocol_version != 1
++            || update.sequence == 0
++            || !(100..=60_000).contains(&update.ttl_ms)
++            || update.estimated_return_ms > 600_000
++        {
++            return Err(ExecutionFeedbackError::InvalidUpdate);
++        }
++        if update.binding != self.binding {
++            return Err(ExecutionFeedbackError::IdentityMismatch);
++        }
++        if let Some(prior) = &self.latest
++            && (update.sequence <= prior.sequence || update.observed_at < prior.observed_at)
++        {
++            return Err(ExecutionFeedbackError::Replay);
++        }
++        let age = wall_now.signed_duration_since(update.observed_at);
++        if age < chrono::Duration::seconds(-1)
++            || age >= chrono::Duration::milliseconds(update.ttl_ms as i64)
++        {
++            return Err(ExecutionFeedbackError::Expired);
++        }
++        let expired = now >= self.expires_at;
++        let changed = self
++            .latest
++            .as_ref()
++            .is_none_or(|old| old.state != update.state);
++        if expired || changed {
++            self.state_since = now;
++        }
++        if update.state == SandboxState::Resuming && (expired || changed) {
++            self.recovery_until = now + policy.recovery_hold;
++        }
++        let remaining = (chrono::Duration::milliseconds(update.ttl_ms as i64) - age)
++            .to_std()
++            .map_err(|_| ExecutionFeedbackError::Expired)?;
++        self.expires_at = now + remaining;
++        self.latest = Some(update);
++        Ok(())
++    }
++
++    pub(crate) fn multiplier(&self, policy: ExecutionFeedbackPolicy, now: Instant) -> f64 {
++        let Some(update) = &self.latest else {
++            return 1.0;
++        };
++        if now >= self.expires_at
++            || now < self.recovery_until
++            || now.saturating_duration_since(self.state_since) < policy.minimum_residence
++        {
++            return 1.0;
++        }
++        match update.state {
++            SandboxState::Suspended => policy.suspended_multiplier,
++            SandboxState::Parked => policy.parked_multiplier,
++            SandboxState::HeavyTool
++                if update.estimated_return_ms >= policy.heavy_tool_minimum_ms =>
++            {
++                policy.heavy_tool_multiplier
++            }
++            _ => 1.0,
++        }
++    }
++}
++
++#[cfg(test)]
++pub(crate) mod tests {
++    use super::*;
++
++    pub(crate) fn signal(state: SandboxState) -> SandboxStateUpdate {
++        SandboxStateUpdate {
++            protocol_version: 1,
++            binding: ExecutionBinding {
++                source_id: "coordinator".into(),
++                tenant_id: "tenant".into(),
++                workspace_id: "workspace".into(),
++                session_id: "session-a".into(),
++                actor_uid: "actor-a".into(),
++                epoch: 1,
++            },
++            sequence: 1,
++            observed_at: Utc::now(),
++            ttl_ms: 5_000,
++            state,
++            estimated_return_ms: 2_000,
++        }
++    }
++
++    #[test]
++    fn wire_contract_uses_versioned_flat_identity_and_rfc3339_time() {
++        let input = signal(SandboxState::HeavyTool);
++        let json = serde_json::to_value(&input).unwrap();
++        assert_eq!(json["protocol_version"], 1);
++        assert_eq!(json["session_id"], "session-a");
++        assert_eq!(json["state"], "HEAVY_TOOL");
++        assert!(json["observed_at"].as_str().unwrap().contains('T'));
++        let output: SandboxStateUpdate = serde_json::from_value(json).unwrap();
++        assert_eq!(output.binding, input.binding);
++    }
++
++    #[test]
++    fn future_observation_within_skew_keeps_observed_at_plus_ttl_deadline() {
++        let now = Instant::now();
++        let mut update = signal(SandboxState::Suspended);
++        let wall = update.observed_at;
++        update.observed_at += chrono::Duration::milliseconds(500);
++        let policy = ExecutionFeedbackPolicy {
++            minimum_residence: Duration::ZERO,
++            ..Default::default()
++        };
++        let mut feedback = ExecutionFeedback::new(update.binding.clone(), now);
++        feedback.accept(update, policy, now, wall).unwrap();
++        assert_eq!(
++            feedback.multiplier(policy, now + Duration::from_millis(5_499)),
++            0.0
++        );
++        assert_eq!(
++            feedback.multiplier(policy, now + Duration::from_millis(5_500)),
++            1.0
++        );
++    }
++
++    #[test]
++    fn rejects_replay_identity_expiry_and_invalid_values() {
++        let now = Instant::now();
++        let update = signal(SandboxState::Suspended);
++        let wall = update.observed_at;
++        let mut feedback = ExecutionFeedback::new(update.binding.clone(), now);
++        let policy = ExecutionFeedbackPolicy::default();
++        feedback.accept(update.clone(), policy, now, wall).unwrap();
++        assert_eq!(
++            feedback.accept(update.clone(), policy, now, wall),
++            Err(ExecutionFeedbackError::Replay)
++        );
++        let mut bad = update.clone();
++        bad.sequence = 2;
++        bad.binding.epoch = 2;
++        assert_eq!(
++            feedback.accept(bad, policy, now, wall),
++            Err(ExecutionFeedbackError::IdentityMismatch)
++        );
++        let mut bad = update.clone();
++        bad.sequence = 2;
++        bad.observed_at = wall - chrono::Duration::seconds(10);
++        assert_eq!(
++            feedback.accept(bad, policy, now, wall),
++            Err(ExecutionFeedbackError::Replay)
++        );
++        let mut bad = update.clone();
++        bad.sequence = 2;
++        bad.protocol_version = 2;
++        assert_eq!(
++            feedback.accept(bad, policy, now, wall),
++            Err(ExecutionFeedbackError::InvalidUpdate)
++        );
++        let mut fresh = ExecutionFeedback::new(update.binding.clone(), now);
++        assert_eq!(
++            fresh.accept(
++                update.clone(),
++                policy,
++                now,
++                wall + chrono::Duration::seconds(6)
++            ),
++            Err(ExecutionFeedbackError::Expired)
++        );
++        assert_eq!(
++            fresh.accept(update, policy, now, wall - chrono::Duration::seconds(2)),
++            Err(ExecutionFeedbackError::Expired)
++        );
++    }
++
++    #[test]
++    fn defaults_debounce_recovery_hold_and_ttl_preserve_replay_watermark() {
++        let now = Instant::now();
++        let mut update = signal(SandboxState::Suspended);
++        let wall = update.observed_at;
++        let policy = ExecutionFeedbackPolicy::default();
++        let mut feedback = ExecutionFeedback::new(update.binding.clone(), now);
++        feedback.accept(update.clone(), policy, now, wall).unwrap();
++        assert_eq!(feedback.multiplier(policy, now), 1.0);
++        assert_eq!(
++            feedback.multiplier(policy, now + Duration::from_millis(250)),
++            0.0
++        );
++        assert_eq!(
++            feedback.multiplier(policy, now + Duration::from_secs(5)),
++            1.0
++        );
++        assert_eq!(
++            feedback.accept(
++                update.clone(),
++                policy,
++                now + Duration::from_secs(5),
++                wall + chrono::Duration::seconds(5)
++            ),
++            Err(ExecutionFeedbackError::Replay)
++        );
++        update.sequence = 2;
++        update.state = SandboxState::Resuming;
++        update.observed_at = wall + chrono::Duration::seconds(5);
++        feedback
++            .accept(
++                update.clone(),
++                policy,
++                now + Duration::from_secs(5),
++                update.observed_at,
++            )
++            .unwrap();
++        update.sequence = 3;
++        update.state = SandboxState::Suspended;
++        feedback
++            .accept(
++                update.clone(),
++                policy,
++                now + Duration::from_secs(5),
++                update.observed_at,
++            )
++            .unwrap();
++        assert_eq!(
++            feedback.multiplier(policy, now + Duration::from_millis(5_500)),
++            1.0
++        );
++        assert_eq!(
++            feedback.multiplier(policy, now + Duration::from_secs(6)),
++            0.0
++        );
++    }
++}
+diff --git a/lib/router-plugins/builtin/src/thunderagent/request_classifier/mod.rs b/lib/router-plugins/builtin/src/thunderagent/request_classifier/mod.rs
+index 8f978085ef472d3bc706d77c0ddc06cb203df24e..643f7fd1ad8213f60a612580954a3d5d48a0a72a 100644
+--- a/lib/router-plugins/builtin/src/thunderagent/request_classifier/mod.rs
++++ b/lib/router-plugins/builtin/src/thunderagent/request_classifier/mod.rs
+@@ -2,9 +2,14 @@
+ // SPDX-License-Identifier: Apache-2.0
+ 
+ mod capacity;
++mod execution_feedback;
+ mod scheduler;
+ 
+ pub use capacity::{WorkerCapacityProvider, WorkerCapacitySnapshot};
++pub use execution_feedback::{
++    ExecutionBinding, ExecutionFeedbackError, ExecutionFeedbackPolicy, SandboxState,
++    SandboxStateUpdate,
++};
+ 
+ use std::sync::Arc;
+ use std::sync::atomic::{AtomicBool, Ordering};
+@@ -50,12 +55,16 @@ fn classifier_provider(
+         .validate()
+         .map_err(|error| RequestClassifierProviderError::new(error.to_string()))?;
+ 
++    let control_server = super::execution_control::from_environment()
++        .map_err(RequestClassifierProviderError::new)?;
+     Ok(Arc::new(move |context| {
+         let capacity_provider = capacity_provider(context);
+-        Box::new(
+-            ThunderAgentClassifier::new(config.clone(), capacity_provider)
+-                .expect("ThunderAgent configuration was validated during catalog resolution"),
+-        )
++        let classifier = ThunderAgentClassifier::new(config.clone(), capacity_provider)
++            .expect("ThunderAgent configuration was validated during catalog resolution");
++        if let Some(server) = &control_server {
++            server.attach(classifier.execution_feedback());
++        }
++        Box::new(classifier)
+     }))
+ }
+ 
+@@ -70,6 +79,8 @@ pub(crate) fn register(
+ 
+ #[derive(Debug, Error)]
+ pub(crate) enum ThunderAgentError {
++    #[error("trusted execution session requires its current inference lease")]
++    InvalidInferenceLease,
+     #[error("session-aware classification requires a request ID")]
+     MissingRequestId,
+ 
+@@ -90,6 +101,7 @@ struct Inner {
+     state: Mutex<State>,
+     capacity_provider: Arc<dyn WorkerCapacityProvider>,
+     scheduler_started: AtomicBool,
++    inference_leases: Mutex<std::collections::HashMap<String, String>>,
+ }
+ 
+ impl Inner {
+@@ -203,6 +215,9 @@ struct PendingClassification {
+     request_id: String,
+     notify: Arc<Notify>,
+     armed: bool,
++    started_at: Instant,
++    queued_at: chrono::DateTime<chrono::Utc>,
++    client_request_id: Option<String>,
+ }
+ 
+ impl PendingClassification {
+@@ -212,6 +227,9 @@ impl PendingClassification {
+             request_id,
+             notify,
+             armed: true,
++            started_at: Instant::now(),
++            queued_at: chrono::Utc::now(),
++            client_request_id: None,
+         }
+     }
+ 
+@@ -241,6 +259,18 @@ async fn await_release<T>(
+         let status = inner.state.lock().wait_status(&request_id, &notify);
+         match status {
+             WaitStatus::Released(worker) => {
++                let wait = pending.started_at.elapsed();
++                let session_id = inner.state.lock().record_admission(
++                    &request_id,
++                    pending.client_request_id.as_deref(),
++                    pending.queued_at,
++                    wait,
++                );
++                tracing::info!(target: "thunderagent", request_id = %request_id,
++                    client_request_id = pending.client_request_id.as_deref().unwrap_or(""),
++                    session_id = session_id.as_deref().unwrap_or(""),
++                    admission_wait_ms = wait.as_secs_f64() * 1000.0,
++                    "ThunderAgent request admitted");
+                 pending.disarm();
+                 return Ok((value, worker));
+             }
+@@ -259,7 +289,75 @@ pub struct ThunderAgentClassifier {
+     inner: Arc<Inner>,
+ }
+ 
++/// Cloneable, in-process control seam owned by an authenticated coordinator.
++#[derive(Clone)]
++pub struct ExecutionFeedbackControl {
++    inner: Arc<Inner>,
++}
++
++impl ExecutionFeedbackControl {
++    pub(crate) fn authorize_session(&self, session_id: &str, lease: &str) {
++        self.inner
++            .inference_leases
++            .lock()
++            .insert(session_id.into(), lease.into());
++    }
++    pub(crate) fn retire_binding(&self, session_id: &str) -> Result<(), ExecutionFeedbackError> {
++        let mut leases = self.inner.inference_leases.lock();
++        self.inner
++            .state
++            .lock()
++            .retire_execution_binding(session_id)?;
++        leases.remove(session_id);
++        Ok(())
++    }
++
++    pub fn session_snapshot(&self, session_id: &str) -> serde_json::Value {
++        self.inner.reconcile();
++        self.inner
++            .state
++            .lock()
++            .execution_snapshot(session_id, Instant::now())
++    }
++
++    pub fn register_binding(
++        &self,
++        binding: ExecutionBinding,
++    ) -> Result<(), ExecutionFeedbackError> {
++        self.inner
++            .state
++            .lock()
++            .register_execution_binding(binding, Instant::now())?;
++        self.inner.reconcile();
++        Ok(())
++    }
++
++    pub fn update_state(&self, update: SandboxStateUpdate) -> Result<(), ExecutionFeedbackError> {
++        self.inner.state.lock().update_execution_state(
++            update,
++            Instant::now(),
++            chrono::Utc::now(),
++        )?;
++        self.inner.reconcile();
++        Ok(())
++    }
++}
++
+ impl ThunderAgentClassifier {
++    pub fn execution_feedback(&self) -> ExecutionFeedbackControl {
++        ExecutionFeedbackControl {
++            inner: Arc::clone(&self.inner),
++        }
++    }
++
++    pub fn with_execution_feedback_policy(
++        self,
++        policy: ExecutionFeedbackPolicy,
++    ) -> Result<Self, ExecutionFeedbackError> {
++        policy.validate()?;
++        self.inner.state.lock().execution_feedback_policy = policy;
++        Ok(self)
++    }
+     pub fn new(
+         config: ThunderAgentConfig,
+         capacity_provider: Arc<dyn WorkerCapacityProvider>,
+@@ -277,6 +375,7 @@ impl ThunderAgentClassifier {
+                 state: Mutex::new(State::new(config)),
+                 capacity_provider,
+                 scheduler_started: AtomicBool::new(false),
++                inference_leases: Mutex::new(std::collections::HashMap::new()),
+             }),
+         })
+     }
+@@ -289,6 +388,8 @@ impl RequestClassifier for ThunderAgentClassifier {
+         request: ClassifyRequest,
+         _workers: WorkerCandidates<'_>,
+     ) -> ClassifyFuture {
++        let started_at = Instant::now();
++        let queued_at = chrono::Utc::now();
+         let Some(session) = request.session_context() else {
+             return Box::pin(async move { Ok(request) });
+         };
+@@ -298,6 +399,29 @@ impl RequestClassifier for ThunderAgentClassifier {
+             });
+         };
+         let session_id = session.session_id().to_owned();
++        let leases = self.inner.inference_leases.lock();
++        if session_id.starts_with("ac:") {
++            let valid = leases.get(&session_id).is_some_and(|lease| {
++                session
++                    .agent_headers()
++                    .get("x-agentcloud-inference-lease")
++                    .is_some_and(|values| {
++                        values.len() == 1
++                            && super::execution_control::constant_equal(lease, &values[0])
++                    })
++            });
++            if !valid {
++                return Box::pin(async {
++                    Err(Box::new(ThunderAgentError::InvalidInferenceLease) as Box<ClassifierError>)
++                });
++            }
++        }
++        let client_request_id = session
++            .agent_headers()
++            .get("x-agentcloud-attempt-id")
++            .filter(|values| values.len() == 1)
++            .and_then(|values| values.first())
++            .cloned();
+         let session_final = session.session_final() == Some(true);
+         let input_tokens = request.isl_tokens();
+         let progress = request.progress().clone();
+@@ -316,8 +440,12 @@ impl RequestClassifier for ThunderAgentClassifier {
+             }
+         };
+ 
++        drop(leases);
+         let inner = Arc::clone(&self.inner);
+-        let pending = PendingClassification::new(inner, request_id, notify);
++        let mut pending = PendingClassification::new(inner, request_id, notify);
++        pending.started_at = started_at;
++        pending.queued_at = queued_at;
++        pending.client_request_id = client_request_id;
+         Box::pin(async move {
+             await_release(pending, request)
+                 .await
+@@ -388,6 +516,120 @@ mod tests {
+         ThunderAgentClassifier::new(config(), provider).unwrap()
+     }
+ 
++    #[tokio::test]
++    async fn retirement_rejects_active_inference_and_reclaims_finalized_bindings_and_leases() {
++        let mut classifier = classifier(&[(1, 1000)]);
++        let mut binding = execution_feedback::tests::signal(SandboxState::Suspended).binding;
++        binding.session_id = "ac:retire-test".into();
++        let control = classifier.execution_feedback();
++        control.register_binding(binding.clone()).unwrap();
++        control.authorize_session(&binding.session_id, "old-lease");
++        register(&classifier, "first", &binding.session_id, 100, false);
++        assert_eq!(
++            control.retire_binding(&binding.session_id),
++            Err(ExecutionFeedbackError::SessionActive)
++        );
++        release(&classifier, "first").await;
++        sent(&mut classifier, "first", 1).await;
++        completed(&mut classifier, "first", 100).await;
++        assert_eq!(
++            control.retire_binding(&binding.session_id),
++            Err(ExecutionFeedbackError::SessionActive)
++        );
++        register(&classifier, "last", &binding.session_id, 1, true);
++        assert_eq!(
++            control.retire_binding(&binding.session_id),
++            Err(ExecutionFeedbackError::SessionActive)
++        );
++        release(&classifier, "last").await;
++        completed(&mut classifier, "last", 1).await;
++        let snapshot = control.session_snapshot(&binding.session_id);
++        assert_eq!(snapshot["program_present"], false);
++        assert_eq!(snapshot["session_active_requests"], 0);
++        assert_eq!(snapshot["admission_history"].as_array().unwrap().len(), 2);
++        control.retire_binding(&binding.session_id).unwrap();
++        assert!(
++            !classifier
++                .inner
++                .inference_leases
++                .lock()
++                .contains_key(&binding.session_id)
++        );
++        let mut update = execution_feedback::tests::signal(SandboxState::Suspended);
++        update.binding = binding;
++        assert_eq!(
++            control.update_state(update),
++            Err(ExecutionFeedbackError::UnknownSession)
++        );
++    }
++
++    #[tokio::test]
++    async fn admission_history_measures_release_and_survives_worker_completion() {
++        let mut classifier = classifier(&[(1, 1_000)]);
++        register(&classifier, "first", "session-a", 100, false);
++        let mut pending = pending(&classifier, "first");
++        pending.started_at = Instant::now() - Duration::from_millis(25);
++        pending.client_request_id = Some("attempt-42".into());
++        let (_, worker) = await_release(pending, ()).await.unwrap();
++        assert_eq!(worker, Some(WorkerWithDpRank::new(1, 0)));
++        sent(&mut classifier, "first", 1).await;
++        completed(&mut classifier, "first", 100).await;
++        let snapshot = classifier
++            .execution_feedback()
++            .session_snapshot("session-a");
++        let receipt = &snapshot["admission_history"][0];
++        assert_eq!(receipt["request_id"], "first");
++        assert_eq!(receipt["client_request_id"], "attempt-42");
++        assert!(receipt["wait_ms"].as_f64().unwrap() >= 25.0);
++        assert_eq!(snapshot["last_admission_wait_ms"], receipt["wait_ms"]);
++        assert!(receipt["admitted_at"].as_str().unwrap() >= receipt["queued_at"].as_str().unwrap());
++        assert_eq!(snapshot["admission_history"].as_array().unwrap().len(), 1);
++    }
++
++    #[tokio::test]
++    async fn cancelled_admission_keeps_history_empty() {
++        let classifier = classifier(&[(1, 100)]);
++        register(&classifier, "first", "session-a", 100, false);
++        drop(pending(&classifier, "first"));
++        let snapshot = classifier
++            .execution_feedback()
++            .session_snapshot("session-a");
++        assert!(snapshot["admission_history"].is_null());
++    }
++
++    #[tokio::test]
++    async fn execution_feedback_releases_real_pending_admission_immediately() {
++        for signal_state in [
++            SandboxState::Suspended,
++            SandboxState::Parked,
++            SandboxState::HeavyTool,
++        ] {
++            let mut classifier = classifier(&[(1, 1_000)])
++                .with_execution_feedback_policy(ExecutionFeedbackPolicy {
++                    minimum_residence: Duration::ZERO,
++                    ..Default::default()
++                })
++                .unwrap();
++            register(&classifier, "acting", "session-a", 800, false);
++            release(&classifier, "acting").await;
++            sent(&mut classifier, "acting", 1).await;
++            completed(&mut classifier, "acting", 800).await;
++            register(&classifier, "interactive", "session-b", 400, false);
++            assert_eq!(
++                status(&classifier.inner.state.lock(), "interactive"),
++                WaitStatus::Waiting
++            );
++            let update = execution_feedback::tests::signal(signal_state);
++            let control = classifier.execution_feedback();
++            control.register_binding(update.binding.clone()).unwrap();
++            control.update_state(update).unwrap();
++            assert_eq!(
++                status(&classifier.inner.state.lock(), "interactive"),
++                WaitStatus::Released(Some(WorkerWithDpRank::new(1, 0)))
++            );
++        }
++    }
++
+     #[test]
+     fn timeout_logs_are_aggregated_outside_the_lock_and_unchanged_ticks_are_silent() {
+         #[derive(Debug, PartialEq)]
+diff --git a/lib/router-plugins/builtin/src/thunderagent/request_classifier/scheduler.rs b/lib/router-plugins/builtin/src/thunderagent/request_classifier/scheduler.rs
+index 99b8ad9ef59eee13cf0b45abbbb992bf364e57b5..a60a52e1ff3c99a97b6945d9ad946822a95a2d40 100644
+--- a/lib/router-plugins/builtin/src/thunderagent/request_classifier/scheduler.rs
++++ b/lib/router-plugins/builtin/src/thunderagent/request_classifier/scheduler.rs
+@@ -13,6 +13,10 @@ use tokio::sync::Notify;
+ use super::super::ThunderAgentConfig;
+ use super::ThunderAgentError;
+ use super::capacity::WorkerCapacitySnapshot;
++use super::execution_feedback::{
++    ExecutionBinding, ExecutionFeedback, ExecutionFeedbackError, ExecutionFeedbackPolicy,
++    SandboxStateUpdate,
++};
+ 
+ #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+ enum ProgramStatus {
+@@ -37,6 +41,8 @@ pub(crate) struct Program {
+     marked_for_pause: bool,
+     acting_since: Option<Instant>,
+     deferred_since: Option<Instant>,
++    execution_feedback: Option<ExecutionFeedback>,
++    admission_history: VecDeque<serde_json::Value>,
+ }
+ 
+ impl Program {
+@@ -51,6 +57,8 @@ impl Program {
+             marked_for_pause: false,
+             acting_since: None,
+             deferred_since: None,
++            execution_feedback: None,
++            admission_history: VecDeque::new(),
+         }
+     }
+ }
+@@ -186,6 +194,13 @@ pub(crate) struct State {
+     waiting_arrivals: HashSet<String>,
+     next_retention_expiry: Option<Instant>,
+     capacity_snapshot_id: Option<u64>,
++    pub(crate) execution_feedback_policy: ExecutionFeedbackPolicy,
++    accounting_now: Instant,
++    execution_bindings: HashMap<String, ExecutionFeedback>,
++    completed_events: u64,
++    aborted_events: u64,
++    pause_events: u64,
++    final_events: u64,
+ }
+ 
+ impl State {
+@@ -202,9 +217,83 @@ impl State {
+             waiting_arrivals: HashSet::new(),
+             next_retention_expiry: None,
+             capacity_snapshot_id: None,
++            execution_feedback_policy: ExecutionFeedbackPolicy::default(),
++            accounting_now: Instant::now(),
++            execution_bindings: HashMap::new(),
++            completed_events: 0,
++            aborted_events: 0,
++            pause_events: 0,
++            final_events: 0,
+         }
+     }
+ 
++    pub(crate) fn register_execution_binding(
++        &mut self,
++        binding: ExecutionBinding,
++        now: Instant,
++    ) -> Result<(), ExecutionFeedbackError> {
++        binding.validate()?;
++        self.refresh_normal_usage(now);
++        let old = self
++            .execution_bindings
++            .get(&binding.session_id)
++            .or_else(|| {
++                self.programs
++                    .get(&binding.session_id)
++                    .and_then(|p| p.execution_feedback.as_ref())
++            });
++        if let Some(old) = old {
++            if old.binding == binding {
++                return Ok(());
++            }
++            if old.binding.tenant_id != binding.tenant_id
++                || old.binding.workspace_id != binding.workspace_id
++            {
++                return Err(ExecutionFeedbackError::IdentityMismatch);
++            }
++            if binding.epoch <= old.binding.epoch {
++                return Err(ExecutionFeedbackError::StaleEpoch);
++            }
++        } else if self.execution_bindings.len() >= self.config.max_tracked_requests {
++            return Err(ExecutionFeedbackError::InvalidBinding);
++        }
++        let feedback = ExecutionFeedback::new(binding.clone(), now);
++        self.execution_bindings
++            .insert(binding.session_id.clone(), feedback.clone());
++        self.update_program(&binding.session_id, |program| {
++            program.execution_feedback = Some(feedback);
++        });
++        Ok(())
++    }
++
++    pub(crate) fn update_execution_state(
++        &mut self,
++        update: SandboxStateUpdate,
++        now: Instant,
++        wall_now: chrono::DateTime<chrono::Utc>,
++    ) -> Result<(), ExecutionFeedbackError> {
++        self.refresh_normal_usage(now);
++        let session_id = update.binding.session_id.clone();
++        let policy = self.execution_feedback_policy;
++        let mut feedback = self
++            .execution_bindings
++            .get(&session_id)
++            .cloned()
++            .or_else(|| {
++                self.programs
++                    .get(&session_id)
++                    .and_then(|p| p.execution_feedback.clone())
++            })
++            .ok_or(ExecutionFeedbackError::UnknownSession)?;
++        feedback.accept(update, policy, now, wall_now)?;
++        self.execution_bindings
++            .insert(session_id.clone(), feedback.clone());
++        self.update_program(&session_id, |program| {
++            program.execution_feedback = Some(feedback)
++        });
++        Ok(())
++    }
++
+     pub(crate) fn register(
+         &mut self,
+         request: RequestRegistration,
+@@ -227,7 +316,7 @@ impl State {
+                 limit: self.config.max_tracked_requests,
+             });
+         }
+-        self.refresh_normal_usage();
++        self.refresh_normal_usage(now);
+         self.expire_retained_programs(now);
+         if !session_final {
+             self.ensure_program_capacity(&session_id)?;
+@@ -277,6 +366,80 @@ impl State {
+         }
+     }
+ 
++    pub(crate) fn retire_execution_binding(
++        &mut self,
++        session_id: &str,
++    ) -> Result<(), ExecutionFeedbackError> {
++        if self.programs.contains_key(session_id)
++            || self.requests.values().any(|r| r.session_id == session_id)
++        {
++            return Err(ExecutionFeedbackError::SessionActive);
++        }
++        self.execution_bindings.remove(session_id);
++        Ok(())
++    }
++
++    pub(crate) fn record_admission(
++        &mut self,
++        request_id: &str,
++        client_request_id: Option<&str>,
++        queued_at: chrono::DateTime<chrono::Utc>,
++        wait: Duration,
++    ) -> Option<String> {
++        let session_id = self.requests.get(request_id)?.session_id.clone();
++        let history = if let Some(feedback) = self.execution_bindings.get_mut(&session_id) {
++            &mut feedback.admission_history
++        } else {
++            &mut self.programs.get_mut(&session_id)?.admission_history
++        };
++        if history.len() == 16 {
++            history.pop_front();
++        }
++        history.push_back(serde_json::json!({
++            "request_id": request_id,
++            "client_request_id": client_request_id,
++            "queued_at": queued_at,
++            "admitted_at": queued_at + chrono::Duration::from_std(wait).unwrap_or_default(),
++            "wait_ms": wait.as_secs_f64() * 1000.0,
++        }));
++        Some(session_id)
++    }
++
++    pub(crate) fn execution_snapshot(
++        &mut self,
++        session_id: &str,
++        now: Instant,
++    ) -> serde_json::Value {
++        self.refresh_normal_usage(now);
++        let program = self.programs.get(session_id);
++        let feedback = self.execution_bindings.get(session_id);
++        let history = feedback
++            .map(|f| &f.admission_history)
++            .or_else(|| program.map(|p| &p.admission_history));
++        serde_json::json!({
++            "program_present": program.is_some(),
++            "admission_history": history,
++            "last_admission_wait_ms": history.and_then(|h| h.back()).map(|r| &r["wait_ms"]),
++            "released_acting_tokens": program.filter(|p| p.status == ProgramStatus::Acting).map_or(0, |p| current_token_total(p).saturating_sub(self.program_tokens(p, false, now))),
++            "phase": program.map(|p| format!("{:?}", p.status)),
++            "lifecycle": program.map(|p| format!("{:?}", p.lifecycle)),
++            "baseline_tokens": program.map(current_token_total),
++            "logical_budget_tokens": program.map(|p| self.program_tokens(p, false, now)),
++            "execution_multiplier": feedback.map(|f| f.multiplier(self.execution_feedback_policy, now)),
++            "state": feedback.and_then(|f| f.latest.as_ref()).map(|u| u.state),
++            "sequence": feedback.and_then(|f| f.latest.as_ref()).map_or(0, |u| u.sequence),
++            "fresh": feedback.is_some_and(|f| f.latest.is_some() && now < f.expires_at),
++            "session_waiting_requests": self.requests.values().filter(|r| r.session_id == session_id && r.phase == RequestPhase::Waiting).count(),
++            "session_active_requests": self.requests.values().filter(|r| r.session_id == session_id).count(),
++            "waiting_requests": self.waiting_arrivals.len(),
++            "paused_programs": self.paused_programs.len(),
++            "completed_events": self.completed_events,
++            "aborted_events": self.aborted_events,
++            "pause_events": self.pause_events,
++            "final_events": self.final_events,
++        })
++    }
++
+     pub(crate) fn telemetry(&self) -> StateTelemetry {
+         let paused_programs = self.paused_programs.len();
+         StateTelemetry {
+@@ -316,14 +479,7 @@ impl State {
+             return None;
+         }
+         let worker = program.assigned_worker?;
+-        let tokens = if program.status == ProgramStatus::Acting {
+-            scale_tokens(
+-                current_token_total(program),
+-                self.config.acting_token_weight,
+-            )
+-        } else {
+-            current_token_total(program)
+-        };
++        let tokens = self.program_tokens(program, false, self.accounting_now);
+         Some((
+             worker,
+             tokens.saturating_add(self.config.buffer_per_program),
+@@ -350,7 +506,9 @@ impl State {
+         }
+     }
+ 
+-    fn refresh_normal_usage(&mut self) {
++    fn refresh_normal_usage(&mut self, now: Instant) {
++        // Every admission transaction uses one clock snapshot, including cached deltas.
++        self.accounting_now = now;
+         let mut normal_usage = HashMap::<WorkerWithDpRank, usize>::new();
+         for program in self.programs.values() {
+             if let Some((worker, tokens)) = self.program_charge(program) {
+@@ -368,6 +526,7 @@ impl State {
+     ) -> Option<R> {
+         let program = self.programs.get(session_id)?;
+         let before = self.program_charge(program);
++        let was_paused = program.lifecycle == ProgramLifecycle::Paused;
+         self.marked_for_pause -= usize::from(program.marked_for_pause);
+         self.subtract_charge(before);
+         let result = update(self.programs.get_mut(session_id)?);
+@@ -379,6 +538,7 @@ impl State {
+             )
+         })?;
+         self.marked_for_pause += usize::from(marked_for_pause);
++        self.pause_events += u64::from(paused && !was_paused);
+         self.add_charge(after);
+         if paused {
+             self.paused_programs.insert(session_id.to_owned());
+@@ -409,7 +569,11 @@ impl State {
+         Some(program)
+     }
+ 
+-    fn replace_program(&mut self, session_id: String, program: Program) {
++    fn replace_program(&mut self, session_id: String, mut program: Program) {
++        // Cancellation restores inference accounting while keeping newer execution feedback.
++        if let Some(current) = self.programs.get(&session_id) {
++            program.execution_feedback = current.execution_feedback.clone();
++        }
+         self.remove_program(&session_id);
+         self.insert_program(session_id, program);
+     }
+@@ -419,7 +583,7 @@ impl State {
+         capacities: &WorkerCapacitySnapshot,
+         now: Instant,
+     ) -> ReconcileOutcome {
+-        self.refresh_normal_usage();
++        self.refresh_normal_usage(now);
+         let mut changed = self.expire_retained_programs(now);
+         changed |= self.clear_removed_workers(capacities);
+         changed |= self.admit_front_requests(capacities, now);
+@@ -604,6 +768,7 @@ impl State {
+         } else {
+             let mut program = Program::new(input_tokens);
+             program.request_progress = Some(progress);
++            program.execution_feedback = self.execution_bindings.get(&session_id).cloned();
+             self.insert_program(session_id, program);
+         }
+         if let Some(request) = self.requests.get_mut(request_id) {
+@@ -1013,7 +1178,21 @@ impl State {
+         capacities: &WorkerCapacitySnapshot,
+         now: Instant,
+     ) -> bool {
+-        self.refresh_normal_usage();
++        self.refresh_normal_usage(now);
++        match &event {
++            ClassifyEvent::Completed { request_id, .. } => {
++                self.completed_events += 1;
++                if self
++                    .requests
++                    .get(request_id)
++                    .is_some_and(|r| r.session_final)
++                {
++                    self.final_events += 1;
++                }
++            }
++            ClassifyEvent::Aborted { .. } => self.aborted_events += 1,
++            _ => {}
++        }
+         match event {
+             ClassifyEvent::Sent { request_id, worker } => self.sent(&request_id, worker),
+             ClassifyEvent::Completed {
+@@ -1047,7 +1226,7 @@ impl State {
+         capacities: &WorkerCapacitySnapshot,
+         now: Instant,
+     ) -> bool {
+-        self.refresh_normal_usage();
++        self.refresh_normal_usage(now);
+         self.finish_request(request_id, false, None, capacities, now)
+     }
+ 
+@@ -1272,7 +1451,10 @@ impl State {
+         } else {
+             self.config.acting_token_weight
+         };
+-        scale_tokens(token_total, weight)
++        let multiplier = program.execution_feedback.as_ref().map_or(1.0, |feedback| {
++            feedback.multiplier(self.execution_feedback_policy, now)
++        });
++        scale_tokens(token_total, weight * multiplier)
+     }
+ 
+     fn request_cost(&self, input_tokens: usize) -> usize {
+@@ -1378,9 +1560,213 @@ mod tests {
+             marked_for_pause: false,
+             acting_since: Some(now),
+             deferred_since: Some(now),
++            execution_feedback: None,
++            admission_history: VecDeque::new(),
+         }
+     }
+ 
++    #[test]
++    fn execution_feedback_preserves_reasoning_padding_ttl_and_resuming_budget() {
++        let now = Instant::now();
++        let mut state = state(ThunderAgentConfig {
++            acting_token_weight: 0.5,
++            ..Default::default()
++        });
++        state.execution_feedback_policy.minimum_residence = Duration::ZERO;
++        state.execution_feedback_policy.recovery_hold = Duration::ZERO;
++        let mut program = Program::new(800);
++        program.assigned_worker = Some(WorkerWithDpRank::new(1, 0));
++        state.insert_program("session-a".into(), program);
++        let mut update =
++            super::super::execution_feedback::tests::signal(super::super::SandboxState::Suspended);
++        let wall = update.observed_at;
++        state
++            .register_execution_binding(update.binding.clone(), now)
++            .unwrap();
++        state
++            .update_execution_state(update.clone(), now, wall)
++            .unwrap();
++        assert_eq!(
++            state
++                .program_charge(&state.programs["session-a"])
++                .unwrap()
++                .1,
++            900
++        );
++        state.update_program("session-a", |program| {
++            program.status = ProgramStatus::Acting;
++            program.acting_since = Some(now);
++        });
++        assert_eq!(
++            state
++                .program_charge(&state.programs["session-a"])
++                .unwrap()
++                .1,
++            100
++        );
++        assert_eq!(
++            state.program_tokens(
++                &state.programs["session-a"],
++                false,
++                now + Duration::from_secs(5)
++            ),
++            400
++        );
++        // Expiry restores the configured baseline, while the accepted sequence stays fenced.
++        assert_eq!(
++            state.update_execution_state(
++                update.clone(),
++                now + Duration::from_secs(5),
++                wall + chrono::Duration::seconds(5)
++            ),
++            Err(ExecutionFeedbackError::Replay)
++        );
++        update.sequence = 2;
++        update.state = super::super::SandboxState::Resuming;
++        state.update_execution_state(update, now, wall).unwrap();
++        assert_eq!(
++            state
++                .program_charge(&state.programs["session-a"])
++                .unwrap()
++                .1,
++            500
++        );
++    }
++
++    #[test]
++    fn execution_binding_fences_epoch_and_cancellation_keeps_new_feedback() {
++        let now = Instant::now();
++        let mut state = state(ThunderAgentConfig {
++            buffer_per_program: 0,
++            ..Default::default()
++        });
++        state.execution_feedback_policy.minimum_residence = Duration::ZERO;
++        let capacity = capacities(&[(1, 1_000)]);
++        let mut program = Program::new(800);
++        program.status = ProgramStatus::Acting;
++        program.acting_since = Some(now);
++        program.assigned_worker = Some(WorkerWithDpRank::new(1, 0));
++        state.insert_program("session-a".into(), program);
++        let mut update =
++            super::super::execution_feedback::tests::signal(super::super::SandboxState::Suspended);
++        let wall = update.observed_at;
++        state
++            .register_execution_binding(update.binding.clone(), now)
++            .unwrap();
++        let mut changed = update.binding.clone();
++        changed.actor_uid = "replacement".into();
++        assert_eq!(
++            state.register_execution_binding(changed.clone(), now),
++            Err(ExecutionFeedbackError::StaleEpoch)
++        );
++        changed.epoch = 2;
++        state
++            .register_execution_binding(changed.clone(), now)
++            .unwrap();
++        assert_eq!(
++            state.update_execution_state(update.clone(), now, wall),
++            Err(ExecutionFeedbackError::IdentityMismatch)
++        );
++        update.binding = changed;
++        state
++            .register(
++                RequestRegistration::new(
++                    "continuation".into(),
++                    "session-a".into(),
++                    1_200,
++                    RequestProgress::new(1_200).0,
++                    false,
++                ),
++                &capacity,
++                now,
++            )
++            .unwrap();
++        state.update_execution_state(update, now, wall).unwrap();
++        state.cancel_request("continuation", &capacity, now);
++        assert_eq!(
++            state.program_tokens(&state.programs["session-a"], false, now),
++            0
++        );
++        assert_eq!(state.programs["session-a"].status, ProgramStatus::Acting);
++    }
++
++    #[test]
++    fn execution_ttl_and_debounce_recompute_real_usage_before_queue_admission() {
++        let now = Instant::now();
++        let mut state = state(ThunderAgentConfig {
++            buffer_per_program: 0,
++            ..Default::default()
++        });
++        let worker = WorkerWithDpRank::new(1, 0);
++        let capacity = capacities(&[(1, 1_000)]);
++        let mut acting = Program::new(800);
++        acting.status = ProgramStatus::Acting;
++        acting.acting_since = Some(now);
++        acting.assigned_worker = Some(worker);
++        state.insert_program("session-a".into(), acting);
++        let mut update =
++            super::super::execution_feedback::tests::signal(super::super::SandboxState::Suspended);
++        let wall = update.observed_at;
++        state
++            .register_execution_binding(update.binding.clone(), now)
++            .unwrap();
++        state
++            .update_execution_state(update.clone(), now, wall)
++            .unwrap();
++        assert_eq!(state.normal_usage[&worker], 800);
++        let after_debounce = now + Duration::from_millis(250);
++        state.reconcile(&capacity, after_debounce);
++        assert_eq!(state.normal_usage.get(&worker).copied().unwrap_or(0), 0);
++        let live = state
++            .register(
++                RequestRegistration::new(
++                    "live".into(),
++                    "live-session".into(),
++                    100,
++                    RequestProgress::new(100).0,
++                    false,
++                ),
++                &capacity,
++                after_debounce,
++            )
++            .unwrap();
++        assert_eq!(
++            state.wait_status("live", &live),
++            WaitStatus::Released(Some(worker))
++        );
++        assert_eq!(state.normal_usage[&worker], 100);
++        let expiry = now + Duration::from_secs(5);
++        let waiting = state
++            .register(
++                RequestRegistration::new(
++                    "waiting".into(),
++                    "waiting-session".into(),
++                    400,
++                    RequestProgress::new(400).0,
++                    false,
++                ),
++                &capacity,
++                expiry,
++            )
++            .unwrap();
++        assert_eq!(state.normal_usage[&worker], 900);
++        assert_eq!(state.wait_status("waiting", &waiting), WaitStatus::Waiting);
++        state.reconcile(&capacity, expiry);
++        assert_eq!(state.normal_usage[&worker], 900);
++        assert_eq!(state.wait_status("waiting", &waiting), WaitStatus::Waiting);
++        update.sequence = 2;
++        update.observed_at = wall + chrono::Duration::seconds(5);
++        state
++            .update_execution_state(update.clone(), expiry, update.observed_at)
++            .unwrap();
++        state.reconcile(&capacity, expiry + Duration::from_millis(250));
++        assert_eq!(
++            state.wait_status("waiting", &waiting),
++            WaitStatus::Released(Some(worker))
++        );
++        assert_eq!(state.normal_usage[&worker], 500);
++    }
++
+     #[test]
+     fn hard_pins_are_charged_before_sent_and_block_an_interleaved_arrival() {
+         let now = Instant::now();

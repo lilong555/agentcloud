@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
 	"flag"
@@ -60,6 +61,14 @@ func run(kubeconfig, kubeContext, out string) error {
 	if err != nil {
 		return err
 	}
+	if err := writeCertificate(cert, out); err != nil {
+		return err
+	}
+	fmt.Printf("Router client certificate expires at %s\n", cert.Leaf.NotAfter.Format(time.RFC3339))
+	return nil
+}
+
+func writeCertificate(cert tls.Certificate, out string) error {
 	if err := os.MkdirAll(out, 0700); err != nil {
 		return err
 	}
@@ -77,6 +86,5 @@ func run(kubeconfig, kubeContext, out string) error {
 	if err := os.WriteFile(filepath.Join(out, "router-cert.pem"), chain, 0600); err != nil {
 		return err
 	}
-	fmt.Printf("Router client certificate expires at %s\n", cert.Leaf.NotAfter.Format(time.RFC3339))
 	return nil
 }

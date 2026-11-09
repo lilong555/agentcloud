@@ -69,3 +69,19 @@ class DeerFlowManifestTests(unittest.TestCase):
         self.path.write_bytes(b'changed graph')
         with self.assertRaises(AssertionError):
             reconcile_binding(*published)
+
+    def test_active_subagent_blocks_global_safe_point(self):
+        with self.assertRaises(AssertionError):
+            prepare_binding(self.session,'graph-a',['call-a'],[self.receipt],self.path,self.sha,
+                            'thread-a','user-a',{'call-a':'actual actor output'},active_subagents=1)
+
+    def test_subagent_outputs_must_be_present_in_durable_parent_graph(self):
+        for parent in ('child result missing','actual actor output'):
+            if parent=='actual actor output':
+                prepared=prepare_binding(self.session,'graph-a',['call-a'],[self.receipt],self.path,self.sha,
+                    'thread-a','user-a',{'call-a':'actual actor output'},graph_tool_outputs={'task-a':parent},graph_backend='postgres')
+                self.assertEqual(prepared['graph_backend'],'postgres')
+            else:
+                with self.assertRaises(AssertionError):
+                    prepare_binding(self.session,'graph-a',['call-a'],[self.receipt],self.path,self.sha,
+                        'thread-a','user-a',{'call-a':'actual actor output'},graph_tool_outputs={'task-a':parent})

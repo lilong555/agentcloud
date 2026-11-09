@@ -120,6 +120,8 @@ pub enum ExecutionFeedbackError {
     Replay,
     #[error("signal version, duration, sequence, or policy value is invalid")]
     InvalidUpdate,
+    #[error("execution session still has a program or an active request")]
+    SessionActive,
     #[error("signal observation exceeds allowed skew or has expired")]
     Expired,
 }
@@ -129,6 +131,7 @@ pub(crate) struct ExecutionFeedback {
     pub(crate) binding: ExecutionBinding,
     pub(crate) latest: Option<SandboxStateUpdate>,
     pub(crate) expires_at: Instant,
+    pub(crate) admission_history: std::collections::VecDeque<serde_json::Value>,
     state_since: Instant,
     recovery_until: Instant,
 }
@@ -139,6 +142,7 @@ impl ExecutionFeedback {
             binding,
             latest: None,
             expires_at: now,
+            admission_history: std::collections::VecDeque::new(),
             state_since: now,
             recovery_until: now,
         }

@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import shutil
 from pathlib import Path
 import subprocess
 import tempfile
@@ -63,6 +64,14 @@ def export(name: str, spec: dict) -> None:
         }, indent=2) + "\n")
         if destination.is_symlink():
             raise RuntimeError(f"覆盖集目录为符号链接：{destination}")
+        for artifact in ("patches", "test-map.json"):
+            previous = destination / artifact
+            if previous.is_symlink():
+                raise RuntimeError(f"交付文件为符号链接：{previous}")
+            if previous.is_dir():
+                shutil.copytree(previous, staging / artifact)
+            elif previous.is_file():
+                shutil.copy2(previous, staging / artifact)
         backup = Path(directory) / "previous"
         if destination.exists():
             destination.rename(backup)

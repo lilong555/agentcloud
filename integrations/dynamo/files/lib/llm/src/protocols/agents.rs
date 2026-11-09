@@ -112,6 +112,7 @@ const MAX_AGENT_HEADER_BYTES: usize = 32 * 1024;
 
 fn is_agent_header(name: &str) -> bool {
     name == "x-agentcloud-inference-lease"
+        || name == "x-agentcloud-attempt-id"
         || name.starts_with("x-claude-code-")
         || name.starts_with("x-codex-")
         || matches!(
@@ -184,6 +185,19 @@ fn header_bool(headers: &HeaderMap, header_name: &str) -> Option<bool> {
 mod tests {
     use super::*;
     use axum::http::{HeaderName, HeaderValue};
+
+    #[test]
+    fn captures_inference_lease_and_attempt_for_frontend_classification() {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            "x-agentcloud-inference-lease",
+            "lease-secret".parse().unwrap(),
+        );
+        headers.insert("x-agentcloud-attempt-id", "attempt-42".parse().unwrap());
+        let captured = capture_agent_headers(&headers);
+        assert_eq!(captured["x-agentcloud-inference-lease"], ["lease-secret"]);
+        assert_eq!(captured["x-agentcloud-attempt-id"], ["attempt-42"]);
+    }
 
     #[test]
     fn captures_open_families_and_repeated_values_verbatim() {

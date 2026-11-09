@@ -1,0 +1,74 @@
+   Compiling dynamo-router-policies v1.7.0 (/home/li/code/Claudeagent/upstream/dynamo/lib/router-plugins/builtin)
+    Finished `test` profile [unoptimized] target(s) in 12.43s
+     Running unittests src/lib.rs (target/debug/deps/dynamo_router_policies-6e39c891329a0175)
+
+running 66 tests
+test thunderagent::request_classifier::scheduler::tests::benchmark_pause_by_rank ... ignored, manual CPU benchmark
+test thunderagent::config::tests::validates_control_values ... ok
+test thunderagent::request_classifier::execution_feedback::tests::rejects_replay_identity_expiry_and_invalid_values ... ok
+test thunderagent::request_classifier::execution_feedback::tests::defaults_debounce_recovery_hold_and_ttl_preserve_replay_watermark ... ok
+test thunderagent::request_classifier::execution_feedback::tests::future_observation_within_skew_keeps_observed_at_plus_ttl_deadline ... ok
+test thunderagent::request_classifier::capacity::tests::distinguishes_missing_capacity_from_worker_removal ... ok
+test thunderagent::request_classifier::scheduler::tests::equal_size_pause_candidates_keep_their_existing_order ... ok
+test thunderagent::request_classifier::scheduler::tests::execution_feedback_preserves_reasoning_padding_ttl_and_resuming_budget ... ok
+test thunderagent::request_classifier::scheduler::tests::greedy_resume_selects_scalar_set_then_packs_largest_first ... ok
+test thunderagent::request_classifier::scheduler::tests::pause_isolates_worker_ranks_and_stops_acting_at_target ... ok
+test thunderagent::request_classifier::scheduler::tests::assigned_continuation_releases_before_periodic_pressure ... ok
+test thunderagent::request_classifier::scheduler::tests::hard_pins_are_charged_before_sent_and_block_an_interleaved_arrival ... ok
+test thunderagent::request_classifier::scheduler::tests::pinned_continuation_waits_when_changing_to_a_full_worker ... ok
+test thunderagent::request_classifier::scheduler::tests::cancelling_a_pinned_worker_change_restores_the_prior_charge ... ok
+test thunderagent::request_classifier::scheduler::tests::pause_sees_a_request_force_resumed_in_the_same_reconcile ... ok
+test thunderagent::request_classifier::scheduler::tests::execution_ttl_and_debounce_recompute_real_usage_before_queue_admission ... ok
+test thunderagent::request_classifier::scheduler::tests::execution_binding_fences_epoch_and_cancellation_keeps_new_feedback ... ok
+test thunderagent::request_classifier::scheduler::tests::pinned_continuation_waits_when_its_current_worker_cannot_fit_growth ... ok
+test thunderagent::request_classifier::scheduler::tests::hard_pin_without_a_capacity_card_keeps_its_exact_target ... ok
+test thunderagent::request_classifier::scheduler::tests::hard_pin_waits_when_only_another_worker_has_capacity ... ok
+test thunderagent::request_classifier::scheduler::tests::streamed_progress_updates_capacity_pressure_without_a_state_event ... ok
+test thunderagent::request_classifier::execution_feedback::tests::wire_contract_uses_versioned_flat_identity_and_rfc3339_time ... ok
+test thunderagent::request_classifier::scheduler::tests::waiting_hard_pin_resumes_only_on_its_worker_after_capacity_change ... ok
+test thunderagent::request_classifier::scheduler::tests::timed_out_hard_pin_waits_when_discovery_has_no_live_workers ... ok
+test thunderagent::request_classifier::tests::benchmark_ignored_events ... ignored, manual CPU benchmark
+test thunderagent::request_classifier::tests::cancelled_admission_keeps_history_empty ... ok
+test thunderagent::request_classifier::tests::derives_capacity_and_liveness_from_the_host_context ... ok
+test thunderagent::request_classifier::tests::a_reused_request_id_does_not_revive_a_canceled_queue_entry ... ok
+test thunderagent::request_classifier::tests::cold_start_without_model_cards_flows_through ... ok
+test thunderagent::request_classifier::tests::aborted_request_rolls_back_new_program ... ok
+test thunderagent::request_classifier::tests::dropping_an_old_classification_preserves_a_reused_request_id ... ok
+test thunderagent::request_classifier::tests::admission_history_measures_release_and_survives_worker_completion ... ok
+test thunderagent::request_classifier::tests::an_old_waiter_cannot_read_a_reused_request_id ... ok
+test thunderagent::request_classifier::tests::authoritative_empty_liveness_clears_the_last_assignment ... ok
+test thunderagent::request_classifier::tests::implements_request_classifier ... ok
+test thunderagent::request_classifier::tests::ignored_and_untracked_events_do_not_read_capacity ... ok
+test thunderagent::request_classifier::tests::final_session_waits_for_inflight_turn_then_removes_program ... ok
+test thunderagent::request_classifier::tests::final_session_frees_capacity_at_admission_without_restoring_on_abort ... ok
+test thunderagent::request_classifier::tests::execution_feedback_releases_real_pending_admission_immediately ... ok
+test thunderagent::request_classifier::tests::live_worker_without_a_model_card_keeps_its_session_assignment ... ok
+test thunderagent::request_classifier::tests::marked_count_stays_current_after_completion_and_rollback ... ok
+test thunderagent::request_classifier::tests::retirement_rejects_active_inference_and_reclaims_finalized_bindings_and_leases ... ok
+test thunderagent::request_classifier::tests::selects_a_worker_then_reconciles_the_sent_event ... ok
+test thunderagent::request_classifier::tests::sent_event_reconciles_the_actual_worker ... ok
+test thunderagent::request_classifier::tests::serializes_requests_for_one_session ... ok
+test thunderagent::request_classifier::tests::stale_capacity_card_is_not_used_for_assignment ... ok
+test thunderagent::request_classifier::tests::timeout_logs_are_aggregated_outside_the_lock_and_unchanged_ticks_are_silent ... ok
+test thunderagent::request_classifier::tests::tracked_request_limit_is_enforced_before_allocating_state ... ok
+test thunderagent::request_classifier::tests::retained_programs_are_bounded_by_the_tracking_limit ... ok
+test thunderagent::worker_selection::tests::falls_back_when_the_classifier_target_is_unavailable ... ok
+test thunderagent::worker_selection::tests::honors_the_classifier_target_when_eligible ... ok
+test thunderagent::execution_control::tests::body_size_and_per_credential_rate_are_bounded ... ok
+test thunderagent::execution_control::tests::concurrent_final_register_and_state_keep_one_generation_and_tenant_scope ... ok
+test thunderagent::tests::registers_classifier_and_worker_selector ... ok
+test thunderagent::execution_control::tests::native_control_rejects_replay_expired_scope_and_unknown_fields ... ok
+test thunderagent::execution_control::tests::authenticated_bindings_isolate_same_session_across_workspaces_and_rotate_epoch_lease ... ok
+test thunderagent::request_classifier::tests::capacity_growth_resumes_a_pending_program ... ok
+test thunderagent::request_classifier::tests::retained_session_expires_before_its_next_request ... ok
+test thunderagent::request_classifier::tests::dropping_an_unpolled_classification_rolls_back_its_program ... ok
+test thunderagent::request_classifier::tests::arrival_tombstones_are_compacted_amortized ... ok
+test thunderagent::request_classifier::tests::dropping_pending_classification_rolls_back_its_program ... ok
+test thunderagent::request_classifier::tests::missing_capacity_respects_pause_until_timeout ... ok
+test thunderagent::request_classifier::tests::timeout_forces_release_on_the_least_loaded_worker ... ok
+test thunderagent::execution_control::tests::finalization_reclaims_binding_capacity_and_rejects_retired_generation_after_churn ... ok
+test thunderagent::request_classifier::tests::pressure_pauses_an_acting_program_and_capacity_resumes_it ... ok
+test thunderagent::request_classifier::tests::releases_a_large_backlog_without_per_release_linear_removal ... ok
+
+test result: ok. 64 passed; 0 failed; 2 ignored; 0 measured; 23 filtered out; finished in 0.40s
+

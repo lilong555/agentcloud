@@ -40,18 +40,19 @@ func (b Binding) Key() Key { return Key{b.TenantID, b.WorkspaceID, b.SessionID} 
 
 // SandboxStateUpdate is the version-1 feedback contract. Durations are milliseconds.
 type SandboxStateUpdate struct {
-	ProtocolVersion   int       `json:"protocol_version"`
-	SourceID          string    `json:"source_id"`
-	TenantID          string    `json:"tenant_id"`
-	WorkspaceID       string    `json:"workspace_id"`
-	SessionID         string    `json:"session_id"`
-	ActorUID          string    `json:"actor_uid"`
-	Epoch             uint64    `json:"epoch"`
-	Sequence          uint64    `json:"sequence"`
-	ObservedAt        time.Time `json:"observed_at"`
-	TTLMS             int64     `json:"ttl_ms"`
-	State             State     `json:"state"`
-	EstimatedReturnMS int64     `json:"estimated_return_ms"`
+	RegistrationGeneration string    `json:"registration_generation,omitempty"`
+	ProtocolVersion        int       `json:"protocol_version"`
+	SourceID               string    `json:"source_id"`
+	TenantID               string    `json:"tenant_id"`
+	WorkspaceID            string    `json:"workspace_id"`
+	SessionID              string    `json:"session_id"`
+	ActorUID               string    `json:"actor_uid"`
+	Epoch                  uint64    `json:"epoch"`
+	Sequence               uint64    `json:"sequence"`
+	ObservedAt             time.Time `json:"observed_at"`
+	TTLMS                  int64     `json:"ttl_ms"`
+	State                  State     `json:"state"`
+	EstimatedReturnMS      int64     `json:"estimated_return_ms"`
 }
 
 func (u SandboxStateUpdate) Binding() Binding {

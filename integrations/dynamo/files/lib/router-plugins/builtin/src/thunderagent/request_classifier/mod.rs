@@ -215,6 +215,9 @@ struct PendingClassification {
     request_id: String,
     notify: Arc<Notify>,
     armed: bool,
+    started_at: Instant,
+    queued_at: chrono::DateTime<chrono::Utc>,
+    client_request_id: Option<String>,
 }
 
 impl PendingClassification {
@@ -224,6 +227,9 @@ impl PendingClassification {
             request_id,
             notify,
             armed: true,
+            started_at: Instant::now(),
+            queued_at: chrono::Utc::now(),
+            client_request_id: None,
         }
     }
 
@@ -253,6 +259,18 @@ async fn await_release<T>(
         let status = inner.state.lock().wait_status(&request_id, &notify);
         match status {
             WaitStatus::Released(worker) => {
+                let wait = pending.started_at.elapsed();
+                let session_id = inner.state.lock().record_admission(
+                    &request_id,
+                    pending.client_request_id.as_deref(),
+                    pending.queued_at,
+                    wait,
+                );
+                tracing::info!(target: "thunderagent", request_id = %request_id,
+                    client_request_id = pending.client_request_id.as_deref().unwrap_or(""),
+                    session_id = session_id.as_deref().unwrap_or(""),
+                    admission_wait_ms = wait.as_secs_f64() * 1000.0,
+                    "ThunderAgent request admitted");
                 pending.disarm();
                 return Ok((value, worker));
             }
@@ -284,6 +302,16 @@ impl ExecutionFeedbackControl {
             .lock()
             .insert(session_id.into(), lease.into());
     }
+    pub(crate) fn retire_binding(&self, session_id: &str) -> Result<(), ExecutionFeedbackError> {
+        let mut leases = self.inner.inference_leases.lock();
+        self.inner
+            .state
+            .lock()
+            .retire_execution_binding(session_id)?;
+        leases.remove(session_id);
+        Ok(())
+    }
+
     pub fn session_snapshot(&self, session_id: &str) -> serde_json::Value {
         self.inner.reconcile();
         self.inner
@@ -360,6 +388,8 @@ impl RequestClassifier for ThunderAgentClassifier {
         request: ClassifyRequest,
         _workers: WorkerCandidates<'_>,
     ) -> ClassifyFuture {
+        let started_at = Instant::now();
+        let queued_at = chrono::Utc::now();
         let Some(session) = request.session_context() else {
             return Box::pin(async move { Ok(request) });
         };
@@ -369,27 +399,29 @@ impl RequestClassifier for ThunderAgentClassifier {
             });
         };
         let session_id = session.session_id().to_owned();
+        let leases = self.inner.inference_leases.lock();
         if session_id.starts_with("ac:") {
-            let valid = self
-                .inner
-                .inference_leases
-                .lock()
-                .get(&session_id)
-                .is_some_and(|lease| {
-                    session
-                        .agent_headers()
-                        .get("x-agentcloud-inference-lease")
-                        .is_some_and(|values| {
-                            values.len() == 1
-                                && super::execution_control::constant_equal(lease, &values[0])
-                        })
-                });
+            let valid = leases.get(&session_id).is_some_and(|lease| {
+                session
+                    .agent_headers()
+                    .get("x-agentcloud-inference-lease")
+                    .is_some_and(|values| {
+                        values.len() == 1
+                            && super::execution_control::constant_equal(lease, &values[0])
+                    })
+            });
             if !valid {
                 return Box::pin(async {
                     Err(Box::new(ThunderAgentError::InvalidInferenceLease) as Box<ClassifierError>)
                 });
             }
         }
+        let client_request_id = session
+            .agent_headers()
+            .get("x-agentcloud-attempt-id")
+            .filter(|values| values.len() == 1)
+            .and_then(|values| values.first())
+            .cloned();
         let session_final = session.session_final() == Some(true);
         let input_tokens = request.isl_tokens();
         let progress = request.progress().clone();
@@ -408,8 +440,12 @@ impl RequestClassifier for ThunderAgentClassifier {
             }
         };
 
+        drop(leases);
         let inner = Arc::clone(&self.inner);
-        let pending = PendingClassification::new(inner, request_id, notify);
+        let mut pending = PendingClassification::new(inner, request_id, notify);
+        pending.started_at = started_at;
+        pending.queued_at = queued_at;
+        pending.client_request_id = client_request_id;
         Box::pin(async move {
             await_release(pending, request)
                 .await
@@ -478,6 +514,87 @@ mod tests {
         let snapshot = capacities(values);
         let provider: Arc<dyn WorkerCapacityProvider> = Arc::new(move || Arc::clone(&snapshot));
         ThunderAgentClassifier::new(config(), provider).unwrap()
+    }
+
+    #[tokio::test]
+    async fn retirement_rejects_active_inference_and_reclaims_finalized_bindings_and_leases() {
+        let mut classifier = classifier(&[(1, 1000)]);
+        let mut binding = execution_feedback::tests::signal(SandboxState::Suspended).binding;
+        binding.session_id = "ac:retire-test".into();
+        let control = classifier.execution_feedback();
+        control.register_binding(binding.clone()).unwrap();
+        control.authorize_session(&binding.session_id, "old-lease");
+        register(&classifier, "first", &binding.session_id, 100, false);
+        assert_eq!(
+            control.retire_binding(&binding.session_id),
+            Err(ExecutionFeedbackError::SessionActive)
+        );
+        release(&classifier, "first").await;
+        sent(&mut classifier, "first", 1).await;
+        completed(&mut classifier, "first", 100).await;
+        assert_eq!(
+            control.retire_binding(&binding.session_id),
+            Err(ExecutionFeedbackError::SessionActive)
+        );
+        register(&classifier, "last", &binding.session_id, 1, true);
+        assert_eq!(
+            control.retire_binding(&binding.session_id),
+            Err(ExecutionFeedbackError::SessionActive)
+        );
+        release(&classifier, "last").await;
+        completed(&mut classifier, "last", 1).await;
+        let snapshot = control.session_snapshot(&binding.session_id);
+        assert_eq!(snapshot["program_present"], false);
+        assert_eq!(snapshot["session_active_requests"], 0);
+        assert_eq!(snapshot["admission_history"].as_array().unwrap().len(), 2);
+        control.retire_binding(&binding.session_id).unwrap();
+        assert!(
+            !classifier
+                .inner
+                .inference_leases
+                .lock()
+                .contains_key(&binding.session_id)
+        );
+        let mut update = execution_feedback::tests::signal(SandboxState::Suspended);
+        update.binding = binding;
+        assert_eq!(
+            control.update_state(update),
+            Err(ExecutionFeedbackError::UnknownSession)
+        );
+    }
+
+    #[tokio::test]
+    async fn admission_history_measures_release_and_survives_worker_completion() {
+        let mut classifier = classifier(&[(1, 1_000)]);
+        register(&classifier, "first", "session-a", 100, false);
+        let mut pending = pending(&classifier, "first");
+        pending.started_at = Instant::now() - Duration::from_millis(25);
+        pending.client_request_id = Some("attempt-42".into());
+        let (_, worker) = await_release(pending, ()).await.unwrap();
+        assert_eq!(worker, Some(WorkerWithDpRank::new(1, 0)));
+        sent(&mut classifier, "first", 1).await;
+        completed(&mut classifier, "first", 100).await;
+        let snapshot = classifier
+            .execution_feedback()
+            .session_snapshot("session-a");
+        let receipt = &snapshot["admission_history"][0];
+        assert_eq!(receipt["request_id"], "first");
+        assert_eq!(receipt["client_request_id"], "attempt-42");
+        assert!(receipt["wait_ms"].as_f64().unwrap() >= 25.0);
+        assert_eq!(snapshot["last_admission_wait_ms"], receipt["wait_ms"]);
+        assert!(receipt["admitted_at"].as_str().unwrap() >= receipt["queued_at"].as_str().unwrap());
+        assert_eq!(snapshot["admission_history"].as_array().unwrap().len(), 1);
+    }
+
+    #[tokio::test]
+    async fn cancelled_admission_keeps_history_empty() {
+        let classifier = classifier(&[(1, 100)]);
+        register(&classifier, "first", "session-a", 100, false);
+        drop(pending(&classifier, "first"));
+        let snapshot = classifier
+            .execution_feedback()
+            .session_snapshot("session-a");
+        assert!(snapshot["admission_history"].is_null());
     }
 
     #[tokio::test]

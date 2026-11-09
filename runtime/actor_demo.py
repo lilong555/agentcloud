@@ -101,10 +101,16 @@ def execute(args):
             assert before['memory_nonce']!=after['memory_nonce'],'冷启动需要产生新的RAM nonce'
             assert after['application_restart'] is True
         assert before['logical_request_id']==after['logical_request_id']
-        assert 'coding-task-ok 55' in after['result']['stdout']
+        assert after['result']['exit_code']==0 and 'Ran 4 tests' in after['result']['stderr']
+        assert after['baseline_test']['exit_code']!=0
+        assert after['ast_fingerprint_preserved']
+        if not root and fidelity=='MEMORY':
+            assert after['ast_object_ids_preserved'] and after['context_nonce_preserved']
+            assert not after['context_rebuilt']
         report=dict(schema_version=1,generated_at=datetime.now(timezone.utc).isoformat(),success=True,mode='in-actor',
             execution_kind='actual-in-actor-python-loop-http-coordination',
-            components={'agent_loop':'actual runtime process','journal':'Actor SQLite plus external Go journal','inference':'configured model endpoint',
+            components={'agent_loop':'actual runtime process','journal':'Actor SQLite plus external Go journal','inference':'configured model endpoint', 'model_name':args.model_name,
+                'coding_task':'multi-file Decimal pricing repository; AST diagnosis and repair; 4 unit tests',
                 'execution_backend':session['backend'],'runtime_location':'explicit host-process contract fixture' if root else 'provided Actor runtime endpoint'},
             runtime_url=runtime_url,local_contract_fixture=root is not None,cold_restart=args.cold_restart,
             before=before,after=after,manifest=manifest,suspended=suspended['state'],resumed_epoch=resumed['epoch'],

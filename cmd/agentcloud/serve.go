@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -17,11 +18,18 @@ import (
 	"github.com/lilong555/agentcloud/internal/adapters/dynamo"
 	substrateapi "github.com/lilong555/agentcloud/internal/adapters/substrate"
 	"github.com/lilong555/agentcloud/internal/control"
+	"github.com/lilong555/agentcloud/internal/observability"
 )
 
 func serve(args []string, stdout, stderr io.Writer) error {
 	flags := flag.NewFlagSet("serve", flag.ContinueOnError)
 	flags.SetOutput(stderr)
+	autonomous := flags.Bool("enable-autonomous-scheduler", false, "启用服务端基于实际队列、Worker容量与历史延迟的自主休眠恢复")
+	schedulerInterval := flags.Duration("scheduler-interval", 250*time.Millisecond, "自主调度观察间隔")
+	schedulerIdlePrior := flags.Duration("scheduler-idle-prior", 0, "冷启动idle预计时长先验；实际idle观测后由p75历史替代")
+	schedulerStable := flags.Duration("scheduler-stable-for", 500*time.Millisecond, "休眠前稳定等待确认时长")
+	otlp := flags.Bool("otel-otlp", os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT") != "" || os.Getenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT") != "", "启用标准OTLP HTTP tracing exporter")
+	serviceName := flags.String("otel-service-name", envDefault("OTEL_SERVICE_NAME", "agentcloud-coordinator"), "OpenTelemetry服务名称")
 	listen := flags.String("listen", "127.0.0.1:8090", "HTTP listen address")
 	data := flags.String("data-dir", "artifacts/local", "durable local state and workspaces")
 	database := flags.String("database-url", os.Getenv("AGENTCLOUD_DATABASE_URL"), "PostgreSQL URL; empty uses fsync JSON")
@@ -30,8 +38,10 @@ func serve(args []string, stdout, stderr io.Writer) error {
 	modelURL := flags.String("model-url", os.Getenv("AGENTCLOUD_MODEL_URL"), "OpenAI-compatible model base URL or mock://deterministic")
 	allowShell := flags.Bool("allow-local-shell", false, "enable controlled local development shell commands")
 	modelConcurrency := flags.Int("model-concurrency", 4, "maximum parallel physical model attempts")
+	modelTimeout := flags.Duration("model-timeout", 120*time.Second, "deadline for one physical model attempt")
 	experimentControls := flags.Bool("enable-experiment-controls", false, "enable explicit session ablation groups A..E")
 	dynamoURL := flags.String("dynamo-control-url", os.Getenv("AGENTCLOUD_DYNAMO_CONTROL_URL"), "native execution control origin")
+	tenantTokensFile := flags.String("dynamo-tenant-tokens-file", "", "私有JSON文件 {tenant-id: native-control-token}")
 	source := flags.String("source-id", "coordinator-local", "trusted execution source identity")
 	substrateAddress := flags.String("substrate-address", "127.0.0.1:9443", "Substrate gRPC API address")
 	atespace := flags.String("atespace", "agentcloud", "Substrate atespace")
@@ -76,6 +86,15 @@ func serve(args []string, stdout, stderr io.Writer) error {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	telemetry, err := observability.New(ctx, observability.Config{ServiceName: *serviceName, OTLP: *otlp})
+	if err != nil {
+		return err
+	}
+	defer func() {
+		shutdown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = telemetry.Close(shutdown)
+	}()
 	var execution control.Backend
 	switch *backend {
 	case "local":
@@ -95,19 +114,58 @@ func serve(args []string, stdout, stderr io.Writer) error {
 	}
 	var sink control.SignalSink
 	if *dynamoURL != "" {
-		client, e := dynamo.NewClient(*dynamoURL, os.Getenv("AGENTCLOUD_DYNAMO_TOKEN"), nil)
-		if e != nil {
-			return e
+		credentials := map[string]string{}
+		if *tenantTokensFile != "" {
+			info, e := os.Stat(*tenantTokensFile)
+			if e != nil {
+				return e
+			}
+			if info.Mode().Perm()&0077 != 0 {
+				return errors.New("Dynamo租户凭证文件权限需要0600")
+			}
+			data, e := os.ReadFile(*tenantTokensFile)
+			if e != nil {
+				return e
+			}
+			if e = json.Unmarshal(data, &credentials); e != nil {
+				return errors.New("Dynamo租户凭证文件需要tenant=token JSON对象")
+			}
+			if len(credentials) == 0 {
+				return errors.New("Dynamo租户凭证文件为空")
+			}
 		}
-		checkCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-		_, e = client.Capabilities(checkCtx)
-		cancel()
-		if e != nil {
-			return e
+		bridge := &control.DynamoBridge{SourceID: *source}
+		if len(credentials) == 0 {
+			client, e := dynamo.NewClient(*dynamoURL, os.Getenv("AGENTCLOUD_DYNAMO_TOKEN"), nil)
+			if e != nil {
+				return e
+			}
+			check, cancel := context.WithTimeout(ctx, 5*time.Second)
+			_, e = client.Capabilities(check)
+			cancel()
+			if e != nil {
+				return e
+			}
+			bridge.Client = client
+		} else {
+			bridge.Clients = map[string]*dynamo.Client{}
+			for tenant, token := range credentials {
+				client, e := dynamo.NewClient(*dynamoURL, token, nil)
+				if e != nil {
+					return errors.New("Dynamo租户凭证格式无效")
+				}
+				check, cancel := context.WithTimeout(ctx, 5*time.Second)
+				_, e = client.Capabilities(check)
+				cancel()
+				if e != nil {
+					return fmt.Errorf("Dynamo tenant %s capability check failed", tenant)
+				}
+				bridge.Clients[tenant] = client
+			}
 		}
-		sink = &control.DynamoBridge{Client: client, SourceID: *source}
+		sink = bridge
 	}
-	c, err := control.New(ctx, control.Config{Signals: sink, DataDir: *data, DatabaseURL: *database, Backend: execution, ModelURL: *modelURL, ModelAPIKey: os.Getenv("AGENTCLOUD_MODEL_API_KEY"), ModelConcurrency: *modelConcurrency, Tokens: bindings, EnableExperimentControls: *experimentControls})
+	c, err := control.New(ctx, control.Config{EnableAutonomousScheduler: *autonomous, SchedulerInterval: *schedulerInterval, SchedulerStableFor: *schedulerStable, SchedulerIdlePrior: *schedulerIdlePrior, Observability: telemetry, Signals: sink, DataDir: *data, DatabaseURL: *database, Backend: execution, ModelURL: *modelURL, ModelAPIKey: os.Getenv("AGENTCLOUD_MODEL_API_KEY"), ModelConcurrency: *modelConcurrency, ModelTimeout: *modelTimeout, Tokens: bindings, EnableExperimentControls: *experimentControls})
 	if err != nil {
 		return err
 	}

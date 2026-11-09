@@ -27,9 +27,41 @@ def checkpoint_backup(connection,destination,checkpoint_id):
     return hashlib.sha256(destination.read_bytes()).hexdigest()
 
 
-def prepare_binding(session,checkpoint_id,tool_call_ids,receipts,graph_path,graph_sha256,thread_id,user_id,tool_outputs):
+def graph_applied_text(outputs):
+    fragments=[]
+    def visit(value):
+        if isinstance(value,str):
+            fragments.append(value)
+            candidate=value.partition('Task Succeeded. Result: ')[2] or value
+            try:
+                decoded=json.loads(candidate)
+            except (ValueError,TypeError):
+                return
+            if decoded!=value:
+                visit(decoded)
+        elif isinstance(value,dict):
+            fragments.append(json.dumps(value,sort_keys=True,ensure_ascii=False,separators=(',',':')))
+            for nested in value.values(): visit(nested)
+        elif isinstance(value,(list,tuple)):
+            for nested in value: visit(nested)
+    visit(outputs)
+    return '\n'.join(fragments)
+
+
+def prepare_binding(session,checkpoint_id,tool_call_ids,receipts,graph_path,graph_sha256,thread_id,user_id,tool_outputs,*,active_subagents=0,graph_tool_outputs=None,graph_backend='sqlite'):
     receipts=sorted(receipts,key=lambda receipt:receipt['receipt_seq'])
     assert session['state']=='RUNNING' and session['active_tools']==0
+    assert active_subagents==0,'全局安全点等待全部子任务完成'
+    if graph_tool_outputs is not None:
+        combined=graph_applied_text(graph_tool_outputs)
+        def applied(output):
+            if output in combined: return True
+            try:
+                canonical=json.dumps(json.loads(output),sort_keys=True,ensure_ascii=False,separators=(',',':'))
+            except (ValueError,TypeError):
+                return False
+            return canonical in combined
+        assert all(applied(output) for output in tool_outputs.values()),'子任务与上传结果需要已应用到持久父图'
     assert [receipt['receipt_seq'] for receipt in receipts]==list(range(1,session['receipt_watermark']+1)),'图关联回执需要连续且完整'
     assert all(receipt['status']=='COMPLETED' and receipt['logical_tool_call_id'] in tool_call_ids for receipt in receipts),'工具结果需要已应用到图checkpoint'
     assert all(session['tools'][receipt['tool_op_id']]['payload_hash']==receipt['payload_hash'] for receipt in receipts),'回执业务输入需要一致'
@@ -41,7 +73,7 @@ def prepare_binding(session,checkpoint_id,tool_call_ids,receipts,graph_path,grap
     return dict(state='PREPARED',generated_at=datetime.now(timezone.utc).isoformat(),
         session_id=session['session_id'],workspace_id=session['workspace_id'],actor_uid=session['actor_uid'],
         epoch=session['epoch'],thread_id=thread_id,user_id=user_id,checkpoint_ns='',checkpoint_id=checkpoint_id,
-        graph_checkpoint_path=str(graph_path),graph_sha256=graph_sha256,receipt_watermark=session['receipt_watermark'],
+        graph_checkpoint_path=str(graph_path),graph_sha256=graph_sha256,graph_backend=graph_backend,receipt_watermark=session['receipt_watermark'],
         receipt_set_sha256=digest(receipts),receipts=receipts,applied_tool_call_ids=sorted(tool_call_ids),
         applied_tool_output_sha256={key:hashlib.sha256(value.encode()).hexdigest() for key,value in tool_outputs.items()},
         graph_application_barrier='persisted LangGraph interrupt or terminal graph; execution stopped',

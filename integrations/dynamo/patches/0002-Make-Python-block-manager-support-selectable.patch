@@ -1,0 +1,29 @@
+From be365b40880c9730936959f7bc498b890f5d5675 Mon Sep 17 00:00:00 2001
+From: lilong555 <173714821+lilong555@users.noreply.github.com>
+Date: Tue, 10 Nov 2026 00:00:00 +0000
+Subject: [PATCH 2/2] Make Python block manager support selectable
+
+
+diff --git a/lib/bindings/python/Cargo.toml b/lib/bindings/python/Cargo.toml
+index fca3c27b40d9a138fdc6cccdda5b3db9a5a9b6a5..699a136c6dfcb18f7fbce1ee8ee864ea7dea66ff 100644
+--- a/lib/bindings/python/Cargo.toml
++++ b/lib/bindings/python/Cargo.toml
+@@ -22,7 +22,8 @@ name = "_core"
+ crate-type = ["cdylib", "rlib"]
+ 
+ [features]
+-default = ["custom-policy"]
++default = ["custom-policy", "block-manager"]
++block-manager = ["dynamo-llm/block-manager"]
+ # Links the router plugins Dynamo ships plus the replaceable catalog selected by the
+ # dependency alias below. Enabled by default so a deployment can select a shipped policy through
+ # router-policy YAML without rebuilding. A private image replaces only the catalog dependency, so
+@@ -128,7 +129,7 @@ pythonize = "0.23"
+ 
+ 
+ [target.'cfg(target_os = "linux")'.dependencies]
+-dynamo-llm = { path = "../../llm" }
++dynamo-llm = { path = "../../llm", default-features = false }
+ 
+ [target.'cfg(not(target_os = "linux"))'.dependencies]
+ dynamo-llm = { path = "../../llm", default-features = false }

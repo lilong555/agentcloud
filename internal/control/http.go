@@ -4,7 +4,6 @@ import (
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -64,7 +63,7 @@ func (c *Controller) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/sessions/{id}/model-boundary", c.ModelBoundaryEndpoint())
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) { respond(w, 200, map[string]any{"status": "ok"}) })
 	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, r *http.Request) {
-		c.mu.Lock()
+		c.lock()
 		err := c.ready()
 		c.mu.Unlock()
 		if err == nil {
@@ -151,7 +150,7 @@ func (c *Controller) Handler() http.Handler {
 		if err := decode(w, r, &input); err != nil {
 			return err
 		}
-		result, err := c.SubmitWithOptions(tenant, r.PathValue("id"), input.ID, input.Payload, input.TerminalTurn)
+		result, err := c.submitWithContext(r.Context(), tenant, r.PathValue("id"), input.ID, input.Payload, input.TerminalTurn)
 		if err != nil {
 			return err
 		}
@@ -188,7 +187,7 @@ func (c *Controller) Handler() http.Handler {
 		if r.URL.Query().Get("after_seq") != "" && err != nil {
 			return problem(400, "invalid_cursor", "after_seq must be an unsigned integer")
 		}
-		c.mu.Lock()
+		c.lock()
 		defer c.mu.Unlock()
 		if after > 0 && len(c.state.Events) > 0 && after < c.state.Events[0].Sequence-1 {
 			return problem(410, "event_gap", "event cursor precedes retained history")
@@ -202,29 +201,54 @@ func (c *Controller) Handler() http.Handler {
 		respond(w, 200, map[string]any{"events": events, "last_sequence": c.state.EventSequence})
 		return nil
 	}))
-	mux.HandleFunc("GET /metrics", c.authenticated(func(w http.ResponseWriter, r *http.Request, tenant string) error {
-		c.mu.Lock()
-		defer c.mu.Unlock()
-		sessions, active, pending, unknown := 0, 0, 0, 0
-		for _, s := range c.state.Sessions {
-			if s.TenantID == tenant {
-				sessions++
-				active += s.ActiveTools
-			}
+	mux.HandleFunc("POST /v1/sessions/{id}/finalize", c.authenticated(func(w http.ResponseWriter, r *http.Request, tenant string) error {
+		result, err := c.FinalizeDynamo(r.Context(), tenant, r.PathValue("id"))
+		if err != nil {
+			return err
 		}
-		for _, request := range c.state.Requests {
-			if request.TenantID == tenant {
-				if request.Status == "PENDING" || request.Status == "DISPATCHING" {
-					pending++
-				}
-				if request.Status == "OUTCOME_UNKNOWN" {
-					unknown++
-				}
-			}
-		}
-		w.Header().Set("Content-Type", "text/plain; version=0.0.4")
-		fmt.Fprintf(w, "agentcloud_sessions %d\nagentcloud_active_tools %d\nagentcloud_pending_model_requests %d\nagentcloud_unknown_model_requests %d\n", sessions, active, pending, unknown)
+		respond(w, 200, result)
 		return nil
 	}))
-	return mux
+	mux.HandleFunc("POST /v1/sessions/{id}/return-demand", c.authenticated(func(w http.ResponseWriter, r *http.Request, tenant string) error {
+		var input LifecycleRequest
+		if err := decode(w, r, &input); err != nil {
+			return err
+		}
+		result, err := c.ReturnDemand(r.Context(), tenant, r.PathValue("id"), input)
+		if err != nil {
+			return err
+		}
+		respond(w, 200, result)
+		return nil
+	}))
+	mux.HandleFunc("POST /v1/sessions/{id}/idle-window", c.authenticated(func(w http.ResponseWriter, r *http.Request, tenant string) error {
+		var input IdleWindowRequest
+		if err := decode(w, r, &input); err != nil {
+			return err
+		}
+		result, err := c.ObserveIdle(r.Context(), tenant, r.PathValue("id"), input)
+		if err != nil {
+			return err
+		}
+		respond(w, 200, result)
+		return nil
+	}))
+	mux.HandleFunc("GET /v1/diagnostics/status", c.authenticated(func(w http.ResponseWriter, r *http.Request, tenant string) error {
+		respond(w, 200, c.DiagnosticStatus(r.Context(), tenant, r.URL.Query().Get("probe") == "true"))
+		return nil
+	}))
+	mux.HandleFunc("GET /v1/workspaces/{id}/trace", c.authenticated(func(w http.ResponseWriter, r *http.Request, tenant string) error {
+		result, err := c.DiagnosticTrace(tenant, r.PathValue("id"))
+		if err != nil {
+			return err
+		}
+		respond(w, 200, result)
+		return nil
+	}))
+	mux.HandleFunc("GET /metrics", c.authenticated(func(w http.ResponseWriter, r *http.Request, tenant string) error {
+		c.telemetry.Handler().ServeHTTP(w, r)
+		return nil
+	}))
+
+	return c.traceHTTP(mux)
 }

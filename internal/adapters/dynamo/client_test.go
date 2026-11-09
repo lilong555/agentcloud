@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -56,6 +57,61 @@ func TestClientTransportsTrustedBindingsAndReceipts(t *testing.T) {
 	u := signals.SandboxStateUpdate{ProtocolVersion: 1, SourceID: binding.SourceID, TenantID: binding.TenantID, WorkspaceID: binding.WorkspaceID, SessionID: binding.SessionID, ActorUID: binding.ActorUID, Epoch: 1, Sequence: 2, ObservedAt: time.Now().UTC(), TTLMS: 2000, State: signals.Suspended}
 	if _, err = client.Update(context.Background(), u); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestGenerationsAreBoundedAcrossEpochsAndFreshRegistrationIsExplicit(t *testing.T) {
+	b := signals.Binding{SourceID: "coordinator", TenantID: "tenant", WorkspaceID: "workspace", SessionID: "session", ActorUID: "actor", Epoch: 1}
+	generation := "g-1"
+	requests := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var input bindingRequest
+		if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+			t.Error(err)
+		}
+		requests++
+		if r.URL.Path == "/v1/execution/finalize" {
+			if input.RegistrationGeneration != generation {
+				t.Error("finalize lost generation")
+			}
+			_ = json.NewEncoder(w).Encode(FinalizeReceipt{ProtocolVersion: 1, Accepted: true, Finalized: true, BindingGeneration: generation})
+			return
+		}
+		if input.RegistrationGeneration != "" && input.RegistrationGeneration != generation {
+			w.WriteHeader(409)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": "stale_generation"})
+			return
+		}
+		_ = json.NewEncoder(w).Encode(Receipt{ProtocolVersion: 1, Accepted: true, Reconciled: true, Binding: input.Binding, RoutingSessionID: "ac:opaque", InferenceLease: "lease-" + generation, BindingGeneration: generation})
+	}))
+	defer server.Close()
+	c, _ := NewClient(server.URL, "test-control-token-0123456789abcdef", nil)
+	for epoch := uint64(1); epoch <= 64; epoch++ {
+		b.Epoch = epoch
+		generation = fmt.Sprintf("g-%d", epoch)
+		if _, err := c.Register(context.Background(), b); err != nil {
+			t.Fatal(err)
+		}
+		if len(c.generations) != 1 {
+			t.Fatal("old epoch generations retained")
+		}
+	}
+	before := requests
+	generation = "frontend-restarted"
+	if _, err := c.Register(context.Background(), b); !IsRetiredGeneration(err) {
+		t.Fatalf("stale generation accepted: %v", err)
+	}
+	if requests != before+1 {
+		t.Fatal("ordinary registration silently retried")
+	}
+	if _, err := c.RegisterFresh(context.Background(), b); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.Finalize(context.Background(), b); err != nil {
+		t.Fatal(err)
+	}
+	if len(c.generations) != 0 {
+		t.Fatal("final binding credential retained")
 	}
 }
 func TestClientDoesNotForwardTokenAcrossRedirects(t *testing.T) {

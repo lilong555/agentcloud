@@ -1,0 +1,322 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-09T16:23:22.071403+00:00",
+  "success": true,
+  "mode": "in-actor",
+  "execution_kind": "actual-in-actor-python-loop-http-coordination",
+  "components": {
+    "agent_loop": "actual runtime process",
+    "journal": "Actor SQLite plus external Go journal",
+    "inference": "configured model endpoint",
+    "model_name": "agentcloud-tiny",
+    "coding_task": "multi-file Decimal pricing repository; AST diagnosis and repair; 4 unit tests",
+    "execution_backend": "substrate",
+    "runtime_location": "provided Actor runtime endpoint"
+  },
+  "runtime_url": "https://127.0.0.1:9444",
+  "local_contract_fixture": false,
+  "cold_restart": false,
+  "before": {
+    "run_id": "deep-4eb2874301",
+    "trajectory_id": "coding-in-actor-fixed",
+    "session_id": "actor-coding-deep-4eb2874301",
+    "status": "WAITING_MODEL",
+    "logical_request_id": "8ce20181169b44a7acc761f65d2decd2",
+    "canonical_logical_request_id": "c1fe4c275b6ea1da621af12c69fd79f0",
+    "origin_boot_id": "eb3728ac0a7a42b28bcc3c58928ac923",
+    "events": [
+      {
+        "phase": "WRITING",
+        "at_monotonic_ns": 2642148476,
+        "epoch": 1
+      },
+      {
+        "phase": "MODEL_REGISTERING",
+        "at_monotonic_ns": 8381478463,
+        "epoch": 1
+      },
+      {
+        "phase": "WAITING_MODEL",
+        "at_monotonic_ns": 8513199901,
+        "epoch": 1
+      }
+    ],
+    "repository_memory": {
+      "ast_sha256": "cf693bd68bc2716e6b0e4e5405315a1c35e28cdeb199661eb44d11b1b84d4059",
+      "context_nonce": "04ec64acf8914851bd71ff32ad0babd5",
+      "ast_object_ids": {
+        "shop/__init__.py": 139777557133776,
+        "shop/pricing.py": 139777541538192,
+        "shop/cart.py": 139777548635408,
+        "tests/test_shop.py": 139777542356944
+      },
+      "history": [
+        "读取4份源码与测试",
+        "运行失败测试",
+        "定位折扣公式运算符"
+      ],
+      "source_files": [
+        "shop/__init__.py",
+        "shop/cart.py",
+        "shop/pricing.py",
+        "tests/test_shop.py"
+      ],
+      "defect_locations": [
+        {
+          "path": "shop/pricing.py",
+          "line": 4,
+          "operator": "Add"
+        }
+      ]
+    },
+    "runtime_memory": {
+      "resident_bytes": 43589632,
+      "virtual_bytes": 426700800,
+      "source": "/proc/self/status",
+      "process_pid": 1
+    },
+    "epoch": 1,
+    "wait_epoch": 1,
+    "tool_receipt_seq": 4,
+    "baseline_test": {
+      "stderr": "test_cart_multiple_files (test_shop.PricingTests.test_cart_multiple_files) ... FAIL\ntest_discount (test_shop.PricingTests.test_discount) ... FAIL\ntest_half_up_rounding (test_shop.PricingTests.test_half_up_rounding) ... FAIL\ntest_zero_discount (test_shop.PricingTests.test_zero_discount) ... ok\n\n======================================================================\nFAIL: test_cart_multiple_files (test_shop.PricingTests.test_cart_multiple_files)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/tests/test_shop.py\", line 12, in test_cart_multiple_files\n    self.assertEqual(cart_total([(\"10\", 2), (\"25\", 1)], 20), Decimal(\"36.00\"))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Decimal('54.00') != Decimal('36.00')\n\n======================================================================\nFAIL: test_discount (test_shop.PricingTests.test_discount)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/tests/test_shop.py\", line 8, in test_discount\n    self.assertEqual(discounted_price(\"100\", 20), Decimal(\"80.00\"))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Decimal('120.00') != Decimal('80.00')\n\n======================================================================\nFAIL: test_half_up_rounding (test_shop.PricingTests.test_half_up_rounding)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/tests/test_shop.py\", line 10, in test_half_up_rounding\n    self.assertEqual(discounted_price(\"0.05\", 10), Decimal(\"0.05\"))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Decimal('0.06') != Decimal('0.05')\n\n----------------------------------------------------------------------\nRan 4 tests in 0.004s\n\nFAILED (failures=3)\n",
+      "exit_code": 1
+    },
+    "repository_before": {
+      "ast_sha256": "cf693bd68bc2716e6b0e4e5405315a1c35e28cdeb199661eb44d11b1b84d4059",
+      "context_nonce": "04ec64acf8914851bd71ff32ad0babd5",
+      "ast_object_ids": {
+        "shop/__init__.py": 139777557133776,
+        "shop/pricing.py": 139777541538192,
+        "shop/cart.py": 139777548635408,
+        "tests/test_shop.py": 139777542356944
+      },
+      "history": [
+        "读取4份源码与测试",
+        "运行失败测试",
+        "定位折扣公式运算符"
+      ],
+      "source_files": [
+        "shop/__init__.py",
+        "shop/cart.py",
+        "shop/pricing.py",
+        "tests/test_shop.py"
+      ],
+      "defect_locations": [
+        {
+          "path": "shop/pricing.py",
+          "line": 4,
+          "operator": "Add"
+        }
+      ]
+    },
+    "registration_status": "PENDING",
+    "process_pid": 1,
+    "current_boot_id": "eb3728ac0a7a42b28bcc3c58928ac923",
+    "memory_nonce": "697bfe606dbb45b8a2f9e4fdff837f6d",
+    "execution_kind": "actual-in-actor-python-loop",
+    "model_wait_owner": "external-durable-coordinator"
+  },
+  "after": {
+    "run_id": "deep-4eb2874301",
+    "trajectory_id": "coding-in-actor-fixed",
+    "session_id": "actor-coding-deep-4eb2874301",
+    "status": "COMPLETED",
+    "logical_request_id": "8ce20181169b44a7acc761f65d2decd2",
+    "canonical_logical_request_id": "c1fe4c275b6ea1da621af12c69fd79f0",
+    "origin_boot_id": "eb3728ac0a7a42b28bcc3c58928ac923",
+    "events": [
+      {
+        "phase": "WRITING",
+        "at_monotonic_ns": 2642148476,
+        "epoch": 1
+      },
+      {
+        "phase": "MODEL_REGISTERING",
+        "at_monotonic_ns": 8381478463,
+        "epoch": 1
+      },
+      {
+        "phase": "WAITING_MODEL",
+        "at_monotonic_ns": 8513199901,
+        "epoch": 1
+      },
+      {
+        "phase": "CLAIMING",
+        "at_monotonic_ns": 10083170803,
+        "epoch": 2
+      },
+      {
+        "phase": "VERIFYING",
+        "at_monotonic_ns": 10301512506,
+        "epoch": 2
+      },
+      {
+        "phase": "COMPLETED",
+        "at_monotonic_ns": 14392497824,
+        "epoch": 2
+      }
+    ],
+    "repository_memory": {
+      "ast_sha256": "b9de59fc20d9d906335a92228fee69640d12cf09438dcbceac36af36127405be",
+      "context_nonce": "04ec64acf8914851bd71ff32ad0babd5",
+      "ast_object_ids": {
+        "shop/__init__.py": 139777557133776,
+        "shop/pricing.py": 139777541538192,
+        "shop/cart.py": 139777548635408,
+        "tests/test_shop.py": 139777542356944
+      },
+      "history": [
+        "读取4份源码与测试",
+        "运行失败测试",
+        "定位折扣公式运算符",
+        "AST替换Add为Sub并验证跨模块单测"
+      ],
+      "source_files": [
+        "shop/__init__.py",
+        "shop/cart.py",
+        "shop/pricing.py",
+        "tests/test_shop.py"
+      ],
+      "defect_locations": [
+        {
+          "path": "shop/pricing.py",
+          "line": 4,
+          "operator": "Sub"
+        }
+      ]
+    },
+    "runtime_memory": {
+      "resident_bytes": 36294656,
+      "virtual_bytes": 426684416,
+      "source": "/proc/self/status",
+      "process_pid": 1
+    },
+    "epoch": 2,
+    "wait_epoch": 1,
+    "tool_receipt_seq": 4,
+    "baseline_test": {
+      "stderr": "test_cart_multiple_files (test_shop.PricingTests.test_cart_multiple_files) ... FAIL\ntest_discount (test_shop.PricingTests.test_discount) ... FAIL\ntest_half_up_rounding (test_shop.PricingTests.test_half_up_rounding) ... FAIL\ntest_zero_discount (test_shop.PricingTests.test_zero_discount) ... ok\n\n======================================================================\nFAIL: test_cart_multiple_files (test_shop.PricingTests.test_cart_multiple_files)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/tests/test_shop.py\", line 12, in test_cart_multiple_files\n    self.assertEqual(cart_total([(\"10\", 2), (\"25\", 1)], 20), Decimal(\"36.00\"))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Decimal('54.00') != Decimal('36.00')\n\n======================================================================\nFAIL: test_discount (test_shop.PricingTests.test_discount)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/tests/test_shop.py\", line 8, in test_discount\n    self.assertEqual(discounted_price(\"100\", 20), Decimal(\"80.00\"))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Decimal('120.00') != Decimal('80.00')\n\n======================================================================\nFAIL: test_half_up_rounding (test_shop.PricingTests.test_half_up_rounding)\n----------------------------------------------------------------------\nTraceback (most recent call last):\n  File \"/workspace/tests/test_shop.py\", line 10, in test_half_up_rounding\n    self.assertEqual(discounted_price(\"0.05\", 10), Decimal(\"0.05\"))\n    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Decimal('0.06') != Decimal('0.05')\n\n----------------------------------------------------------------------\nRan 4 tests in 0.004s\n\nFAILED (failures=3)\n",
+      "exit_code": 1
+    },
+    "repository_before": {
+      "ast_sha256": "cf693bd68bc2716e6b0e4e5405315a1c35e28cdeb199661eb44d11b1b84d4059",
+      "context_nonce": "04ec64acf8914851bd71ff32ad0babd5",
+      "ast_object_ids": {
+        "shop/__init__.py": 139777557133776,
+        "shop/pricing.py": 139777541538192,
+        "shop/cart.py": 139777548635408,
+        "tests/test_shop.py": 139777542356944
+      },
+      "history": [
+        "读取4份源码与测试",
+        "运行失败测试",
+        "定位折扣公式运算符"
+      ],
+      "source_files": [
+        "shop/__init__.py",
+        "shop/cart.py",
+        "shop/pricing.py",
+        "tests/test_shop.py"
+      ],
+      "defect_locations": [
+        {
+          "path": "shop/pricing.py",
+          "line": 4,
+          "operator": "Add"
+        }
+      ]
+    },
+    "registration_status": "PENDING",
+    "actual_fidelity": "MEMORY",
+    "model_result": {
+      "id": "chatcmpl-36cdee4f-88eb-4e0c-9431-c0aaf3a471a9",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "content": " token1161 token1384 token1998 token1007 token1013 token1596 token1367 token1213 token1678 token1197 token1277 token1160 token1148 token1821 token1121 token1792 token1463 token1240 token1273 token1418 token1934 token1647 token1051 token1520 token1974 token1167 token1580 token1815 token1181 token1223 token1488 token1982",
+            "refusal": null,
+            "role": "assistant"
+          },
+          "finish_reason": "length",
+          "logprobs": null
+        }
+      ],
+      "created": 1794241387,
+      "model": "agentcloud-tiny",
+      "object": "chat.completion",
+      "usage": {
+        "prompt_tokens": 295,
+        "completion_tokens": 32,
+        "total_tokens": 327,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      }
+    },
+    "result": {
+      "stderr": "test_cart_multiple_files (test_shop.PricingTests.test_cart_multiple_files) ... ok\ntest_discount (test_shop.PricingTests.test_discount) ... ok\ntest_half_up_rounding (test_shop.PricingTests.test_half_up_rounding) ... ok\ntest_zero_discount (test_shop.PricingTests.test_zero_discount) ... ok\n\n----------------------------------------------------------------------\nRan 4 tests in 0.001s\n\nOK\n",
+      "exit_code": 0
+    },
+    "repository_after": {
+      "ast_sha256": "cf693bd68bc2716e6b0e4e5405315a1c35e28cdeb199661eb44d11b1b84d4059",
+      "context_nonce": "04ec64acf8914851bd71ff32ad0babd5",
+      "ast_object_ids": {
+        "shop/__init__.py": 139777557133776,
+        "shop/pricing.py": 139777541538192,
+        "shop/cart.py": 139777548635408,
+        "tests/test_shop.py": 139777542356944
+      },
+      "history": [
+        "读取4份源码与测试",
+        "运行失败测试",
+        "定位折扣公式运算符"
+      ],
+      "source_files": [
+        "shop/__init__.py",
+        "shop/cart.py",
+        "shop/pricing.py",
+        "tests/test_shop.py"
+      ],
+      "defect_locations": [
+        {
+          "path": "shop/pricing.py",
+          "line": 4,
+          "operator": "Add"
+        }
+      ]
+    },
+    "ast_fingerprint_preserved": true,
+    "context_rebuilt": false,
+    "ast_object_ids_preserved": true,
+    "context_nonce_preserved": true,
+    "patch_sha256": "ec63bf221ff834f91a84a2e9995e728058b2e128907e6f01a14d95d6472b3ece",
+    "application_restart": false,
+    "process_pid": 1,
+    "current_boot_id": "eb3728ac0a7a42b28bcc3c58928ac923",
+    "memory_nonce": "697bfe606dbb45b8a2f9e4fdff837f6d",
+    "execution_kind": "actual-in-actor-python-loop",
+    "model_wait_owner": "external-durable-coordinator"
+  },
+  "manifest": {
+    "manifest_id": "87982e4b3ce5c4cb0860b6543f0eaf48",
+    "state": "COMMITTED",
+    "epoch": 1,
+    "barrier_generation": 1,
+    "receipt_watermark": 5,
+    "actor_uid": "dc5ee869-9888-4470-bef2-2feed80cb0bf",
+    "snapshot_uuid": "620cfe7f-8c7e-40b2-909d-16f83ad17570",
+    "snapshot_generation": 1,
+    "fidelity": "MEMORY",
+    "retained_tag": "ac-snapshot-30a5c16e9ed9749aff6830df",
+    "retained_tag_uid": "094a94c1-dfe0-4171-a8c7-3f20252998da",
+    "created_at": "2026-11-09T16:23:10.913098848Z"
+  },
+  "suspended": "SUSPENDED",
+  "resumed_epoch": 2,
+  "actual_fidelity": "MEMORY",
+  "ram_nonce_preserved": true,
+  "gpu_measurements": null,
+  "final_session_state": "SUSPENDED"
+}

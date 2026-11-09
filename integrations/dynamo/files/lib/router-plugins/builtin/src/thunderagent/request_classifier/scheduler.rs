@@ -42,6 +42,7 @@ pub(crate) struct Program {
     acting_since: Option<Instant>,
     deferred_since: Option<Instant>,
     execution_feedback: Option<ExecutionFeedback>,
+    admission_history: VecDeque<serde_json::Value>,
 }
 
 impl Program {
@@ -57,6 +58,7 @@ impl Program {
             acting_since: None,
             deferred_since: None,
             execution_feedback: None,
+            admission_history: VecDeque::new(),
         }
     }
 }
@@ -364,6 +366,45 @@ impl State {
         }
     }
 
+    pub(crate) fn retire_execution_binding(
+        &mut self,
+        session_id: &str,
+    ) -> Result<(), ExecutionFeedbackError> {
+        if self.programs.contains_key(session_id)
+            || self.requests.values().any(|r| r.session_id == session_id)
+        {
+            return Err(ExecutionFeedbackError::SessionActive);
+        }
+        self.execution_bindings.remove(session_id);
+        Ok(())
+    }
+
+    pub(crate) fn record_admission(
+        &mut self,
+        request_id: &str,
+        client_request_id: Option<&str>,
+        queued_at: chrono::DateTime<chrono::Utc>,
+        wait: Duration,
+    ) -> Option<String> {
+        let session_id = self.requests.get(request_id)?.session_id.clone();
+        let history = if let Some(feedback) = self.execution_bindings.get_mut(&session_id) {
+            &mut feedback.admission_history
+        } else {
+            &mut self.programs.get_mut(&session_id)?.admission_history
+        };
+        if history.len() == 16 {
+            history.pop_front();
+        }
+        history.push_back(serde_json::json!({
+            "request_id": request_id,
+            "client_request_id": client_request_id,
+            "queued_at": queued_at,
+            "admitted_at": queued_at + chrono::Duration::from_std(wait).unwrap_or_default(),
+            "wait_ms": wait.as_secs_f64() * 1000.0,
+        }));
+        Some(session_id)
+    }
+
     pub(crate) fn execution_snapshot(
         &mut self,
         session_id: &str,
@@ -372,8 +413,14 @@ impl State {
         self.refresh_normal_usage(now);
         let program = self.programs.get(session_id);
         let feedback = self.execution_bindings.get(session_id);
+        let history = feedback
+            .map(|f| &f.admission_history)
+            .or_else(|| program.map(|p| &p.admission_history));
         serde_json::json!({
             "program_present": program.is_some(),
+            "admission_history": history,
+            "last_admission_wait_ms": history.and_then(|h| h.back()).map(|r| &r["wait_ms"]),
+            "released_acting_tokens": program.filter(|p| p.status == ProgramStatus::Acting).map_or(0, |p| current_token_total(p).saturating_sub(self.program_tokens(p, false, now))),
             "phase": program.map(|p| format!("{:?}", p.status)),
             "lifecycle": program.map(|p| format!("{:?}", p.lifecycle)),
             "baseline_tokens": program.map(current_token_total),
@@ -382,6 +429,8 @@ impl State {
             "state": feedback.and_then(|f| f.latest.as_ref()).map(|u| u.state),
             "sequence": feedback.and_then(|f| f.latest.as_ref()).map_or(0, |u| u.sequence),
             "fresh": feedback.is_some_and(|f| f.latest.is_some() && now < f.expires_at),
+            "session_waiting_requests": self.requests.values().filter(|r| r.session_id == session_id && r.phase == RequestPhase::Waiting).count(),
+            "session_active_requests": self.requests.values().filter(|r| r.session_id == session_id).count(),
             "waiting_requests": self.waiting_arrivals.len(),
             "paused_programs": self.paused_programs.len(),
             "completed_events": self.completed_events,
@@ -1512,6 +1561,7 @@ mod tests {
             acting_since: Some(now),
             deferred_since: Some(now),
             execution_feedback: None,
+            admission_history: VecDeque::new(),
         }
     }
 
