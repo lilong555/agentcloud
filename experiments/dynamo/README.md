@@ -12,6 +12,8 @@ python3 experiments/dynamo/build_cpu.py
 
 服务入口为 `http://127.0.0.1:18080`，控制入口为 `http://127.0.0.1:18081`，模型名为 `agentcloud-tiny`。`--port` 和 `--control-port` 选择监听端口。设置 `AGENTCLOUD_DYNAMO_TOKEN` 配置控制凭证；开发默认值为 `agentcloud-development-token-0123456789abcdef`。
 
+GitHub Actions 的 `Native upstream validation` 在独立 runner 构建 wheel、执行原生回归，并在全新的 Python 3.12 环境安装 [CPU 依赖锁](requirements-cpu.lock)。`native_run_id` 可复用同一源码摘要的 wheel 与原生测试映射；每次运行仍执行依赖兼容检查、连续 64 轮绑定回收和进程生命周期验收。规模与故障实验要求该运行通过完整验证。启动日志始终启用 Python faulthandler 和 Rust backtrace，失败时追加 GDB 原生堆栈，保留首次尝试。
+
 ## 执行控制
 
 控制请求使用 `Authorization: Bearer <token>`。`DYN_EXECUTION_CONTROL_CONFIG` 指向认证配置 JSON，原生 ThunderAgent factory 创建独立 HTTP listener。每个 token 固定 source、tenant 和 workspace；workspace 值 `*` 允许该 tenant 下的工作区。完整身份与事件字段遵循 [状态协议](../../docs/STATE_CONTRACT.md)。
@@ -22,8 +24,11 @@ python3 experiments/dynamo/build_cpu.py
 | `POST /v1/execution/bindings` | `protocol_version:1` 与 flat Binding；可选 `classifier_id` | 已分配的 `routing_session_id`、`inference_lease` 与原生 snapshot |
 | `POST /v1/execution/state` | flat `SandboxStateUpdate` | identity、sequence、accepted、applied、reconciled 与原生 snapshot |
 | `POST /v1/execution/session` | `protocol_version:1` 与 flat Binding | 最新状态、TTL、逻辑 token 预算和实际生命周期事件计数 |
+| `POST /v1/execution/finalize` | flat Binding 与 `registration_generation` | 终结回执、已释放的绑定与 lease；活跃推理和 ACTING 会话返回 `session_active` |
 
 会话在推理前登记。推理请求携带 `X-Dynamo-Session-ID: <routing_session_id>` 和 `X-AgentCloud-Inference-Lease: <inference_lease>`。最终请求携带 `X-Dynamo-Session-Final: true`。同一绑定重复登记保留事件水位；Actor epoch 推进时旋转推理 lease，旧身份事件和旧 lease 随即失效。
+
+登记回执中的 `binding_generation` 用于后续控制请求的 `registration_generation`。最终推理完成后，协调器调用 `finalize` 回收 ControlServer 容量、分类器反馈和推理 lease。有限数量的 generation 墓碑及全局代次边界拒绝退役身份重放，长期创建与终结会话可复用容量。
 
 回执 `accepted` 表示事件通过验证，`applied` 表示该绑定已有原生 program，`reconciled` 表示 scheduler 完成重新核算。预登记事件保留到首个 program 创建。`snapshot` 包含 phase、lifecycle、未加权 token 数、ACTING 逻辑预算、执行倍率、sequence、新鲜度、等待/暂停数量及 completed/aborted/pause/final 累计事件。
 

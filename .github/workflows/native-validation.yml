@@ -133,6 +133,10 @@ jobs:
         env:
           AGENTCLOUD_NATIVE_GDB: mocker
         run: |
+          if ! command -v gdb >/dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends gdb
+          fi
           cp -a docs/evidence/logs/native-binding-churn docs/evidence/logs/native-binding-churn-first-attempt
           cp docs/evidence/upstream-patches-binding-churn.json docs/evidence/upstream-patches-binding-churn-first-attempt.json
           python3 scripts/ci_native_churn.py
