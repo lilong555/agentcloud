@@ -1,5 +1,10 @@
 name: Real Actor scale experiments
 on:
+  push:
+    paths:
+      - .github/workflows/live-scale.yml
+      - bench/scale.py
+      - scripts/ci_live_prepare.sh
   workflow_dispatch:
     inputs:
       scope:
@@ -26,7 +31,7 @@ jobs:
     steps:
       - id: plan
         env:
-          SCOPE: ${{ inputs.scope }}
+          SCOPE: ${{ inputs.scope || 'smoke' }}
         run: |
           python3 - <<'PY'
           import itertools,json,os
@@ -36,14 +41,14 @@ jobs:
           with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('matrix='+json.dumps({'include':cases})+'\n')
           PY
   native:
-    if: inputs.native_run_id == ''
+    if: '!inputs.native_run_id'
     uses: ./.github/workflows/native-validation.yml
   experiment:
     needs: [plan,native]
     if: always() && needs.plan.result == 'success' && (needs.native.result == 'success' || needs.native.result == 'skipped')
     strategy:
       fail-fast: false
-      max-parallel: ${{ inputs.max_parallel }}
+      max-parallel: ${{ inputs.max_parallel || 8 }}
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
