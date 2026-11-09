@@ -83,18 +83,46 @@ func run() error {
 				return err
 			}
 		}
-		if actor.Durable {
-			return errors.New("injection did not produce a PENDING snapshot")
+		if *tagName == "" {
+			return errors.New("PENDING verification requires an explicit Tag")
 		}
-		_, e := c.RetainSnapshot(ctx, actor.Name, actor.UID, actor.SnapshotUUID, actor.SnapshotGeneration, *tagName)
-		if status.Code(e) != codes.FailedPrecondition {
-			return fmt.Errorf("expected PENDING tag rejection, got %v", e)
+		observe := func() error {
+			// Each read remains usable after the promotion request expires.
+			readCtx, done := context.WithTimeout(context.Background(), 10*time.Second)
+			defer done()
+			observed, e := c.Control().GetActor(readCtx, &ateapi.GetActorRequest{Actor: ref(actor.Name)})
+			if e != nil {
+				return e
+			}
+			if e = validatePendingSnapshot(observed, actor); e != nil {
+				return e
+			}
+			_, e = c.Control().GetTag(readCtx, &ateapi.GetTagRequest{Tag: ref(*tagName)})
+			if status.Code(e) != codes.NotFound {
+				return fmt.Errorf("PENDING source published a Tag or could not be inspected: %v", e)
+			}
+			return nil
 		}
-		_, e = c.Control().GetTag(ctx, &ateapi.GetTagRequest{Tag: ref(*tagName)})
-		if status.Code(e) != codes.NotFound {
-			return fmt.Errorf("PENDING snapshot created a retained tag: %v", e)
+		if err = observe(); err != nil {
+			return err
+		}
+		// Native Tag creation promotes the local snapshot before reserving a name.
+		// An unavailable object store can therefore leave this call waiting.
+		promoteCtx, stopPromotion := context.WithTimeout(ctx, 5*time.Second)
+		_, e := c.RetainSnapshot(promoteCtx, actor.Name, actor.UID, actor.SnapshotUUID, actor.SnapshotGeneration, *tagName)
+		stopPromotion()
+		switch status.Code(e) {
+		case codes.FailedPrecondition, codes.Unavailable, codes.DeadlineExceeded:
+		default:
+			return fmt.Errorf("expected an incomplete PENDING promotion, got %v", e)
+		}
+		if err = observe(); err != nil {
+			return err
 		}
 		result["pending_actor"] = actor
+		result["snapshot_storage_state"] = "PENDING"
+		result["promotion_grpc_code"] = status.Code(e).String()
+		result["independent_read_checks"] = 2
 		result["retained_tag_absent"] = true
 	case "replace-tag":
 		prior, e := c.Control().GetTag(ctx, &ateapi.GetTagRequest{Tag: ref(*tagName)})

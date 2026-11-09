@@ -13,6 +13,18 @@ ROOT = Path(__file__).resolve().parents[1]
 REPORTS = {'scale': 'result.json', 'faults': 'fault-matrix.json', 'heatmap': 'heatmap.json'}
 
 
+def reports_for_run(source, kind, run_id, attempt=None):
+    reports = []
+    for path in sorted((source/kind).glob('*/'+REPORTS[kind])):
+        report = json.loads(path.read_text())
+        if str(report.get('github_run_id')) != str(run_id):
+            continue
+        if attempt is not None and str(report.get('github_run_attempt')) != str(attempt):
+            continue
+        reports.append(path)
+    return reports
+
+
 def stream_digest(handle):
     hasher = hashlib.sha256()
     while chunk := handle.read(1 << 20):
@@ -92,7 +104,7 @@ def main():
         parser.error('smoke applies to scale artifacts')
     if shutil.disk_usage(ROOT).free < 6 * 2**30:
         parser.error('evidence import requires 6 GiB disk headroom')
-    reports = sorted((source/args.kind).glob('*/'+REPORTS[args.kind]))
+    reports = reports_for_run(source, args.kind, args.run_id)
     if not reports:
         parser.error('no experiment reports found; archive a workflow launch failure separately')
     trial_ids, commits, files = [], set(), []

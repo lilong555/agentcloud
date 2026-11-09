@@ -107,13 +107,13 @@ jobs:
       - name: Release owned background processes and cluster
         if: always()
         run: python3 scripts/ci_live_cleanup.py
+      - name: Stage current attempt evidence
+        if: always()
+        run: python3 scripts/stage_live_artifact.py --kind scale
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: real-scale-n${{ matrix.n }}-${{ matrix.policy }}-s${{ matrix.seed }}
-          path: |
-            docs/evidence/scale/
-            docs/evidence/ci-live-runtime.json
-            docs/evidence/ci-live-cleanup.json
-            docs/evidence/ci-live-logs/
+          path: artifacts/ci-live-evidence/
+          if-no-files-found: error
           retention-days: 30

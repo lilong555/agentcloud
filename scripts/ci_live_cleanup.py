@@ -51,6 +51,7 @@ def main():
             errors.append(str(error));code=1
     p=ROOT/'docs/evidence/ci-live-cleanup.json';p.parent.mkdir(parents=True,exist_ok=True)
     report=dict(recorded_at=datetime.now(timezone.utc).isoformat(),status='failed' if errors else 'passed',
+        github_run_id=os.getenv('GITHUB_RUN_ID'),github_run_attempt=os.getenv('GITHUB_RUN_ATTEMPT'),
         port_forwards=released,cluster_release_exit_code=code,remaining_containers=remaining,errors=errors)
     p.write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps(report))

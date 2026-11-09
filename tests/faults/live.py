@@ -19,7 +19,7 @@ from bench.scale import Trial
 from bench.postgres import execute
 from bench.substrate_live import clean, write_json
 from experiments.dynamo.native_mocker import Stack, binding, request, inference_headers
-from runtime.client import CloudError
+from runtime.client import Client, CloudError
 from scripts.resource_guard import stop
 
 CASES=('return_during_suspend','stale_epoch_tool','stale_substrate_suspend','pending_snapshot_tag',
@@ -45,6 +45,20 @@ def rejected(callback,codes=(409,)):
     raise AssertionError('operation was accepted in the injected fault window')
 
 
+def pending_manifest_state(state,before,pending,operation,terminal=False):
+    assert state['actor']['uid']==pending['uid']==before['actor']['uid']
+    assert state['epoch']==before['epoch'] and state['gate']=='CLOSED'
+    assert state.get('manifest')==before.get('manifest'),'PENDING upload changed the committed Manifest'
+    receipt=state['lifecycle'][operation]
+    assert receipt['status']==('OUTCOME_UNKNOWN' if terminal else 'RUNNING')
+    assert state['state']==('RECOVERY_REQUIRED' if terminal else 'QUIESCING')
+    manifests=[state.get('manifest')]+[r.get('manifest') for r in state['lifecycle'].values()]
+    assert all(not m or m['snapshot_uuid']!=pending['snapshot_uuid'] for m in manifests)
+    assert receipt.get('manifest') is None
+    return dict(state=state['state'],gate=state['gate'],epoch=state['epoch'],
+        receipt_status=receipt['status'],committed_manifest_unchanged=True,pending_manifest_absent=True)
+
+
 class Matrix:
     def __init__(self,args):
         config=json.loads((ROOT/'bench/configs/scale-live.json').read_text())
@@ -54,7 +68,8 @@ class Matrix:
         self.args=args;self.index=0;self.extra={};self.processes=[];self.results=[]
         self.report=dict(schema_version=1,execution_kind='real-substrate-memory-postgresql-native-dynamo-faults',
             generated_at=datetime.now(timezone.utc).isoformat(),source_commit=subprocess.check_output(['git','rev-parse','HEAD'],text=True,cwd=ROOT).strip(),
-            github_run_id=os.getenv('GITHUB_RUN_ID'),gpu_execution=False,planned=list(args.cases),checks=self.results)
+            github_run_id=os.getenv('GITHUB_RUN_ID'),github_run_attempt=os.getenv('GITHUB_RUN_ATTEMPT'),
+            gpu_execution=False,planned=list(args.cases),checks=self.results)
 
     def command(self,command,timeout=100):
         result=subprocess.run(command,cwd=ROOT,env=dict(os.environ,KUBECONFIG=str(ROOT/'artifacts/substrate/kubeconfig')),
@@ -142,15 +157,33 @@ class Matrix:
         deployment=json.loads(self.command(kubectl+['get','deployment/rustfs','-o','json']))
         selector=','.join(k+'='+v for k,v in deployment['spec']['selector']['matchLabels'].items())
         self.command(kubectl+['scale','deployment/rustfs','--replicas=0'])
-        try:
-            self.command(kubectl+['wait','--for=delete','pod','-l',selector,'--timeout=45s'],55)
-            result=self.probe('pending-tag',e,tag='ac-fault-pending-'+str(self.index))
-            state=self.state(e)
-            assert state.get('manifest') is None or state['manifest']['snapshot_uuid']!=result['pending_actor']['snapshot_uuid']
-            return result
-        finally:
-            self.command(kubectl+['scale','deployment/rustfs','--replicas='+str(deployment['spec']['replicas'])])
-            self.command(kubectl+['rollout','status','deployment/rustfs','--timeout=90s'],100)
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            try:
+                self.command(kubectl+['wait','--for=delete','pod','-l',selector,'--timeout=45s'],55)
+                before=self.state(e);operation='pending-checkpoint'
+                client=self.t.client(e)
+                bounded=Client(client.base_url,client.token,timeout=30,headers=client.headers)
+                future=pool.submit(bounded.lifecycle,e['id'],'checkpoint',before['epoch'],operation)
+                pending=wait_for(lambda:self.probe('inspect',e)['actor'],lambda a:a['state']=='SUSPENDED',20)
+                during=pending_manifest_state(self.state(e),before,pending,operation)
+                result=self.probe('pending-tag',e,tag='ac-fault-pending-'+str(self.index))
+                assert result['pending_actor']['snapshot_uuid']==pending['snapshot_uuid']
+                try:
+                    future.result(timeout=35)
+                except CloudError as error:
+                    assert error.code=='recovery_required'
+                    result['checkpoint_error']=dict(code=error.code,status=error.status)
+                except TimeoutError:
+                    assert future.done(),'checkpoint request exceeded its client deadline'
+                    result['checkpoint_error']=dict(code='client_deadline')
+                else: raise AssertionError('checkpoint committed while its upload was PENDING')
+                after=wait_for(lambda:self.state(e),lambda s:s['lifecycle'][operation]['status']=='OUTCOME_UNKNOWN',20)
+                result['manifest_during_upload']=during
+                result['manifest_after_deadline']=pending_manifest_state(after,before,pending,operation,terminal=True)
+                return result
+            finally:
+                self.command(kubectl+['scale','deployment/rustfs','--replicas='+str(deployment['spec']['replicas'])])
+                self.command(kubectl+['rollout','status','deployment/rustfs','--timeout=90s'],100)
 
     def rootfs_downgrade(self,e):
         template='agentcloud-fault-rootfs-'+str(self.index)

@@ -35,6 +35,7 @@ def run(args):
         actor_memory_limit_mib=MEMORY_LIMIT_MIB[args.heap_mib],seed=args.seed,measurements=planned,
         execution_kind='real-substrate-memory-wait-working-set-sweep',gpu_execution=False,
         generated_at=datetime.now(timezone.utc).isoformat(),github_run_id=os.getenv('GITHUB_RUN_ID'),
+        github_run_attempt=os.getenv('GITHUB_RUN_ATTEMPT'),
         source_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
         source_sha256={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in
             (ROOT/'bench/heatmap.py',ROOT/'bench/workloads/actor_mix.py',ROOT/'bench/analysis/resources.py')},
