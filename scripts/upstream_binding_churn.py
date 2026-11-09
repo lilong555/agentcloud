@@ -72,8 +72,8 @@ def main() -> None:
         if code != 200 or finalized.get("finalized") is not True:
             raise RuntimeError(f"native finalize failed: {code} {finalized}")
         old_code, _ = request(args.inference_url.rstrip("/") + "/v1/chat/completions", infer, inference_headers)
-        if old_code == 200:
-            raise RuntimeError("retired inference lease authorized a new model request")
+        if old_code != 401:
+            raise RuntimeError(f"retired inference lease must be rejected as unauthenticated: {old_code}")
         stale_code, stale = request(args.control_url.rstrip("/") + "/v1/execution/bindings", body, auth)
         if stale_code != 409 or stale.get("error") != "stale_generation":
             raise RuntimeError("retired binding generation was recreated")

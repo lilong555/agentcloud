@@ -164,7 +164,7 @@ def verify(args):
         b=binding();status,r=stack.control_call('bindings',b);check('trusted_pre_registration',status==200 and r['accepted'] and not r['applied'],{k:v for k,v in r.items() if k!='inference_lease'})
         # A known route ID needs the session's lease before scheduler state allocation.
         status,denied=request(stack.front,'/v1/completions',{'model':'agentcloud-tiny','prompt':'x','max_tokens':1},headers={'X-Dynamo-Session-ID':r['routing_session_id']})
-        check('ordinary_session_cannot_inject_trusted_program',status>=400,{'status':status,'response':denied})
+        check('ordinary_session_cannot_inject_trusted_program',status==401,{'status':status,'response':denied})
         status,result=stack.infer(r,700,8);check('real_mocker_first_turn',status==200 and bool(result.get('choices')),{'status':status,'usage':result.get('usage')})
         status,s=stack.control_call('session',b);baseline=s['snapshot'];check('native_acting_budget',status==200 and baseline['phase']=='Acting' and baseline['baseline_tokens']>=700,baseline)
         u={**b,'registration_generation':r['binding_generation'],'sequence':1,'observed_at':dt.datetime.now(dt.timezone.utc).isoformat(),'ttl_ms':1500,'state':'SUSPENDED','estimated_return_ms':10000}

@@ -36,6 +36,7 @@ func main() {
 	encoder := json.NewEncoder(os.Stdout)
 	ticker := time.NewTicker(*interval)
 	defer ticker.Stop()
+	var observation uint64
 	for {
 		callctx, stop := context.WithTimeout(ctx, 5*time.Second)
 		workers, err := client.Control().ListWorkers(callctx, &ateapi.ListWorkersRequest{})
@@ -53,7 +54,10 @@ func main() {
 			}
 			continue
 		}
+		observation++
+		inventory := make([]string, 0, len(workers.GetWorkers()))
 		for _, worker := range workers.GetWorkers() {
+			inventory = append(inventory, worker.GetMetadata().GetName())
 			assignments, err := client.Control().ListWorkerActorAssignments(callctx, &ateapi.ListWorkerActorAssignmentsRequest{Worker: &ateapi.ObjectRef{Name: worker.GetMetadata().GetName()}})
 			if err != nil {
 				_ = encoder.Encode(map[string]any{"at": time.Now().UTC(), "error": err.Error()})
@@ -66,8 +70,18 @@ func main() {
 			}
 			allocated, _ := protojson.Marshal(worker.GetStatus().GetAllocated())
 			capacity, _ := protojson.Marshal(worker.GetStatus().GetCapacity())
-			_ = encoder.Encode(map[string]any{"at": time.Now().UTC(), "worker_name": worker.GetMetadata().GetName(), "worker_pool": worker.GetWorkerPool(), "worker_namespace": worker.GetWorkerNamespace(), "worker_state": worker.GetStatus().GetState().String(), "assignments": json.RawMessage(data), "worker_allocated": json.RawMessage(allocated), "worker_capacity": json.RawMessage(capacity)})
+			status, _ := protojson.Marshal(worker.GetStatus())
+			_ = encoder.Encode(map[string]any{
+				"at": time.Now().UTC(), "observation": observation,
+				"worker_name": worker.GetMetadata().GetName(), "worker_uid": worker.GetMetadata().GetUid(),
+				"worker_pool": worker.GetWorkerPool(), "worker_namespace": worker.GetWorkerNamespace(),
+				"worker_state": worker.GetStatus().GetState().String(), "worker_labels": worker.GetLabels(),
+				"worker_status": json.RawMessage(status), "assignments": json.RawMessage(data),
+				"worker_allocated": json.RawMessage(allocated), "worker_capacity": json.RawMessage(capacity),
+			})
 		}
+		// End each complete fleet observation explicitly, including an empty fleet.
+		_ = encoder.Encode(map[string]any{"at": time.Now().UTC(), "observation": observation, "worker_inventory": inventory})
 		stop()
 		select {
 		case <-ctx.Done():

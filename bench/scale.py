@@ -18,6 +18,7 @@ import uuid
 from bench.analysis.resources import integrate
 from bench.postgres import connection, execute
 from bench.substrate_live import Evidence, clean, quantile, timestamp, write_json
+from bench.worker_readiness import current_workers, placement_capacity
 from experiments.dynamo.native_mocker import Stack
 from runtime.client import Client, CloudError
 from scripts.disk_guard import inspect
@@ -134,16 +135,24 @@ class Trial:
                             self.service_samples.append(row);self.event('service_process_observation',sample=row)
                         except (OSError,ValueError,IndexError): pass
         self.probe_thread=threading.Thread(target=consume,daemon=True);self.probe_thread.start()
-        deadline=time.monotonic()+30
+        deadline=time.monotonic()+180
+        latest={}
         while time.monotonic()<deadline:
-            with self.lock: latest={s.get('worker_name'):s for s in self.samples if s.get('worker_pool')=='agentcloud' and s.get('worker_namespace')=='agentcloud' and s.get('worker_state')=='WORKER_STATE_ACTIVE'}
+            self.guard()
+            if self.probe.poll() is not None: raise RuntimeError('Worker observation process exited before readiness')
+            with self.lock: latest=current_workers(self.samples,time.time())
+            latest={name:s for name,s in latest.items() if s.get('worker_pool')=='agentcloud' and s.get('worker_namespace')=='agentcloud'}
             if len(latest)==self.config['workers']:
-                capacities=[s['worker_capacity'] for s in latest.values()]
-                slots=sum(min(int(c.get('actors',0)),int(c.get('memoryBytes',0))//self.config['actor_memory_bytes'],int(c.get('cpuMillicores',0))//self.config['actor_cpu_millicores']) for c in capacities)
-                if slots!=self.config['worker_slots']: raise RuntimeError(f'observed Worker slots {slots} differ from frozen configuration')
-                self.expected_workers=sorted(latest);self.event('worker_capacity_preflight',workers=latest,observed_slots=slots);break
+                capacities={name:placement_capacity(s,self.config) for name,s in latest.items()}
+                if all(c is not None for c in capacities.values()):
+                    slots=sum(c['total_slots'] for c in capacities.values())
+                    if slots!=self.config['worker_slots']: raise RuntimeError(f'observed Worker slots {slots} differ from frozen configuration')
+                    if sum(c['available_slots'] for c in capacities.values())==slots:
+                        self.expected_workers=sorted(latest);self.event('worker_capacity_preflight',workers=latest,placement=capacities,observed_slots=slots);break
             time.sleep(.1)
-        else: raise TimeoutError('expected active Worker pool not observed')
+        else:
+            self.event('worker_readiness_timeout',workers=latest)
+            raise TimeoutError('registered gVisor Worker runtimes and unallocated placement capacity were not observed')
     def refresh(self,entry):
         self.guard();state=self.client(entry).session(entry['id']);before=entry.get('state')
         entry['state']=state
@@ -335,7 +344,7 @@ class Trial:
             raise KeyboardInterrupt(f'signal {signum}')
         prior_handlers={sig:signal.signal(sig,interrupted) for sig in (signal.SIGINT,signal.SIGTERM)}
         attempted_at=time.time()
-        source={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [ROOT/'bench/scale.py',ROOT/'bench/configs/scale-live.json',ROOT/'bench/workloads/actor_mix.py',ROOT/'bench/analysis/resources.py',ROOT/'experiments/dynamo/native_mocker.py',ROOT/'integrations/dynamo/manifest.json',ROOT/'integrations/substrate/manifest.json']}
+        source={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [ROOT/'bench/scale.py',ROOT/'bench/configs/scale-live.json',ROOT/'bench/workloads/actor_mix.py',ROOT/'bench/worker_readiness.py',ROOT/'bench/worker_probe/main.go',ROOT/'bench/analysis/resources.py',ROOT/'experiments/dynamo/native_mocker.py',ROOT/'integrations/dynamo/manifest.json',ROOT/'integrations/substrate/manifest.json']}
         report=dict(schema_version=1,trial_id=self.id,seed=self.seed,concurrency=self.n,policy=self.policy,order=self.order,status='failed',config=self.config,
             gpu_execution=False,execution_kind='real-substrate-memory-native-dynamo-cpu-mocker',source_sha256=source,
             source_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),

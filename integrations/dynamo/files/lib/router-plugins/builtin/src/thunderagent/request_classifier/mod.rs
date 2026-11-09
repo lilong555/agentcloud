@@ -23,6 +23,7 @@ use dynamo_kv_router::plugins::request_classifier::{
     RequestClassifierProviderError, RequestClassifierRegistryError, RequestProgress,
 };
 use dynamo_kv_router::plugins::worker_selection::WorkerCandidates;
+use dynamo_runtime::error::{DynamoError, ErrorClass};
 use parking_lot::Mutex;
 use thiserror::Error;
 use tokio::sync::Notify;
@@ -79,8 +80,6 @@ pub(crate) fn register(
 
 #[derive(Debug, Error)]
 pub(crate) enum ThunderAgentError {
-    #[error("trusted execution session requires its current inference lease")]
-    InvalidInferenceLease,
     #[error("session-aware classification requires a request ID")]
     MissingRequestId,
 
@@ -102,6 +101,30 @@ struct Inner {
     capacity_provider: Arc<dyn WorkerCapacityProvider>,
     scheduler_started: AtomicBool,
     inference_leases: Mutex<std::collections::HashMap<String, String>>,
+}
+
+fn verify_inference_lease(
+    leases: &std::collections::HashMap<String, String>,
+    session_id: &str,
+    supplied: Option<&[String]>,
+) -> Result<(), DynamoError> {
+    if !session_id.starts_with("ac:") {
+        return Ok(());
+    }
+    let valid = leases.get(session_id).is_some_and(|lease| {
+        supplied.is_some_and(|values| {
+            values.len() == 1 && super::execution_control::constant_equal(lease, &values[0])
+        })
+    });
+    if valid {
+        Ok(())
+    } else {
+        Err(DynamoError::builder()
+            .class(ErrorClass::Unauthenticated)
+            .diagnostic("trusted execution session requires its current inference lease")
+            .public_message("A current inference lease is required")
+            .build())
+    }
 }
 
 impl Inner {
@@ -399,22 +422,14 @@ impl RequestClassifier for ThunderAgentClassifier {
             });
         };
         let session_id = session.session_id().to_owned();
+        // Hold the lease guard through registration, serializing validation with retirement.
         let leases = self.inner.inference_leases.lock();
-        if session_id.starts_with("ac:") {
-            let valid = leases.get(&session_id).is_some_and(|lease| {
-                session
-                    .agent_headers()
-                    .get("x-agentcloud-inference-lease")
-                    .is_some_and(|values| {
-                        values.len() == 1
-                            && super::execution_control::constant_equal(lease, &values[0])
-                    })
-            });
-            if !valid {
-                return Box::pin(async {
-                    Err(Box::new(ThunderAgentError::InvalidInferenceLease) as Box<ClassifierError>)
-                });
-            }
+        let supplied = session
+            .agent_headers()
+            .get("x-agentcloud-inference-lease")
+            .map(Vec::as_slice);
+        if let Err(error) = verify_inference_lease(&leases, &session_id, supplied) {
+            return Box::pin(async move { Err(Box::new(error) as Box<ClassifierError>) });
         }
         let client_request_id = session
             .agent_headers()
@@ -514,6 +529,41 @@ mod tests {
         let snapshot = capacities(values);
         let provider: Arc<dyn WorkerCapacityProvider> = Arc::new(move || Arc::clone(&snapshot));
         ThunderAgentClassifier::new(config(), provider).unwrap()
+    }
+
+    #[test]
+    fn lease_rejections_preserve_authentication_semantics_across_rotation_and_retirement() {
+        let mut leases = std::collections::HashMap::from([("ac:session".into(), "current".into())]);
+        for supplied in [
+            None,
+            Some(vec![]),
+            Some(vec!["stale".into()]),
+            Some(vec!["current".into(), "current".into()]),
+        ] {
+            let error =
+                verify_inference_lease(&leases, "ac:session", supplied.as_deref()).unwrap_err();
+            assert_eq!(error.class(), ErrorClass::Unauthenticated);
+            assert_eq!(error.reason().as_str(), "request.unauthenticated");
+        }
+        let current = vec!["current".to_owned()];
+        assert!(verify_inference_lease(&leases, "ac:session", Some(&current)).is_ok());
+        leases.insert("ac:session".into(), "rotated".into());
+        assert_eq!(
+            verify_inference_lease(&leases, "ac:session", Some(&current))
+                .unwrap_err()
+                .class(),
+            ErrorClass::Unauthenticated
+        );
+        let rotated = vec!["rotated".to_owned()];
+        assert!(verify_inference_lease(&leases, "ac:session", Some(&rotated)).is_ok());
+        leases.remove("ac:session");
+        assert_eq!(
+            verify_inference_lease(&leases, "ac:session", Some(&rotated))
+                .unwrap_err()
+                .class(),
+            ErrorClass::Unauthenticated
+        );
+        assert!(verify_inference_lease(&leases, "ordinary-session", None).is_ok());
     }
 
     #[tokio::test]

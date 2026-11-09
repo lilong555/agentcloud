@@ -58,7 +58,7 @@ jobs:
           python3 scripts/upstream.py --fetch substrate dynamo
       - name: Install locked Rust toolchain
         if: inputs.native_run_id == ''
-        run: rustup toolchain install 1.96.1 --profile minimal
+        run: rustup toolchain install 1.96.1 --profile minimal --component clippy --component rustfmt
       - uses: actions/cache/restore@v4
         id: native_cache
         if: inputs.native_run_id == ''
@@ -78,7 +78,9 @@ jobs:
       - name: Package reusable native Python wheel
         if: inputs.native_run_id == ''
         working-directory: upstream/dynamo
-        run: ../../.venv-dynamo/bin/maturin build --locked --manifest-path lib/bindings/python/Cargo.toml --no-default-features --features custom-policy --out ../../artifacts/native-wheels
+        env:
+          VIRTUAL_ENV: ${{ github.workspace }}/.venv-dynamo
+        run: python3 ../../scripts/resource_guard.py --min-available-mib 1536 --max-rss-mib 12000 --timeout 5400 -- ../../.venv-dynamo/bin/maturin build --locked --interpreter ../../.venv-dynamo/bin/python --manifest-path lib/bindings/python/Cargo.toml --no-default-features --features custom-policy --out ../../artifacts/native-wheels
       - uses: actions/download-artifact@v4
         if: inputs.native_run_id != ''
         with:
@@ -111,6 +113,12 @@ jobs:
       - name: Run mapped native Go and Rust tests
         if: inputs.native_run_id == ''
         run: python3 scripts/resource_guard.py --min-available-mib 1536 --max-rss-mib 12000 --timeout 5400 -- python3 scripts/upstream_native_tests.py --go go --cargo cargo
+      - name: Lint native router policy targets
+        if: inputs.native_run_id == ''
+        working-directory: upstream/dynamo
+        run: |
+          rustfmt --edition 2024 --config skip_children=true --check lib/router-plugins/builtin/src/thunderagent/request_classifier/mod.rs
+          python3 ../../scripts/resource_guard.py --min-available-mib 1536 --max-rss-mib 12000 --timeout 1800 -- cargo clippy --locked --no-deps -p dynamo-router-policies --all-targets -- -D warnings
       - name: Apply format-patch series on clean locked sources
         run: python3 scripts/upstream_patches.py verify
       - name: Install wheel into a clean locked runtime

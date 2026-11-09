@@ -14,36 +14,7 @@
     "upstream/dynamo/CONTRIBUTING.md"
   ],
   "blocking_findings": [],
-  "nonblocking_findings": [
-    {
-      "id": "AR-003",
-      "priority": "P2",
-      "status": "open",
-      "title": "Dynamo 控制绑定按前端进程累计占用会话额度",
-      "locations": [
-        {
-          "path": "upstream/dynamo/lib/router-plugins/builtin/src/thunderagent/execution_control.rs",
-          "line": 338
-        },
-        {
-          "path": "upstream/dynamo/lib/router-plugins/builtin/src/thunderagent/request_classifier/scheduler.rs",
-          "line": 255
-        },
-        {
-          "path": "upstream/dynamo/lib/router-plugins/builtin/src/thunderagent/request_classifier/scheduler.rs",
-          "line": 1343
-        }
-      ],
-      "trigger": [
-        "配置较小的 max_sessions，逐一登记不同 tenant/workspace/session 绑定。",
-        "结束这些会话的推理，或等待 session_retention_seconds 到期，使其 program 被移除。",
-        "登记第 max_sessions+1 个新会话；控制服务仍返回 429 session_limit。"
-      ],
-      "impact": "已结束的会话继续占用 ControlServer.sessions、inference_leases 和 execution_bindings；长期运行的前端达到配置额度后持续拒绝新会话。",
-      "evidence": "ControlServer 只有 capabilities/bindings/state/session 路由；登记写入 sessions，缺少删除路径。scheduler 的 expire_retained_programs 仅 remove_program，execution_bindings 没有回收调用，另受 max_tracked_requests 总量限制。",
-      "recommendation": "增加认证后的会话终结与绑定回收，撤销 inference lease，并设计保留 epoch/sequence 防重放水位的有界记录。"
-    }
-  ],
+  "nonblocking_findings": [],
   "resolved_findings": [
     {
       "id": "AR-001",
@@ -110,6 +81,47 @@
         "forged_uid_attach_http_status": 409,
         "forged_uid_error": "ACTOR_UID_MISMATCH",
         "source_assertion": "SubstrateBackend.attach 拒绝 !receipt.IdentityAttested"
+      }
+    },
+    {
+      "id": "AR-003",
+      "priority": "P2",
+      "status": "verified_resolved",
+      "title": "Dynamo 控制绑定按前端进程累计占用会话额度",
+      "locations": [
+        {
+          "path": "upstream/dynamo/lib/router-plugins/builtin/src/thunderagent/execution_control.rs",
+          "line": 338
+        },
+        {
+          "path": "upstream/dynamo/lib/router-plugins/builtin/src/thunderagent/request_classifier/scheduler.rs",
+          "line": 255
+        },
+        {
+          "path": "upstream/dynamo/lib/router-plugins/builtin/src/thunderagent/request_classifier/scheduler.rs",
+          "line": 1343
+        }
+      ],
+      "trigger": [
+        "配置较小的 max_sessions，逐一登记不同 tenant/workspace/session 绑定。",
+        "结束这些会话的推理，或等待 session_retention_seconds 到期，使其 program 被移除。",
+        "登记第 max_sessions+1 个新会话；控制服务仍返回 429 session_limit。"
+      ],
+      "impact": "已结束的会话继续占用 ControlServer.sessions、inference_leases 和 execution_bindings；长期运行的前端达到配置额度后持续拒绝新会话。",
+      "recommendation": "增加认证后的会话终结与绑定回收，撤销 inference lease，并设计保留 epoch/sequence 防重放水位的有界记录。",
+      "original_evidence": "ControlServer 只有 capabilities/bindings/state/session 路由；登记写入 sessions，缺少删除路径。scheduler 的 expire_retained_programs 仅 remove_program，execution_bindings 没有回收调用，另受 max_tracked_requests 总量限制。",
+      "resolution": "认证 finalize 在原生 FINAL 且活动请求归零后释放绑定、feedback 与 inference lease，使用有界 generation 墓碑拒收重放。",
+      "validation": {
+        "kind": "native-rust-frontend-mocker-binding-finalization",
+        "github_run_id": 42694640610,
+        "evidence": "docs/evidence/upstream-patches-binding-churn.json",
+        "cycles": 64,
+        "configured_max_sessions": 2,
+        "model_requests": 128,
+        "active_bindings": 0,
+        "retired_bindings_retained": 2,
+        "old_lease_rejected": 64,
+        "old_generation_rejected": 64
       }
     }
   ],

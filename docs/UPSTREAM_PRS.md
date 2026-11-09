@@ -41,6 +41,8 @@ ThunderAgent 通过独立鉴权控制端口注册可信 Actor 绑定、接收有
 
 新绑定分配随机 `binding_generation`、opaque routing session 与 inference lease。Register 首次省略 `registration_generation`；幂等注册返回当前 generation，epoch 旋转更新 generation 与 lease。State、Session 与 Finalize 提交 `registration_generation`。`POST /v1/execution/finalize` 在原生 program 已结束且 active request 数为零时回收 ControlServer session、classifier feedback 与 inference lease，释放 `max_sessions` 额度。最近墓碑数量受 `max_sessions` 限制；旧 generation 与旧 routing lease 持续失效。持有效 source 凭据且省略 generation 的 Register 可显式创建新的绑定身份。
 
+缺失、重复、过期和已回收的 inference lease 使用 Dynamo 的 `Unauthenticated` 语义错误，Frontend 返回 HTTP 401。校验与请求登记期间持续持有 lease 锁，保持与并发回收的互斥顺序。原生回归覆盖凭据轮换、重复头、回收后的拒收和普通 session 的兼容性。
+
 原生 Rust 回归覆盖租户/Workspace 隔离、身份旋转、lease 校验、重放/TTL 拒收、更新与排队预算、admission 收据、取消路径、FINAL 前拒收回收、FINAL 后回收，以及 final/register/state 的并发顺序。`max_sessions=2` 的原生控制测试完成 64 轮创建/回收，验证墓碑淘汰后旧 generation 仍被拒绝。
 
 真实 Frontend 验收入口为 `scripts/upstream_binding_churn.py`：每轮执行真实普通推理、Acting 回收拒收、真实 FINAL 推理、原生 FINAL 观测、显式回收、旧 lease 推理拒收与旧 generation 注册拒收。脚本支持 `--cycles` 与 `--max-sessions`，大规模循环由 GitHub Actions 执行，本地使用两会话 smoke。

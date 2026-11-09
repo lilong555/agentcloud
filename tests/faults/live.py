@@ -74,7 +74,8 @@ class Matrix:
         return result
 
     def create(self):
-        entry=self.t._provision(self.index);self.index+=1
+        index=self.index;self.index+=1
+        entry=self.t._provision(index)
         self.t.resume(entry,'fault-start')
         return entry
 
@@ -202,7 +203,7 @@ class Matrix:
         status,new=native.control_call('bindings',b);assert status==200
         assert old['inference_lease']!=new['inference_lease'] and old['binding_generation']!=new['binding_generation']
         status,replay=request(native.front,'/v1/completions',dict(model='agentcloud-tiny',prompt='x',max_tokens=1),headers=inference_headers(old))
-        assert status in (400,401,403,409)
+        assert status==401
         code,stale=request(native.control,'/v1/execution/session',dict(b,registration_generation=old['binding_generation']),native.tenant_tokens[e['tenant']])
         assert code==409
         native.control_call('finalize',b)
@@ -294,12 +295,15 @@ class Matrix:
                 row=dict(case=name,status='failed',started_at=time.time());self.results.append(row)
                 print(json.dumps(dict(case=name,status='running')),flush=True)
                 entry=None
+                case_index=self.index
                 try:
                     entry=self.create()
                     row['evidence']=clean(getattr(self,name)(entry));row['status']='passed'
                 except Exception as error: row['error']=str(error)
                 finally:
                     row['seconds']=time.time()-row['started_at']
+                    if entry is None:
+                        entry=next((e for e in self.t.sessions if e.get('index')==case_index),None)
                     if entry:
                         try: self.t.client(entry).call('POST',self.t.client(entry).path(entry['id'])+'/finalize',{})
                         except Exception: pass

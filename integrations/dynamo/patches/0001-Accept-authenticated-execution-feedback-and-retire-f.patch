@@ -1,4 +1,4 @@
-From 73fc1e83c787e5386616db2caee7f16d271b7c50 Mon Sep 17 00:00:00 2001
+From 3c47d4dd9a81cf0062e464ce7639afaff5bb9fde Mon Sep 17 00:00:00 2001
 From: lilong555 <173714821+lilong555@users.noreply.github.com>
 Date: Tue, 10 Nov 2026 00:00:00 +0000
 Subject: [PATCH 1/3] Accept authenticated execution feedback and retire final
@@ -6,10 +6,10 @@ Subject: [PATCH 1/3] Accept authenticated execution feedback and retire final
 
 
 diff --git a/Cargo.lock b/Cargo.lock
-index 3134bb638ac9a45b44fbd77605f6f6ef2fa3a06e..22af3548c6f29788735c1a6078e49e38938bad14 100644
+index 3134bb638ac9a45b44fbd77605f6f6ef2fa3a06e..2d0814f2659b1b94e93bcb8988589d791f1bb493 100644
 --- a/Cargo.lock
 +++ b/Cargo.lock
-@@ -3094,6 +3094,8 @@ name = "dynamo-router-policies"
+@@ -3094,8 +3094,11 @@ name = "dynamo-router-policies"
  version = "1.7.0"
  dependencies = [
   "async-trait",
@@ -17,8 +17,11 @@ index 3134bb638ac9a45b44fbd77605f6f6ef2fa3a06e..22af3548c6f29788735c1a6078e49e38
 + "chrono",
   "criterion",
   "dynamo-kv-router",
++ "dynamo-runtime",
   "fastrand",
-@@ -3104,7 +3106,9 @@ dependencies = [
+  "parking_lot",
+  "rustc-hash 2.1.2",
+@@ -3104,7 +3107,9 @@ dependencies = [
   "tempfile",
   "thiserror 2.0.18",
   "tokio",
@@ -29,19 +32,21 @@ index 3134bb638ac9a45b44fbd77605f6f6ef2fa3a06e..22af3548c6f29788735c1a6078e49e38
  
  [[package]]
 diff --git a/lib/bindings/python/Cargo.lock b/lib/bindings/python/Cargo.lock
-index 994950eb94d97cbe1663abac345e4fa44626c70c..db93267d2f979ae880e78a97001f820997ab857d 100644
+index 994950eb94d97cbe1663abac345e4fa44626c70c..1b27097780f516f34da4101dc8dc4c8e5bff1f20 100644
 --- a/lib/bindings/python/Cargo.lock
 +++ b/lib/bindings/python/Cargo.lock
-@@ -2546,6 +2546,8 @@ name = "dynamo-router-policies"
+@@ -2546,7 +2546,10 @@ name = "dynamo-router-policies"
  version = "1.7.0"
  dependencies = [
   "async-trait",
 + "axum",
 + "chrono",
   "dynamo-kv-router",
++ "dynamo-runtime",
   "fastrand",
   "parking_lot",
-@@ -2554,6 +2556,7 @@ dependencies = [
+  "serde",
+@@ -2554,6 +2557,7 @@ dependencies = [
   "thiserror 2.0.18",
   "tokio",
   "tracing",
@@ -166,10 +171,10 @@ index 28a7048ba1450dd89a30637ee28d6974268691ae..6ccdc888b1f072241b62d279348df5f6
      fn agent_context_accepts_missing_input_trigger() {
          let context: AgentContext = serde_json::from_str(r#"{"session_id":"root"}"#).unwrap();
 diff --git a/lib/router-plugins/builtin/Cargo.toml b/lib/router-plugins/builtin/Cargo.toml
-index b29ae81b061e812deca063453170afdd2518f0b4..058ec5f3dfda1faf1ec53d350ed94c9794efb580 100644
+index b29ae81b061e812deca063453170afdd2518f0b4..f1060c6af0a808ae8e7ab5f3ca5b7ddb945f1f29 100644
 --- a/lib/router-plugins/builtin/Cargo.toml
 +++ b/lib/router-plugins/builtin/Cargo.toml
-@@ -12,6 +12,9 @@ repository.workspace = true
+@@ -12,9 +12,13 @@ repository.workspace = true
  description = "Router plugins shipped with Dynamo"
  
  [dependencies]
@@ -179,7 +184,11 @@ index b29ae81b061e812deca063453170afdd2518f0b4..058ec5f3dfda1faf1ec53d350ed94c97
  fastrand = "2"
  parking_lot.workspace = true
  dynamo-kv-router = { workspace = true, features = ["standalone-selection"] }
-@@ -23,6 +26,7 @@ tokio.workspace = true
++dynamo-runtime = { workspace = true }
+ serde.workspace = true
+ serde_json.workspace = true
+ async-trait.workspace = true
+@@ -23,6 +27,7 @@ tokio.workspace = true
  tracing.workspace = true
  
  [dev-dependencies]
@@ -1505,7 +1514,7 @@ index 0000000000000000000000000000000000000000..cd69e1927774e0b015cac08515033070
 +    }
 +}
 diff --git a/lib/router-plugins/builtin/src/thunderagent/request_classifier/mod.rs b/lib/router-plugins/builtin/src/thunderagent/request_classifier/mod.rs
-index 8f978085ef472d3bc706d77c0ddc06cb203df24e..643f7fd1ad8213f60a612580954a3d5d48a0a72a 100644
+index 8f978085ef472d3bc706d77c0ddc06cb203df24e..952e30accf1beafa7a7f73c04f3c278e1d3222c6 100644
 --- a/lib/router-plugins/builtin/src/thunderagent/request_classifier/mod.rs
 +++ b/lib/router-plugins/builtin/src/thunderagent/request_classifier/mod.rs
 @@ -2,9 +2,14 @@
@@ -1523,7 +1532,15 @@ index 8f978085ef472d3bc706d77c0ddc06cb203df24e..643f7fd1ad8213f60a612580954a3d5d
  
  use std::sync::Arc;
  use std::sync::atomic::{AtomicBool, Ordering};
-@@ -50,12 +55,16 @@ fn classifier_provider(
+@@ -18,6 +23,7 @@ use dynamo_kv_router::plugins::request_classifier::{
+     RequestClassifierProviderError, RequestClassifierRegistryError, RequestProgress,
+ };
+ use dynamo_kv_router::plugins::worker_selection::WorkerCandidates;
++use dynamo_runtime::error::{DynamoError, ErrorClass};
+ use parking_lot::Mutex;
+ use thiserror::Error;
+ use tokio::sync::Notify;
+@@ -50,12 +56,16 @@ fn classifier_provider(
          .validate()
          .map_err(|error| RequestClassifierProviderError::new(error.to_string()))?;
  
@@ -1544,24 +1561,39 @@ index 8f978085ef472d3bc706d77c0ddc06cb203df24e..643f7fd1ad8213f60a612580954a3d5d
      }))
  }
  
-@@ -70,6 +79,8 @@ pub(crate) fn register(
- 
- #[derive(Debug, Error)]
- pub(crate) enum ThunderAgentError {
-+    #[error("trusted execution session requires its current inference lease")]
-+    InvalidInferenceLease,
-     #[error("session-aware classification requires a request ID")]
-     MissingRequestId,
- 
-@@ -90,6 +101,7 @@ struct Inner {
+@@ -90,6 +100,31 @@ struct Inner {
      state: Mutex<State>,
      capacity_provider: Arc<dyn WorkerCapacityProvider>,
      scheduler_started: AtomicBool,
 +    inference_leases: Mutex<std::collections::HashMap<String, String>>,
++}
++
++fn verify_inference_lease(
++    leases: &std::collections::HashMap<String, String>,
++    session_id: &str,
++    supplied: Option<&[String]>,
++) -> Result<(), DynamoError> {
++    if !session_id.starts_with("ac:") {
++        return Ok(());
++    }
++    let valid = leases.get(session_id).is_some_and(|lease| {
++        supplied.is_some_and(|values| {
++            values.len() == 1 && super::execution_control::constant_equal(lease, &values[0])
++        })
++    });
++    if valid {
++        Ok(())
++    } else {
++        Err(DynamoError::builder()
++            .class(ErrorClass::Unauthenticated)
++            .diagnostic("trusted execution session requires its current inference lease")
++            .public_message("A current inference lease is required")
++            .build())
++    }
  }
  
  impl Inner {
-@@ -203,6 +215,9 @@ struct PendingClassification {
+@@ -203,6 +238,9 @@ struct PendingClassification {
      request_id: String,
      notify: Arc<Notify>,
      armed: bool,
@@ -1571,7 +1603,7 @@ index 8f978085ef472d3bc706d77c0ddc06cb203df24e..643f7fd1ad8213f60a612580954a3d5d
  }
  
  impl PendingClassification {
-@@ -212,6 +227,9 @@ impl PendingClassification {
+@@ -212,6 +250,9 @@ impl PendingClassification {
              request_id,
              notify,
              armed: true,
@@ -1581,7 +1613,7 @@ index 8f978085ef472d3bc706d77c0ddc06cb203df24e..643f7fd1ad8213f60a612580954a3d5d
          }
      }
  
-@@ -241,6 +259,18 @@ async fn await_release<T>(
+@@ -241,6 +282,18 @@ async fn await_release<T>(
          let status = inner.state.lock().wait_status(&request_id, &notify);
          match status {
              WaitStatus::Released(worker) => {
@@ -1600,7 +1632,7 @@ index 8f978085ef472d3bc706d77c0ddc06cb203df24e..643f7fd1ad8213f60a612580954a3d5d
                  pending.disarm();
                  return Ok((value, worker));
              }
-@@ -259,7 +289,75 @@ pub struct ThunderAgentClassifier {
+@@ -259,7 +312,75 @@ pub struct ThunderAgentClassifier {
      inner: Arc<Inner>,
  }
  
@@ -1676,7 +1708,7 @@ index 8f978085ef472d3bc706d77c0ddc06cb203df24e..643f7fd1ad8213f60a612580954a3d5d
      pub fn new(
          config: ThunderAgentConfig,
          capacity_provider: Arc<dyn WorkerCapacityProvider>,
-@@ -277,6 +375,7 @@ impl ThunderAgentClassifier {
+@@ -277,6 +398,7 @@ impl ThunderAgentClassifier {
                  state: Mutex::new(State::new(config)),
                  capacity_provider,
                  scheduler_started: AtomicBool::new(false),
@@ -1684,7 +1716,7 @@ index 8f978085ef472d3bc706d77c0ddc06cb203df24e..643f7fd1ad8213f60a612580954a3d5d
              }),
          })
      }
-@@ -289,6 +388,8 @@ impl RequestClassifier for ThunderAgentClassifier {
+@@ -289,6 +411,8 @@ impl RequestClassifier for ThunderAgentClassifier {
          request: ClassifyRequest,
          _workers: WorkerCandidates<'_>,
      ) -> ClassifyFuture {
@@ -1693,26 +1725,18 @@ index 8f978085ef472d3bc706d77c0ddc06cb203df24e..643f7fd1ad8213f60a612580954a3d5d
          let Some(session) = request.session_context() else {
              return Box::pin(async move { Ok(request) });
          };
-@@ -298,6 +399,29 @@ impl RequestClassifier for ThunderAgentClassifier {
+@@ -298,6 +422,21 @@ impl RequestClassifier for ThunderAgentClassifier {
              });
          };
          let session_id = session.session_id().to_owned();
++        // Hold the lease guard through registration, serializing validation with retirement.
 +        let leases = self.inner.inference_leases.lock();
-+        if session_id.starts_with("ac:") {
-+            let valid = leases.get(&session_id).is_some_and(|lease| {
-+                session
-+                    .agent_headers()
-+                    .get("x-agentcloud-inference-lease")
-+                    .is_some_and(|values| {
-+                        values.len() == 1
-+                            && super::execution_control::constant_equal(lease, &values[0])
-+                    })
-+            });
-+            if !valid {
-+                return Box::pin(async {
-+                    Err(Box::new(ThunderAgentError::InvalidInferenceLease) as Box<ClassifierError>)
-+                });
-+            }
++        let supplied = session
++            .agent_headers()
++            .get("x-agentcloud-inference-lease")
++            .map(Vec::as_slice);
++        if let Err(error) = verify_inference_lease(&leases, &session_id, supplied) {
++            return Box::pin(async move { Err(Box::new(error) as Box<ClassifierError>) });
 +        }
 +        let client_request_id = session
 +            .agent_headers()
@@ -1723,7 +1747,7 @@ index 8f978085ef472d3bc706d77c0ddc06cb203df24e..643f7fd1ad8213f60a612580954a3d5d
          let session_final = session.session_final() == Some(true);
          let input_tokens = request.isl_tokens();
          let progress = request.progress().clone();
-@@ -316,8 +440,12 @@ impl RequestClassifier for ThunderAgentClassifier {
+@@ -316,8 +455,12 @@ impl RequestClassifier for ThunderAgentClassifier {
              }
          };
  
@@ -1737,10 +1761,45 @@ index 8f978085ef472d3bc706d77c0ddc06cb203df24e..643f7fd1ad8213f60a612580954a3d5d
          Box::pin(async move {
              await_release(pending, request)
                  .await
-@@ -388,6 +516,120 @@ mod tests {
+@@ -388,6 +531,155 @@ mod tests {
          ThunderAgentClassifier::new(config(), provider).unwrap()
      }
  
++    #[test]
++    fn lease_rejections_preserve_authentication_semantics_across_rotation_and_retirement() {
++        let mut leases = std::collections::HashMap::from([("ac:session".into(), "current".into())]);
++        for supplied in [
++            None,
++            Some(vec![]),
++            Some(vec!["stale".into()]),
++            Some(vec!["current".into(), "current".into()]),
++        ] {
++            let error =
++                verify_inference_lease(&leases, "ac:session", supplied.as_deref()).unwrap_err();
++            assert_eq!(error.class(), ErrorClass::Unauthenticated);
++            assert_eq!(error.reason().as_str(), "request.unauthenticated");
++        }
++        let current = vec!["current".to_owned()];
++        assert!(verify_inference_lease(&leases, "ac:session", Some(&current)).is_ok());
++        leases.insert("ac:session".into(), "rotated".into());
++        assert_eq!(
++            verify_inference_lease(&leases, "ac:session", Some(&current))
++                .unwrap_err()
++                .class(),
++            ErrorClass::Unauthenticated
++        );
++        let rotated = vec!["rotated".to_owned()];
++        assert!(verify_inference_lease(&leases, "ac:session", Some(&rotated)).is_ok());
++        leases.remove("ac:session");
++        assert_eq!(
++            verify_inference_lease(&leases, "ac:session", Some(&rotated))
++                .unwrap_err()
++                .class(),
++            ErrorClass::Unauthenticated
++        );
++        assert!(verify_inference_lease(&leases, "ordinary-session", None).is_ok());
++    }
++
 +    #[tokio::test]
 +    async fn retirement_rejects_active_inference_and_reclaims_finalized_bindings_and_leases() {
 +        let mut classifier = classifier(&[(1, 1000)]);
