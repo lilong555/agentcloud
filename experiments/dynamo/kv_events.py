@@ -288,6 +288,26 @@ def ports(count):
             sock.close()
 
 
+def owned_memory(groups):
+    """PSS apportions shared CUDA/Python mappings; RSS remains a separate ceiling."""
+    rss, pss, pids = 0, 0, []
+    for entry in Path("/proc").iterdir():
+        if not entry.name.isdigit():
+            continue
+        try:
+            fields = (entry / "stat").read_text().rsplit(")", 1)[1].split()
+            if int(entry.name) != os.getpid() and int(fields[2]) not in groups:
+                continue
+            rollup = (entry / "smaps_rollup").read_text()
+            pss_line = next(line for line in rollup.splitlines() if line.startswith("Pss:"))
+            pss += int(pss_line.split()[1]) * 1024
+            rss += int(fields[21]) * os.sysconf("SC_PAGE_SIZE")
+            pids.append(int(entry.name))
+        except (FileNotFoundError, ProcessLookupError):
+            continue
+    return {"rss_bytes": rss, "pss_bytes": pss, "pids": pids}
+
+
 class Stack:
     def __init__(self, args, baseline_gpu):
         self.args, self.baseline_gpu = args, baseline_gpu
@@ -295,6 +315,8 @@ class Stack:
         self.done = threading.Event()
         self.failure = None
         self.peak_rss = 0
+        self.peak_pss = 0
+        self.memory_samples = []
         self.peak_gpu_delta = 0
         self.watch = threading.Thread(target=self.monitor, daemon=True)
         self.front_port, self.worker_port, self.indexer_port, self.event_port, self.replay_port, self.front_system = ports(6)
@@ -313,12 +335,19 @@ class Stack:
         started, gpu_checked = time.monotonic(), 0.
         while not self.done.wait(.25):
             try:
-                own_rss = int(Path("/proc/self/statm").read_text().split()[1]) * os.sysconf("SC_PAGE_SIZE")
-                rss = own_rss + sum(group_rss(p.pid) for p in self.processes)
+                usage = owned_memory({p.pid for p in self.processes})
+                rss, pss = usage["rss_bytes"], usage["pss_bytes"]
+                available = memory()["MemAvailable"]
                 self.peak_rss = max(self.peak_rss, rss)
+                self.peak_pss = max(self.peak_pss, pss)
+                if not self.memory_samples or time.monotonic() - self.memory_samples[-1]["monotonic_seconds"] >= 1:
+                    self.memory_samples.append({"monotonic_seconds": time.monotonic(), **usage,
+                                                "system_available_bytes": available})
                 if rss > self.args.max_rss_mib * 2**20:
                     raise RuntimeError("process_group_memory_limit")
-                if memory()["MemAvailable"] < self.args.min_available_mib * 2**20:
+                if pss > self.args.max_pss_mib * 2**20:
+                    raise RuntimeError("process_group_pss_limit")
+                if available < self.args.min_available_mib * 2**20:
                     raise RuntimeError("available_memory_limit")
                 if shutil.disk_usage(ROOT).free < 12 * 2**30:
                     raise RuntimeError("disk_headroom_limit")
@@ -453,7 +482,8 @@ class Stack:
             log.close()
         return {"process_exit_codes": [p.returncode for p in self.processes],
                 "remaining_group_rss_bytes": sum(group_rss(p.pid) for p in self.processes),
-                "peak_owned_rss_bytes": self.peak_rss, "peak_device_used_delta_mib": self.peak_gpu_delta,
+                "peak_owned_rss_bytes": self.peak_rss, "peak_owned_pss_bytes": self.peak_pss,
+                "peak_device_used_delta_mib": self.peak_gpu_delta,
                 "resource_stop_reason": self.failure}
 
 
@@ -461,6 +491,9 @@ def run(args, ready):
     args.output_dir.mkdir(parents=True, exist_ok=False)
     report = {"schema_version": 1, "status": "failed", "started_at": utc(), "preflight": ready,
               "source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
+              "resource_limits": {"max_rss_mib": args.max_rss_mib, "max_pss_mib": args.max_pss_mib,
+                                  "min_available_mib": args.min_available_mib,
+                                  "gpu_budget_mib": args.gpu_budget_mib},
               "execution_kind": "real-vllm-official-kv-events-single-worker", "checks": [],
               "router_indexer": "official embedded KVIndexer through Dynamo event relay",
               "audit_indexer": "official standalone KVIndexer through engine ZMQ",
@@ -540,6 +573,7 @@ def run(args, ready):
         report["cleanup"] = stack.close()
         observer.close()
         write(args.output_dir / "events.json", observer.snapshot())
+        write(args.output_dir / "memory.json", stack.memory_samples)
         report["commands"] = stack.commands
         report["finished_at"] = utc()
         if report["cleanup"]["remaining_group_rss_bytes"] or report["cleanup"]["resource_stop_reason"]:
@@ -554,13 +588,15 @@ def arguments(argv=None):
     parser.add_argument("--model-dir", type=Path, default=MODEL)
     parser.add_argument("--output-dir", type=Path, default=ROOT / "artifacts/kv-events-single-worker")
     parser.add_argument("--wheel-provenance", type=Path, default=ROOT / "artifacts/kv-event-wheel/provenance.json")
-    parser.add_argument("--max-rss-mib", type=int, default=2560)
+    parser.add_argument("--max-rss-mib", type=int, default=4096)
+    parser.add_argument("--max-pss-mib", type=int, default=2560)
     parser.add_argument("--min-available-mib", type=int, default=1536)
     parser.add_argument("--gpu-budget-mib", type=int, default=3072)
     parser.add_argument("--pressure-requests", type=int, default=12)
     parser.add_argument("--freshness-seconds", type=float, default=5)
     args = parser.parse_args(argv)
-    if not (512 <= args.max_rss_mib <= 2560 and 1536 <= args.min_available_mib and
+    if not (512 <= args.max_rss_mib <= 4096 and 512 <= args.max_pss_mib <= 2560 and
+            1536 <= args.min_available_mib and
             512 <= args.gpu_budget_mib <= 3072 and 4 <= args.pressure_requests <= 32 and
             0 < args.freshness_seconds <= 30):
         parser.error("resource and workload limits exceed the single-worker experiment contract")

@@ -82,6 +82,7 @@ dynamo_component_kv_publisher_zmq_events_total{stage="accepted",event_type="remo
 
     def test_limits_are_checked_without_importing_gpu_libraries(self):
         for flags in (["--gpu-budget-mib", "4000"], ["--max-rss-mib", "9999"],
+                      ["--max-pss-mib", "9999"],
                       ["--pressure-requests", "100"], ["--freshness-seconds", "0"]):
             with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
                 experiment.arguments(["run", *flags])
