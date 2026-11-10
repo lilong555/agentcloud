@@ -1,0 +1,58 @@
+name: KV event runtime wheel
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  wheel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    env:
+      CARGO_BUILD_JOBS: '4'
+      CARGO_INCREMENTAL: '0'
+      CARGO_PROFILE_DEV_DEBUG: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v7
+      - name: Lightweight experiment contract checks
+        run: python3 -m unittest tests.tooling.test_kv_events
+      - name: Fetch pinned Dynamo and apply its source overlay
+        run: python3 scripts/upstream.py --fetch dynamo
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.96.1 --profile minimal
+      - name: Restore isolated compiler cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: kv-event-cargo-${{ runner.os }}-${{ hashFiles('integrations/dynamo/manifest.json') }}
+          restore-keys: native-cpu-${{ runner.os }}-
+      - name: Build custom policy and standalone KVIndexer wheel
+        run: >-
+          python3 scripts/resource_guard.py
+          --max-rss-mib 12000 --min-available-mib 1536 --min-free-gib 12
+          --timeout 5400 --log artifacts/kv-event-build.log --
+          python3 -m experiments.dynamo.kv_events_build
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: kv-event-wheel
+          path: |
+            artifacts/kv-event-wheel/*.whl
+            artifacts/kv-event-wheel/provenance.json
+            artifacts/kv-event-wheel/indexer-help.txt
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kv-event-build-log
+          path: artifacts/kv-event-build.log
+          retention-days: 14
