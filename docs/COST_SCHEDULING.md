@@ -110,6 +110,8 @@ python3 -m bench.analysis.scale \
 
 ## 完整规模结果
 
+用于当前诊断的冻结源码为 `32e3d6e`：固定矩阵 **35/36 trial、10,367/10,368 请求**；长尾、分布变化和开放环合计 **53/54 trial、5,088/5,184 请求**。各场景单独汇总，B/E 反馈与 Program 寿命按历史配置记录。统一控制变量的 v2 对照采用独立的 `symmetric-program-v1` 协议。[固定矩阵](evidence/cost-matrix-32e3d6e-summary.json) · [长尾](evidence/cost-tail-32e3d6e-summary.json) · [分布变化](evidence/cost-phase-32e3d6e-summary.json) · [开放环](evidence/cost-open-32e3d6e-summary.json) · [统一配对验收](V2_EVALUATION.md)
+
 冻结源码 `1bd80b2` 的 [36 组矩阵](https://github.com/lilong555/agentcloud/actions/runs/42743170099)覆盖 N=32/64、六种策略和三个种子：30/36 trial 通过，9,865/10,368 请求完成，503 个失败或未投递请求保留；36/36 runner 资源清理通过。cost-aware 的六组均通过，共完成 1,728 个请求。实际容量估计及生命周期语义以该冻结源码和原始回执为准。
 
 | 并发 | 策略 | 完成／计划 | Stranded GB·s | 交互 p95 秒 | Goodput/s |

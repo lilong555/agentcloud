@@ -29,7 +29,7 @@ bin/agentcloud serve --enable-experiment-controls \
   --enable-autonomous-scheduler --scheduler-policy cost-aware --scheduler-shadow
 ```
 
-实验首先写入全部计划 trial 和请求占位。业务失败且清理成功时继续后续策略；清理失败时，后续 trial 保留为 `BLOCKED_CLEANUP`。监督者按本次 trial 标记回收跨进程组残留，并使用 pidfd 固定进程身份。每个 trial 的执行预算为 1,500 秒，清理预算为 300 秒。[Runner](../bench/scale.py) · [Actions](../.github/workflows/live-scale.yml)
+实验首先写入全部计划 trial 和请求占位。业务失败且清理成功时继续后续策略；清理失败时，后续 trial 保留为 `BLOCKED_CLEANUP`。监督者按本次 trial 标记回收跨进程组残留，并使用 pidfd 固定进程身份。Gate 1、Gate 2 和边界初筛的 trial 执行预算为 1,500 秒；边界确认对两种策略统一使用 2,400 秒，清理预算均为 300 秒。[Runner](../bench/scale.py) · [Actions](../.github/workflows/live-scale.yml)
 
 ## 两阶段规模与停止条件
 
@@ -38,9 +38,9 @@ bin/agentcloud serve --enable-experiment-controls \
 | Gate 1 | N=32/64，7101～7103 | 6 / 24 | TTL2、旧 cost-aware、v2、TTL2-Shadow |
 | 边界初筛 | N=64，7101，16/64/128 MiB × 1/3/6 s | 9 / 18 | TTL2、v2 |
 | Gate 2 | N=32/64，7301～7305 | 10 / 50 | TTL15、TTL2、Observed、旧 cost-aware、v2 |
-| 边界确认 | 最多三个冻结坐标，7401～7403 | 最多 9 / 18 | TTL2、v2 |
+| 边界确认 | 16 MiB/1 s、64 MiB/3 s、128 MiB/3 s，7401～7403 | 9 / 18 | TTL2、v2 |
 
-Gate 2 使用 Gate 1 确认有效后冻结的代码。边界确认配置在选择坐标前保持空集合，工作流对此直接退出。本轮仅包含一个主要 v2 方案及必要修正；最终结果按工作集、等待与恢复成本记录适用范围，保留资源和时延的实际取舍。
+Gate 2 使用 Gate 1 确认有效后冻结的代码。边界确认覆盖短等待、资源与尾延迟取舍、高恢复成本三类坐标。128 MiB/3 s 初筛中，v2 完成 384/384 请求，TTL2 在原预算内完成 314/384；确认阶段统一延长观测预算，用于完整测量两种策略的交付率与资源、尾延迟。本轮仅包含一个主要 v2 方案及必要修正；最终结果按工作集、等待与恢复成本记录适用范围，保留资源和时延的实际取舍。
 
 ## 联合验收
 
@@ -48,14 +48,71 @@ Gate 2 使用 Gate 1 确认有效后冻结的代码。边界确认配置在选�
 
 Stranded GB·s、Goodput、恢复次数、恢复耗时、控制面 CPU/RSS 和资源采样覆盖单独报告。主图显示各 trial 资源均值与合并请求的交互 P95；联合判定使用逐 seed 的 P95 配对差值。首个尝试独立于结果选入主统计，后续重跑保留完整身份与分母。[统计实现与图表](../bench/analysis/scale.py)
 
+## Gate 1 实测
+
+[原始运行](https://github.com/lilong555/agentcloud/actions/runs/42772928305)固定实验源码 `52af93d`、7101～7103，首轮完成 **23/24 trial、6,717/6,912 请求**。N32 的四策略均完成 576/576 请求；N64 的 v2/7101 发生 CI 访问令牌过期，完成 189/384，其余策略和种子全部完成。[完整首轮分母](evidence/gate1-summary.json)
+
+N32 的差值采用每个种子 v2 减去基线，负数表示减少：
+
+| 基线 | 总预留差 GB·s，配对 95% CI | 交互 P95 差秒，配对 95% CI | 联合判定 |
+| --- | --- | --- | --- |
+| 旧 cost-aware | −21.614 [−24.996, −16.042] | −27.066 [−41.105, −10.481] | 两项改善 |
+| TTL2 | −8.660 [−22.365, +1.554] | −4.988 [−15.267, +0.914] | 均值改善，区间跨零 |
+| TTL2-Shadow | −13.059 [−14.113, −11.451] | −13.431 [−20.229, −2.544] | 两项改善 |
+
+### Shadow 开销
+
+Shadow 与 TTL2 由相同 runner 端的两秒动作执行，只增加服务端旧成本策略的观测、计算与有界诊断；计算得到的生命周期动作由 Shadow gate 抑制。[实现](../internal/control/autonomous.go#L386)
+
+| 并发 | 协调器平均 CPU，TTL2 / Shadow | Shadow−TTL2 总预留 GB·s，95% CI | Shadow−TTL2 交互 P95 秒，95% CI |
+| --- | --- | --- | --- |
+| 32 | 0.0942 / 0.1304 核 | +4.399 [−10.914, +15.667] | +8.444 [+1.934, +18.436] |
+| 64 | 0.1263 / 0.1644 核 | +25.706 [+17.507, +34.200] | −18.267 [−24.676, −12.658] |
+
+这组测量把观察与计算的 CPU 成本单独暴露出来，同时保留它对端到端排队时序的实际影响。N64 的资源与延迟变化方向相反；两项主指标和控制开销分别报告。[Shadow 完整统计](evidence/gate1-shadow-summary.json)
+
+### 长时间配对运行的访问有效期
+
+原始 CI 在集群准备时签发一小时的 Substrate service-account token。N64/7101 的第四个策略于 08:12:52 UTC 开始；08:22:17.033 UTC 起产生 **9,382 次 Unauthenticated Worker 观测**，四个挂起操作进入 `OUTCOME_UNKNOWN` 与 `RECOVERY_REQUIRED`，其余 60 个会话保持 SUSPENDED。该运行的 Router mTLS 证书有效至次日 07:15:19 UTC。[逐项来源与状态](evidence/gate1-credential-expiry.json)
+
+CI 访问有效期覆盖整个配对 Job，保留四小时上限，并校验服务账号、audience 和实际签发有效期。每个 trial 保存不含令牌内容的有效期与工作流源码证明。`source_ref` 固定实验 checkout，工作流与实验源码身份分别记录；[完整四策略验证](https://github.com/lilong555/agentcloud/actions/runs/42785891260)使用相同 `52af93d`、N64/7101、随机顺序和资源参数。首轮失败持续保留在主统计与尝试审计中。[有效期检查](../scripts/ci_substrate_access.py)
+
+## 工作集与等待边界
+
+N64、四槽位、种子 7101 的初筛覆盖九个坐标。16/64 MiB 的六对全部完成；128 MiB 原始初始化同时分配随机字节与可写副本，六个 trial 在运行前退出。预分配并直接读取随机数据后，三个 128 MiB 坐标具有独立源码 `89a4706` 和尝试身份。[完整 24 次尝试](evidence/v2-boundary-summary.json)保留 **6,397/9,216 请求、9 个失败 trial**。
+
+| 工作集／等待 | TTL2 总预留／交互 P95 | v2 总预留／交互 P95 | TTL2／v2 恢复次数 | 完成情况 |
+| --- | --- | --- | --- | --- |
+| 16 MiB／1 s | 363.440 GB·s／230.603 s | 399.860 GB·s／260.371 s | 71／64 | 两者 384/384 |
+| 64 MiB／3 s | 725.459 GB·s／205.941 s | 662.354 GB·s／564.447 s | 384／141 | 两者 384/384 |
+| 128 MiB／1 s | 499.786 GB·s／344.690 s | 530.617 GB·s／408.729 s | 72／71 | 两者 384/384 |
+| 128 MiB／3 s | 1,500 秒执行预算到期 | 778.879 GB·s／640.355 s | 314／140 | TTL2 314/384；v2 384/384 |
+
+64 MiB／3 s 下，v2 的 KEEP 复用减少 243 次恢复，总资源节省 8.7%。同一机制延长了首批 Actor 占据四个槽位的时间：v2 第一轮全部工作负载的 P95 为 726.994 秒，其后五轮约 8～10 秒；TTL2 的六轮约 164～211 秒。v2 首轮全部请求的槽位排队总时长占 TTFT 总时长 **98.82%**，后续五轮为零；TTL2 各轮约为 **94.82%～95.40%**。资源收益与首次容量准入尾延迟来自相同的驻留选择。[逐轮原始统计](evidence/v2-boundary-summary.json)同时记录 TTFT 和 FairSlots 等待，耗时占比使用逐请求总和。
+
+![工作集边界的资源与首次准入代价](evidence/v2-boundary-admission.png)
+
+128 MiB／6 s 的 TTL2 完成 323/384 后到期，逻辑 Program 清理未完成，后续 v2 标记 `BLOCKED_CLEANUP`；Runner 最终 Kind 清理通过。三组边界确认采用 7401～7403 与统一 2,400 秒执行预算，冻结短等待优势、资源／准入取舍和高恢复成本三个坐标。最终交付据完整配对与失败分母记录适用范围，保持现有调度方案。
+
+## 复现
+
 ```bash
 gh workflow run live-scale.yml -f scope=gate1 -f max_parallel=6 \
-  -f native_run_id=<通过当前上游源码核验的原生运行ID>
+  -f native_run_id=42769316617 \
+  -f source_ref=52af93d9389c1103af941ec72b885d50ad47e284
 
 python3 -m bench.analysis.scale --candidate agentcloud-v2 \
-  --source-commit <实验源码SHA> --stage gate1 --scenario fixed \
+  --source-commit 52af93d9389c1103af941ec72b885d50ad47e284 \
+  --stage gate1 --scenario fixed --github-run-id 42772928305 \
   --matrix-config bench/configs/gate1.json \
   --output docs/evidence/gate1-summary.json
+
+python3 -m bench.analysis.regime
+
+python3 -m bench.analysis.frontier --input docs/evidence/gate1-summary.json \
+  --output docs/evidence/gate1-frontier
 ```
+
+`--github-run-id` 选择明确工作流的独立统计；省略时，最早尝试始终进入主统计，后续尝试进入审计。边界统计从冻结计划读取完整种子集合，缺失种子和未执行请求保留在分母。
 
 [完整诊断](SCHEDULER_DIAGNOSIS.md)提供 v2 的量化依据：未知预测晚完成与工具区间资源占用是主导问题；B/E 配置混杂由本协议统一控制。GPU 事件与物理 KV 测量使用[独立实验入口](GPU_VALIDATION.md)，其环境准备和结果归档独立于本阶段验收。

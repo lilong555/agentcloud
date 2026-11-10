@@ -50,8 +50,12 @@ class ScalePlanTests(unittest.TestCase):
         self.assertEqual({c['n'] for c in boundary},{64})
         self.assertEqual({(c['heap_mib'],c['wait_seconds']) for c in boundary},
                          {(h,w) for h in (16,64,128) for w in (1,3,6)})
-        with self.assertRaisesRegex(ValueError,'freeze'):
-            matrix('boundary-confirm')
+        confirmation=matrix('boundary-confirm')['include']
+        self.assertEqual(len(confirmation),9)
+        self.assertEqual({c['seed'] for c in confirmation},{7401,7402,7403})
+        self.assertEqual({(c['heap_mib'],c['wait_seconds']) for c in confirmation},
+                         {(16,1),(64,3),(128,3)})
+        self.assertTrue(all(c['policies']=='static-2,agentcloud-v2' for c in confirmation))
 
     def test_paired_filter_rejects_partial_policy_reruns(self):
         good=dict(n=32,seed=7101,scenario='fixed')

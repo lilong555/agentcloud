@@ -15,6 +15,7 @@ AgentCloud 围绕 64 个有状态 Agent 共享四个 gVisor 槽位，交付持�
 | 成本协调 | 原生 classifier 排队观测、等待与快照成本估计、最小驻留、恢复冷却、并发操作排他 | [真实 HTTP 策略验收](evidence/service-scheduling.json) |
 | 条件成本策略 | 可选 `cost-aware`：含删失样本的条件等待预测、固定释放期限、恢复需求容量成本、重启持久化与竞态契约 | [策略与实机验收协议](COST_SCHEDULING.md)、[观察快照微基准](evidence/scheduling-snapshot-benchmark.json) |
 | v2 成本策略 | 持久等待 episode、真实事件起点的两秒未知期限、条件 KEEP 比较与恢复冷却；统一 E/FINAL 协议、同 Runner 配对与 TTL2-Shadow | [诊断](SCHEDULER_DIAGNOSIS.md)、[机制与配对验收](V2_EVALUATION.md) |
+| Gate 1 首轮 | `52af93d`，23/24 trial、6,717/6,912 请求；N32 相对旧成本策略两项改善；N64/7101 的 CI 令牌过期，原始失败与独立验证分列 | [首轮完整分母](evidence/gate1-summary.json)、[令牌有效期归因](evidence/gate1-credential-expiry.json) |
 | CUDA 物理 KV | RTX 4070 Laptop、OPT-125M、30 组 KEEP/释放对照；64 会话总时间 −22.5%，16 会话 +44.5%，反转范围 48～64 会话 | [物理 GPU 验证](GPU_VALIDATION.md) |
 | 官方 KV 事件 | 真实 vLLM、KVIndexer 与默认 Selector；26 个连续事件 batch、Stored/Removed 和 relay 零丢失；六次 Prefill 计算对账全部一致，单 Worker | [事件验收与完整尝试](evidence/gpu/kv-events-summary.json) |
 | 规模实验 | 四租户、两 Worker、N=8/16/32/64，60 组首轮中 58 组通过，10,765/10,800 请求；AgentCloud 12/12 组通过 | [完整矩阵与区间](evidence/scale-summary.json) |

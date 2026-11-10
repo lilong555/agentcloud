@@ -72,6 +72,23 @@ def matrix_coverage(trials, config):
         status='passed' if expected==observed and all(t['status']=='passed' for t in primary) and done==offered else 'incomplete')
 
 
+def select_trials(paths, source_commit=None, scenario=None, stage=None, github_run_id=None):
+    """Select a declared evidence cohort before loading its complete request trajectories."""
+    selected = []
+    for path in paths:
+        trial = json.loads(path.read_text())
+        if source_commit and trial.get('source_commit') != source_commit:
+            continue
+        if scenario and trial.get('workload_scenario', 'fixed') != scenario:
+            continue
+        if stage and trial.get('config', {}).get('experiment_stage') != stage:
+            continue
+        if github_run_id and str(trial.get('github_run_id')) != str(github_run_id):
+            continue
+        selected.append((path, with_cleanup(path, trial)))
+    return selected
+
+
 def summarize(trials, samples=2000, seed=9031, candidate="agentcloud"):
     if not trials or samples < 1:
         raise ValueError('at least one trial and positive bootstrap count required')
@@ -262,26 +279,20 @@ def main():
     p.add_argument('--source-commit')
     p.add_argument('--scenario', help='Select one frozen workload scenario, including its failed attempts')
     p.add_argument('--stage', help='Select one frozen experiment stage, such as gate1 or gate2')
+    p.add_argument('--github-run-id', help='Report one declared workflow attempt independently, including its failures')
     p.add_argument('--candidate', default='agentcloud', choices=['agentcloud','cost-aware','agentcloud-v2','static-2-shadow'])
     p.add_argument('--matrix-config', type=Path, default=Path('bench/configs/scale-live.json'))
     p.add_argument('--bootstrap-samples', type=int, default=2000)
     p.add_argument('--skip-figures', action='store_true')
     args = p.parse_args()
     paths = sorted(args.input_dir.rglob('result.json'))
-    selected = [(path,json.loads(path.read_text())) for path in paths]
-    if args.source_commit:
-        selected = [(path,t) for path,t in selected if t.get('source_commit') == args.source_commit]
-    if args.scenario:
-        selected = [(path,t) for path,t in selected if t.get('workload_scenario','fixed') == args.scenario]
-    if args.stage:
-        selected = [(path,t) for path,t in selected if t.get('config', {}).get('experiment_stage') == args.stage]
-    selected = [(path,with_cleanup(path,t)) for path,t in selected]
+    selected = select_trials(paths, args.source_commit, args.scenario, args.stage, args.github_run_id)
     paths,trials=zip(*selected) if selected else ([],[])
     result = summarize(trials, args.bootstrap_samples, candidate=args.candidate)
     result['matrix'] = matrix_coverage(trials, json.loads(args.matrix_config.read_text()))
     result.update(schema_version=2, execution_kind='real-substrate-memory-native-dynamo-cpu-mocker',
         upstream_execution=True, gpu_execution=False, source_commit_filter=args.source_commit, workload_scenario=args.scenario,
-        experiment_stage=args.stage, sources=[str(path) for path in paths])
+        experiment_stage=args.stage, github_run_id_filter=args.github_run_id, sources=[str(path) for path in paths])
     write_json(args.output, result)
     with args.output.with_suffix('.csv').open('w', newline='') as handle:
         columns = ['concurrency','policy','trials','offered','completed','failed_or_unoffered','ttft_p50','ttft_p95','ttft_p99','resume_p50','resume_p95','resume_p99','interactive_p95_seconds'] + list(SCALARS) + ['cached_tokens']

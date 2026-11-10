@@ -11,7 +11,21 @@
 
 [真实模型汇总](evidence/deep-agents-summary.json)链接两项完整结果和 11 次已归档尝试，包含六个通过与五个失败的完整运行。Coding 使用源码 `20113d5` 的[独立 Actions 验收](https://github.com/lilong555/agentcloud/actions/runs/42769409786)，模型、工具、终态发布与资源清理均通过；历史组合验收保留各子项及整体状态。DeerFlow 的成功来自单独完成的验收。研究资料为受控 HTTP 来源，模型通过真实 CPA 推理选择和执行工具。
 
-## 多租户规模与静态 TTL 对照
+## 统一配对的成本调度与 Shadow
+
+`52af93d` 的 Gate 1 使用四租户、两 Worker、四槽位与 N=32/64；7101～7103 的每个完整策略组在同一 Runner 随机串行运行。TTL2、旧 cost-aware、v2、TTL2-Shadow 统一使用 E 组、开启执行反馈、Program 跨轮，仅终态 FINAL。主判据为总 Actor 预留 GB·s 与交互 P95 的配对区间同时不劣。
+
+首轮 **23/24 trial、6,717/6,912 请求**完成。N32 的 v2 相对旧 cost-aware 平均节省 **21.614 GB·s、27.066 秒交互 P95**，两项配对 95% 区间均改善；相对 TTL2 分别节省 8.660 GB·s、4.988 秒，区间跨零。N64/7101 的 v2 在第四个串行策略期间遇到一小时 CI 访问令牌过期，该 trial 的 195 个失败／未投递请求完整保留。[Gate 1 数据](evidence/gate1-summary.json) · [有效期轨迹与安全状态](evidence/gate1-credential-expiry.json)
+
+Shadow 将服务端观测与计算成本单独纳入对照：协调器平均 CPU 在 N32 从 0.0942 增到 0.1304 核，N64 从 0.1263 增到 0.1644 核。端到端资源和时延差异及其置信区间分别保存。[Shadow 数据](evidence/gate1-shadow-summary.json) · [完整机制、协议与验证](V2_EVALUATION.md)
+
+边界坐标为 16/64/128 MiB × 1/3/6 秒等待。每个坐标按自身源码和 Runner 保留完整请求分母、资源积分、P95、恢复次数及逐轮容量等待；工作集初始化与运行时限故障保留独立验证记录。[边界汇总](evidence/v2-boundary-summary.json)
+
+## RTX 4070 真实 CUDA 与官方 KV 事件
+
+独立 OPT-125M CUDA 压力曲线完成 **30/30 组测量**：16/24/32/48/64 会话，KEEP 与释放各三次。64 会话总耗时下降 **22.5%**，16 会话增加 **44.5%**，实测反转范围为 **48～64 会话**。原生 vLLM 的独立单 Worker 验收接通官方 KVEvent、KVIndexer 与默认 Selector；26 个事件 batch 连续、Stored/Removed 到达且 relay 零丢失。三轮热缓存／驱逐后请求分别新增计算 16／256 token，六次前缀驻留预测全部与实际计算量一致。[GPU 完整环境、原文与复现](GPU_VALIDATION.md)
+
+## 历史多租户规模与静态 TTL 对照
 
 [正式运行](https://github.com/lilong555/agentcloud/actions/runs/42694974426/attempts/1)冻结源码 `dc9081f42359b53bd50d2ca7c90fc09723980024`，完成全部 60 组计划，首轮 58/60 组通过，10,765/10,800 请求完成。AgentCloud 的 12/12 组、2,160/2,160 请求通过。N=8／TTL0／7101 在 PostgreSQL 读取超时后留下 30 个失败或未投递请求；N=64／TTL2／7102 的运行时 HTTP 503 留下 5 个。原始失败、清理结果和重跑均保存在独立证据中，主统计固定选择最早尝试。[两组定向重跑](evidence/scale-run-42694974426-attempt-2.json)分别完成 48/48、384/384 请求，清理通过；全部 62 次实际 trial 共完成 11,197/11,232 请求。主统计继续保留首轮的 35 个失败或未投递请求。
 

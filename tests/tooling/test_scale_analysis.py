@@ -1,6 +1,11 @@
+import json
+from pathlib import Path
+import tempfile
 import unittest
+from unittest.mock import patch
 
-from bench.analysis.scale import summarize, matrix_coverage, trial_metric
+from bench.analysis.regime import analyze as analyze_regimes
+from bench.analysis.scale import select_trials, summarize, matrix_coverage, trial_metric
 
 
 def trial(identity, at, status='passed', policy='agentcloud', seed=7101):
@@ -89,6 +94,54 @@ class ScaleAnalysisTests(unittest.TestCase):
         self.assertEqual(row['ci95']['resume_p95'],[None,None])
         self.assertEqual(report['all_attempts'],dict(trials=2,failed_trials=1,planned_requests=4,completed_requests=2))
         self.assertEqual([r['trial_id'] for r in report['attempt_audit'] if r['primary']],['initial'])
+
+    def test_workflow_selection_keeps_initial_failure_and_revalidation_separate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            paths = []
+            for identity, run_id, status in (('initial', 100, 'failed'), ('revalidation', 101, 'passed')):
+                row = trial(identity, run_id, status)
+                row.update(github_run_id=run_id, source_commit='frozen', workload_scenario='fixed')
+                row['config']['experiment_stage'] = 'gate1'
+                path = Path(directory) / (identity + '.json')
+                path.write_text(json.dumps(row))
+                paths.append(path)
+            with patch('bench.analysis.scale.with_cleanup', side_effect=lambda path, row: row):
+                first = select_trials(paths, 'frozen', 'fixed', 'gate1', '100')
+                retry = select_trials(paths, 'frozen', 'fixed', 'gate1', '101')
+                all_rows = select_trials(paths, 'frozen', 'fixed', 'gate1')
+            self.assertEqual([(row['trial_id'], row['status']) for _, row in first], [('initial', 'failed')])
+            self.assertEqual([row['trial_id'] for _, row in retry], ['revalidation'])
+            report = summarize([row for _, row in all_rows], samples=10)
+            self.assertEqual(report['groups'][0]['completed'], 0)
+            self.assertEqual(report['all_attempts']['completed_requests'], 2)
+
+    def test_boundary_matrix_uses_all_declared_seeds_including_missing_trials(self):
+        for seeds, expected_observed, expected_status in (
+                ((7401, 7402, 7403), 6, 'passed'), ((7401, 7402), 4, 'incomplete')):
+            with self.subTest(seeds=seeds), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                policies = ['static-2', 'agentcloud-v2']
+                plan = dict(concurrency=[2], policies=policies, paired_seeds=[7401, 7402, 7403],
+                            boundary_coordinates=[dict(heap_mib=16, wait_seconds=1)])
+                (root / 'boundary-confirm.json').write_text(json.dumps(plan))
+                for seed in seeds:
+                    for policy in policies:
+                        row = trial(f'{policy}-{seed}', seed, policy=policy, seed=seed)
+                        row.update(source_commit='frozen', workload_scenario='boundary-h16-w1',
+                                   paired_runner_id=f'runner-{seed}', comparison_protocol='symmetric-program-v1')
+                        row['config'].update(concurrency=[2], paired_seeds=[seed], policies=policies,
+                                             experiment_stage='boundary-confirm', heap_mib=16, wait_seconds=1)
+                        for request in row['requests']:
+                            request['round'] = 0
+                        path = root / row['trial_id']
+                        path.mkdir()
+                        (path / 'result.json').write_text(json.dumps(row))
+                report = analyze_regimes(root, samples=10, plan_dir=root)
+                matrix = report['groups'][0]['matrix']
+                self.assertEqual((matrix['planned_trials'], matrix['observed_trials']), (6, expected_observed))
+                self.assertEqual(matrix['planned_requests'], 12)
+                self.assertEqual(matrix['failed_or_unoffered_requests'], 12 - 2 * expected_observed)
+                self.assertEqual(matrix['status'], expected_status)
 
     def test_resume_intervals_and_failed_pair_prevent_improvement_verdict(self):
         trials=[trial('auto-'+str(s),s,seed=s) for s in (7101,7102,7103)]
