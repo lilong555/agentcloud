@@ -437,6 +437,7 @@ class Stack:
                         "replay_endpoint": f"tcp://*:{self.replay_port}", "buffer_steps": 1024}
         self.launch("vllm", [sys.executable, "-m", "dynamo.vllm", "--model", str(self.args.model_dir),
                             "--served-model-name", "facebook/opt-125m", "--dtype", "float16",
+                            "--endpoint-types", "completions",
                             "--skip-tokenizer-init",
                             "--enforce-eager", "--max-model-len", "512", "--max-num-seqs", "1",
                             "--max-num-batched-tokens", "512", "--kv-cache-memory-bytes", "33554432",
