@@ -304,17 +304,37 @@ class Trial:
         return json.loads(receipt['result']['stdout'])
     def suspend(self,entry,operation):
         state=self.refresh(entry)
-        deadline=self.phase_deadline(180)
-        while state['state'] in ('QUIESCING','SUSPENDING','RESUMING'):
-            if time.monotonic()>deadline: raise TimeoutError('in-flight lifecycle deadline')
-            time.sleep(.1);state=self.refresh(entry)
-        if state['state']=='SUSPENDED': return state
-        begin=time.time();state=self.client(entry).lifecycle(entry['id'],'suspend',state['epoch'],operation)
-        if state['state']!='SUSPENDED' or state['manifest']['fidelity']!='MEMORY': raise RuntimeError('MEMORY suspension was not committed')
-        entry['state']=state
-        if entry['resident']: entry['resident']=False;self.slots.release()
-        self.event('suspend',session_id=entry['id'],start=begin,end=time.time(),manifest=state['manifest'])
-        return state
+        deadline=self.phase_deadline(180);epoch=state['epoch']
+        while True:
+            if state['epoch']!=epoch: raise RuntimeError('suspend epoch changed while waiting')
+            receipts=[r for field in ('scheduling','lifecycle','tools') for r in (state.get(field) or {}).values()]
+            if state['state']=='RECOVERY_REQUIRED' or any(r.get('status')=='OUTCOME_UNKNOWN' for r in receipts):
+                raise RuntimeError('suspend requires outcome reconciliation')
+            pending=any(r.get('status')=='RUNNING' for field in ('scheduling','lifecycle') for r in (state.get(field) or {}).values())
+            if not pending and state['state']=='SUSPENDED':
+                if (state.get('manifest') or {}).get('fidelity')!='MEMORY' or state.get('gate')!='CLOSED' or state.get('active_tools')!=0:
+                    raise RuntimeError('MEMORY suspension safe point was not committed')
+                return state
+            if time.monotonic()>=deadline: raise TimeoutError('in-flight lifecycle deadline')
+            if not pending and state['state'] not in ('QUIESCING','SUSPENDING','RESUMING'):
+                begin=time.time()
+                try:
+                    state=self.client(entry).lifecycle(entry['id'],'suspend',epoch,operation)
+                except CloudError as exc:
+                    # This 409 precedes receipt creation. Observe the competing operation;
+                    # transport failures and unknown outcomes retain their single attempt.
+                    if exc.code!='lifecycle_busy' or exc.status!=409: raise
+                    self.event('suspend_lifecycle_busy',session_id=entry['id'],operation_id=operation,epoch=epoch)
+                else:
+                    if state['epoch']!=epoch or state['state']!='SUSPENDED' or (state.get('manifest') or {}).get('fidelity')!='MEMORY' or state.get('gate')!='CLOSED' or state.get('active_tools')!=0:
+                        raise RuntimeError('MEMORY suspension was not committed at the expected epoch')
+                    entry['state']=state
+                    if entry['resident']: entry['resident']=False;self.slots.release()
+                    self.event('suspend',session_id=entry['id'],start=begin,end=time.time(),manifest=state['manifest'])
+                    return state
+            remaining=deadline-time.monotonic()
+            if remaining<=0: raise TimeoutError('in-flight lifecycle deadline')
+            time.sleep(min(.1,remaining));state=self.refresh(entry)
     def resume(self,entry,operation):
         state=self.refresh(entry);queue=0.
         if state['state']=='RUNNING' and state['gate']=='OPEN': return queue

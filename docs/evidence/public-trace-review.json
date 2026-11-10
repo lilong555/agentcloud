@@ -1,0 +1,702 @@
+{
+  "schema_version": 1,
+  "review_date": "2026-11-10",
+  "checked_at_utc": "2026-11-10T10:21:32.618679+00:00",
+  "scope": "source authenticity/license/schema/bounded sample and executable adapter selection",
+  "sources": {
+    "harvard": {
+      "repo": "HarvardMadSys/freeinference_agentic_trace",
+      "repo_commit": "2b795dbf5eac490a7c081906fdce6cc7a184b7ef",
+      "repo_commit_date": "2026-11-05T03:27:51Z",
+      "dataset_revision": "bb26cf72c9c20f2b05f765d88548156a74d3c253",
+      "dataset_modified": "2026-11-03T02:49:50.000Z",
+      "license": "CC-BY-4.0",
+      "count_status": "publisher_reported; bounded sample checked; complete population not independently recounted",
+      "counts": {
+        "sessions": 12002,
+        "accounts": 267,
+        "llm_requests": 1186582,
+        "tool_calls": 1213347
+      },
+      "collection_window": {
+        "start": "2026-05-17",
+        "end": "2026-09-05"
+      },
+      "urls": {
+        "readme": "https://github.com/HarvardMadSys/freeinference_agentic_trace/blob/2b795dbf5eac490a7c081906fdce6cc7a184b7ef/README.md",
+        "dataset_card": "https://huggingface.co/datasets/harvardMadsys/freeinference_agentic_trace/blob/bb26cf72c9c20f2b05f765d88548156a74d3c253/README.md",
+        "schema": "https://github.com/HarvardMadSys/freeinference_agentic_trace/blob/2b795dbf5eac490a7c081906fdce6cc7a184b7ef/release/schema.py",
+        "manifest": "https://huggingface.co/datasets/harvardMadsys/freeinference_agentic_trace/blob/bb26cf72c9c20f2b05f765d88548156a74d3c253/release/2026-05-17_2026-05-23/manifest.json",
+        "file_metadata": "https://huggingface.co/api/datasets/harvardMadsys/freeinference_agentic_trace?blobs=true"
+      },
+      "schema": {
+        "model": [
+          "start_ms",
+          "end_ms",
+          "ttft_ms",
+          "step_trigger",
+          "waited_for",
+          "provider_tokens",
+          "block_ids"
+        ],
+        "tool": [
+          "call_index",
+          "category",
+          "outcome",
+          "result_tokens",
+          "latency_ms"
+        ],
+        "tool_latency_semantics": "post-request to next-request gap shared by all calls in batch; individual execution start/end absent",
+        "clock": "gateway epoch milliseconds; sessions split at week boundary; week-local block IDs"
+      },
+      "decision": "independent external confirmation for model waits and observed request-return timing; reserve exact tool safety for primary source; KV structure separate from physical GPU evidence",
+      "download_bytes": {
+        "processed_tables_and_metadata": 8371200605,
+        "compressed_zstd_traces": 437277111,
+        "status": "sum of fixed HF revision sibling sizes; no full download"
+      }
+    },
+    "tracelab": {
+      "repo": "uw-syfi/TraceLab",
+      "repo_commit": "5c6550b0d08beff983e9159fe2575e7a2334c8c1",
+      "repo_commit_date": "2026-10-19T05:03:56Z",
+      "dataset_release": "v0.0.2",
+      "release_published": "2026-07-24T09:55:14Z",
+      "license": {
+        "data": "CC-BY-4.0",
+        "code": "Apache-2.0"
+      },
+      "count_status": "release-body reported; bounded sample checked; complete population not independently recounted",
+      "counts": {
+        "sessions": 8058,
+        "agent_steps": 665453,
+        "users": 52,
+        "tool_calls": 743819
+      },
+      "old_readme_counts": {
+        "release": "v0.0.1",
+        "agent_steps": 357161,
+        "tool_records": 432510,
+        "users": 43
+      },
+      "collection_window": {
+        "claude": [
+          "2025-10-03",
+          "2026-07-24"
+        ],
+        "codex": [
+          "2025-09-23",
+          "2026-07-24"
+        ],
+        "status": "website reported"
+      },
+      "release": [
+        {
+          "name": "syfi_coding_trace.duckdb",
+          "bytes": 160182272,
+          "sha256": "a7bab286bc640844560850965ccf47975cf66407154132abaab90f27ec9be744",
+          "url": "https://github.com/uw-syfi/TraceLab/releases/download/v0.0.2/syfi_coding_trace.duckdb"
+        },
+        {
+          "name": "syfi_coding_trace.jsonl.gz",
+          "bytes": 100939722,
+          "sha256": "11ce51ec0a25e3d1d95b025bca2f7d1647e47571eb7cc968acd5fc64d4b4fb65",
+          "url": "https://github.com/uw-syfi/TraceLab/releases/download/v0.0.2/syfi_coding_trace.jsonl.gz"
+        }
+      ],
+      "urls": {
+        "release": "https://github.com/uw-syfi/TraceLab/releases/tag/v0.0.2",
+        "license": "https://github.com/uw-syfi/TraceLab/blob/5c6550b0d08beff983e9159fe2575e7a2334c8c1/LICENSE-DATASET.md",
+        "example": "https://github.com/uw-syfi/TraceLab/blob/5c6550b0d08beff983e9159fe2575e7a2334c8c1/example_sessions/sanitized/round_trace.jsonl",
+        "timing": "https://github.com/uw-syfi/TraceLab/blob/5c6550b0d08beff983e9159fe2575e7a2334c8c1/artifacts/utils/timing.py",
+        "decomposition": "https://github.com/uw-syfi/TraceLab/blob/5c6550b0d08beff983e9159fe2575e7a2334c8c1/artifacts/human_in_the_loop/user_turn_decomposition/README.md",
+        "site": "https://tracelab.cs.washington.edu/"
+      },
+      "schema": {
+        "identity": [
+          "provider",
+          "session_id",
+          "round_id",
+          "round_index",
+          "user",
+          "project"
+        ],
+        "events": [
+          "timing_events.event_type",
+          "timing_events.timestamp",
+          "timing_events.source"
+        ],
+        "tools": [
+          "emitted_at",
+          "result_at",
+          "tool_wall_latency_ms",
+          "tool_internal_latency_ms",
+          "tool_call_id",
+          "continuation_of_tool_call_id",
+          "command_status"
+        ],
+        "tokens": [
+          "input_tokens_total",
+          "prefix_tokens",
+          "newly_append_tokens",
+          "output_tokens"
+        ],
+        "model_timing_semantics": "latest eligible input to last model output is local observed response span, includes overhead; pure inference timing absent",
+        "human_wait_semantics": "publisher measures previous event of any type to each user_message; validate no overlapping active work before classifying safe idle",
+        "backfill_rule": "command lifecycle terminal state may be filled into an earlier row; publish only at its actual observation time, otherwise exclude unresolved chain"
+      },
+      "decision": "primary minimal source; merge exec_command and write_stdin by process lifecycle; filter unresolved tools and unknown safe points"
+    },
+    "goat": {
+      "dataset": "GOAT-AI/gatc-workload-1w",
+      "dataset_revision": "0be08beb262257985491c4d5ae1e36fd08e7da4b",
+      "dataset_modified": "2026-10-27T08:50:56.000Z",
+      "license": "CC-BY-4.0",
+      "counts": {
+        "sessions": 883,
+        "steps": 136283,
+        "users": 107,
+        "repos": 118
+      },
+      "count_status": "883 sessions and summed 136283 steps independently recounted from 289827-byte session JSONL; other figures card reported",
+      "collection_window": "one undisclosed calendar week, whole sessions retained including 21 that extend beyond week",
+      "urls": {
+        "card": "https://huggingface.co/datasets/GOAT-AI/gatc-workload-1w/blob/0be08beb262257985491c4d5ae1e36fd08e7da4b/README.md",
+        "api": "https://huggingface.co/api/datasets/GOAT-AI/gatc-workload-1w?blobs=true",
+        "rows": "https://datasets-server.huggingface.co/rows?dataset=GOAT-AI%2Fgatc-workload-1w&config=steps&split=train&offset=10000&length=100"
+      },
+      "schema": {
+        "fields": [
+          "session_id",
+          "step_index",
+          "step_type",
+          "tool_verb",
+          "t_rel_ms",
+          "duration_ms",
+          "in_tokens",
+          "out_tokens",
+          "cached_in_tokens",
+          "duration_resolution",
+          "is_subagent",
+          "parent_session_id"
+        ],
+        "tool_duration": "call to result, absent values stay null",
+        "model_timing": "token-bearing row marks first output step; model start and latency absent",
+        "clock": "common relative milliseconds; 31 whole-session shifts for minute precision; absolute date withheld"
+      },
+      "publisher_quality": {
+        "nonmonotonic_sessions": 275,
+        "minute_precision_sessions": 31,
+        "missing_step_time": 2777,
+        "missing_tool_duration": 13889,
+        "missing_tool_status": 13533
+      },
+      "decision": "supplementary tool mix and long-tail sensitivity; no complete three-state timing replay",
+      "download_bytes": {
+        "steps_parquet": 1570388,
+        "sessions_parquet": 33846,
+        "sessions_jsonl": 289827,
+        "steps_jsonl": 43147106
+      },
+      "steps_parquet_sha256": "736a5ed59c4f63f4840ae7b42c123b55fca959c763ca7a1aae1f764e66d96f29",
+      "sessions_jsonl_sha256": "5c540680ed9fe9aaf8fe8dcef1a8ebd764aa11aae56ea1b46eb16c714eaff691"
+    },
+    "copilot": {
+      "repo": "Azure/AzurePublicDataset",
+      "repo_commit": "215becdacba1ce682c7368642ce97d5a332de7a6",
+      "repo_commit_date": "2026-10-01T21:03:49Z",
+      "dataset_release": "ghcp-coding-agent-2026",
+      "release_published": "2026-10-01T01:21:42Z",
+      "license": "CC-BY-4.0",
+      "counts": {
+        "sessions": 301026,
+        "user_turns": 1189581,
+        "llm_calls": 9310255,
+        "tool_batches": 7767261,
+        "tool_calls": 8681190,
+        "models": 37
+      },
+      "count_status": "dataset-card reported; bounded sample checked; complete population not independently recounted",
+      "collection_window": [
+        "2026-06-01",
+        "2026-06-07"
+      ],
+      "population": "uniform sample of non-enterprise agentic sessions; sample rate not supplied in card",
+      "release": [
+        {
+          "name": "date.2026-06-01.tar.gz",
+          "bytes": 594479134,
+          "sha256": "cacad69f23d3c87ac54d788fec3f8e9c84df82c0cc9638d693340423c14e68e9",
+          "url": "https://github.com/Azure/AzurePublicDataset/releases/download/ghcp-coding-agent-2026/date.2026-06-01.tar.gz"
+        },
+        {
+          "name": "date.2026-06-02.tar.gz",
+          "bytes": 621345734,
+          "sha256": "95b0450041095dbe88181b88841c64b1e42f55a0127aa7abe91c1c9d3b424240",
+          "url": "https://github.com/Azure/AzurePublicDataset/releases/download/ghcp-coding-agent-2026/date.2026-06-02.tar.gz"
+        },
+        {
+          "name": "date.2026-06-03.tar.gz",
+          "bytes": 618403924,
+          "sha256": "622a5b0742eeb196d69d9a5ee5f6457cf82d432ddc435b9eb76eb5bb4363f1d0",
+          "url": "https://github.com/Azure/AzurePublicDataset/releases/download/ghcp-coding-agent-2026/date.2026-06-03.tar.gz"
+        },
+        {
+          "name": "date.2026-06-04.tar.gz",
+          "bytes": 572771629,
+          "sha256": "fd81d45e0149cae10aa193f2c2536ae709a5eba61b5aa886e534587e80473028",
+          "url": "https://github.com/Azure/AzurePublicDataset/releases/download/ghcp-coding-agent-2026/date.2026-06-04.tar.gz"
+        },
+        {
+          "name": "date.2026-06-05.tar.gz",
+          "bytes": 548375182,
+          "sha256": "ababba256966dc8bb005c98fbb4b72faea5301e17dcd949fd5b69e71b8239c50",
+          "url": "https://github.com/Azure/AzurePublicDataset/releases/download/ghcp-coding-agent-2026/date.2026-06-05.tar.gz"
+        },
+        {
+          "name": "date.2026-06-06.tar.gz",
+          "bytes": 124247983,
+          "sha256": "9546e3fd156d379e2420b8a0ada496ff507cf74aab32b9fc97bd1b6b353fa182",
+          "url": "https://github.com/Azure/AzurePublicDataset/releases/download/ghcp-coding-agent-2026/date.2026-06-06.tar.gz"
+        },
+        {
+          "name": "date.2026-06-07.tar.gz",
+          "bytes": 139262550,
+          "sha256": "8b6da125b486aea3eb37c752adf6be14d61dd1e6a584f5967bca7077fafe8c3c",
+          "url": "https://github.com/Azure/AzurePublicDataset/releases/download/ghcp-coding-agent-2026/date.2026-06-07.tar.gz"
+        }
+      ],
+      "urls": {
+        "card": "https://github.com/Azure/AzurePublicDataset/blob/215becdacba1ce682c7368642ce97d5a332de7a6/analysis/GitHubCopilotCodingAgents/DATASET_CARD.md",
+        "schema": "https://github.com/Azure/AzurePublicDataset/blob/215becdacba1ce682c7368642ce97d5a332de7a6/analysis/GitHubCopilotCodingAgents/schema.json",
+        "timing_code": "https://github.com/Azure/AzurePublicDataset/blob/215becdacba1ce682c7368642ce97d5a332de7a6/analysis/GitHubCopilotCodingAgents/trace_metrics.py",
+        "release": "https://github.com/Azure/AzurePublicDataset/releases/tag/ghcp-coding-agent-2026"
+      },
+      "schema": {
+        "model": [
+          "message_id",
+          "timestamp",
+          "duration_ms",
+          "initiator_type",
+          "result",
+          "status_code",
+          "tokens"
+        ],
+        "tool_batch": [
+          "timestamp",
+          "duration_ms",
+          "request_id",
+          "auto_continue",
+          "function_calls"
+        ],
+        "tool_call": [
+          "name",
+          "status",
+          "duration_ms"
+        ],
+        "timing": "official analysis treats timestamp as start and derives end by adding duration; schema does not define timestamp endpoint; observed overlaps require audit",
+        "clock": "official analysis acknowledges client clock skew versus date partitions"
+      },
+      "decision": "independent production-scale structure corroboration; full scheduling replay conditional on timestamp endpoint and overlap audit",
+      "download_total_bytes": 3218886136
+    },
+    "azure_functions": {
+      "repo": "Azure/AzurePublicDataset",
+      "repo_commit": "215becdacba1ce682c7368642ce97d5a332de7a6",
+      "dataset_release": "dataset-functions-2019",
+      "license": "CC-BY-4.0",
+      "collection_window": "14 sampled 24-hour periods in July 2019; application memory only 12 periods",
+      "urls": {
+        "description": "https://github.com/Azure/AzurePublicDataset/blob/215becdacba1ce682c7368642ce97d5a332de7a6/AzureFunctionsDataset2019.md",
+        "release": "https://github.com/Azure/AzurePublicDataset/releases/tag/dataset-functions-2019"
+      },
+      "release": [
+        {
+          "name": "azurefunctions_dataset2019_azurefunctions-dataset2019.tar.xz",
+          "bytes": 142968140,
+          "sha256": "aff8b3ca7240a41a109e4ee598e0a96e45fcb92e7b8395ac19cb3748cd260d89",
+          "url": "https://github.com/Azure/AzurePublicDataset/releases/download/dataset-functions-2019/azurefunctions_dataset2019_azurefunctions-dataset2019.tar.xz"
+        }
+      ],
+      "schema": {
+        "invocations": "HashOwner, HashApp, HashFunction, Trigger, 1440 per-minute counts recorded after execution",
+        "duration": "daily weighted percentiles of 30-second average function execution duration, excludes cold start",
+        "memory": "application allocation, weighted percentiles of minute averages of 5-second samples"
+      },
+      "sample_status": "official schema and release metadata checked; archive not downloaded",
+      "decision": "optional serverless arrival concentration comparison; no coding-agent stateful trajectory adapter"
+    }
+  },
+  "sample_methods": {
+    "tracelab_examples": {
+      "url": "https://github.com/uw-syfi/TraceLab/blob/5c6550b0d08beff983e9159fe2575e7a2334c8c1/example_sessions/sanitized/round_trace.jsonl",
+      "file_git_blob_sha": "e1a6e26a362d34b7d9cecfeebf603a6e95828880",
+      "sample": "all 19 sanitized example rows; two explained examples; not representative sampling"
+    },
+    "tracelab_release_prefix": {
+      "url": "https://github.com/uw-syfi/TraceLab/releases/download/v0.0.2/syfi_coding_trace.jsonl.gz",
+      "http_range": "bytes=0-1999999",
+      "total_source_bytes": 100939722,
+      "sample": "first 100 complete rows of a bounded gzip prefix; provider/session ordering bias retained",
+      "range_sha256": "fa11a13ffc13e2357d201b498bacc14ebdcee2d9199493c4a6995d41b5415b44",
+      "full_asset_checksum_verified": false
+    },
+    "copilot_prefix": {
+      "url": "https://github.com/Azure/AzurePublicDataset/releases/download/ghcp-coding-agent-2026/date.2026-06-01.tar.gz",
+      "http_range": "bytes=0-2999999",
+      "total_source_bytes": 594479134,
+      "sample": "first 20 complete sessions in first compressed shard of first archive; not random sample",
+      "range_sha256": "da13590b90fd30851204f4f5bcc425d97102bf980484ebb9cb1d6808fbda8980",
+      "full_asset_checksum_verified": false
+    },
+    "goat_offsets": {
+      "url_template": "https://datasets-server.huggingface.co/rows?dataset=GOAT-AI%2Fgatc-workload-1w&config=steps&split=train&offset={offset}&length=100",
+      "offsets": [
+        0,
+        10000,
+        50000,
+        90000,
+        130000
+      ],
+      "sample": "500 rows across five offsets; coverage varies by session; API current view checked alongside fixed revision",
+      "global_missingness_inference": false
+    },
+    "goat_all_sessions": {
+      "url": "https://huggingface.co/datasets/GOAT-AI/gatc-workload-1w/resolve/0be08beb262257985491c4d5ae1e36fd08e7da4b/jsonl/sessions.jsonl",
+      "download_bytes": 289827,
+      "sample": "entire session index; raw steps not exhaustively parsed",
+      "sha256": "5c540680ed9fe9aaf8fe8dcef1a8ebd764aa11aae56ea1b46eb16c714eaff691"
+    },
+    "harvard_requests": {
+      "url": "https://datasets-server.huggingface.co/rows?dataset=harvardMadsys%2Ffreeinference_agentic_trace&config=requests&split=week_2026_05_17&offset=50&length=3",
+      "sample": "3 request rows plus first 100 tool rows from same week; current API view checked alongside fixed revision",
+      "tool_rows_checked": 100,
+      "large_response": "first attempt length=100 reached 2MB local cap and was discarded as truncated; smaller length=3 parsed successfully"
+    }
+  },
+  "sample_audit": {
+    "tracelab_examples": {
+      "rows": 19,
+      "sessions": 2,
+      "providers": {
+        "claude": 10,
+        "codex": 9
+      },
+      "tools": 19,
+      "missing_emitted_at": 0,
+      "missing_result_at": 0,
+      "negative_tool_wall_duration": 0,
+      "negative_tool_timestamp_span": 0,
+      "overlapping_tool_intervals_in_same_round": 5,
+      "timing_event_types": {
+        "user_message": 5,
+        "reasoning": 16,
+        "text": 16,
+        "tool_call": 19,
+        "tool_result": 19,
+        "usage_report": 9
+      }
+    },
+    "tracelab_release_prefix": {
+      "rows": 100,
+      "sessions": 4,
+      "providers": {
+        "claude": 100
+      },
+      "tools": 128,
+      "missing_emitted_at": 0,
+      "missing_result_at": 0,
+      "negative_tool_wall_duration": 0,
+      "negative_tool_timestamp_span": 0,
+      "overlapping_tool_intervals_in_same_round": 28,
+      "timing_event_types": {
+        "user_message": 10,
+        "text": 54,
+        "reasoning": 66,
+        "tool_call": 128,
+        "tool_result": 127
+      }
+    },
+    "copilot_prefix": {
+      "sessions": 20,
+      "turns": 92,
+      "llm_calls": 441,
+      "tool_batches": 303,
+      "tools": 313,
+      "llm_missing_timestamp": 0,
+      "llm_missing_duration": 0,
+      "llm_negative_duration": 0,
+      "llm_null_prompt_tokens": 11,
+      "llm_result_status": {
+        "Failure": 4,
+        "Success": 433,
+        "UserCancel": 4
+      },
+      "batch_missing_duration": 0,
+      "batch_negative_duration": 0,
+      "multi_tool_batches": 10,
+      "tool_negative_duration": 0,
+      "batch_missing_timestamp": 0,
+      "batches_overlapping_llm": 297,
+      "llm_nonmonotonic_in_array_adjacent": 0,
+      "includes_tool_model_calls": 4,
+      "timestamp_precision": "source uses up to 9 fractional digits; audit parses by truncating to microseconds; final adapter preserves integer ns or explicit precision",
+      "overlap_rule": "derived start=timestamp,end=timestamp+duration; same session and turn; any positive batch/model intersection; includes tool-model rows; diagnostic pending endpoint audit"
+    },
+    "goat_offsets": [
+      {
+        "offset": 0,
+        "rows": 100,
+        "step_types": {
+          "user": 2,
+          "assistant": 6,
+          "retrieval": 33,
+          "tool_call": 59
+        },
+        "null_time": 0,
+        "zero_time": 80,
+        "recorded_duration": 0,
+        "recorded_in_tokens": 0
+      },
+      {
+        "offset": 10000,
+        "rows": 100,
+        "step_types": {
+          "tool_call": 68,
+          "assistant": 29,
+          "user": 3
+        },
+        "null_time": 0,
+        "zero_time": 0,
+        "recorded_duration": 68,
+        "recorded_in_tokens": 66
+      },
+      {
+        "offset": 50000,
+        "rows": 100,
+        "step_types": {
+          "tool_call": 100
+        },
+        "null_time": 0,
+        "zero_time": 0,
+        "recorded_duration": 100,
+        "recorded_in_tokens": 100
+      },
+      {
+        "offset": 90000,
+        "rows": 100,
+        "step_types": {
+          "tool_call": 59,
+          "assistant": 23,
+          "user": 16,
+          "retrieval": 2
+        },
+        "null_time": 0,
+        "zero_time": 0,
+        "recorded_duration": 61,
+        "recorded_in_tokens": 67
+      },
+      {
+        "offset": 130000,
+        "rows": 100,
+        "step_types": {
+          "tool_call": 29,
+          "assistant": 48,
+          "user": 7,
+          "retrieval": 16
+        },
+        "null_time": 0,
+        "zero_time": 0,
+        "recorded_duration": 45,
+        "recorded_in_tokens": 35
+      }
+    ],
+    "goat_all_sessions": {
+      "sessions": 883,
+      "steps": 136283,
+      "session_fields": [
+        "session_id",
+        "user_id",
+        "repo_id",
+        "start_rel_ms",
+        "end_rel_ms",
+        "n_steps",
+        "n_tool_calls",
+        "n_failures",
+        "max_context_tokens",
+        "is_eval",
+        "is_subagent",
+        "parent_session_id",
+        "has_tokens",
+        "has_durations",
+        "duration_resolution"
+      ],
+      "null_end": 15,
+      "duration_resolution": {
+        "null": 105,
+        "ms": 741,
+        "s": 37
+      },
+      "has_durations": 782,
+      "has_tokens": 652,
+      "is_eval": 50,
+      "is_subagent": 168
+    },
+    "harvard_requests": {
+      "rows": 3,
+      "fields": [
+        "session_id",
+        "step",
+        "link_reason",
+        "start_ms",
+        "end_ms",
+        "ttft_ms",
+        "model",
+        "provider",
+        "stream",
+        "step_trigger",
+        "waited_for",
+        "prompt_tokens",
+        "completion_tokens",
+        "cache_read_tokens",
+        "role_tokens",
+        "n_messages",
+        "tool_definition_names",
+        "finish_reason",
+        "transition",
+        "cause",
+        "block_ids"
+      ],
+      "start_end_valid": 3,
+      "trigger": {
+        "tool": 3
+      },
+      "waited_for": {
+        "tool": 2,
+        "ask_user_tool": 1
+      },
+      "block_lengths": [
+        2769,
+        3141,
+        3180
+      ]
+    }
+  },
+  "adapter_contract": {
+    "schema": "agentcloud-public-events-v1",
+    "deliverable_files": [
+      "manifest.json",
+      "sessions.jsonl",
+      "events.jsonl",
+      "audit.json"
+    ],
+    "session_required": [
+      "source_session_id_hash",
+      "family_id_hash",
+      "split",
+      "provider",
+      "origin_clock",
+      "clock_resolution_ms",
+      "source_span_ms",
+      "censoring",
+      "eligible",
+      "exclusion_reasons"
+    ],
+    "event_required": [
+      "event_id",
+      "session_id",
+      "source_order",
+      "t_rel_ms",
+      "event_type",
+      "operation_id",
+      "parent_operation_id",
+      "provenance",
+      "quality_flags"
+    ],
+    "event_types": [
+      "USER_ARRIVAL",
+      "MODEL_START",
+      "MODEL_OUTPUT",
+      "MODEL_END",
+      "TOOL_START",
+      "TOOL_RESULT",
+      "PROCESS_END",
+      "SESSION_END"
+    ],
+    "online_rule": "Fields enter policy only at observed_at. Prefix/input use only actually available observations. Next trigger, future return, complete duration, final outcome and future-filled terminal state remain evaluator-private until observed.",
+    "safe_idle_rule": "Use wall-clock interval union and active side-effect/process counts. Every side-effect tool and background process must reach observed terminal state before safe-idle eligibility.",
+    "missing_rule": "Keep null, right/left censoring, resolution and monotonicity evidence. Never relabel all tool gaps idle. Incomplete/dependency-inconsistent selected windows exit primary replay with denominator retained.",
+    "cost_rule": "Actual gVisor checkpoint/durable/resume-ready/journal samples belong to independent cost_profile_id; public traces supply timing shape, not Actor memory or snapshot cost.",
+    "split_rule": "Stable family/session hash 60/20/20 calibration/development/holdout; parent/subagent/continuation family indivisible; time-holdout sensitivity grouped to later split. Freeze hash seed and rule before policy results.",
+    "queue_rule": "Preserve frozen FairSlots admission order and ReturnDemand-after-permit semantics; record arrival, queue start, permit and demand publication separately.",
+    "audit_denominator": "All source sessions/events, candidate windows, selected/excluded count, each reason and overlap, missing/negative/nonmonotonic/same-time/overlap/resolution/censoring/backfill/unfinished process and safe-idle coverage.",
+    "deduplication_rule": "Deduplicate repeated cross-round tool-result events by stable operation ID and event identity; preserve all original duplicates in audit denominator."
+  },
+  "minimum_stage_specification": {
+    "stage": "independent-real-trace-validation",
+    "implementation_status": "review specification only; no trace experiments or scheduler changes added",
+    "frozen_p1_commit": "52af93d9389c1103af941ec72b885d50ad47e284",
+    "primary": "tracelab",
+    "independent_confirmation": "harvard",
+    "structure_confirmation": "copilot",
+    "adapter_audit_limits": {
+      "sessions": 512,
+      "events": 100000
+    },
+    "primary_holdout": {
+      "families": 32,
+      "user_turns_per_window_max": 2,
+      "model_calls_per_window_max": 8,
+      "source_window_seconds_max": 600
+    },
+    "paired_runner": {
+      "workers": 2,
+      "slots": 4,
+      "concurrency": 32,
+      "seeds": 3,
+      "policies": [
+        "static-2",
+        "agentcloud-v2"
+      ],
+      "execution_budget_seconds": 2400,
+      "cleanup_budget_seconds": 300
+    },
+    "independent_source_limits": {
+      "harvard_sessions": 64,
+      "seeds": 3,
+      "scope": "gateway model waits and return gaps; tools conservatively resident"
+    },
+    "metrics": [
+      "reserved_actor_gb_seconds",
+      "user_interaction_p95",
+      "request_to_first_token_for_gateway_only",
+      "p99",
+      "goodput",
+      "planned_completion_rate",
+      "first_admission_queue_latency",
+      "subsequent_turn_latency",
+      "real_resume_count_and_duration",
+      "stranded_gb_seconds",
+      "control_plane_cost",
+      "filter_rate",
+      "safe_wait_coverage"
+    ],
+    "joint_improvement_rule": "paired seed bootstrap 95% CI upper bounds <=0 for both reserved GBs and interactive P95; at least one strictly <0; require full planned request correctness",
+    "stops": [
+      "checksum_or_license_conflict",
+      "fewer_than_32_complete_holdout_families",
+      "unresolved_selected_timestamp_or_process_terminal_semantics",
+      "future_information_enters_policy",
+      "unexplained_negative_duration_or_dependency_time_contradiction_in_selected_window",
+      "unaccounted_release_count_mismatch",
+      "execution_correctness_or_cleanup_failure"
+    ],
+    "budget_rule": "Keep deadline/censoring/incomplete planned requests and all filtering in denominators; deliver quality findings if eligible coverage inadequate."
+  },
+  "claim_scope": {
+    "real_agent_task_execution": "existing P0 evidence; published metadata trace replay adds scheduling external-validity evidence",
+    "trace_driven_real_actor_execution": "real gVisor memory persistence and physical lifecycle cost with source-derived timing",
+    "physical_kv": "existing P2 hardware measurement; trace blocks provide structural inputs only"
+  },
+  "privacy": "Evidence contains source URLs, snapshot IDs, aggregate counts, schemas and filter rules. Original user text, commands, paths and raw trace rows omitted."
+}

@@ -21,6 +21,12 @@ Shadow 将服务端观测与计算成本单独纳入对照：协调器平均 CPU
 
 边界坐标为 16/64/128 MiB × 1/3/6 秒等待。每个坐标按自身源码和 Runner 保留完整请求分母、资源积分、P95、恢复次数及逐轮容量等待；工作集初始化与运行时限故障保留独立验证记录。[边界汇总](evidence/v2-boundary-summary.json)
 
+N64/7101 的完整四策略独立验证完成 **1,536/1,536 请求、3/4 trial**，访问有效期与清理通过。v2 最终释放与自主挂起预留竞争，Runner 的失败记录与最终已提交 MEMORY 状态一同归档。[独立统计](evidence/gate1-revalidation-summary.json) · [竞态回执与时间](evidence/gate1-lifecycle-race.json)
+
+## 公开真实轨迹的数据规格
+
+[五源审查](PUBLIC_TRACE_REVIEW.md)推荐 TraceLab v0.0.2 作为工具／用户等待与后台进程的最小数据源，FreeInference 作为 gateway 模型等待的独立确认。固定 release、许可、字段语义和原始摘要已核验；采样审核、会话 family 留出、安全点覆盖及在线信息约束形成独立导入契约。该阶段当前交付审查与回放规格，已有性能结论采用本页各自注明的实际执行负载。[机器可读来源](evidence/public-trace-review.json)
+
 ## RTX 4070 真实 CUDA 与官方 KV 事件
 
 独立 OPT-125M CUDA 压力曲线完成 **30/30 组测量**：16/24/32/48/64 会话，KEEP 与释放各三次。64 会话总耗时下降 **22.5%**，16 会话增加 **44.5%**，实测反转范围为 **48～64 会话**。原生 vLLM 的独立单 Worker 验收接通官方 KVEvent、KVIndexer 与默认 Selector；26 个事件 batch 连续、Stored/Removed 到达且 relay 零丢失。三轮热缓存／驱逐后请求分别新增计算 16／256 token，六次前缀驻留预测全部与实际计算量一致。[GPU 完整环境、原文与复现](GPU_VALIDATION.md)

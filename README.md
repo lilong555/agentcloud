@@ -131,3 +131,5 @@ PostgreSQL 验证可设置 `AGENTCLOUD_TEST_PG_ADMIN`；测试会创建独立临
 `integrations/` 保存完整修改文件、标准 format-patch 序列、基线提交、内容哈希和原生测试映射。[上游 PR 说明](docs/UPSTREAM_PRS.md)描述可独立审阅的上游贡献。`make verify-delivery` 在全新 checkout 验证完整文件和补丁得到相同 Git tree。根项目采用 Apache-2.0，来源和上游许可证见 [NOTICE](NOTICE) 与 [licenses](licenses/)。
 
 [实施计划](docs/IMPLEMENTATION_PLAN.md)记录交付目标，[原始设计](AGENTCLOUD_PLAN.md)保留详细协议与源码依据。
+
+[公开 Coding Agent 轨迹审查](docs/PUBLIC_TRACE_REVIEW.md)核验 TraceLab、FreeInference、GATC、Copilot2026 和 Azure Functions 的来源、许可、时间语义与有限样本，给出独立真实轨迹回放的数据契约和留出规则。

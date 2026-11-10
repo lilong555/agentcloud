@@ -48,6 +48,8 @@ Gate 2 使用 Gate 1 确认有效后冻结的代码。边界确认覆盖短等�
 
 Stranded GB·s、Goodput、恢复次数、恢复耗时、控制面 CPU/RSS 和资源采样覆盖单独报告。主图显示各 trial 资源均值与合并请求的交互 P95；联合判定使用逐 seed 的 P95 配对差值。首个尝试独立于结果选入主统计，后续重跑保留完整身份与分母。[统计实现与图表](../bench/analysis/scale.py)
 
+资源积分窗口从全部 Workspace 完成初始 MEMORY 快照、发出 `all_workspaces_ready` 起，到全部会话循环及 `final-release` 结束。该窗口包含首次容量准入、全部模型／工具轮次、等待、挂起和恢复。依赖部署、初始 Actor 准备与销毁清理由独立的 Job 时间和清理报告记录。[窗口定义](../bench/scale.py#L529) · [资源积分](../bench/scale.py#L458)
+
 ## Gate 1 实测
 
 [原始运行](https://github.com/lilong555/agentcloud/actions/runs/42772928305)固定实验源码 `52af93d`、7101～7103，首轮完成 **23/24 trial、6,717/6,912 请求**。N32 的四策略均完成 576/576 请求；N64 的 v2/7101 发生 CI 访问令牌过期，完成 189/384，其余策略和种子全部完成。[完整首轮分母](evidence/gate1-summary.json)
@@ -77,6 +79,21 @@ Shadow 与 TTL2 由相同 runner 端的两秒动作执行，只增加服务端�
 
 CI 访问有效期覆盖整个配对 Job，保留四小时上限，并校验服务账号、audience 和实际签发有效期。每个 trial 保存不含令牌内容的有效期与工作流源码证明。`source_ref` 固定实验 checkout，工作流与实验源码身份分别记录；[完整四策略验证](https://github.com/lilong555/agentcloud/actions/runs/42785891260)使用相同 `52af93d`、N64/7101、随机顺序和资源参数。首轮失败持续保留在主统计与尝试审计中。[有效期检查](../scripts/ci_substrate_access.py)
 
+### 最终释放与自主挂起
+
+N64/7101 的独立验证完成 **1,536/1,536 请求、3/4 trial**，访问有效期与全部清理通过。v2 的 384 个请求和 64 个 Program FINAL 全部完成，一个会话的 `final-release` 收到 `lifecycle_busy`，该 trial 保留失败。[独立统计](evidence/gate1-revalidation-summary.json) · [工作流与清理](evidence/scale-run-42785891260.json)
+
+| 策略 | 总预留 GB·s | 交互 P95 秒 | 请求完成／计划 | trial |
+| --- | ---: | ---: | ---: | --- |
+| TTL2 | 646.074 | 230.994 | 384/384 | 通过 |
+| TTL2-Shadow | 670.665 | 249.642 | 384/384 | 通过 |
+| 旧 cost-aware | 717.933 | 368.174 | 384/384 | 通过 |
+| v2 | 674.646 | 229.169 | 384/384 | 最终释放竞争失败 |
+
+原始轨迹中，10:22:18.608738676 UTC 自主挂起预留开始，10:22:18.636140 Runner 最终释放被拒收，10:22:21.561493511 自主操作完成。终态为 `SUSPENDED/CLOSED/epoch=7`、`MEMORY`、零活跃工具；`final-release` 的 LifecycleReceipt 尚未创建。[原始回执、时间与摘要](evidence/gate1-lifecycle-race.json)
+
+Runner 对 HTTP 409 `lifecycle_busy` 使用最长 180 秒且受 trial 总预算约束的状态观察，等待已有 RUNNING 预留完成；重新提交时保留同一 operation ID 和 epoch。UNKNOWN、恢复待对账、epoch 变化及传输丢响应保留失败。成功释放验证 MEMORY、关闭的工具 gate 和零活跃工具，槽位只归还一次。[实现](../bench/scale.py#L305) · [十项容量与释放回归](../tests/tooling/test_scale_capacity.py)
+
 ## 工作集与等待边界
 
 N64、四槽位、种子 7101 的初筛覆盖九个坐标。16/64 MiB 的六对全部完成；128 MiB 原始初始化同时分配随机字节与可写副本，六个 trial 在运行前退出。预分配并直接读取随机数据后，三个 128 MiB 坐标具有独立源码 `89a4706` 和尝试身份。[完整 24 次尝试](evidence/v2-boundary-summary.json)保留 **6,397/9,216 请求、9 个失败 trial**。
@@ -89,6 +106,8 @@ N64、四槽位、种子 7101 的初筛覆盖九个坐标。16/64 MiB 的六对�
 | 128 MiB／3 s | 1,500 秒执行预算到期 | 778.879 GB·s／640.355 s | 314／140 | TTL2 314/384；v2 384/384 |
 
 64 MiB／3 s 下，v2 的 KEEP 复用减少 243 次恢复，总资源节省 8.7%。同一机制延长了首批 Actor 占据四个槽位的时间：v2 第一轮全部工作负载的 P95 为 726.994 秒，其后五轮约 8～10 秒；TTL2 的六轮约 164～211 秒。v2 首轮全部请求的槽位排队总时长占 TTFT 总时长 **98.82%**，后续五轮为零；TTL2 各轮约为 **94.82%～95.40%**。资源收益与首次容量准入尾延迟来自相同的驻留选择。[逐轮原始统计](evidence/v2-boundary-summary.json)同时记录 TTFT 和 FairSlots 等待，耗时占比使用逐请求总和。
+
+首次准入遵循 [FairSlots FIFO](../bench/scale.py#L142)，Runner [先取得许可，再登记 ReturnDemand](../bench/scale.py#L317)。协调器的 [readyReturnCountLocked](../internal/control/idle_cost.go#L42)统计已经登记返回需求的挂起会话，并进入 [HoldingRate](../internal/control/scheduler_v2.go#L191)；尚在首次 FIFO 排队的请求由 Runner 持有。由此，这组边界展示了成本复用策略与前置准入队列的联合作用，首次容量公平性是高恢复成本下的主要时延约束。
 
 ![工作集边界的资源与首次准入代价](evidence/v2-boundary-admission.png)
 
