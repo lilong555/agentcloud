@@ -1,5 +1,7 @@
 # AgentCloud 公开 Coding Agent 轨迹数据审查
 
+固定 release 的流式导入、时序审核和策略观察接口见 [TraceLab 导入与质量审核](PUBLIC_TRACE_IMPORT.md)。下文保留各数据源的审查证据和独立回放准入规格。
+
 审查日期：2026-11-10。推荐采用 **TraceLab v0.0.2 作为最小数据源，FreeInference 作为模型等待与返回间隔的独立确认源**，形成独立真实轨迹验证阶段。Copilot2026 用于生产规模的工作流结构确认；完整时间回放先通过起止语义审核。GATC 适合工具组合与长尾敏感性分析，Azure Functions 适合应用到达密度的背景对照。当前工作交付数据审查与执行契约；P1 的 Gate 1/Gate 2 和边界矩阵按[现有协议](V2_EVALUATION.md)独立验收。
 
 各官方入口均公开可读，五类数据均明确采用 CC BY 4.0。计数逐项区分发布者统计与本次重计数；本次读取官方元数据、有限 HTTP Range 和小样本。完整文件摘要采用发布者给出的 SHA256，Range 摘要只标识读取的前缀。机器可读证据见 [public-trace-review.json](evidence/public-trace-review.json)。发布衍生轨迹时，附作者/机构、原始地址、许可链接和“字段归一化与会话筛选”说明。

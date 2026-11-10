@@ -19,7 +19,7 @@ flowchart LR
 
 **确定性容错闭环。** Inference Lease、Model Attempt ID、Actor UID/epoch、工具安全点与 durable manifest 共同保护执行、挂起、崩溃和恢复。源码 `20113d5` 的 **16/16 类实机故障**覆盖恢复、幂等、陈旧身份拒收与 UNKNOWN 隔离；外部副作用通过目标服务的幂等／查询能力完成对账。Azure CPA `gpt-6-luna` 的 Coding 验收完成 **8 轮模型、10 次工具调用、两个文件修复、8 次 MEMORY 恢复**。上游交付为 **38 个 Substrate 文件＋13 个 Dynamo 文件，2＋3 组补丁，1,336 项原生测试通过**。[容错证据](docs/evidence/p0-20113d5.json) · [真实 Coding](docs/evidence/real-model/realmodel-5b80fdc027c8/acceptance.json) · [上游源码](integrations/)
 
-**轨迹归因驱动的成本调度。** 对 N32 的逐条收据和 Worker 采样复算，定位出未知等待回退导致的 **45/48 次 research 挂起晚完成**，以及工具阶段占资源增量 **63.6%** 的配置混杂。`agentcloud-v2` 使用持久等待 episode、固定两秒未知期限与条件 KEEP 成本比较；TTL2、旧 cost-aware 和 Shadow 在同 Runner、相同 E/FINAL 协议下配对。Gate 1 的 N32 相对旧 cost-aware 平均节省 **21.6 GB·s、27.1 秒交互 P95**，两项配对区间均改善；相对 TTL2 的区间仍跨零。主验收使用 **总 Actor GB·s＋交互 P95**，失败分母与恢复成本独立列出。[完整归因与复算](docs/SCHEDULER_DIAGNOSIS.md) · [v2 机制、Gate 与停止条件](docs/V2_EVALUATION.md)
+**轨迹归因驱动的成本调度。** 对 N32 的逐条收据和 Worker 采样复算，定位出未知等待回退导致的 **45/48 次 research 挂起晚完成**，以及工具阶段占资源增量 **63.6%** 的配置混杂。`agentcloud-v2` 使用持久等待 episode、固定两秒未知期限与条件 KEEP 成本比较；TTL2、旧 cost-aware 和 Shadow 在同 Runner、相同 E/FINAL 协议下配对。`a7e324a` 的 Gate 1 N32 三种子完成 **12/12 trial、2,304/2,304 请求**，相对旧 cost-aware 平均节省 **24.9 GB·s、34.8 秒交互 P95**；相对 TTL2 的资源区间跨零、P95 增加 **8.9 秒**。主验收使用总 Actor GB·s 与交互 P95，同时保留恢复开销和适用范围。[完整归因与复算](docs/SCHEDULER_DIAGNOSIS.md) · [v2 机制、Gate 与停止条件](docs/V2_EVALUATION.md)
 
 **真实 GPU 的收益反转与官方事件集成。** RTX 4070、OPT-125M、3 GiB allocator 预算下，**30/30 组真实 CUDA 测量**覆盖 16/24/32/48/64 个闲置会话。64 会话释放 KV 并计入全部重建成本，总耗时下降 **22.5%**；16 会话时增加 **44.5%**，当前反转范围为 **48～64 会话**。独立 vLLM 验收进一步接通官方 **KVEvent → KVIndexer → 默认 Selector**：六次请求的新增 Prefill token 与缓存观测逐次一致，Stored/Removed 序号连续、relay 零丢失。[GPU 原始测量、压力曲线与官方 KV 事件验收](docs/GPU_VALIDATION.md)
 
@@ -132,4 +132,4 @@ PostgreSQL 验证可设置 `AGENTCLOUD_TEST_PG_ADMIN`；测试会创建独立临
 
 [实施计划](docs/IMPLEMENTATION_PLAN.md)记录交付目标，[原始设计](AGENTCLOUD_PLAN.md)保留详细协议与源码依据。
 
-[公开 Coding Agent 轨迹审查](docs/PUBLIC_TRACE_REVIEW.md)核验 TraceLab、FreeInference、GATC、Copilot2026 和 Azure Functions 的来源、许可、时间语义与有限样本，给出独立真实轨迹回放的数据契约和留出规则。
+[公开 Coding Agent 轨迹审查](docs/PUBLIC_TRACE_REVIEW.md)核验五类来源、许可和时间语义。[TraceLab 导入与审核](docs/PUBLIC_TRACE_IMPORT.md)提供固定 release 的流式扫描、完整会话筛选、后台终态对账和未来信息隔离，使用独立 Actions 产出数据质量与回放准入报告。

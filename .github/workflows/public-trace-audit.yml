@@ -1,0 +1,38 @@
+name: Public Agent trace quality audit
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: public-trace-audit
+  cancel-in-progress: false
+jobs:
+  tracelab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify temporal causality and process accounting
+        run: python3 -m unittest discover -s tests/tooling -p test_public_traces.py -v
+      - name: Verify release and audit complete source with a bounded session sample
+        run: |
+          mkdir -p artifacts/public-traces
+          python3 scripts/resource_guard.py --max-rss-mib 2048 --min-available-mib 2048 --min-free-gib 8 \
+            --timeout 1200 --log artifacts/public-traces/import.log -- \
+            python3 -m bench.public_traces.tracelab \
+              --source "$RUNNER_TEMP/syfi_coding_trace.jsonl.gz" --download \
+              --output artifacts/public-traces/tracelab-v0.0.2 \
+            > artifacts/public-traces/resources.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tracelab-v0.0.2-quality-audit
+          path: artifacts/public-traces/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Release owned source download
+        if: always()
+        run: rm -f "$RUNNER_TEMP/syfi_coding_trace.jsonl.gz" "$RUNNER_TEMP/syfi_coding_trace.jsonl.gz.partial"

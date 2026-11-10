@@ -23,9 +23,11 @@ Shadow 将服务端观测与计算成本单独纳入对照：协调器平均 CPU
 
 N64/7101 的完整四策略独立验证完成 **1,536/1,536 请求、3/4 trial**，访问有效期与清理通过。v2 最终释放与自主挂起预留竞争，Runner 的失败记录与最终已提交 MEMORY 状态一同归档。[独立统计](evidence/gate1-revalidation-summary.json) · [竞态回执与时间](evidence/gate1-lifecycle-race.json)
 
+`a7e324a` 的独立 Gate 1 cohort 在 [42800756685](https://github.com/lilong555/agentcloud/actions/runs/42800756685) 执行。N32 的三种子完成 **12/12 trial、2,304/2,304 请求**，清理全部通过。v2 相对 oldCost 的总资源差为 **−24.871 GB·s [−31.002, −21.006]**，交互 P95 差为 **−34.756 s [−45.966, −26.088]**；相对 TTL2 分别为 **−1.724 GB·s [−6.038, +5.685]**、**+8.897 s [+2.553, +13.776]**。N64 三组继续纳入同一 24 trial／6,912 请求计划分母。[当前 cohort 原始统计](evidence/gate1-a7e324a-summary.json)
+
 ## 公开真实轨迹的数据规格
 
-[五源审查](PUBLIC_TRACE_REVIEW.md)推荐 TraceLab v0.0.2 作为工具／用户等待与后台进程的最小数据源，FreeInference 作为 gateway 模型等待的独立确认。固定 release、许可、字段语义和原始摘要已核验；采样审核、会话 family 留出、安全点覆盖及在线信息约束形成独立导入契约。该阶段当前交付审查与回放规格，已有性能结论采用本页各自注明的实际执行负载。[机器可读来源](evidence/public-trace-review.json)
+[五源审查](PUBLIC_TRACE_REVIEW.md)推荐 TraceLab v0.0.2 作为工具／用户等待与后台进程的最小数据源，FreeInference 作为 gateway 模型等待的独立确认。[离线导入器](PUBLIC_TRACE_IMPORT.md)提供固定摘要的全量扫描、完整会话筛选、贡献者 family 留出、安全等待覆盖和策略观察截断。独立 Actions 输出全部原始分母与 `replay_ready` 准入结论，已有性能数据采用本页各自注明的实际执行负载。[机器可读来源](evidence/public-trace-review.json)
 
 ## RTX 4070 真实 CUDA 与官方 KV 事件
 
