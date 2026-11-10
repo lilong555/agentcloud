@@ -63,7 +63,8 @@ def storage_bytes(cache):
 
 
 def nvidia_observation():
-    command = ['nvidia-smi', '--query-gpu=name,driver_version,memory.used,temperature.gpu,clocks.sm,utilization.gpu',
+    executable = shutil.which('nvidia-smi') or '/usr/lib/wsl/lib/nvidia-smi'
+    command = [executable, '--query-gpu=name,driver_version,memory.used,temperature.gpu,clocks.sm,utilization.gpu',
                '--format=csv,noheader,nounits']
     try:
         result = subprocess.run(command, check=True, capture_output=True, text=True, timeout=5)

@@ -36,11 +36,13 @@
 
 工具 ID 绑定业务输入，同一输入重试返回原持久回执。恢复后的新 epoch 可读取同一 ID 的原结果。新工具须使用当前 epoch，并通过 OPEN gate。工具执行前记录 RUNNING；完成后发布终态与连续 receipt 水位。
 
+协调器对具备持久幂等身份的 Runtime RPC 执行有界传输重试。瞬时网关故障和响应截断复用同一 ID、epoch 与输入；已有 `RUNNING` 工具继续观察原 claim。重试在原操作期限内执行，传输故障最多额外尝试三次。attach 重试要求 Runtime 声明协议版本 1，同代次重放保持当前 gate。明确的 `OUTCOME_UNKNOWN`、身份或输入冲突直接进入对账；完整协议见 [Actor Runtime](../runtime/README.md)。
+
 单条工具查询经过租户鉴权和持久提交读隔离，直接读取回执。挂起后的观察保持 Sandbox 休眠。自主调度的 `return-demand` 可附带 `after_model_request`：协调器在模型登记使用的同一临界区内，核验指定请求属于本会话且已完成，并确认所有模型结果已确定。条件满足后登记恢复需求，新的模型登记消费该需求；同一操作重放返回原回执。条件失效返回 `409 return_condition_unmet`，保留当前等待阶段。
 
 Checkpoint 先关闭准入，等待已准入工具完成，再生成快照和 COMMITTED manifest。会话进入 `CHECKPOINTED` 并保持 CLOSED。Suspend 可复用此安全点；Resume 在 manifest、Actor UID、快照身份和水位核验通过后增加 epoch，并打开 gate。Substrate manifest 还绑定独立保留 Tag 的 UID。外置 Harness 的 `checkpoint_id` 对应其持久图检查点。
 
-Worker 容量拒绝后，协调器重新读取 Substrate Actor。权威读取确认 Actor 仍处于原 SUSPENDED 状态，UID、版本、快照与分配信息均保持一致时，Resume 回执进入 `WAITING_CAPACITY`，会话保留原状态、epoch、barrier 与 manifest。响应为 `409 resume_capacity_wait`，携带 `Retry-After: 1`；回执保存 `capacity_wait` 身份证明、`attempt_count` 与 `retry_after`。客户端在重试时间到达后使用原操作 ID 和原输入继续，自主调度器自动复用同一回执和待处理返回需求。容量拒绝耗时独立于成功恢复成本样本。读取失败、身份或版本变化、运行时超时和响应丢失保持 `OUTCOME_UNKNOWN`，进入对账流程。
+Worker 容量拒绝后，协调器重新读取 Substrate Actor。权威读取确认 Actor 仍处于原 SUSPENDED 状态，UID、版本、快照与分配信息均保持一致时，Resume 回执进入 `WAITING_CAPACITY`，会话保留原状态、epoch、barrier 与 manifest。响应为 `409 resume_capacity_wait`，携带 `Retry-After: 1`；回执保存 `capacity_wait` 身份证明、`attempt_count` 与 `retry_after`。客户端在重试时间到达后使用原操作 ID 和原输入继续，自主调度器自动复用同一回执和待处理返回需求。容量拒绝耗时独立于成功恢复成本样本。读取失败、身份或版本变化，以及有界恢复后仍然超时或缺失的回执保持 `OUTCOME_UNKNOWN`，进入对账流程。
 
 模型请求在持久登记后由协调器发起一次物理请求。模型可在 Actor 挂起期间执行，完成结果由恢复后的 Runtime 认领。登记后的重复观察与认领均读取日志。进程在发送意图持久化后崩溃，或工具执行后丢失终态，相关记录进入 `OUTCOME_UNKNOWN`，保留原 ID 和 attempt ID 供对账。未知工具结果关闭 gate 并阻止发布安全点。
 

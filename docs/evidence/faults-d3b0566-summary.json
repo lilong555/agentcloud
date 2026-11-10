@@ -1,0 +1,1408 @@
+{
+  "schema_version": 1,
+  "execution_kind": "real-substrate-memory-postgresql-native-dynamo-faults",
+  "gpu_execution": false,
+  "source_commit": "d3b0566721456d223a002f2a63ed7db31b5b4240",
+  "status": "passed",
+  "planned_cases": 16,
+  "scheduled_cases": 16,
+  "attempted_cases": 16,
+  "passed_cases": 16,
+  "failed_cases": 0,
+  "unexecuted_cases": 0,
+  "cases": [
+    {
+      "case": "return_during_suspend",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:48:34.088119+00:00",
+      "scheduled_at_unix": 1794282514.088119,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-7355b0/fault-matrix.json",
+      "seconds": 18.234036207199097,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "observed_state": "QUIESCING",
+        "return_demand": {
+          "operation_id": "race-return",
+          "expected_epoch": 2,
+          "status": "PENDING",
+          "requested_at": "2026-11-10T03:48:51.660353029Z"
+        },
+        "suspended": "SUSPENDED",
+        "restored_epoch": 3
+      },
+      "label": "挂起途中返回需求与 MEMORY 恢复",
+      "attempts": 1
+    },
+    {
+      "case": "stale_epoch_tool",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:47:57.395166+00:00",
+      "scheduled_at_unix": 1794282477.395166,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-f35a68/fault-matrix.json",
+      "seconds": 18.063899517059326,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "rejection": {
+          "status": 409,
+          "code": "stale_epoch"
+        },
+        "receipt": {
+          "tool_op_id": "initial",
+          "epoch": 2,
+          "status": "COMPLETED",
+          "payload_hash": "8762fc8b07d28ded8a732e0ca6d32ab91f8614d02c039e3ca8f95f6bac14bee3",
+          "receipt_seq": 3,
+          "result": {
+            "content": "original",
+            "exit_code": 0
+          },
+          "deadline": "2026-11-10T03:48:44.435542483Z",
+          "started_at": "2026-11-10T03:48:14.435542423Z",
+          "finished_at": "2026-11-10T03:48:14.469324489Z"
+        },
+        "after": {
+          "tool_op_id": "inspect-epoch",
+          "epoch": 3,
+          "status": "COMPLETED",
+          "payload_hash": "9ae75322be5bb57826ab398d7ee2d6d069d252cff61dcffba08ab0bcc293473f",
+          "receipt_seq": 4,
+          "result": {
+            "content": "original",
+            "exit_code": 0
+          },
+          "deadline": "2026-11-10T03:48:47.204459429Z",
+          "started_at": "2026-11-10T03:48:17.204459369Z",
+          "finished_at": "2026-11-10T03:48:17.266272835Z"
+        }
+      },
+      "label": "旧执行 epoch 工具拒收",
+      "attempts": 1
+    },
+    {
+      "case": "stale_substrate_suspend",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:46:51.594215+00:00",
+      "scheduled_at_unix": 1794282411.594215,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-326b54/fault-matrix.json",
+      "seconds": 13.785409927368164,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "action": "stale-suspend",
+        "actor": {
+          "assigned_worker": "49fb21b3-a925-4066-9776-d4570bdc8c27",
+          "name": "ac-scale-7101-2-agentcloud-326b54-w0",
+          "uid": "d90f34d9-7329-40e1-89fd-67affcc6bf85",
+          "version": 13,
+          "state": "RUNNING",
+          "snapshot_uuid": "5c40d9a1-2588-4a94-94df-63b5b42c359b",
+          "snapshot_generation": 2,
+          "snapshot_fidelity": "MEMORY",
+          "durable": true,
+          "resumed": false,
+          "cold_started": false,
+          "actual_fidelity": "MEMORY",
+          "restored_snapshot_uuid": "5c40d9a1-2588-4a94-94df-63b5b42c359b",
+          "restored_snapshot_generation": 2
+        },
+        "grpc_code": "FailedPrecondition",
+        "wrong_snapshot": {
+          "action": "wrong-snapshot",
+          "actor": {
+            "assigned_worker": "49fb21b3-a925-4066-9776-d4570bdc8c27",
+            "name": "ac-scale-7101-2-agentcloud-326b54-w0",
+            "uid": "d90f34d9-7329-40e1-89fd-67affcc6bf85",
+            "version": 13,
+            "state": "RUNNING",
+            "snapshot_uuid": "5c40d9a1-2588-4a94-94df-63b5b42c359b",
+            "snapshot_generation": 2,
+            "snapshot_fidelity": "MEMORY",
+            "durable": true,
+            "resumed": false,
+            "cold_started": false,
+            "actual_fidelity": "MEMORY",
+            "restored_snapshot_uuid": "5c40d9a1-2588-4a94-94df-63b5b42c359b",
+            "restored_snapshot_generation": 2
+          },
+          "grpc_code": "NotFound"
+        }
+      },
+      "label": "Substrate UID/version 拦截迟到挂起",
+      "attempts": 1
+    },
+    {
+      "case": "pending_snapshot_tag",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:45:53.946326+00:00",
+      "scheduled_at_unix": 1794282353.946326,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-14b60a/fault-matrix.json",
+      "seconds": 44.10836720466614,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "action": "pending-tag",
+        "actor": {
+          "name": "ac-scale-7101-2-agentcloud-14b60a-w0",
+          "uid": "cbc12ffa-f470-45fe-91db-d2c30ec019ff",
+          "version": 10,
+          "state": "SUSPENDED",
+          "snapshot_uuid": "9bfaf9d0-c067-4f06-90b0-b008ff22d122",
+          "snapshot_generation": 2,
+          "snapshot_fidelity": "MEMORY",
+          "durable": false,
+          "resumed": false,
+          "cold_started": false,
+          "actual_fidelity": "MEMORY",
+          "restored_snapshot_uuid": "568c0ee6-9fe5-4102-81d0-471e12a0d93f",
+          "restored_snapshot_generation": 1
+        },
+        "independent_read_checks": 2,
+        "pending_actor": {
+          "name": "ac-scale-7101-2-agentcloud-14b60a-w0",
+          "uid": "cbc12ffa-f470-45fe-91db-d2c30ec019ff",
+          "version": 10,
+          "state": "SUSPENDED",
+          "snapshot_uuid": "9bfaf9d0-c067-4f06-90b0-b008ff22d122",
+          "snapshot_generation": 2,
+          "snapshot_fidelity": "MEMORY",
+          "durable": false,
+          "resumed": false,
+          "cold_started": false,
+          "actual_fidelity": "MEMORY",
+          "restored_snapshot_uuid": "568c0ee6-9fe5-4102-81d0-471e12a0d93f",
+          "restored_snapshot_generation": 1
+        },
+        "promotion_grpc_code": "DeadlineExceeded",
+        "retained_tag_absent": true,
+        "snapshot_storage_state": "PENDING",
+        "checkpoint_error": {
+          "code": "client_deadline"
+        },
+        "manifest_during_upload": {
+          "state": "QUIESCING",
+          "gate": "CLOSED",
+          "epoch": 2,
+          "receipt_status": "RUNNING",
+          "committed_manifest_unchanged": true,
+          "pending_manifest_absent": true
+        },
+        "manifest_after_deadline": {
+          "state": "RECOVERY_REQUIRED",
+          "gate": "CLOSED",
+          "epoch": 2,
+          "receipt_status": "OUTCOME_UNKNOWN",
+          "committed_manifest_unchanged": true,
+          "pending_manifest_absent": true
+        }
+      },
+      "label": "PENDING 快照与 Tag/Manifest 安全性",
+      "attempts": 1
+    },
+    {
+      "case": "rootfs_downgrade",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:48:34.088119+00:00",
+      "scheduled_at_unix": 1794282514.088119,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-7355b0/fault-matrix.json",
+      "seconds": 21.32925820350647,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "rejection": {
+          "status": 409,
+          "code": "recovery_required"
+        },
+        "state": "RECOVERY_REQUIRED",
+        "manifest": null,
+        "native": {
+          "action": "inspect",
+          "actor": {
+            "name": "ac-scale-7101-2-agentcloud-7355b0-w1-rootfs",
+            "uid": "45220bde-8be3-44e3-8a41-8523d5f4724f",
+            "version": 6,
+            "state": "SUSPENDED",
+            "snapshot_uuid": "88ba2028-20bb-4f80-a1e3-2e7a75bbe876",
+            "snapshot_generation": 1,
+            "snapshot_fidelity": "ROOTFS",
+            "durable": true,
+            "resumed": false,
+            "cold_started": true,
+            "actual_fidelity": "UNSPECIFIED"
+          }
+        }
+      },
+      "label": "MEMORY 降级 ROOTFS 拦截",
+      "attempts": 1
+    },
+    {
+      "case": "dispatch_crash_unknown",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:47:57.395166+00:00",
+      "scheduled_at_unix": 1794282477.395166,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-f35a68/fault-matrix.json",
+      "seconds": 14.485172510147095,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "before": {
+          "trace_parent": "00-8f7178a84882a4a4d8e99158f9ae3a33-52502d47a9ce4f39-01",
+          "dispatched_at": "2026-11-10T03:48:32.103966095Z",
+          "logical_request_id": "scale-7101-2-agentcloud-f35a68-w1-crash",
+          "tenant_id": "tenant-b",
+          "session_id": "scale-7101-2-agentcloud-f35a68-w1",
+          "payload_hash": "ce17f91da2da7c005ba847c130864b9ea445ca8819de1bf0764bec1bccc06a93",
+          "payload": {
+            "ignore_eos": true,
+            "max_tokens": 2048,
+            "messages": [
+              {
+                "content": "x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x ",
+                "role": "user"
+              }
+            ],
+            "min_tokens": 2048,
+            "model": "agentcloud-tiny",
+            "stream": true
+          },
+          "status": "DISPATCHING",
+          "attempt_id": "e0f9ed709fd0381bfe87d38476d23e58",
+          "first_token": " token1259",
+          "first_token_kind": "content",
+          "first_token_at": "2026-11-10T03:48:32.235377571Z",
+          "created_at": "2026-11-10T03:48:32.084777331Z",
+          "updated_at": "2026-11-10T03:48:32.235377571Z"
+        },
+        "after": {
+          "trace_parent": "00-8f7178a84882a4a4d8e99158f9ae3a33-52502d47a9ce4f39-01",
+          "dispatched_at": "2026-11-10T03:48:32.103966095Z",
+          "logical_request_id": "scale-7101-2-agentcloud-f35a68-w1-crash",
+          "tenant_id": "tenant-b",
+          "session_id": "scale-7101-2-agentcloud-f35a68-w1",
+          "payload_hash": "ce17f91da2da7c005ba847c130864b9ea445ca8819de1bf0764bec1bccc06a93",
+          "payload": {
+            "model": "agentcloud-tiny",
+            "stream": true,
+            "messages": [
+              {
+                "role": "user",
+                "content": "x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x "
+              }
+            ],
+            "ignore_eos": true,
+            "max_tokens": 2048,
+            "min_tokens": 2048
+          },
+          "status": "OUTCOME_UNKNOWN",
+          "attempt_id": "e0f9ed709fd0381bfe87d38476d23e58",
+          "first_token": " token1259",
+          "first_token_kind": "content",
+          "first_token_at": "2026-11-10T03:48:32.235377571Z",
+          "error": "dispatcher restarted after durable dispatch intent",
+          "created_at": "2026-11-10T03:48:32.084777331Z",
+          "updated_at": "2026-11-10T03:48:32.274639128Z"
+        },
+        "replay": {
+          "trace_parent": "00-8f7178a84882a4a4d8e99158f9ae3a33-52502d47a9ce4f39-01",
+          "dispatched_at": "2026-11-10T03:48:32.103966095Z",
+          "logical_request_id": "scale-7101-2-agentcloud-f35a68-w1-crash",
+          "tenant_id": "tenant-b",
+          "session_id": "scale-7101-2-agentcloud-f35a68-w1",
+          "payload_hash": "ce17f91da2da7c005ba847c130864b9ea445ca8819de1bf0764bec1bccc06a93",
+          "payload": {
+            "model": "agentcloud-tiny",
+            "stream": true,
+            "messages": [
+              {
+                "role": "user",
+                "content": "x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x "
+              }
+            ],
+            "ignore_eos": true,
+            "max_tokens": 2048,
+            "min_tokens": 2048
+          },
+          "status": "OUTCOME_UNKNOWN",
+          "attempt_id": "e0f9ed709fd0381bfe87d38476d23e58",
+          "first_token": " token1259",
+          "first_token_kind": "content",
+          "first_token_at": "2026-11-10T03:48:32.235377571Z",
+          "error": "dispatcher restarted after durable dispatch intent",
+          "created_at": "2026-11-10T03:48:32.084777331Z",
+          "updated_at": "2026-11-10T03:48:32.274639128Z"
+        }
+      },
+      "label": "发送后崩溃与 OUTCOME_UNKNOWN 防重放",
+      "attempts": 1
+    },
+    {
+      "case": "frontend_restart",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:46:51.594215+00:00",
+      "scheduled_at_unix": 1794282411.594215,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-326b54/fault-matrix.json",
+      "seconds": 11.779638051986694,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "original_claim": {
+          "trace_parent": "00-e48e8fd33237f8546a86973ed8693222-85dac073eb99c7dd-01",
+          "dispatched_at": "2026-11-10T03:47:17.701386248Z",
+          "logical_request_id": "scale-7101-2-agentcloud-326b54-w1-before-restart",
+          "tenant_id": "tenant-b",
+          "session_id": "scale-7101-2-agentcloud-326b54-w1",
+          "payload_hash": "73b709413d6d49de7843125d9098a2761b74040fc3fb39d5ea2b8ebe677c30f4",
+          "payload": {
+            "ignore_eos": true,
+            "max_tokens": 8,
+            "messages": [
+              {
+                "content": "x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x ",
+                "role": "user"
+              }
+            ],
+            "min_tokens": 8,
+            "model": "agentcloud-tiny",
+            "stream": true
+          },
+          "status": "COMPLETED",
+          "attempt_id": "af3d7b7fd836a2247a6aa3437255eebc",
+          "result": {
+            "choices": [
+              {
+                "finish_reason": "length",
+                "index": 0,
+                "message": {
+                  "content": " token1729 token1910 token1749 token1431 token1876 token1331 token1071 token1486",
+                  "role": "assistant"
+                }
+              }
+            ],
+            "created": 1794282437,
+            "id": "chatcmpl-0a23b488-fe30-40c4-81f3-35aa47e8976f",
+            "model": "agentcloud-tiny",
+            "object": "chat.completion"
+          },
+          "first_token": " token1729",
+          "first_token_kind": "content",
+          "first_token_at": "2026-11-10T03:47:17.817706373Z",
+          "created_at": "2026-11-10T03:47:17.69331913Z",
+          "updated_at": "2026-11-10T03:47:17.866118339Z",
+          "claimed_epoch": 2
+        },
+        "original_attempt": "af3d7b7fd836a2247a6aa3437255eebc",
+        "new_attempt": "d03a9024a5290b1428f20001cbbae72c",
+        "new_request": "scale-7101-2-agentcloud-326b54-w1-after-restart"
+      },
+      "label": "Frontend 重启与持久模型回执",
+      "attempts": 1
+    },
+    {
+      "case": "retired_lease_generation",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:45:53.946326+00:00",
+      "scheduled_at_unix": 1794282353.946326,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-14b60a/fault-matrix.json",
+      "seconds": 10.284156084060669,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "old_lease_rejection": 401,
+        "old_generation_rejection": 409,
+        "finalized": {
+          "protocol_version": 1,
+          "accepted": true,
+          "finalized": true,
+          "binding_generation": "0c3e3059eac441e29522f3eac45a0588",
+          "snapshot": {
+            "program_present": false,
+            "admission_history": [
+              {
+                "request_id": "7d96465f-7a81-411f-9660-2412539737cc",
+                "client_request_id": null,
+                "queued_at": "2026-11-10T03:46:51.238572279Z",
+                "admitted_at": "2026-11-10T03:46:51.238743438Z",
+                "wait_ms": 0.171159
+              }
+            ],
+            "last_admission_wait_ms": 0.171159,
+            "released_acting_tokens": 0,
+            "phase": null,
+            "lifecycle": null,
+            "baseline_tokens": null,
+            "logical_budget_tokens": null,
+            "execution_multiplier": 1.0,
+            "state": null,
+            "sequence": 0,
+            "fresh": false,
+            "session_waiting_requests": 0,
+            "session_active_requests": 0,
+            "waiting_requests": 0,
+            "paused_programs": 0,
+            "completed_events": 1,
+            "aborted_events": 0,
+            "pause_events": 0,
+            "final_events": 1
+          }
+        },
+        "stale": {
+          "protocol_version": 1,
+          "accepted": false,
+          "applied": false,
+          "error": "stale_generation"
+        }
+      },
+      "label": "回收后的 lease/generation 拒收",
+      "attempts": 1
+    },
+    {
+      "case": "concurrent_duplicate_model",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:48:34.088119+00:00",
+      "scheduled_at_unix": 1794282514.088119,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-7355b0/fault-matrix.json",
+      "seconds": 14.23551607131958,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "registrations": 12,
+        "unique_attempts": [
+          "3862fb3f7f065e67b4345eba17a0df32"
+        ],
+        "claims_equal": true
+      },
+      "label": "并发重复模型请求共享物理尝试",
+      "attempts": 1
+    },
+    {
+      "case": "model_payload_conflict",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:47:57.395166+00:00",
+      "scheduled_at_unix": 1794282477.395166,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-f35a68/fault-matrix.json",
+      "seconds": 13.50533413887024,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "status": 409,
+        "code": "payload_conflict"
+      },
+      "label": "模型请求 ID 的 payload 冲突",
+      "attempts": 1
+    },
+    {
+      "case": "concurrent_duplicate_tool",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:46:51.594215+00:00",
+      "scheduled_at_unix": 1794282411.594215,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-326b54/fault-matrix.json",
+      "seconds": 11.295867919921875,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "concurrent_requests": 12,
+        "physical_effects": 1,
+        "receipt_seq": 3
+      },
+      "label": "并发重复工具保持单次副作用",
+      "attempts": 1
+    },
+    {
+      "case": "tool_payload_conflict",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:45:53.946326+00:00",
+      "scheduled_at_unix": 1794282353.946326,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-14b60a/fault-matrix.json",
+      "seconds": 9.795599699020386,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "status": 409,
+        "code": "payload_conflict"
+      },
+      "label": "工具 ID 的 payload 冲突",
+      "attempts": 1
+    },
+    {
+      "case": "cross_tenant_identity",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:48:34.088119+00:00",
+      "scheduled_at_unix": 1794282514.088119,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-7355b0/fault-matrix.json",
+      "seconds": 16.234642267227173,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "session": {
+          "status": 404,
+          "code": "session_not_found"
+        },
+        "request": {
+          "status": 404,
+          "code": "session_not_found"
+        },
+        "trace": {
+          "status": 404,
+          "code": "workspace_not_found"
+        }
+      },
+      "label": "跨租户会话、请求与追踪隔离",
+      "attempts": 1
+    },
+    {
+      "case": "retained_tag_replacement",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:47:57.395166+00:00",
+      "scheduled_at_unix": 1794282477.395166,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-f35a68/fault-matrix.json",
+      "seconds": 17.145777463912964,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "replacement": {
+          "action": "replace-tag",
+          "actor": {
+            "name": "ac-scale-7101-2-agentcloud-f35a68-w3",
+            "uid": "26bfd957-6f87-488b-a493-35e9493b07b6",
+            "version": 11,
+            "state": "SUSPENDED",
+            "snapshot_uuid": "676aa90c-1bcc-4aed-9c00-30d1dcaf12fe",
+            "snapshot_generation": 2,
+            "snapshot_fidelity": "MEMORY",
+            "durable": true,
+            "resumed": false,
+            "cold_started": false,
+            "actual_fidelity": "MEMORY",
+            "restored_snapshot_uuid": "4260098a-cad7-4af5-ae9c-04d15c2e0226",
+            "restored_snapshot_generation": 1
+          },
+          "object": {
+            "kind": "tag",
+            "name": "ac-snapshot-9042e34d9e2f6a7ec29264d2",
+            "uid": "e5e7f541-5b1d-457c-9cdf-4075a93d4ab1"
+          },
+          "old_uid": "72df5bcb-e602-4629-bf3e-b3c4994c3bab"
+        },
+        "rejection": {
+          "status": 409,
+          "code": "recovery_required"
+        }
+      },
+      "label": "保留 Tag 替换后的恢复拦截",
+      "attempts": 1
+    },
+    {
+      "case": "postgres_commit_failure",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:46:51.594215+00:00",
+      "scheduled_at_unix": 1794282411.594215,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-326b54/fault-matrix.json",
+      "seconds": 10.114142417907715,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "rejection": {
+          "status": 500,
+          "code": "internal_error"
+        },
+        "uncommitted_effect_absent": true
+      },
+      "label": "数据库提交失败与副作用隔离",
+      "attempts": 1
+    },
+    {
+      "case": "resume_capacity_wait",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:45:53.946326+00:00",
+      "scheduled_at_unix": 1794282353.946326,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-14b60a/fault-matrix.json",
+      "seconds": 25.90463662147522,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "rejection": {
+          "status": 409,
+          "code": "resume_capacity_wait"
+        },
+        "capacity_holders": 4,
+        "durable_wait": {
+          "operation_id": "capacity-return",
+          "action": "resume",
+          "epoch": 2,
+          "payload_hash": "21bccf7d24ff78e1ed6963bebedca31dfa24c5140a2da03103116cfc3d84dd87",
+          "status": "WAITING_CAPACITY",
+          "attempt_count": 1,
+          "last_attempt_at": "2026-11-10T03:47:24.260221506Z",
+          "retry_after": "2026-11-10T03:47:25.276637116Z",
+          "capacity_wait": {
+            "actor_uid": "bf0b8dc1-3ef6-4b1d-b90e-242f6497b3cb",
+            "actor_version": 11,
+            "snapshot_uuid": "f691dbee-f401-48b6-9812-0d0f5a1f65ce",
+            "snapshot_generation": 2,
+            "observed_at": "2026-11-10T03:47:24.276561202Z"
+          },
+          "error": "rpc error: code = ResourceExhausted desc = no worker has room for the actor"
+        },
+        "coordinator_restart_preserved_wait": true,
+        "restored_epoch": 3,
+        "actual_fidelity": "MEMORY",
+        "ram_continuity": true,
+        "completed_receipt": {
+          "operation_id": "capacity-return",
+          "action": "resume",
+          "epoch": 2,
+          "payload_hash": "21bccf7d24ff78e1ed6963bebedca31dfa24c5140a2da03103116cfc3d84dd87",
+          "status": "COMPLETED",
+          "attempt_count": 2,
+          "last_attempt_at": "2026-11-10T03:47:26.013917066Z",
+          "retry_after": "0001-01-01T00:00:00Z"
+        }
+      },
+      "label": "容量拒绝、持久等待、重启与同操作 MEMORY 恢复",
+      "attempts": 1
+    }
+  ],
+  "attempt_audit": [
+    {
+      "case": "pending_snapshot_tag",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:45:53.946326+00:00",
+      "scheduled_at_unix": 1794282353.946326,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-14b60a/fault-matrix.json",
+      "seconds": 44.10836720466614,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "action": "pending-tag",
+        "actor": {
+          "name": "ac-scale-7101-2-agentcloud-14b60a-w0",
+          "uid": "cbc12ffa-f470-45fe-91db-d2c30ec019ff",
+          "version": 10,
+          "state": "SUSPENDED",
+          "snapshot_uuid": "9bfaf9d0-c067-4f06-90b0-b008ff22d122",
+          "snapshot_generation": 2,
+          "snapshot_fidelity": "MEMORY",
+          "durable": false,
+          "resumed": false,
+          "cold_started": false,
+          "actual_fidelity": "MEMORY",
+          "restored_snapshot_uuid": "568c0ee6-9fe5-4102-81d0-471e12a0d93f",
+          "restored_snapshot_generation": 1
+        },
+        "independent_read_checks": 2,
+        "pending_actor": {
+          "name": "ac-scale-7101-2-agentcloud-14b60a-w0",
+          "uid": "cbc12ffa-f470-45fe-91db-d2c30ec019ff",
+          "version": 10,
+          "state": "SUSPENDED",
+          "snapshot_uuid": "9bfaf9d0-c067-4f06-90b0-b008ff22d122",
+          "snapshot_generation": 2,
+          "snapshot_fidelity": "MEMORY",
+          "durable": false,
+          "resumed": false,
+          "cold_started": false,
+          "actual_fidelity": "MEMORY",
+          "restored_snapshot_uuid": "568c0ee6-9fe5-4102-81d0-471e12a0d93f",
+          "restored_snapshot_generation": 1
+        },
+        "promotion_grpc_code": "DeadlineExceeded",
+        "retained_tag_absent": true,
+        "snapshot_storage_state": "PENDING",
+        "checkpoint_error": {
+          "code": "client_deadline"
+        },
+        "manifest_during_upload": {
+          "state": "QUIESCING",
+          "gate": "CLOSED",
+          "epoch": 2,
+          "receipt_status": "RUNNING",
+          "committed_manifest_unchanged": true,
+          "pending_manifest_absent": true
+        },
+        "manifest_after_deadline": {
+          "state": "RECOVERY_REQUIRED",
+          "gate": "CLOSED",
+          "epoch": 2,
+          "receipt_status": "OUTCOME_UNKNOWN",
+          "committed_manifest_unchanged": true,
+          "pending_manifest_absent": true
+        }
+      },
+      "primary": true
+    },
+    {
+      "case": "resume_capacity_wait",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:45:53.946326+00:00",
+      "scheduled_at_unix": 1794282353.946326,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-14b60a/fault-matrix.json",
+      "seconds": 25.90463662147522,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "rejection": {
+          "status": 409,
+          "code": "resume_capacity_wait"
+        },
+        "capacity_holders": 4,
+        "durable_wait": {
+          "operation_id": "capacity-return",
+          "action": "resume",
+          "epoch": 2,
+          "payload_hash": "21bccf7d24ff78e1ed6963bebedca31dfa24c5140a2da03103116cfc3d84dd87",
+          "status": "WAITING_CAPACITY",
+          "attempt_count": 1,
+          "last_attempt_at": "2026-11-10T03:47:24.260221506Z",
+          "retry_after": "2026-11-10T03:47:25.276637116Z",
+          "capacity_wait": {
+            "actor_uid": "bf0b8dc1-3ef6-4b1d-b90e-242f6497b3cb",
+            "actor_version": 11,
+            "snapshot_uuid": "f691dbee-f401-48b6-9812-0d0f5a1f65ce",
+            "snapshot_generation": 2,
+            "observed_at": "2026-11-10T03:47:24.276561202Z"
+          },
+          "error": "rpc error: code = ResourceExhausted desc = no worker has room for the actor"
+        },
+        "coordinator_restart_preserved_wait": true,
+        "restored_epoch": 3,
+        "actual_fidelity": "MEMORY",
+        "ram_continuity": true,
+        "completed_receipt": {
+          "operation_id": "capacity-return",
+          "action": "resume",
+          "epoch": 2,
+          "payload_hash": "21bccf7d24ff78e1ed6963bebedca31dfa24c5140a2da03103116cfc3d84dd87",
+          "status": "COMPLETED",
+          "attempt_count": 2,
+          "last_attempt_at": "2026-11-10T03:47:26.013917066Z",
+          "retry_after": "0001-01-01T00:00:00Z"
+        }
+      },
+      "primary": true
+    },
+    {
+      "case": "retired_lease_generation",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:45:53.946326+00:00",
+      "scheduled_at_unix": 1794282353.946326,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-14b60a/fault-matrix.json",
+      "seconds": 10.284156084060669,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "old_lease_rejection": 401,
+        "old_generation_rejection": 409,
+        "finalized": {
+          "protocol_version": 1,
+          "accepted": true,
+          "finalized": true,
+          "binding_generation": "0c3e3059eac441e29522f3eac45a0588",
+          "snapshot": {
+            "program_present": false,
+            "admission_history": [
+              {
+                "request_id": "7d96465f-7a81-411f-9660-2412539737cc",
+                "client_request_id": null,
+                "queued_at": "2026-11-10T03:46:51.238572279Z",
+                "admitted_at": "2026-11-10T03:46:51.238743438Z",
+                "wait_ms": 0.171159
+              }
+            ],
+            "last_admission_wait_ms": 0.171159,
+            "released_acting_tokens": 0,
+            "phase": null,
+            "lifecycle": null,
+            "baseline_tokens": null,
+            "logical_budget_tokens": null,
+            "execution_multiplier": 1.0,
+            "state": null,
+            "sequence": 0,
+            "fresh": false,
+            "session_waiting_requests": 0,
+            "session_active_requests": 0,
+            "waiting_requests": 0,
+            "paused_programs": 0,
+            "completed_events": 1,
+            "aborted_events": 0,
+            "pause_events": 0,
+            "final_events": 1
+          }
+        },
+        "stale": {
+          "protocol_version": 1,
+          "accepted": false,
+          "applied": false,
+          "error": "stale_generation"
+        }
+      },
+      "primary": true
+    },
+    {
+      "case": "tool_payload_conflict",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:45:53.946326+00:00",
+      "scheduled_at_unix": 1794282353.946326,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-14b60a/fault-matrix.json",
+      "seconds": 9.795599699020386,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "status": 409,
+        "code": "payload_conflict"
+      },
+      "primary": true
+    },
+    {
+      "case": "concurrent_duplicate_tool",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:46:51.594215+00:00",
+      "scheduled_at_unix": 1794282411.594215,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-326b54/fault-matrix.json",
+      "seconds": 11.295867919921875,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "concurrent_requests": 12,
+        "physical_effects": 1,
+        "receipt_seq": 3
+      },
+      "primary": true
+    },
+    {
+      "case": "frontend_restart",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:46:51.594215+00:00",
+      "scheduled_at_unix": 1794282411.594215,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-326b54/fault-matrix.json",
+      "seconds": 11.779638051986694,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "original_claim": {
+          "trace_parent": "00-e48e8fd33237f8546a86973ed8693222-85dac073eb99c7dd-01",
+          "dispatched_at": "2026-11-10T03:47:17.701386248Z",
+          "logical_request_id": "scale-7101-2-agentcloud-326b54-w1-before-restart",
+          "tenant_id": "tenant-b",
+          "session_id": "scale-7101-2-agentcloud-326b54-w1",
+          "payload_hash": "73b709413d6d49de7843125d9098a2761b74040fc3fb39d5ea2b8ebe677c30f4",
+          "payload": {
+            "ignore_eos": true,
+            "max_tokens": 8,
+            "messages": [
+              {
+                "content": "x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x ",
+                "role": "user"
+              }
+            ],
+            "min_tokens": 8,
+            "model": "agentcloud-tiny",
+            "stream": true
+          },
+          "status": "COMPLETED",
+          "attempt_id": "af3d7b7fd836a2247a6aa3437255eebc",
+          "result": {
+            "choices": [
+              {
+                "finish_reason": "length",
+                "index": 0,
+                "message": {
+                  "content": " token1729 token1910 token1749 token1431 token1876 token1331 token1071 token1486",
+                  "role": "assistant"
+                }
+              }
+            ],
+            "created": 1794282437,
+            "id": "chatcmpl-0a23b488-fe30-40c4-81f3-35aa47e8976f",
+            "model": "agentcloud-tiny",
+            "object": "chat.completion"
+          },
+          "first_token": " token1729",
+          "first_token_kind": "content",
+          "first_token_at": "2026-11-10T03:47:17.817706373Z",
+          "created_at": "2026-11-10T03:47:17.69331913Z",
+          "updated_at": "2026-11-10T03:47:17.866118339Z",
+          "claimed_epoch": 2
+        },
+        "original_attempt": "af3d7b7fd836a2247a6aa3437255eebc",
+        "new_attempt": "d03a9024a5290b1428f20001cbbae72c",
+        "new_request": "scale-7101-2-agentcloud-326b54-w1-after-restart"
+      },
+      "primary": true
+    },
+    {
+      "case": "postgres_commit_failure",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:46:51.594215+00:00",
+      "scheduled_at_unix": 1794282411.594215,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-326b54/fault-matrix.json",
+      "seconds": 10.114142417907715,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "rejection": {
+          "status": 500,
+          "code": "internal_error"
+        },
+        "uncommitted_effect_absent": true
+      },
+      "primary": true
+    },
+    {
+      "case": "stale_substrate_suspend",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:46:51.594215+00:00",
+      "scheduled_at_unix": 1794282411.594215,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-326b54/fault-matrix.json",
+      "seconds": 13.785409927368164,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "action": "stale-suspend",
+        "actor": {
+          "assigned_worker": "49fb21b3-a925-4066-9776-d4570bdc8c27",
+          "name": "ac-scale-7101-2-agentcloud-326b54-w0",
+          "uid": "d90f34d9-7329-40e1-89fd-67affcc6bf85",
+          "version": 13,
+          "state": "RUNNING",
+          "snapshot_uuid": "5c40d9a1-2588-4a94-94df-63b5b42c359b",
+          "snapshot_generation": 2,
+          "snapshot_fidelity": "MEMORY",
+          "durable": true,
+          "resumed": false,
+          "cold_started": false,
+          "actual_fidelity": "MEMORY",
+          "restored_snapshot_uuid": "5c40d9a1-2588-4a94-94df-63b5b42c359b",
+          "restored_snapshot_generation": 2
+        },
+        "grpc_code": "FailedPrecondition",
+        "wrong_snapshot": {
+          "action": "wrong-snapshot",
+          "actor": {
+            "assigned_worker": "49fb21b3-a925-4066-9776-d4570bdc8c27",
+            "name": "ac-scale-7101-2-agentcloud-326b54-w0",
+            "uid": "d90f34d9-7329-40e1-89fd-67affcc6bf85",
+            "version": 13,
+            "state": "RUNNING",
+            "snapshot_uuid": "5c40d9a1-2588-4a94-94df-63b5b42c359b",
+            "snapshot_generation": 2,
+            "snapshot_fidelity": "MEMORY",
+            "durable": true,
+            "resumed": false,
+            "cold_started": false,
+            "actual_fidelity": "MEMORY",
+            "restored_snapshot_uuid": "5c40d9a1-2588-4a94-94df-63b5b42c359b",
+            "restored_snapshot_generation": 2
+          },
+          "grpc_code": "NotFound"
+        }
+      },
+      "primary": true
+    },
+    {
+      "case": "dispatch_crash_unknown",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:47:57.395166+00:00",
+      "scheduled_at_unix": 1794282477.395166,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-f35a68/fault-matrix.json",
+      "seconds": 14.485172510147095,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "before": {
+          "trace_parent": "00-8f7178a84882a4a4d8e99158f9ae3a33-52502d47a9ce4f39-01",
+          "dispatched_at": "2026-11-10T03:48:32.103966095Z",
+          "logical_request_id": "scale-7101-2-agentcloud-f35a68-w1-crash",
+          "tenant_id": "tenant-b",
+          "session_id": "scale-7101-2-agentcloud-f35a68-w1",
+          "payload_hash": "ce17f91da2da7c005ba847c130864b9ea445ca8819de1bf0764bec1bccc06a93",
+          "payload": {
+            "ignore_eos": true,
+            "max_tokens": 2048,
+            "messages": [
+              {
+                "content": "x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x ",
+                "role": "user"
+              }
+            ],
+            "min_tokens": 2048,
+            "model": "agentcloud-tiny",
+            "stream": true
+          },
+          "status": "DISPATCHING",
+          "attempt_id": "e0f9ed709fd0381bfe87d38476d23e58",
+          "first_token": " token1259",
+          "first_token_kind": "content",
+          "first_token_at": "2026-11-10T03:48:32.235377571Z",
+          "created_at": "2026-11-10T03:48:32.084777331Z",
+          "updated_at": "2026-11-10T03:48:32.235377571Z"
+        },
+        "after": {
+          "trace_parent": "00-8f7178a84882a4a4d8e99158f9ae3a33-52502d47a9ce4f39-01",
+          "dispatched_at": "2026-11-10T03:48:32.103966095Z",
+          "logical_request_id": "scale-7101-2-agentcloud-f35a68-w1-crash",
+          "tenant_id": "tenant-b",
+          "session_id": "scale-7101-2-agentcloud-f35a68-w1",
+          "payload_hash": "ce17f91da2da7c005ba847c130864b9ea445ca8819de1bf0764bec1bccc06a93",
+          "payload": {
+            "model": "agentcloud-tiny",
+            "stream": true,
+            "messages": [
+              {
+                "role": "user",
+                "content": "x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x "
+              }
+            ],
+            "ignore_eos": true,
+            "max_tokens": 2048,
+            "min_tokens": 2048
+          },
+          "status": "OUTCOME_UNKNOWN",
+          "attempt_id": "e0f9ed709fd0381bfe87d38476d23e58",
+          "first_token": " token1259",
+          "first_token_kind": "content",
+          "first_token_at": "2026-11-10T03:48:32.235377571Z",
+          "error": "dispatcher restarted after durable dispatch intent",
+          "created_at": "2026-11-10T03:48:32.084777331Z",
+          "updated_at": "2026-11-10T03:48:32.274639128Z"
+        },
+        "replay": {
+          "trace_parent": "00-8f7178a84882a4a4d8e99158f9ae3a33-52502d47a9ce4f39-01",
+          "dispatched_at": "2026-11-10T03:48:32.103966095Z",
+          "logical_request_id": "scale-7101-2-agentcloud-f35a68-w1-crash",
+          "tenant_id": "tenant-b",
+          "session_id": "scale-7101-2-agentcloud-f35a68-w1",
+          "payload_hash": "ce17f91da2da7c005ba847c130864b9ea445ca8819de1bf0764bec1bccc06a93",
+          "payload": {
+            "model": "agentcloud-tiny",
+            "stream": true,
+            "messages": [
+              {
+                "role": "user",
+                "content": "x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x x "
+              }
+            ],
+            "ignore_eos": true,
+            "max_tokens": 2048,
+            "min_tokens": 2048
+          },
+          "status": "OUTCOME_UNKNOWN",
+          "attempt_id": "e0f9ed709fd0381bfe87d38476d23e58",
+          "first_token": " token1259",
+          "first_token_kind": "content",
+          "first_token_at": "2026-11-10T03:48:32.235377571Z",
+          "error": "dispatcher restarted after durable dispatch intent",
+          "created_at": "2026-11-10T03:48:32.084777331Z",
+          "updated_at": "2026-11-10T03:48:32.274639128Z"
+        }
+      },
+      "primary": true
+    },
+    {
+      "case": "model_payload_conflict",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:47:57.395166+00:00",
+      "scheduled_at_unix": 1794282477.395166,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-f35a68/fault-matrix.json",
+      "seconds": 13.50533413887024,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "status": 409,
+        "code": "payload_conflict"
+      },
+      "primary": true
+    },
+    {
+      "case": "retained_tag_replacement",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:47:57.395166+00:00",
+      "scheduled_at_unix": 1794282477.395166,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-f35a68/fault-matrix.json",
+      "seconds": 17.145777463912964,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "replacement": {
+          "action": "replace-tag",
+          "actor": {
+            "name": "ac-scale-7101-2-agentcloud-f35a68-w3",
+            "uid": "26bfd957-6f87-488b-a493-35e9493b07b6",
+            "version": 11,
+            "state": "SUSPENDED",
+            "snapshot_uuid": "676aa90c-1bcc-4aed-9c00-30d1dcaf12fe",
+            "snapshot_generation": 2,
+            "snapshot_fidelity": "MEMORY",
+            "durable": true,
+            "resumed": false,
+            "cold_started": false,
+            "actual_fidelity": "MEMORY",
+            "restored_snapshot_uuid": "4260098a-cad7-4af5-ae9c-04d15c2e0226",
+            "restored_snapshot_generation": 1
+          },
+          "object": {
+            "kind": "tag",
+            "name": "ac-snapshot-9042e34d9e2f6a7ec29264d2",
+            "uid": "e5e7f541-5b1d-457c-9cdf-4075a93d4ab1"
+          },
+          "old_uid": "72df5bcb-e602-4629-bf3e-b3c4994c3bab"
+        },
+        "rejection": {
+          "status": 409,
+          "code": "recovery_required"
+        }
+      },
+      "primary": true
+    },
+    {
+      "case": "stale_epoch_tool",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:47:57.395166+00:00",
+      "scheduled_at_unix": 1794282477.395166,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-f35a68/fault-matrix.json",
+      "seconds": 18.063899517059326,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "rejection": {
+          "status": 409,
+          "code": "stale_epoch"
+        },
+        "receipt": {
+          "tool_op_id": "initial",
+          "epoch": 2,
+          "status": "COMPLETED",
+          "payload_hash": "8762fc8b07d28ded8a732e0ca6d32ab91f8614d02c039e3ca8f95f6bac14bee3",
+          "receipt_seq": 3,
+          "result": {
+            "content": "original",
+            "exit_code": 0
+          },
+          "deadline": "2026-11-10T03:48:44.435542483Z",
+          "started_at": "2026-11-10T03:48:14.435542423Z",
+          "finished_at": "2026-11-10T03:48:14.469324489Z"
+        },
+        "after": {
+          "tool_op_id": "inspect-epoch",
+          "epoch": 3,
+          "status": "COMPLETED",
+          "payload_hash": "9ae75322be5bb57826ab398d7ee2d6d069d252cff61dcffba08ab0bcc293473f",
+          "receipt_seq": 4,
+          "result": {
+            "content": "original",
+            "exit_code": 0
+          },
+          "deadline": "2026-11-10T03:48:47.204459429Z",
+          "started_at": "2026-11-10T03:48:17.204459369Z",
+          "finished_at": "2026-11-10T03:48:17.266272835Z"
+        }
+      },
+      "primary": true
+    },
+    {
+      "case": "concurrent_duplicate_model",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:48:34.088119+00:00",
+      "scheduled_at_unix": 1794282514.088119,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-7355b0/fault-matrix.json",
+      "seconds": 14.23551607131958,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "registrations": 12,
+        "unique_attempts": [
+          "3862fb3f7f065e67b4345eba17a0df32"
+        ],
+        "claims_equal": true
+      },
+      "primary": true
+    },
+    {
+      "case": "cross_tenant_identity",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:48:34.088119+00:00",
+      "scheduled_at_unix": 1794282514.088119,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-7355b0/fault-matrix.json",
+      "seconds": 16.234642267227173,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "session": {
+          "status": 404,
+          "code": "session_not_found"
+        },
+        "request": {
+          "status": 404,
+          "code": "session_not_found"
+        },
+        "trace": {
+          "status": 404,
+          "code": "workspace_not_found"
+        }
+      },
+      "primary": true
+    },
+    {
+      "case": "return_during_suspend",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:48:34.088119+00:00",
+      "scheduled_at_unix": 1794282514.088119,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-7355b0/fault-matrix.json",
+      "seconds": 18.234036207199097,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "observed_state": "QUIESCING",
+        "return_demand": {
+          "operation_id": "race-return",
+          "expected_epoch": 2,
+          "status": "PENDING",
+          "requested_at": "2026-11-10T03:48:51.660353029Z"
+        },
+        "suspended": "SUSPENDED",
+        "restored_epoch": 3
+      },
+      "primary": true
+    },
+    {
+      "case": "rootfs_downgrade",
+      "status": "passed",
+      "check_status": "passed",
+      "run_status": "passed",
+      "generated_at": "2026-11-10T03:48:34.088119+00:00",
+      "scheduled_at_unix": 1794282514.088119,
+      "github_run_id": "42750623733",
+      "source": "docs/evidence/faults/scale-7101-2-agentcloud-7355b0/fault-matrix.json",
+      "seconds": 21.32925820350647,
+      "error": null,
+      "run_errors": {},
+      "evidence": {
+        "rejection": {
+          "status": 409,
+          "code": "recovery_required"
+        },
+        "state": "RECOVERY_REQUIRED",
+        "manifest": null,
+        "native": {
+          "action": "inspect",
+          "actor": {
+            "name": "ac-scale-7101-2-agentcloud-7355b0-w1-rootfs",
+            "uid": "45220bde-8be3-44e3-8a41-8523d5f4724f",
+            "version": 6,
+            "state": "SUSPENDED",
+            "snapshot_uuid": "88ba2028-20bb-4f80-a1e3-2e7a75bbe876",
+            "snapshot_generation": 1,
+            "snapshot_fidelity": "ROOTFS",
+            "durable": true,
+            "resumed": false,
+            "cold_started": true,
+            "actual_fidelity": "UNSPECIFIED"
+          }
+        }
+      },
+      "primary": true
+    }
+  ],
+  "primary_selection": "earliest scheduled run per case, independent of outcome; missing checks remain in the denominator",
+  "acceptance": "all 16 first scheduled cases pass in successful runs with successful cleanup",
+  "all_attempts": {
+    "scheduled": 16,
+    "attempted": 16,
+    "passed": 16,
+    "failed": 0,
+    "unexecuted": 0
+  }
+}

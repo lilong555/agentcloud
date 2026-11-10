@@ -87,6 +87,39 @@ class ToolRuntimeTests(unittest.TestCase):
         with self.assertRaises(ToolFailure):
             self.runtime.attach({'epoch':1})
 
+    def test_late_attach_replay_preserves_closed_safe_point(self):
+        self.runtime.quiesce(dict(operation_id='safe',expected_epoch=1,barrier_generation=2))
+        replay=self.runtime.attach({'epoch':1})
+        self.assertEqual(replay['gate'],'CLOSED')
+        self.assertFalse(self.runtime.open)
+        with self.assertRaises(ToolFailure) as error:
+            self.execute(path='late.txt',content='late')
+        self.assertEqual(error.exception.code,'GATE_CLOSED')
+        activated=self.runtime.attach({'epoch':2,'manifest_id':'committed-snapshot'})
+        self.assertEqual(activated['gate'],'OPEN')
+        with self.assertRaises(ToolFailure) as error:
+            self.runtime.attach({'epoch':2,'manifest_id':'different-snapshot'})
+        self.assertEqual(error.exception.code,'ATTACH_PAYLOAD_MISMATCH')
+        self.assertEqual(self.runtime.epoch,2)
+
+    def test_attach_identity_survives_process_restart(self):
+        reboot=ToolRuntime(self.temp.name)
+        self.addCleanup(reboot.db.close)
+        self.assertEqual(reboot.attach({'epoch':1})['gate'],'CLOSED')
+        self.assertFalse(reboot.open)
+        self.assertEqual(reboot.attach({'epoch':2})['gate'],'OPEN')
+
+    def test_repeated_activation_keeps_running_tools_at_same_epoch(self):
+        self.runtime.active=1
+        try:
+            self.assertEqual(self.runtime.attach({'epoch':1})['gate'],'OPEN')
+            with self.assertRaises(ToolFailure) as error:
+                self.runtime.attach({'epoch':2})
+            self.assertEqual(error.exception.code,'TOOLS_ACTIVE')
+            self.assertEqual(self.runtime.epoch,1)
+        finally:
+            self.runtime.active=0
+
     def test_quiesce_drains_parallel_tool_and_closes_upload(self):
         outcomes=[]
         worker=threading.Thread(target=lambda:outcomes.append(self.execute(kind='shell',command='sleep 0.15; printf finished',timeout_ms=1000)))

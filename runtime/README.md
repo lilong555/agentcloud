@@ -52,16 +52,20 @@ python3 -m runtime.actor_demo \
 
 | 路径 | 内容 |
 | --- | --- |
-| `GET /healthz`、`GET /readyz` | 启动探针与 gate 状态 |
+| `GET /healthz`、`GET /readyz` | 启动探针、gate 状态与 `idempotent_lifecycle_rpc_version` |
 | `GET /runtime/v1/status` | epoch、gate、活跃工具与Actor内真实进程内存 |
 | `GET /runtime/v1/capabilities` | 部署 fidelity、进程策略与 Loop 位置 |
 | `POST /runtime/v1/tools` | epoch、稳定工具 ID、文件与 Shell操作 |
 | `POST /runtime/v1/quiesce` | 关闭准入、等待工具完成、提交回执水位 |
-| `POST /runtime/v1/attach` | 核验可信 Actor UID 与 epoch并开启准入 |
+| `POST /runtime/v1/attach` | 核验可信 Actor UID、epoch 与 manifest，激活新代次 |
 | `POST /runtime/v1/agents/start` | `run_id`、`trajectory_id`、`session_id`、`agent_kind`、任务与仓库 |
 | `GET /runtime/v1/agents/{run_id}` | 运行状态、模型轮次、工具轨迹、驻留 AST 与真实进程内存 |
 
 `runtime_memory` 的 `resident_bytes`、`virtual_bytes` 来自 Actor 内 `/proc/self/status`；进程 PID 与数据源同时记录。Worker 资源保留成本由协调器的资源分配记录计算。
+
+Runtime 持久保存最近一次 attach 的 epoch、Actor UID 与 manifest。相同代次和输入重放返回当前 gate，安全点关闭后的 gate 保持 CLOSED；相同代次的输入冲突返回 `ATTACH_PAYLOAD_MISMATCH`。进程重启后 gate 从 CLOSED 开始，恢复准入需要新的 epoch。`readyz` 与 capabilities 的 `idempotent_lifecycle_rpc_version: 1` 声明上述语义，协调器据此开启 attach 的传输重试；旧运行时和旧 MEMORY 快照沿原单次调用协议执行。
+
+工具、quiesce 和具备上述能力的 attach 使用稳定身份恢复传输故障。无应用错误码的 HTTP 502/503/504、连接中断与截断 JSON 最多触发三次额外重试，每次请求最长 10 秒，整体受原操作期限约束。工具返回 `409 RUNNING` 时每秒读取原持久 claim；完成回执直接返回。`OUTCOME_UNKNOWN`、输入冲突、陈旧 epoch 和身份错误立即交给对账处理。工具 ID、业务输入、epoch、安全点代次和 manifest 在重试期间保持一致。
 
 文件操作使用相对根目录描述符与 `O_NOFOLLOW`。Shell完成或超时时清理其进程组。超时、输出溢出和重启期间的未知副作用保存为 `OUTCOME_UNKNOWN`，等待对账。Runtime 启动时自动载入未完成运行，恢复后的执行者沿原逻辑请求继续认领。
 

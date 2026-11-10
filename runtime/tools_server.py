@@ -92,12 +92,20 @@ class ToolRuntime:
                 actor_uid=trusted_uid
             if epoch < self.epoch:
                 raise ToolFailure('STALE_EPOCH', '激活代次陈旧')
+            identity=json.dumps(dict(epoch=epoch,actor_uid=actor_uid,manifest_id=body.get('manifest_id')),sort_keys=True)
+            prior=self.db.execute("SELECT value FROM metadata WHERE key='attach_identity'").fetchone()
+            if epoch == self.epoch and prior:
+                if prior[0]!=identity:
+                    raise ToolFailure('ATTACH_PAYLOAD_MISMATCH','当前激活代次已绑定其他输入')
+                return dict(epoch=epoch,gate='OPEN' if self.open else 'CLOSED',actor_uid=actor_uid,
+                    identity_attested=bool(identity_file),manifest_id=body.get('manifest_id'))
             if self.active:
                 raise ToolFailure('TOOLS_ACTIVE', '工具运行期间保持当前代次')
             if actor_uid:
                 self.db.execute("INSERT OR REPLACE INTO metadata VALUES ('actor_uid',?)",(actor_uid,))
             self.epoch = epoch
             self.db.execute("INSERT OR REPLACE INTO metadata VALUES ('epoch',?)", (str(epoch),))
+            self.db.execute("INSERT OR REPLACE INTO metadata VALUES ('attach_identity',?)", (identity,))
             self.db.commit()
             self.open = True
             return dict(epoch=epoch, gate='OPEN', actor_uid=actor_uid, identity_attested=bool(identity_file), manifest_id=body.get('manifest_id'))
@@ -276,10 +284,10 @@ def serve(root, port, host='0.0.0.0', token=None, snapshot_fidelity=('VOLUMES',)
                 except KeyError:
                     return self.reply(404,{'error':{'code':'AGENT_NOT_FOUND','message':'Agent运行记录缺失'}})
             if self.path in ('/healthz','/readyz'):
-                return self.reply(200,{'ready':True,'gate':'OPEN' if runtime.open else 'CLOSED'})
+                return self.reply(200,{'ready':True,'gate':'OPEN' if runtime.open else 'CLOSED','idempotent_lifecycle_rpc_version':1})
             if self.path == '/runtime/v1/capabilities':
                 return self.reply(200,dict(snapshot_fidelity=list(snapshot_fidelity),fidelity_authority='Substrate lifecycle receipt',background_process_policy='kill-owned-process-group',
-                    model_location='external-coordinator',agent_loop_location='in-actor',durable_agent_loop=agents.client is not None,application_checkpoint=True,physical_memory_restore=None,
+                    model_location='external-coordinator',agent_loop_location='in-actor',durable_agent_loop=agents.client is not None,application_checkpoint=True,physical_memory_restore=None,idempotent_lifecycle_rpc_version=1,
                     coding_agent_kinds=['controlled','model-tools'],model_tool_protocol='OpenAI chat.completions tool_calls'))
             self.reply(404,{'error':{'code':'NOT_FOUND','message':'路径未注册'}})
         def do_POST(self):

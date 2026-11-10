@@ -1,0 +1,1067 @@
+{
+  "schema_version": 1,
+  "execution_kind": "local-cuda-pretrained-kv-contention",
+  "status": "passed",
+  "generated_at": "2026-11-10T03:35:41.602478+00:00",
+  "source_commit": "d3b0566721456d223a002f2a63ed7db31b5b4240",
+  "source_sha256": {
+    "bench/cuda_kv.py": "301ec51068fa0df35a993b60d1075066a8014ad5417d975d3add2f51bfcbd483"
+  },
+  "model": {
+    "name": "facebook/opt-125m",
+    "revision": "27dcfa74d334bc871f3234de431e71c6eeba5dd6",
+    "weights_sha256": "2d74da6615135c58cf3cf9ad4cb11e7c613ff9e55fe658a47ab83b6c8d1174a9",
+    "config_sha256": "54162c9cd0377110df1859dfabebb106fc0988c8aadb88207ce1ee0d34985df6",
+    "dtype": "float16"
+  },
+  "environment": {
+    "torch": "2.9.1+cu128",
+    "transformers": "4.47.1",
+    "cuda": "12.8",
+    "device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "total_device_bytes": 8585216000,
+    "nvidia_fields": [
+      "name",
+      "driver_version",
+      "memory_used_mib",
+      "temperature_c",
+      "sm_clock_mhz",
+      "utilization_percent"
+    ]
+  },
+  "config": {
+    "gpu_allocator_budget_mib": 3072,
+    "idle_counts": [
+      16,
+      64
+    ],
+    "context_tokens": 1024,
+    "new_tokens": 32,
+    "requests": 32,
+    "max_batch": 16,
+    "repeats": 3,
+    "admission": "largest successful power-of-two batch under fixed allocator budget",
+    "scheduler_integration": "standalone CUDA backend measurement",
+    "memory_metrics": [
+      "KV tensor storage",
+      "PyTorch allocated",
+      "PyTorch reserved",
+      "CUDA device free"
+    ]
+  },
+  "trials": [
+    {
+      "idle_sessions": 16,
+      "repeat": 0,
+      "policy": "keep",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 370328576
+      },
+      "idle_prefill_seconds": 0.1863929979954264,
+      "idle_kv_storage_bytes": 603979776,
+      "occupied": {
+        "allocated_bytes": 909620224,
+        "reserved_bytes": 933232640,
+        "device_free_bytes": 6402605056,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 987862528
+      },
+      "nvidia_before": null,
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "fits",
+          "peak_allocated_bytes": 2155828224
+        }
+      ],
+      "active": {
+        "batch": 16,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 0.905233910001698,
+        "tokens_per_second": 1131.1993382992903,
+        "completion_p95_seconds": 0.9052320569971926,
+        "prefill_seconds": 0.25008383500244236,
+        "decode_seconds": 0.6536121779936366,
+        "decode_tokens_per_second": 1517.7195795909083,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 909620224,
+          "reserved_bytes": 2648702976,
+          "device_free_bytes": 4687134720,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 2155828224
+        }
+      },
+      "return_recompute_seconds": 0.0,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2155828224
+      },
+      "nvidia_after": null
+    },
+    {
+      "idle_sessions": 16,
+      "repeat": 0,
+      "policy": "release",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2155828224
+      },
+      "idle_prefill_seconds": 0.18634898500022246,
+      "idle_kv_storage_bytes": 603979776,
+      "occupied": {
+        "allocated_bytes": 909620224,
+        "reserved_bytes": 933232640,
+        "device_free_bytes": 6402605056,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2155828224
+      },
+      "nvidia_before": null,
+      "after_tensor_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 933232640,
+        "device_free_bytes": 6402605056,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2155828224
+      },
+      "after_allocator_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2155828224
+      },
+      "release_seconds": 0.21294080799998483,
+      "kv_freed_allocated_bytes": 617611264,
+      "allocator_returned_bytes": 587202560,
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "fits",
+          "peak_allocated_bytes": 1537728512
+        }
+      ],
+      "active": {
+        "batch": 16,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 0.9014530040003592,
+        "tokens_per_second": 1135.9438544836132,
+        "completion_p95_seconds": 0.9014462110062595,
+        "prefill_seconds": 0.24870441999519244,
+        "decode_seconds": 0.6514973789962824,
+        "decode_tokens_per_second": 1522.6461870473015,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 292008960,
+          "reserved_bytes": 2009071616,
+          "device_free_bytes": 5326766080,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 1537728512
+        }
+      },
+      "return_recompute_seconds": 0.17930294099642197,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 1537728512
+      },
+      "nvidia_after": null
+    },
+    {
+      "idle_sessions": 64,
+      "repeat": 0,
+      "policy": "keep",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 1537728512
+      },
+      "idle_prefill_seconds": 0.7682742179968045,
+      "idle_kv_storage_bytes": 2415919104,
+      "occupied": {
+        "allocated_bytes": 2768221184,
+        "reserved_bytes": 2799697920,
+        "device_free_bytes": 4536139776,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2846467072
+      },
+      "nvidia_before": null,
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "allocator_budget_rejected",
+          "peak_allocated_bytes": 3120870400
+        },
+        {
+          "batch": 8,
+          "status": "allocator_budget_rejected",
+          "peak_allocated_bytes": 3145872384
+        },
+        {
+          "batch": 4,
+          "status": "fits",
+          "peak_allocated_bytes": 3079663616
+        }
+      ],
+      "active": {
+        "batch": 4,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 2.4172833470001933,
+        "tokens_per_second": 423.6160404078265,
+        "completion_p95_seconds": 2.4172815729980357,
+        "prefill_seconds": 0.2213957619969733,
+        "decode_seconds": 2.191636900010053,
+        "decode_tokens_per_second": 452.6297216457022,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 2768221184,
+          "reserved_bytes": 3168796672,
+          "device_free_bytes": 4167041024,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 3079663616
+        }
+      },
+      "return_recompute_seconds": 0.0,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 3079663616
+      },
+      "nvidia_after": null
+    },
+    {
+      "idle_sessions": 64,
+      "repeat": 0,
+      "policy": "release",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 3079663616
+      },
+      "idle_prefill_seconds": 0.7325464860041393,
+      "idle_kv_storage_bytes": 2415919104,
+      "occupied": {
+        "allocated_bytes": 2768221184,
+        "reserved_bytes": 2799697920,
+        "device_free_bytes": 4536139776,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 3079663616
+      },
+      "nvidia_before": null,
+      "after_tensor_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 2799697920,
+        "device_free_bytes": 4536139776,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 3079663616
+      },
+      "after_allocator_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 3079663616
+      },
+      "release_seconds": 0.23525285300274845,
+      "kv_freed_allocated_bytes": 2476212224,
+      "allocator_returned_bytes": 2453667840,
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "fits",
+          "peak_allocated_bytes": 1537728512
+        }
+      ],
+      "active": {
+        "batch": 16,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 0.9009958530004951,
+        "tokens_per_second": 1136.5202143715496,
+        "completion_p95_seconds": 0.9009941499971319,
+        "prefill_seconds": 0.2517175090033561,
+        "decode_seconds": 0.6481307110007037,
+        "decode_tokens_per_second": 1530.555462289956,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 292008960,
+          "reserved_bytes": 2009071616,
+          "device_free_bytes": 5326766080,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 1537728512
+        }
+      },
+      "return_recompute_seconds": 0.7508965209999587,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2846467072
+      },
+      "nvidia_after": null
+    },
+    {
+      "idle_sessions": 16,
+      "repeat": 1,
+      "policy": "release",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2846467072
+      },
+      "idle_prefill_seconds": 0.18409440399409505,
+      "idle_kv_storage_bytes": 603979776,
+      "occupied": {
+        "allocated_bytes": 909620224,
+        "reserved_bytes": 933232640,
+        "device_free_bytes": 6402605056,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2846467072
+      },
+      "nvidia_before": null,
+      "after_tensor_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 933232640,
+        "device_free_bytes": 6402605056,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2846467072
+      },
+      "after_allocator_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2846467072
+      },
+      "release_seconds": 0.21662323400232708,
+      "kv_freed_allocated_bytes": 617611264,
+      "allocator_returned_bytes": 587202560,
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "fits",
+          "peak_allocated_bytes": 1537728512
+        }
+      ],
+      "active": {
+        "batch": 16,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 0.9191705150005873,
+        "tokens_per_second": 1114.047919606457,
+        "completion_p95_seconds": 0.919168931999593,
+        "prefill_seconds": 0.25576011699740775,
+        "decode_seconds": 0.6622373870050069,
+        "decode_tokens_per_second": 1497.952274314135,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 292008960,
+          "reserved_bytes": 2009071616,
+          "device_free_bytes": 5326766080,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 1537728512
+        }
+      },
+      "return_recompute_seconds": 0.17941568899550475,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 1537728512
+      },
+      "nvidia_after": null
+    },
+    {
+      "idle_sessions": 16,
+      "repeat": 1,
+      "policy": "keep",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 1537728512
+      },
+      "idle_prefill_seconds": 0.18178969399741618,
+      "idle_kv_storage_bytes": 603979776,
+      "occupied": {
+        "allocated_bytes": 909620224,
+        "reserved_bytes": 933232640,
+        "device_free_bytes": 6402605056,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 1537728512
+      },
+      "nvidia_before": null,
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "fits",
+          "peak_allocated_bytes": 2155828224
+        }
+      ],
+      "active": {
+        "batch": 16,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 0.9038516739965416,
+        "tokens_per_second": 1132.9292509601726,
+        "completion_p95_seconds": 0.9038501819959492,
+        "prefill_seconds": 0.2517415300026187,
+        "decode_seconds": 0.6507568919987534,
+        "decode_tokens_per_second": 1524.3787844538115,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 909620224,
+          "reserved_bytes": 2648702976,
+          "device_free_bytes": 4687134720,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 2155828224
+        }
+      },
+      "return_recompute_seconds": 0.0,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2155828224
+      },
+      "nvidia_after": null
+    },
+    {
+      "idle_sessions": 64,
+      "repeat": 1,
+      "policy": "release",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2155828224
+      },
+      "idle_prefill_seconds": 0.794343936999212,
+      "idle_kv_storage_bytes": 2415919104,
+      "occupied": {
+        "allocated_bytes": 2768221184,
+        "reserved_bytes": 2799697920,
+        "device_free_bytes": 4536139776,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2846467072
+      },
+      "nvidia_before": null,
+      "after_tensor_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 2799697920,
+        "device_free_bytes": 4536139776,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2846467072
+      },
+      "after_allocator_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2846467072
+      },
+      "release_seconds": 0.2284063219995005,
+      "kv_freed_allocated_bytes": 2476212224,
+      "allocator_returned_bytes": 2453667840,
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "fits",
+          "peak_allocated_bytes": 1537728512
+        }
+      ],
+      "active": {
+        "batch": 16,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 0.903672848995484,
+        "tokens_per_second": 1133.1534427954439,
+        "completion_p95_seconds": 0.9036710759974085,
+        "prefill_seconds": 0.24787691699748393,
+        "decode_seconds": 0.6546214879999752,
+        "decode_tokens_per_second": 1515.3795257023974,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 292008960,
+          "reserved_bytes": 2009071616,
+          "device_free_bytes": 5326766080,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 1537728512
+        }
+      },
+      "return_recompute_seconds": 0.7458882440041634,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2846467072
+      },
+      "nvidia_after": null
+    },
+    {
+      "idle_sessions": 64,
+      "repeat": 1,
+      "policy": "keep",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2846467072
+      },
+      "idle_prefill_seconds": 0.733966589999909,
+      "idle_kv_storage_bytes": 2415919104,
+      "occupied": {
+        "allocated_bytes": 2768221184,
+        "reserved_bytes": 2799697920,
+        "device_free_bytes": 4536139776,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2846467072
+      },
+      "nvidia_before": null,
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "allocator_budget_rejected",
+          "peak_allocated_bytes": 3120870400
+        },
+        {
+          "batch": 8,
+          "status": "allocator_budget_rejected",
+          "peak_allocated_bytes": 3145872384
+        },
+        {
+          "batch": 4,
+          "status": "fits",
+          "peak_allocated_bytes": 3079663616
+        }
+      ],
+      "active": {
+        "batch": 4,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 2.4489165020058863,
+        "tokens_per_second": 418.14410542836004,
+        "completion_p95_seconds": 2.4489146590058226,
+        "prefill_seconds": 0.22185837900906336,
+        "decode_seconds": 2.2229328850007732,
+        "decode_tokens_per_second": 446.25728770018844,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 2768221184,
+          "reserved_bytes": 3168796672,
+          "device_free_bytes": 4167041024,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 3079663616
+        }
+      },
+      "return_recompute_seconds": 0.0,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 3079663616
+      },
+      "nvidia_after": null
+    },
+    {
+      "idle_sessions": 16,
+      "repeat": 2,
+      "policy": "keep",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 3079663616
+      },
+      "idle_prefill_seconds": 0.18571037199581042,
+      "idle_kv_storage_bytes": 603979776,
+      "occupied": {
+        "allocated_bytes": 909620224,
+        "reserved_bytes": 933232640,
+        "device_free_bytes": 6402605056,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 3079663616
+      },
+      "nvidia_before": null,
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "fits",
+          "peak_allocated_bytes": 2155828224
+        }
+      ],
+      "active": {
+        "batch": 16,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 0.9018829790002201,
+        "tokens_per_second": 1135.402290367152,
+        "completion_p95_seconds": 0.901881466001214,
+        "prefill_seconds": 0.24915716700343182,
+        "decode_seconds": 0.6514585730037652,
+        "decode_tokens_per_second": 1522.7368878209031,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 909620224,
+          "reserved_bytes": 2648702976,
+          "device_free_bytes": 4687134720,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 2155828224
+        }
+      },
+      "return_recompute_seconds": 0.0,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2155828224
+      },
+      "nvidia_after": null
+    },
+    {
+      "idle_sessions": 16,
+      "repeat": 2,
+      "policy": "release",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2155828224
+      },
+      "idle_prefill_seconds": 0.18613195000216365,
+      "idle_kv_storage_bytes": 603979776,
+      "occupied": {
+        "allocated_bytes": 909620224,
+        "reserved_bytes": 933232640,
+        "device_free_bytes": 6402605056,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2155828224
+      },
+      "nvidia_before": null,
+      "after_tensor_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 933232640,
+        "device_free_bytes": 6402605056,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2155828224
+      },
+      "after_allocator_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2155828224
+      },
+      "release_seconds": 0.20535099400149193,
+      "kv_freed_allocated_bytes": 617611264,
+      "allocator_returned_bytes": 587202560,
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "fits",
+          "peak_allocated_bytes": 1537728512
+        }
+      ],
+      "active": {
+        "batch": 16,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 0.9210486379961367,
+        "tokens_per_second": 1111.7762491108479,
+        "completion_p95_seconds": 0.9210468449964537,
+        "prefill_seconds": 0.2546613550002803,
+        "decode_seconds": 0.664636806002818,
+        "decode_tokens_per_second": 1492.5444860117993,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 292008960,
+          "reserved_bytes": 2009071616,
+          "device_free_bytes": 5326766080,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 1537728512
+        }
+      },
+      "return_recompute_seconds": 0.18007832200237317,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 1537728512
+      },
+      "nvidia_after": null
+    },
+    {
+      "idle_sessions": 64,
+      "repeat": 2,
+      "policy": "keep",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 1537728512
+      },
+      "idle_prefill_seconds": 0.7502346019973629,
+      "idle_kv_storage_bytes": 2415919104,
+      "occupied": {
+        "allocated_bytes": 2768221184,
+        "reserved_bytes": 2799697920,
+        "device_free_bytes": 4536139776,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2846467072
+      },
+      "nvidia_before": null,
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "allocator_budget_rejected",
+          "peak_allocated_bytes": 3120870400
+        },
+        {
+          "batch": 8,
+          "status": "allocator_budget_rejected",
+          "peak_allocated_bytes": 3145872384
+        },
+        {
+          "batch": 4,
+          "status": "fits",
+          "peak_allocated_bytes": 3079663616
+        }
+      ],
+      "active": {
+        "batch": 4,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 2.433961280999938,
+        "tokens_per_second": 420.71334823342494,
+        "completion_p95_seconds": 2.4339593170006992,
+        "prefill_seconds": 0.22272629799408605,
+        "decode_seconds": 2.2070545820024563,
+        "decode_tokens_per_second": 449.4678147470011,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 2768221184,
+          "reserved_bytes": 3168796672,
+          "device_free_bytes": 4167041024,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 3079663616
+        }
+      },
+      "return_recompute_seconds": 0.0,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 3079663616
+      },
+      "nvidia_after": null
+    },
+    {
+      "idle_sessions": 64,
+      "repeat": 2,
+      "policy": "release",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 3079663616
+      },
+      "idle_prefill_seconds": 0.7240543230000185,
+      "idle_kv_storage_bytes": 2415919104,
+      "occupied": {
+        "allocated_bytes": 2768221184,
+        "reserved_bytes": 2799697920,
+        "device_free_bytes": 4536139776,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 3079663616
+      },
+      "nvidia_before": null,
+      "after_tensor_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 2799697920,
+        "device_free_bytes": 4536139776,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 3079663616
+      },
+      "after_allocator_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 3079663616
+      },
+      "release_seconds": 0.23364061000029324,
+      "kv_freed_allocated_bytes": 2476212224,
+      "allocator_returned_bytes": 2453667840,
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "fits",
+          "peak_allocated_bytes": 1537728512
+        }
+      ],
+      "active": {
+        "batch": 16,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 0.916698250999616,
+        "tokens_per_second": 1117.0524203393827,
+        "completion_p95_seconds": 0.9166966679986217,
+        "prefill_seconds": 0.25350604999403004,
+        "decode_seconds": 0.6619419739945442,
+        "decode_tokens_per_second": 1498.6207839543592,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 292008960,
+          "reserved_bytes": 2009071616,
+          "device_free_bytes": 5326766080,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 1537728512
+        }
+      },
+      "return_recompute_seconds": 0.737095511998632,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2846467072
+      },
+      "nvidia_after": null
+    }
+  ],
+  "summary": [
+    {
+      "idle_sessions": 16,
+      "paired_repeats": 3,
+      "keep_batch_sizes": [
+        16,
+        16,
+        16
+      ],
+      "release_batch_sizes": [
+        16,
+        16,
+        16
+      ],
+      "keep_tokens_per_second_median": 1132.9292509601726,
+      "release_tokens_per_second_median": 1114.047919606457,
+      "freed_kv_bytes_median": 617611264,
+      "allocator_returned_bytes_median": 587202560,
+      "device_free_increase_bytes_median": 587202560,
+      "return_recompute_seconds_median": 0.17941568899550475,
+      "keep_active_seconds_median": 0.9038516739965416,
+      "release_active_plus_return_seconds_median": 1.3064779540000018
+    },
+    {
+      "idle_sessions": 64,
+      "paired_repeats": 3,
+      "keep_batch_sizes": [
+        4,
+        4,
+        4
+      ],
+      "release_batch_sizes": [
+        16,
+        16,
+        16
+      ],
+      "keep_tokens_per_second_median": 420.71334823342494,
+      "release_tokens_per_second_median": 1133.1534427954439,
+      "freed_kv_bytes_median": 2476212224,
+      "allocator_returned_bytes_median": 2453667840,
+      "device_free_increase_bytes_median": 2453667840,
+      "return_recompute_seconds_median": 0.7458882440041634,
+      "keep_active_seconds_median": 2.433961280999938,
+      "release_active_plus_return_seconds_median": 1.8871452270032023
+    }
+  ],
+  "cleanup": {
+    "allocated_bytes": 34603008,
+    "reserved_bytes": 79691776,
+    "device_free_bytes": 7256145920,
+    "services_started": 0
+  },
+  "finished_at": "2026-11-10T03:36:26.470668+00:00"
+}

@@ -242,7 +242,7 @@ def main():
                 flattened.update({f'{kind}_p{percent}':row[kind+'_seconds'][f'p{percent}'] for percent in PERCENTILES})
             writer.writerow(flattened)
     if not args.skip_figures:
-        figures(result, args.output.with_name('scale-metrics'))
+        figures(result, args.output.with_name(args.output.stem.removesuffix('-summary')+'-metrics'))
     print(json.dumps(dict(groups=len(result['groups']), attempts=len(result['attempt_audit']), output=str(args.output))))
 
 

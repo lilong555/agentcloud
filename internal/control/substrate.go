@@ -7,7 +7,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -101,7 +100,16 @@ func (b *SubstrateBackend) call(ctx context.Context, name, path string, input, o
 		return errors.New("runtime response exceeds 2 MiB")
 	}
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return fmt.Errorf("runtime HTTP %d: %.512s", response.StatusCode, data)
+		var body struct {
+			Error struct {
+				Code string `json:"code"`
+			} `json:"error"`
+		}
+		code := ""
+		if json.Unmarshal(data, &body) == nil {
+			code = body.Error.Code
+		}
+		return &runtimeHTTPError{status: response.StatusCode, code: code, body: string(data)}
 	}
 	if output != nil {
 		return json.Unmarshal(data, output)
@@ -113,9 +121,15 @@ func fromSubstrate(s substrateapi.Summary) Actor {
 }
 func (b *SubstrateBackend) attach(ctx context.Context, s *Session, a Actor, epoch uint64) error {
 	// The ready endpoint reports process readiness while the tool gate remains closed.
+	replayVersion := 0
 	for {
-		err := b.call(ctx, a.Name, "/readyz", nil, nil)
-		if err == nil {
+		var ready struct {
+			Ready         bool `json:"ready"`
+			ReplayVersion int  `json:"idempotent_lifecycle_rpc_version"`
+		}
+		err := b.call(ctx, a.Name, "/readyz", nil, &ready)
+		if err == nil && ready.Ready {
+			replayVersion = ready.ReplayVersion
 			break
 		}
 		select {
@@ -128,16 +142,21 @@ func (b *SubstrateBackend) attach(ctx context.Context, s *Session, a Actor, epoc
 	if s.Manifest != nil {
 		manifest = s.Manifest.ID
 	}
-	var receipt struct {
-		Epoch            uint64 `json:"epoch"`
-		Gate             string `json:"gate"`
-		ActorUID         string `json:"actor_uid"`
-		IdentityAttested bool   `json:"identity_attested"`
+	var receipt runtimeAttachReceipt
+	invoke := func(attempt context.Context) error {
+		receipt = runtimeAttachReceipt{}
+		return b.call(attempt, a.Name, "/runtime/v1/attach", map[string]any{"epoch": epoch, "actor_uid": a.UID, "manifest_id": manifest}, &receipt)
 	}
-	if err := b.call(ctx, a.Name, "/runtime/v1/attach", map[string]any{"epoch": epoch, "actor_uid": a.UID, "manifest_id": manifest}, &receipt); err != nil {
+	var err error
+	if replayVersion == 1 {
+		err = retryRuntimeRPC(ctx, "/runtime/v1/attach", 30*time.Second, invoke)
+	} else {
+		err = invoke(ctx)
+	}
+	if err != nil {
 		return err
 	}
-	if receipt.Epoch != epoch || receipt.Gate != "OPEN" || receipt.ActorUID != a.UID || !receipt.IdentityAttested {
+	if receipt.Epoch != epoch || receipt.Gate != "OPEN" || receipt.ActorUID != a.UID || !receipt.IdentityAttested || replayVersion == 1 && receipt.ManifestID != manifest {
 		return errors.New("runtime attach identity mismatch")
 	}
 	return nil
@@ -196,7 +215,14 @@ func (b *SubstrateBackend) Ensure(ctx context.Context, s *Session) (Actor, error
 }
 func (b *SubstrateBackend) Tool(ctx context.Context, s *Session, input ToolRequest) (ToolResult, error) {
 	var receipt ToolReceipt
-	if err := b.call(ctx, s.Actor.Name, "/runtime/v1/tools", input, &receipt); err != nil {
+	limit := 30 * time.Second
+	if input.TimeoutMS > 0 {
+		limit = time.Duration(min(300000, input.TimeoutMS)) * time.Millisecond
+	}
+	if err := retryRuntimeRPC(ctx, "/runtime/v1/tools", limit, func(attempt context.Context) error {
+		receipt = ToolReceipt{}
+		return b.call(attempt, s.Actor.Name, "/runtime/v1/tools", input, &receipt)
+	}); err != nil {
 		return ToolResult{}, err
 	}
 	if receipt.ID != input.ID || receipt.Epoch != s.Epoch || receipt.Status != "COMPLETED" {
@@ -205,16 +231,11 @@ func (b *SubstrateBackend) Tool(ctx context.Context, s *Session, input ToolReque
 	return receipt.Result, nil
 }
 func (b *SubstrateBackend) Checkpoint(ctx context.Context, s *Session, operation string) (Actor, string, error) {
-	var barrier struct {
-		OperationID string `json:"operation_id"`
-		Epoch       uint64 `json:"epoch"`
-		Generation  uint64 `json:"barrier_generation"`
-		Watermark   uint64 `json:"receipt_watermark"`
-		State       string `json:"state"`
-		Gate        string `json:"gate"`
-		Active      int    `json:"active_tools"`
-	}
-	if err := b.call(ctx, s.Actor.Name, "/runtime/v1/quiesce", map[string]any{"operation_id": operation, "expected_epoch": s.Epoch, "barrier_generation": s.BarrierGeneration}, &barrier); err != nil {
+	var barrier runtimeBarrierReceipt
+	if err := retryRuntimeRPC(ctx, "/runtime/v1/quiesce", 30*time.Second, func(attempt context.Context) error {
+		barrier = runtimeBarrierReceipt{}
+		return b.call(attempt, s.Actor.Name, "/runtime/v1/quiesce", map[string]any{"operation_id": operation, "expected_epoch": s.Epoch, "barrier_generation": s.BarrierGeneration}, &barrier)
+	}); err != nil {
 		return Actor{}, "", err
 	}
 	if barrier.OperationID != operation || barrier.Epoch != s.Epoch || barrier.Generation != s.BarrierGeneration || barrier.Watermark != s.ReceiptWatermark || barrier.State != "QUIESCED" || barrier.Gate != "CLOSED" || barrier.Active != 0 {

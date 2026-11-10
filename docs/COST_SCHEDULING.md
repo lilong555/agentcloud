@@ -106,6 +106,56 @@ python3 -m bench.analysis.scale \
 
 当前验收将有服务端观测证据的 KEEP 纳入有效决策，同时保留首个业务失败和后续清理错误。Actor 绑定回收只处理结果已经确定的模型请求。
 
+## 完整规模结果
+
+冻结源码 `1bd80b2` 的 [36 组矩阵](https://github.com/lilong555/agentcloud/actions/runs/42743170099)覆盖 N=32/64、六种策略和三个种子：30/36 trial 通过，9,865/10,368 请求完成，503 个失败或未投递请求保留；36/36 runner 资源清理通过。cost-aware 的六组均通过，共完成 1,728 个请求。实际容量估计及生命周期语义以该冻结源码和原始回执为准。
+
+| 并发 | 策略 | 完成／计划 | Stranded GB·s | 交互 p95 秒 | Goodput/s |
+| --- | --- | ---: | ---: | ---: | ---: |
+| 32 | TTL2 | 576/576 | 77.989 | 52.908 | 0.17450 |
+| 32 | observed | 562/576 | 119.714 | 77.927 | 0.13645 |
+| 32 | cost-aware | 576/576 | 92.818 | 77.889 | 0.14436 |
+| 64 | TTL2 | 838/1,152 | 108.182 | 144.211 | 0.19299 |
+| 64 | observed | 1,151/1,152 | 228.764 | 220.840 | 0.11534 |
+| 64 | cost-aware | 1,152/1,152 | 205.847 | 188.467 | 0.12806 |
+
+资源和 Goodput 按种子 trial 平均，时延按完成请求的工作区轨迹统计。N=64 的 TTL2 与 observed 包含失败 trial，完成比例和原始分母与时延共同报告。N=32 的完整配对结果中，cost-aware 相对 TTL15 达到联合改善判据；相对 TTL2，Stranded 差值的 95% 区间为 +11.384 至 +16.670 GB·s，Goodput 为 −0.05236 至 −0.00461 请求／秒，交互 p95 为 +14.031 至 +46.406 秒。N=64 相对 TTL15 的资源与 Goodput 区间改善，交互 p95 区间跨零。
+
+[完整 JSON](evidence/cost-matrix-1bd80b2-summary.json) · [全部六策略 CSV](evidence/cost-matrix-1bd80b2-summary.csv) · [图表](evidence/cost-matrix-1bd80b2-metrics.svg) · [失败回执审计](evidence/cost-matrix-1bd80b2-failures.json)
+
+| 失败 trial | 完成／计划 | 原始故障 |
+| --- | ---: | --- |
+| N32 / TTL0 / 7101 | 18/192 | Substrate FinalizeRunning 的 PostgreSQL 读取超时，随后 28 次容量拒绝 |
+| N32 / observed / 7103 | 178/192 | 一次 Runtime HTTP 503 与两次容量拒绝 |
+| N64 / TTL2 / 7101 | 76/384 | 一次 Runtime HTTP 503，随后 52 次容量拒绝 |
+| N64 / TTL2 / 7103 | 378/384 | 首轮工具的 Runtime HTTP 503 |
+| N64 / observed / 7101 | 383/384 | Substrate FinalizeRunning 的 PostgreSQL 读取超时 |
+| N64 / observed / 7102 | 384/384 | 最终挂起返回 `Aborted: another operation is in progress` |
+
+未知结果保留在 RECOVERY_REQUIRED 中。容量等待使用原操作 ID 和权威 Actor 证明恢复；Runtime 的传输恢复使用稳定工具身份和具备幂等能力的 attach。Substrate 工作流中途失败的对账依据为原 UID、版本、快照与持久生命周期记录。
+
+## 独立场景结果
+
+源码 `a25010f` 的固定负载完成 144/144 请求；三个独立场景共有 432 个计划请求，384 个完成。长尾 observed 的 runner 在 Kind 准备阶段触发磁盘保护，[启动记录](evidence/workflow-launch-42746885292-129601069434.json)保留 48 个未投递请求；其余八组均完成并清理。
+
+| 场景 | 策略 | Stranded GB·s | 交互 p95 秒 | Goodput/s |
+| --- | --- | ---: | ---: | ---: |
+| 固定 | TTL2 | 19.003 | 3.495 | 0.09529 |
+| 固定 | observed | 33.869 | 11.326 | 0.08321 |
+| 固定 | cost-aware | 26.735 | 3.588 | 0.08505 |
+| 长尾 | TTL2 | 12.608 | 16.042 | 0.09866 |
+| 长尾 | cost-aware | 16.092 | 2.546 | 0.09625 |
+| 分布变化 | TTL2 | 14.252 | 9.270 | 0.05735 |
+| 分布变化 | observed | 77.643 | 2.680 | 0.06281 |
+| 分布变化 | cost-aware | 18.903 | 3.982 | 0.06025 |
+| 开放环 | TTL2 | 21.750 | 6.616 | 0.12328 |
+| 开放环 | observed | 48.124 | 46.835 | 0.07062 |
+| 开放环 | cost-aware | 26.928 | 15.858 | 0.12350 |
+
+在长尾和分布变化的单种子样本中，cost-aware 相对 TTL2 的交互 p95 分别降低约 84.1% 和 57.0%，Stranded 分别增加约 27.6% 和 32.6%。固定与开放环场景的 TTL2 具有更低的资源成本和交互 p95。场景选择、成本与 SLO 共同决定策略适用范围；默认策略保持 `observed`。
+
+[固定汇总](evidence/cost-smoke-a25010f-summary.json) · [长尾汇总](evidence/cost-tail-smoke-a25010f-summary.json) · [分布变化汇总](evidence/cost-phase-smoke-a25010f-summary.json) · [开放环汇总](evidence/cost-open-smoke-a25010f-summary.json)
+
 ## 研究依据
 
 - [Kaplan–Meier：不完整观测的非参数估计](https://doi.org/10.1080/01621459.1958.10501452)

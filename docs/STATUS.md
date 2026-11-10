@@ -1,6 +1,6 @@
 # AgentCloud 交付状态
 
-AgentCloud 提供持久协调器、Dynamo 原生反馈、Substrate 生命周期、双模式 Agent、指标追踪与诊断 CLI。Azure CPA 的真实 `gpt-6-luna` 已完成多文件 Coding 修复与 DeerFlow 研究任务，两类任务均通过实际 MEMORY 恢复。GitHub Actions 已完成 60 组规模矩阵首轮、15/15 类故障与 126/126 个等待／内存窗口；原生测试、失败样本及资源清理记录均已归档。
+AgentCloud 提供持久协调器、Dynamo 原生反馈、Substrate 生命周期、双模式 Agent、指标追踪与诊断 CLI。Azure CPA 的真实 `gpt-6-luna` 已完成多文件 Coding 修复与 DeerFlow 研究任务，两类任务均通过实际 MEMORY 恢复。GitHub Actions 已完成 60 组基础规模矩阵、36 组条件成本矩阵、16/16 类故障与 126/126 个等待／内存窗口；原生测试、失败样本及资源清理记录均已归档。本地 RTX 4070 已完成 12 组物理 CUDA KV 对照。
 
 | 组件 | 已验证能力 | 证据 |
 | --- | --- | --- |
@@ -11,11 +11,13 @@ AgentCloud 提供持久协调器、Dynamo 原生反馈、Substrate 生命周期�
 | 真实外置客户端 | HTTP 写入、安全点、挂起期间推理完成、MEMORY 恢复、跨 epoch 原回执读取，最终释放 Worker | [完整服务验收](evidence/service-substrate.json) |
 | 独立快照副本 | Tag UID、源 Actor UID、源 snapshot UUID/generation 与 manifest 一致，独立存储对象 COMPLETED | [原生 GetTag 核验](evidence/substrate-retained-tag.json) |
 | DeerFlow | 真实模型、两个并发子任务、文件上传、70 个 PostgreSQL 图检查点、两阶段 manifest、新进程恢复与 MEMORY | [真实研究 Agent](evidence/real-model/realmodel-74bd7470d2c7/deerflow.json) |
-| Python Runtime | 持久终态发布、只读控制面观察、跨 epoch 回执；锁定 DeerFlow 环境 20 项全部通过，含 PostgreSQL、新连接恢复、并发子任务与上传 | [通用契约](evidence/local-contract.json)、[独立 CI](evidence/ci-run-42742116903.json)、[TLS](evidence/agents-runtime-tls.json) |
+| Python Runtime | 持久终态发布、只读控制面观察、跨 epoch 回执、具备能力协商的有界传输恢复与 attach 安全点保护；锁定 DeerFlow 环境 20 项全部通过 | [通用契约](evidence/local-contract.json)、[独立 CI](evidence/ci-run-42750472998.json)、[协议](../runtime/README.md) |
 | 成本协调 | 原生 classifier 排队观测、等待与快照成本估计、最小驻留、恢复冷却、并发操作排他 | [真实 HTTP 策略验收](evidence/service-scheduling.json) |
 | 条件成本策略 | 可选 `cost-aware`：含删失样本的条件等待预测、固定释放期限、恢复需求容量成本、重启持久化与竞态契约 | [策略与实机验收协议](COST_SCHEDULING.md)、[观察快照微基准](evidence/scheduling-snapshot-benchmark.json) |
+| CUDA 物理 KV | RTX 4070 Laptop、预训练 OPT-125M、12 组 KEEP/释放对照；固定 3 GiB 显存预算，真实 KV、竞争推理、重建成本与进程退出 | [物理 GPU 验证](GPU_VALIDATION.md) |
 | 规模实验 | 四租户、两 Worker、N=8/16/32/64，60 组首轮中 58 组通过，10,765/10,800 请求；AgentCloud 12/12 组通过 | [完整矩阵与区间](evidence/scale-summary.json) |
-| 故障矩阵 | 15/15 类真实注入通过；PENDING、UID/epoch、lease、未知结果与事务失败保持安全状态，全部分片清理通过 | [逐项审计](evidence/faults-summary.json) |
+| 条件成本规模实验 | N=32/64、六策略、三个种子，30/36 组通过，9,865/10,368 请求；cost-aware 6/6 组、1,728/1,728 请求 | [完整结果与失败分母](evidence/cost-matrix-1bd80b2-summary.json) |
+| 故障矩阵 | 16/16 类真实注入通过；容量等待跨协调器重启恢复，PENDING、UID/epoch、lease、未知结果与事务失败保持安全状态，全部分片清理通过 | [逐项审计](evidence/faults-d3b0566-summary.json) |
 | 等待／内存热力图 | 9/9 trial、126/126 窗口，三个工作集与七档等待；同步报告资源收益和返回延迟 | [热力图](evidence/heatmap-summary.json) |
 | 控制面开销 | N=64 协调器平均 0.173 CPU 核，采样峰值 RSS 71.71 MiB；提交 p95/p99 为 19.037/97.197 ms | [阶段测量](evidence/control-plane-summary.json) |
 | 源码复现 | 固定上游 SHA、完整修改文件与摘要，在全新 checkout 还原并核验 | [源码复现](evidence/source-reproduction.json) |
@@ -30,14 +32,18 @@ AgentCloud 提供持久协调器、Dynamo 原生反馈、Substrate 生命周期�
 | [两组定向重跑](https://github.com/lilong555/agentcloud/actions/runs/42694974426/attempts/2) | `dc9081f` | 2/2 trial、432/432 请求及资源清理通过；主统计保留首轮失败 |
 | [等待／内存热力图](https://github.com/lilong555/agentcloud/actions/runs/42694984376) | `dc9081f` | 热力图 126/126 窗口通过；同一历史 workflow 的故障分片保留失败状态 |
 | [15 类实机故障](https://github.com/lilong555/agentcloud/actions/runs/42706024235) | `d1223e3` | 15/15 通过，四个分片资源清理通过 |
+| [16 类实机故障](https://github.com/lilong555/agentcloud/actions/runs/42750623733) | `d3b0566` | 16/16 通过，包含真实槽位饱和、持久等待、重启与同操作恢复；四分片清理通过 |
 | [当前运行时烟雾测试](https://github.com/lilong555/agentcloud/actions/runs/42701929437) | `717d0ea` | 48/48 请求完成，两个 Worker，清理通过 |
 | [条件成本烟雾对照](https://github.com/lilong555/agentcloud/actions/runs/42740998570) | `e966b47` | TTL2、observed、cost-aware 三组，144/144 请求及清理通过 |
 | [三场景烟雾首轮](https://github.com/lilong555/agentcloud/actions/runs/42742201307) | `1bd80b2` | 7/9 trial、426/432 请求，9/9 清理；原始失败和分母保留 |
 | [真实 Coding 自主调度](https://github.com/lilong555/agentcloud/actions/runs/42746880453) | `a25010f` | `gpt-6-luna` 完成多文件修复，8 次 MEMORY 恢复、持久终态与资源清理通过 |
+| [条件成本完整矩阵](https://github.com/lilong555/agentcloud/actions/runs/42743170099) | `1bd80b2` | 30/36 trial、9,865/10,368 请求；36/36 runner 清理通过，六组失败保留 |
+| [条件成本烟雾对照](https://github.com/lilong555/agentcloud/actions/runs/42746882665) | `a25010f` | 三策略 144/144 请求与清理通过 |
+| [三场景烟雾对照](https://github.com/lilong555/agentcloud/actions/runs/42746885292) | `a25010f` | 八组完成 384 请求；长尾 observed 在环境准备阶段退出，48 个未投递请求保留，9/9 清理通过 |
 
 N=32 和 N=64 时，AgentCloud 相比 TTL15 的 Stranded、Goodput 与交互 p95 达到预声明联合区间判据。闲置预留分别减少 53.52%/50.08%，Goodput 提高 24.81%/11.68%。TTL2 在当前负载下仍具有较低资源成本和较高 Goodput；全部策略及置信区间见[实验报告](EXPERIMENTS.md)。N=64 为四槽位饱和配置，交互 p95 为 237.983 秒，生产容量需要按业务 SLO 规划。
 
-`cost-aware` 的初次 N=8 单种子试验相对 observed 降低 Stranded 24.4%、交互 p95 23.6%；TTL2 的 Stranded 仍更低。三场景的原始报告及失败诊断见[条件成本对照](COST_SCHEDULING.md)。默认策略保持 `observed`。
+`cost-aware` 在 N=32 的三个种子中相对 TTL15 达到资源、Goodput 与交互 p95 的联合区间判据；TTL2 在该规模下的资源成本和延迟更低。长尾与等待分布变化的 N=8 单种子对照中，cost-aware 以较高闲置预留换取较低交互 p95。完整区间、源码身份与失败诊断见[条件成本对照](COST_SCHEDULING.md)。默认策略保持 `observed`。
 
 ## 实测环境
 
@@ -45,7 +51,7 @@ N=32 和 N=64 时，AgentCloud 相比 TTL15 的 Stranded、Goodput 与交互 p95
 
 本机 WSL2 的历史实测使用 Kind Kubernetes v1.37.0、Go 1.27.3、Rust 1.96.1、gVisor v7 ptrace 与 RustFS；小规模 Actor 配置 768 MiB，Worker 可分配 1472 MiB。[部署记录](evidence/substrate-deployment.json)保存镜像与组件状态，[平台记录](evidence/substrate-gvisor-platform.json)保存 ptrace 成功路径与 systrap 初始化失败，[存储记录](evidence/substrate-storage.json)保存容量条件。重型构建与压测由 Actions 执行，本机使用进程组内存和磁盘保护器完成轻量检查。
 
-当前 GPU 证据来自 CPU Mocker 的逻辑 KV 容量、原生暂停和预算事件。物理显存、KV 回收量及 GPU 吞吐等待独立 CUDA 节点测量。真实 Agent 模型调用来自 Azure CPA `gpt-6-luna`。每个 PostgreSQL 数据库使用单写者 advisory lock 与 revision CAS，持续更高密度和高可用容量验收可基于 Workspace 所有权分片开展。
+原生 Dynamo 证据覆盖 CPU Mocker 的逻辑 KV 容量、原生暂停和预算事件。本机独立 CUDA 后端已完成物理 KV、显存归还、竞争吞吐与重建成本测量：64 个闲置会话时释放 2,304 MiB KV，竞争 batch 从 4 增至 16，计入重建的总时间降低约 22.5%；16 个闲置会话时释放增加总时间。Dynamo GPU 引擎与执行反馈联动保留独立验收要求。真实 Agent 模型调用来自 Azure CPA `gpt-6-luna`。每个 PostgreSQL 数据库使用单写者 advisory lock 与 revision CAS，持续更高密度和高可用容量验收可基于 Workspace 所有权分片开展。
 
 ## 原生完整性与回收
 
