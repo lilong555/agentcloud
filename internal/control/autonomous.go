@@ -20,6 +20,12 @@ func (b *SubstrateBackend) SchedulingCapacity(ctx context.Context, s *Session) (
 }
 
 type ServerEstimateEvidence struct {
+	WaitPhase            string                     `json:"wait_phase,omitempty"`
+	WaitStartedAt        time.Time                  `json:"wait_started_at,omitempty"`
+	WaitAgeMS            int64                      `json:"wait_age_ms,omitempty"`
+	WaitPrediction       *policy.ResidualPrediction `json:"wait_prediction,omitempty"`
+	ReleasePlan          *ReleasePlan               `json:"release_plan,omitempty"`
+	waitSamples          []policy.SurvivalSample
 	Sources              []string             `json:"sources"`
 	ModelSamples         int                  `json:"model_samples"`
 	ModelServiceP75MS    int64                `json:"model_service_p75_ms"`
@@ -29,6 +35,7 @@ type ServerEstimateEvidence struct {
 	WorkerCapacity       *CapacityObservation `json:"worker_capacity,omitempty"`
 }
 type AutonomousState struct {
+	ReleasePlan       *ReleasePlan            `json:"release_plan,omitempty"`
 	Epoch             uint64                  `json:"epoch"`
 	LastEvaluatedAt   time.Time               `json:"last_evaluated_at"`
 	CandidateSince    time.Time               `json:"candidate_since,omitempty"`
@@ -166,6 +173,9 @@ func (c *Controller) serverEstimateLocked(s *Session, input ModelBoundaryRequest
 	input.SnapshotCostMS = &snapshot
 	input.ResumeCostMS = &resume
 	input.JournalCostMS = &journal
+	if c.cfg.SchedulerPolicy == "cost-aware" {
+		input = c.conditionalEstimateLocked(s, input, evidence, now)
+	}
 	return input, evidence
 }
 func (c *Controller) autonomousLoop() {
@@ -213,7 +223,7 @@ func (c *Controller) autonomousLoop() {
 					if !waiting && (s.Autonomous == nil || !s.Autonomous.ReturnDemand) {
 						continue
 					}
-					candidates = append(candidates, copyValue(s))
+					candidates = append(candidates, schedulingSnapshot(s))
 				}
 			}
 			sort.Slice(candidates, func(i, j int) bool {
@@ -298,16 +308,18 @@ func (c *Controller) autonomousStep(snapshot *Session) {
 	if a.Epoch != s.Epoch {
 		a.Epoch = s.Epoch
 		a.CandidateSince = time.Time{}
+		a.ReleasePlan = nil
 	}
 	request, evidence := c.serverEstimateLocked(s, ModelBoundaryRequest{ExpectedEpoch: s.Epoch}, queue, capacity, p.Config(), now)
 	a.Evidence = evidence
 	previousAction, previousReason := a.LastAction, a.Reason
 	action, reason := "KEEP", "no_expected_wait"
+	costWaiting := false
 	if observationErr != nil {
 		reason = "upstream_observation_unavailable"
-	} else if capacity != nil && (capacity.ObservedAt.IsZero() || now.Sub(capacity.ObservedAt) > 5*time.Second) {
+	} else if capacity != nil && (capacity.ObservedAt.IsZero() || capacity.ObservedAt.After(now.Add(time.Second)) || now.Sub(capacity.ObservedAt) > 5*time.Second) {
 		reason = "worker_capacity_stale"
-	} else if queue != nil && (queue.ObservedAt.IsZero() || now.Sub(queue.ObservedAt) > 5*time.Second) {
+	} else if queue != nil && (queue.ObservedAt.IsZero() || queue.ObservedAt.After(now.Add(time.Second)) || now.Sub(queue.ObservedAt) > 5*time.Second) {
 		reason = "queue_observation_stale"
 	} else if s.State == "SUSPENDED" || s.State == "CHECKPOINTED" {
 		reason = "await_return_demand"
@@ -324,6 +336,13 @@ func (c *Controller) autonomousStep(snapshot *Session) {
 		}
 	} else {
 		decision, e := p.Decide(boundaryInput(s, request, p.Config(), now))
+		if c.cfg.SchedulerPolicy == "cost-aware" {
+			decision, e = c.costDecisionLocked(s, request, evidence, p.Config(), now)
+			costWaiting = e == nil && decision.Estimates.SafePoint && !a.ReturnDemand && !evidence.WaitStartedAt.IsZero() && a.ReleasePlan != nil
+			if costWaiting && a.CandidateSince.IsZero() {
+				a.CandidateSince = now
+			}
+		}
 		if e == nil {
 			action, reason = decision.Action, decision.Reason
 		}
@@ -338,13 +357,15 @@ func (c *Controller) autonomousStep(snapshot *Session) {
 		} else if now.Sub(a.CandidateSince) < c.cfg.SchedulerStableFor {
 			action, reason = "KEEP", "stable_wait_confirmation"
 		}
-	} else if action != "KEEP" || reason != "stable_wait_confirmation" {
+	} else if !costWaiting && (action != "KEEP" || reason != "stable_wait_confirmation") {
 		a.CandidateSince = time.Time{}
 	}
 	a.LastAction, a.Reason = action, reason
 	if action == "KEEP" {
 		if action != previousAction || reason != previousReason {
 			c.event(s, "autonomous.keep", reason)
+			_ = c.persistContext(c.operationContext(ctx, snapshot.TenantID, snapshot.SessionID, "autonomous"))
+		} else if c.cfg.SchedulerPolicy == "cost-aware" && c.dirty["sessions"][key(s.TenantID, s.SessionID)] {
 			_ = c.persistContext(c.operationContext(ctx, snapshot.TenantID, snapshot.SessionID, "autonomous"))
 		}
 		c.mu.Unlock()
@@ -415,16 +436,16 @@ func (c *Controller) requestReturnLocked(s *Session, input LifecycleRequest) (*R
 		return nil, problem(429, "return_demand_quota", "return demand capacity reached")
 	}
 	now := time.Now().UTC()
+	resetReleasePlan(s)
 	receipt := &ReturnDemandReceipt{OperationID: input.OperationID, ExpectedEpoch: input.ExpectedEpoch, Status: "PENDING", RequestedAt: now}
+	if s.Autonomous == nil {
+		s.Autonomous = &AutonomousState{Epoch: s.Epoch}
+	}
+	s.Autonomous.ReturnDemand = true
+	s.Autonomous.ReturnRequestedAt = now
 	if s.State == "RUNNING" && s.Gate == "OPEN" {
 		receipt.Status = "COMPLETED"
 		receipt.ResultEpoch = s.Epoch
-	} else {
-		if s.Autonomous == nil {
-			s.Autonomous = &AutonomousState{Epoch: s.Epoch}
-		}
-		s.Autonomous.ReturnDemand = true
-		s.Autonomous.ReturnRequestedAt = now
 	}
 	s.ReturnDemands[input.OperationID] = receipt
 	c.event(s, "autonomous.return_demand", input.OperationID)

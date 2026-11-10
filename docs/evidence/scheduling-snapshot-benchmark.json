@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "execution_kind": "go-scheduling-snapshot-microbenchmark",
+  "status": "passed",
+  "recorded_at": "2026-11-10T02:05:55.917676+00:00",
+  "iterations": 5,
+  "history_receipts": 4096,
+  "receipt_content_bytes": 1024,
+  "command": "GOMAXPROCS=2 GOFLAGS=-p=1 go test ./internal/control -run ^$ -bench ^BenchmarkSchedulingSnapshot$ -benchmem -benchtime=5x -count=1",
+  "source_sha256": {
+    "internal/control/idle_cost.go": "0cedf05e9cfd851d69e1543f09b5d9b58467a699dc9cb657e829d47daabdebdb",
+    "internal/control/idle_cost_test.go": "6d6fd93a5ec341c6adb14acbfb0c29ab291ae3970b11ee2141a8780365da7bcd"
+  },
+  "log": "docs/evidence/scheduling-snapshot-benchmark.txt",
+  "measurements": {
+    "bounded_observer": {
+      "ns_per_operation": 1825,
+      "bytes_per_operation": 939,
+      "allocations_per_operation": 6
+    },
+    "complete_history": {
+      "ns_per_operation": 13646485,
+      "bytes_per_operation": 15824185,
+      "allocations_per_operation": 12369
+    }
+  },
+  "scope": "single snapshot operation; service resource and SLO effects require live paired trials"
+}

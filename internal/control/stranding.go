@@ -168,6 +168,9 @@ func (c *Controller) ObserveIdle(ctx context.Context, tenant, id string, input I
 		window = &IdleWindow{OperationID: input.OperationID, Epoch: s.Epoch, StartedAt: now, ExpiresAt: now.Add(time.Duration(input.TTLMS) * time.Millisecond)}
 		s.IdleWindows[input.OperationID] = window
 		s.IdleSince = now
+		if s.State == "RUNNING" && s.Gate == "OPEN" && s.Autonomous != nil {
+			s.Autonomous.ReturnDemand = false
+		}
 	} else {
 		if window == nil {
 			return nil, problem(404, "idle_window_not_found", "idle window not found")
@@ -179,6 +182,7 @@ func (c *Controller) ObserveIdle(ctx context.Context, tenant, id string, input I
 			return copyValue(window), nil
 		}
 		window.FinishedAt = &now
+		resetReleasePlan(s)
 		if now.Before(window.ExpiresAt) {
 			c.observeLocked(ctx, "idle_window_ms", float64(now.Sub(window.StartedAt))/float64(time.Millisecond), "authenticated_idle_start_to_end_observation")
 		}

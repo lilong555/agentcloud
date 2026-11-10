@@ -13,6 +13,7 @@ AgentCloud 提供持久协调器、Dynamo 原生反馈、Substrate 生命周期�
 | DeerFlow | 真实模型、两个并发子任务、文件上传、70 个 PostgreSQL 图检查点、两阶段 manifest、新进程恢复与 MEMORY | [真实研究 Agent](evidence/real-model/realmodel-74bd7470d2c7/deerflow.json) |
 | Python Runtime | 通用运行时 29 项通过；锁定 DeerFlow 环境 20 项全部通过，含 PostgreSQL、新连接恢复、并发子任务与上传 | [通用契约](evidence/local-contract.json)、[DeerFlow 契约](evidence/deerflow-contracts-final.json)、[TLS](evidence/agents-runtime-tls.json) |
 | 成本协调 | 原生 classifier 排队观测、等待与快照成本估计、最小驻留、恢复冷却、并发操作排他 | [真实 HTTP 策略验收](evidence/service-scheduling.json) |
+| 条件成本策略 | 可选 `cost-aware`：含删失样本的条件等待预测、固定释放期限、恢复需求容量成本、重启持久化与竞态契约 | [策略与实机验收协议](COST_SCHEDULING.md)、[观察快照微基准](evidence/scheduling-snapshot-benchmark.json) |
 | 规模实验 | 四租户、两 Worker、N=8/16/32/64，60 组首轮中 58 组通过，10,765/10,800 请求；AgentCloud 12/12 组通过 | [完整矩阵与区间](evidence/scale-summary.json) |
 | 故障矩阵 | 15/15 类真实注入通过；PENDING、UID/epoch、lease、未知结果与事务失败保持安全状态，全部分片清理通过 | [逐项审计](evidence/faults-summary.json) |
 | 等待／内存热力图 | 9/9 trial、126/126 窗口，三个工作集与七档等待；同步报告资源收益和返回延迟 | [热力图](evidence/heatmap-summary.json) |

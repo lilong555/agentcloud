@@ -99,6 +99,10 @@ func (c *Controller) submitWithContext(ctx context.Context, tenant, id, logicalI
 	r.TraceParent = headers.Get("traceparent")
 	r.TraceState = headers.Get("tracestate")
 	s.IdleSince = time.Time{}
+	if s.Autonomous != nil && s.Autonomous.ReturnDemand {
+		resetReleasePlan(s)
+		s.Autonomous.ReturnDemand = false
+	}
 	s.DynamoFinalized = false
 	s.DynamoFinalizedSnapshot = nil
 	c.state.Requests[key(tenant, logicalID)] = r

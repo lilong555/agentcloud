@@ -156,7 +156,7 @@ func (c *Controller) ModelBoundary(ctx context.Context, tenant, id string, input
 		c.mu.Unlock()
 		return nil, problem(400, "invalid_cost_estimate", err.Error())
 	}
-	snapshot := copyValue(s)
+	snapshot := schedulingSnapshot(s)
 	c.operations.Add(1)
 	defer c.operations.Done()
 	c.mu.Unlock()
@@ -204,14 +204,20 @@ func (c *Controller) ModelBoundary(ctx context.Context, tenant, id string, input
 	if serverEvidence != nil {
 		estimateSource = "server_observed"
 	}
-	if input.ExpectedWaitMS == 0 {
+	if input.ExpectedWaitMS == 0 || c.cfg.SchedulerPolicy == "cost-aware" && input.ServerEvidence != nil {
 		input, serverEvidence = c.serverEstimateLocked(s, input, observation, nil, p.Config(), now)
 		estimateSource = "server_observed"
 	}
 	d, err := p.Decide(boundaryInput(s, input, p.Config(), now))
+	if c.cfg.SchedulerPolicy == "cost-aware" && estimateSource == "server_observed" {
+		d, err = c.costDecisionLocked(s, input, serverEvidence, p.Config(), now)
+	}
 	if err != nil {
 		c.mu.Unlock()
 		return nil, problem(400, "invalid_cost_estimate", err.Error())
+	}
+	if s.Autonomous != nil && s.Autonomous.ReturnDemand {
+		d.Action, d.Reason = "KEEP", "return_demand"
 	}
 	receipt := &BoundaryDecision{OperationID: input.OperationID, SessionID: id, ExpectedEpoch: input.ExpectedEpoch, ResultEpoch: s.Epoch, PayloadHash: hash, Status: "COMPLETED", SessionState: s.State, Decision: d, EstimateSource: estimateSource, ServerEvidence: serverEvidence, QueueObservation: observation, StartedAt: now, FinishedAt: &now}
 	if observeErr != nil {
@@ -221,7 +227,7 @@ func (c *Controller) ModelBoundary(ctx context.Context, tenant, id string, input
 		switch {
 		case observation.Source == "" || observation.Scope == "" || observation.ObservedAt.IsZero() || observation.ObservedAt.After(now.Add(time.Second)) || now.Sub(observation.ObservedAt) > 5*time.Second:
 			receipt.Decision.Action, receipt.Decision.Reason = "KEEP", "queue_observation_stale"
-		case observation.WaitingRequests == 0 && input.WorkerPressure == 0:
+		case observation.WaitingRequests == 0 && input.WorkerPressure == 0 && !(c.cfg.SchedulerPolicy == "cost-aware" && estimateSource == "server_observed"):
 			receipt.Decision.Action, receipt.Decision.Reason = "KEEP", "observed_queue_empty"
 		}
 	}

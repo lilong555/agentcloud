@@ -25,6 +25,7 @@ type Config struct {
 	SchedulerInterval         time.Duration
 	SchedulerStableFor        time.Duration
 	SchedulerIdlePrior        time.Duration
+	SchedulerPolicy           string
 	SchedulerConcurrency      int
 	CapacityObserver          CapacityObserver
 	Observability             *observability.Runtime
@@ -99,6 +100,12 @@ func New(ctx context.Context, cfg Config) (*Controller, error) {
 	}
 	if cfg.ModelTimeout == 0 {
 		cfg.ModelTimeout = 120 * time.Second
+	}
+	if cfg.SchedulerPolicy == "" {
+		cfg.SchedulerPolicy = "observed"
+	}
+	if cfg.SchedulerPolicy != "observed" && cfg.SchedulerPolicy != "cost-aware" {
+		return nil, errors.New("scheduler policy must be observed or cost-aware")
 	}
 	if cfg.ModelConcurrency < 1 || cfg.ModelConcurrency > 64 {
 		return nil, errors.New("model concurrency must be 1..64")
@@ -532,6 +539,7 @@ func (c *Controller) Tool(ctx context.Context, tenant, id string, input ToolRequ
 		}
 	}
 	s.IdleSince = time.Time{}
+	resetReleasePlan(s)
 	if s.Autonomous != nil {
 		s.Autonomous.ReturnDemand = false
 		for _, demand := range s.ReturnDemands {

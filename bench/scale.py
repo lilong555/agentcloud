@@ -25,6 +25,7 @@ from scripts.disk_guard import inspect
 
 ROOT=Path(__file__).resolve().parents[1]
 KINDS=('interactive','coding','research','batch')
+AUTONOMOUS_POLICIES=('agentcloud','cost-aware')
 
 
 class FairSlots:
@@ -101,7 +102,8 @@ class Trial:
             '--substrate-client-cert',str(self.args.client_dir/'router-cert.pem'),'--substrate-client-key',str(self.args.client_dir/'router-key.pem'),
             '--model-url',self.native.front,'--dynamo-control-url',self.native.control,
             '--dynamo-tenant-tokens-file',str(self.native.runtime_dir/'tenant-tokens.json'),'--enable-experiment-controls']
-        if self.policy=='agentcloud': command+=['--enable-autonomous-scheduler']
+        if self.policy in AUTONOMOUS_POLICIES: command+=['--enable-autonomous-scheduler']
+        if self.policy=='cost-aware': command+=['--scheduler-policy','cost-aware']
         self.coordinator_command=command;self.coordinator_env=env
         self.coordinator=subprocess.Popen(command,cwd=ROOT,env=env,stdout=self.log('coordinator.log'),stderr=subprocess.STDOUT,start_new_session=True)
         for _ in range(200):
@@ -109,7 +111,9 @@ class Trial:
             try:
                 caps=self.clients['tenant-a'].call('GET','/v1/capabilities')
                 if caps['execution_backend']!='substrate' or caps['journal_backend']!='postgresql': raise RuntimeError('real backend preflight failed')
-                if caps.get('autonomous_scheduler_enabled')!=(self.policy=='agentcloud'): raise RuntimeError('autonomous scheduler preflight failed')
+                if caps.get('autonomous_scheduler_enabled')!=(self.policy in AUTONOMOUS_POLICIES): raise RuntimeError('autonomous scheduler preflight failed')
+                expected_policy='cost-aware' if self.policy=='cost-aware' else 'observed'
+                if caps.get('scheduler_policy')!=expected_policy: raise RuntimeError('server scheduler policy differs from frozen trial')
                 self.event('preflight',capabilities=caps,native=self.native.control_call('capabilities')[1],config=self.config,
                     policy=self.policy,concurrent_workspaces=self.n,tenants=list(self.tokens),coordinator_command=command)
                 break
@@ -197,7 +201,7 @@ class Trial:
             queue=self.slots.acquire(entry['id'],self.config['request_deadline_seconds']);entry['resident']=True
         begin=time.time();entry['return_pending']=True
         try:
-            if self.policy=='agentcloud':
+            if self.policy in AUTONOMOUS_POLICIES:
                 body=dict(operation_id=operation,expected_epoch=state['epoch'])
                 demand=self.client(entry).call('POST',self.client(entry).path(entry['id'])+'/return-demand',body)
                 deadline=time.monotonic()+self.config['request_deadline_seconds']
@@ -230,7 +234,7 @@ class Trial:
         entry=dict(id=name,tenant=tenant,index=index,kind=KINDS[index%len(KINDS)],resident=False,state=None)
         self.sessions.append(entry);self.slots.acquire(name,self.config['request_deadline_seconds']);entry['resident']=True
         entry['state']=self.client(entry).call('POST','/v1/sessions',dict(session_id=name,workspace_id=name,actor_name='ac-'+name,
-            mode='external',profile=entry['kind'],ablation_group='E' if self.policy=='agentcloud' else 'B'))
+            mode='external',profile=entry['kind'],ablation_group='E' if self.policy in AUTONOMOUS_POLICIES else 'B'))
         installed=self.client(entry).tool(name,1,'install-workload','file_write',path='actor_mix.py',content=(ROOT/'bench/workloads/actor_mix.py').read_text())
         if installed['status']!='COMPLETED': raise RuntimeError('workload installation failed')
         entry['proof']=self.tool(entry,'start-ram',f'python3 actor_mix.py start --memory-mib {self.config["heap_mib"]}')
@@ -277,7 +281,7 @@ class Trial:
                                 window=self.client(entry).call('POST',self.client(entry).path(entry['id'])+'/idle-window',dict(operation_id=f'think-{turn}',expected_epoch=state['epoch'],phase='START',ttl_ms=600000))
                             entry['next_arrival']=row['completed_at']+gap
                     if result is not None and time.time()>=entry['next_arrival']: break
-                    if self.policy!='agentcloud' and not ttl_applied and time.time()>=row['submitted_at']+float(self.policy.split('-')[-1]):
+                    if self.policy not in AUTONOMOUS_POLICIES and not ttl_applied and time.time()>=row['submitted_at']+float(self.policy.split('-')[-1]):
                         self.suspend(entry,f'idle-{turn}');ttl_applied=True
                     if time.monotonic()>deadline: raise TimeoutError('model/idle deadline')
                     time.sleep(self.config['poll_seconds'])
@@ -351,7 +355,7 @@ class Trial:
             attempted_at=attempted_at,runner=dict(os=os.getenv('RUNNER_OS'),arch=os.getenv('RUNNER_ARCH'),name=os.getenv('RUNNER_NAME')),
             github_run_id=os.getenv('GITHUB_RUN_ID'),github_run_attempt=os.getenv('GITHUB_RUN_ATTEMPT'),
             arrival_pattern='closed-loop workspace trajectories with paired seeds and fixed think intervals',
-            scheduler_inputs='server_observed' if self.policy=='agentcloud' else 'static_ttl')
+            scheduler_inputs='server_observed' if self.policy in AUTONOMOUS_POLICIES else 'static_ttl')
         try:
             self.start()
             with futures.ThreadPoolExecutor(max_workers=self.config['worker_slots']) as pool: entries=list(pool.map(self.provision,range(self.n)))
@@ -380,7 +384,7 @@ class Trial:
                 states,traces=self.cleanup()
                 decisions=[d for s in states for d in s.get('scheduling',{}).values()]
                 report['autonomous_decisions']=dict(total=len(decisions),suspend=sum(d['decision']['action']=='SUSPEND' for d in decisions),all_server_observed=all(d.get('estimate_source')=='server_observed' for d in decisions))
-                if self.policy=='agentcloud' and (not decisions or not report['autonomous_decisions']['all_server_observed']):
+                if self.policy in AUTONOMOUS_POLICIES and (not decisions or not report['autonomous_decisions']['all_server_observed']):
                     report['status']='failed';report['error']='autonomous decisions lack server observation evidence'
                 if self.native:
                     report['final_native_capabilities']=self.native.control_call('capabilities')[1]
@@ -421,7 +425,7 @@ def main():
     for field,override,cast in [('concurrency',args.concurrency,int),('paired_seeds',args.seeds,int),('policies',args.policies,str)]:
         if override: config[field]=[cast(item) for item in override.split(',')]
     if os.getenv('GITHUB_ACTIONS')!='true' and max(config['concurrency'])>2: parser.error('N > 2 real Actor trials run on GitHub Actions; local memory is reserved for light validation')
-    if any(n<1 or n>64 for n in config['concurrency']) or any(p not in ('agentcloud','eager-0','static-2','static-5','static-15') for p in config['policies']): parser.error('invalid frozen matrix selection')
+    if any(n<1 or n>64 for n in config['concurrency']) or any(p not in ('agentcloud','cost-aware','eager-0','static-2','static-5','static-15') for p in config['policies']): parser.error('invalid frozen matrix selection')
     args.output_dir.mkdir(parents=True,exist_ok=True)
     plan=[(seed,n,policy) for seed in config['paired_seeds'] for n in config['concurrency'] for policy in config['policies']];random.Random(config['randomized_order_seed']).shuffle(plan)
     write_json(args.output_dir/'schedule.json',dict(config=config,order=plan,planned_requests=sum(n*len(config['context_tokens']) for _,n,_ in plan)))

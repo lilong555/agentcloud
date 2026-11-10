@@ -40,6 +40,19 @@ class ScaleAnalysisTests(unittest.TestCase):
         self.assertEqual(report['paired_comparisons'][0]['verdict'],'insufficient_complete_pairs')
         self.assertEqual(report['paired_comparisons'][0]['differences']['completion_fraction']['pairs_observed'],3)
 
+    def test_candidate_comparison_retains_all_baselines_and_failure_denominators(self):
+        rows=[trial('new-'+str(s),s,policy='cost-aware',seed=s) for s in (7101,7102,7103)]
+        rows += [trial('old-'+str(s),s,policy='agentcloud',seed=s) for s in (7101,7102,7103)]
+        rows += [trial('ttl-'+str(s),s,policy='static-2',seed=s,status='failed' if s==7103 else 'passed') for s in (7101,7102,7103)]
+        report=summarize(rows,samples=20,candidate='cost-aware')
+        self.assertEqual(report['candidate_policy'],'cost-aware')
+        comparisons={row['baseline']:row for row in report['paired_comparisons']}
+        self.assertEqual(set(comparisons),{'agentcloud','static-2'})
+        self.assertTrue(all(row['candidate']=='cost-aware' for row in comparisons.values()))
+        self.assertEqual(comparisons['static-2']['verdict'],'insufficient_complete_pairs')
+        self.assertEqual(report['all_attempts']['planned_requests'],18)
+        self.assertEqual(report['all_attempts']['completed_requests'],16)
+
     def test_source_changes_require_explicit_experiment_selection(self):
         a,b=trial('a',1),trial('b',2)
         b['source_sha256']={'workload':'changed'}

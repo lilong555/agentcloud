@@ -67,7 +67,7 @@ def matrix_coverage(trials, config):
         status='passed' if expected==observed and all(t['status']=='passed' for t in primary) and done==offered else 'incomplete')
 
 
-def summarize(trials, samples=2000, seed=9031):
+def summarize(trials, samples=2000, seed=9031, candidate="agentcloud"):
     if not trials or samples < 1:
         raise ValueError('at least one trial and positive bootstrap count required')
     provenance = {json.dumps(t.get('source_sha256', {}), sort_keys=True) for t in trials}
@@ -138,8 +138,8 @@ def summarize(trials, samples=2000, seed=9031):
         groups.append(row)
     comparisons = []
     for concurrency in sorted({t['concurrency'] for t in primary}):
-        autonomous = {t['seed']: t for t in primary if t['concurrency'] == concurrency and t['policy'] == 'agentcloud'}
-        for policy in sorted({t['policy'] for t in primary if t['policy'] != 'agentcloud'}):
+        autonomous = {t['seed']: t for t in primary if t['concurrency'] == concurrency and t['policy'] == candidate}
+        for policy in sorted({t['policy'] for t in primary if t['policy'] != candidate}):
             baseline = {t['seed']: t for t in primary if t['concurrency'] == concurrency and t['policy'] == policy}
             seeds = sorted(autonomous.keys() & baseline.keys())
             if not seeds:
@@ -156,9 +156,9 @@ def summarize(trials, samples=2000, seed=9031):
                 joint = (changes['stranded_worker_gb_s']['paired_seed_bootstrap_ci95'][1] < 0
                           and changes['goodput_per_second']['paired_seed_bootstrap_ci95'][0] >= 0
                           and changes['interactive_p95']['paired_seed_bootstrap_ci95'][1] <= 0)
-            comparisons.append(dict(concurrency=concurrency, baseline=policy, paired_seeds=seeds, differences=changes,
+            comparisons.append(dict(concurrency=concurrency, candidate=candidate, baseline=policy, paired_seeds=seeds, differences=changes,
                 verdict='supported_joint_improvement' if joint else ('tradeoff_or_uncertain' if fully_observed else 'insufficient_complete_pairs')))
-    return dict(groups=groups, paired_comparisons=comparisons, attempt_audit=audit,
+    return dict(candidate_policy=candidate, groups=groups, paired_comparisons=comparisons, attempt_audit=audit,
         all_attempts=dict(trials=len(trials), failed_trials=sum(t['status'] != 'passed' for t in trials),
             planned_requests=sum(planned(t) for t in trials), completed_requests=sum(len(completed(t)) for t in trials)),
         primary_selection='earliest attempt per concurrency, policy and seed; independent of outcome',
@@ -178,7 +178,7 @@ def figures(report, output):
     metrics = [(f'ttft_p{p}', f'TTFT p{p} (s)') for p in PERCENTILES]
     metrics += [(f'resume_p{p}', f'Resume p{p} (s)') for p in PERCENTILES]
     metrics += [('completion_fraction','Request completion fraction'), ('goodput_per_second','Interactive goodput (req/s)'), ('stranded_worker_gb_s','Stranded reservation (GB s)')]
-    colors = dict(zip(['eager-0','static-2','static-5','static-15','agentcloud'], ['#6c757d','#e69f00','#56b4e9','#cc79a7','#0072b2']))
+    colors = dict(zip(['eager-0','static-2','static-5','static-15','agentcloud','cost-aware'], ['#6c757d','#e69f00','#56b4e9','#cc79a7','#0072b2','#009e73']))
     for ax, (metric, title) in zip(axes.flat, metrics):
         for policy, color in colors.items():
             def value(row):
@@ -208,6 +208,7 @@ def main():
     p.add_argument('--input-dir', type=Path, default=Path('docs/evidence/scale'))
     p.add_argument('--output', type=Path, default=Path('docs/evidence/scale-summary.json'))
     p.add_argument('--source-commit')
+    p.add_argument('--candidate', default='agentcloud', choices=['agentcloud','cost-aware'])
     p.add_argument('--matrix-config', type=Path, default=Path('bench/configs/scale-live.json'))
     p.add_argument('--bootstrap-samples', type=int, default=2000)
     p.add_argument('--skip-figures', action='store_true')
@@ -218,7 +219,7 @@ def main():
         selected = [(path,t) for path,t in selected if t.get('source_commit') == args.source_commit]
     selected = [(path,with_cleanup(path,t)) for path,t in selected]
     paths,trials=zip(*selected) if selected else ([],[])
-    result = summarize(trials, args.bootstrap_samples)
+    result = summarize(trials, args.bootstrap_samples, candidate=args.candidate)
     result['matrix'] = matrix_coverage(trials, json.loads(args.matrix_config.read_text()))
     result.update(schema_version=2, execution_kind='real-substrate-memory-native-dynamo-cpu-mocker',
         upstream_execution=True, gpu_execution=False, source_commit_filter=args.source_commit, sources=[str(path) for path in paths])

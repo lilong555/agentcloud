@@ -34,6 +34,10 @@ flowchart LR
 
 Worker 压力取 Actor 槽位占用率与内存预留占用率的较大值。恢复候选同时满足 ACTIVE、正注册 epoch、已发布 sandbox class 和默认运行时兼容版本，再逐 Worker 检查可分配空间，保留资源碎片信息。尚在初始化的 Worker 记录于 `unready_workers`，待运行时注册完成后参与容量判断。内存来自真实 assignment，包含运行时预留开销。
 
+## 条件成本策略
+
+`--scheduler-policy cost-aware` 使用有界的条件剩余等待估计与固定阶段期限；待恢复会话形成容量成本输入。默认策略为 `observed`。预测样本、生命周期安全条件、开销证据和实机对照协议见[条件等待与成本期限调度](COST_SCHEDULING.md)。
+
 ## Agent 接入
 
 In-Actor 模型循环先持久登记逻辑请求，模型完成后调度器登记返回需求。Actor 恢复并 attach 后认领原请求；KEEP 路径可在同一 epoch 继续执行模型工具调用。

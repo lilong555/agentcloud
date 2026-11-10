@@ -3,9 +3,9 @@ on:
   workflow_dispatch:
     inputs:
       scope:
-        description: 'smoke: one 8-workspace trial; matrix: all 60 paired trials'
+        description: 'smoke/matrix: established policy; cost-smoke/cost-matrix: paired cost-aware evaluation'
         type: choice
-        options: [smoke, matrix]
+        options: [smoke, matrix, cost-smoke, cost-matrix]
         default: smoke
       max_parallel:
         description: 'Independent GitHub hosted runners'
@@ -33,6 +33,8 @@ jobs:
           policies=['eager-0','static-2','static-5','static-15','agentcloud']
           cases=[dict(n=n,policy=policy,seed=seed) for n,policy,seed in itertools.product([8,16,32,64],policies,[7101,7102,7103])]
           if os.environ['SCOPE']=='smoke': cases=[dict(n=8,policy='agentcloud',seed=7101)]
+          if os.environ['SCOPE']=='cost-smoke': cases=[dict(n=8,policy=p,seed=7101) for p in ['static-2','agentcloud','cost-aware']]
+          if os.environ['SCOPE']=='cost-matrix': cases=[dict(n=n,policy=p,seed=s) for n,p,s in itertools.product([32,64],policies+['cost-aware'],[7101,7102,7103])]
           with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('matrix='+json.dumps({'include':cases})+'\n')
           PY
   native:
