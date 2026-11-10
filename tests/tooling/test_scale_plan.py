@@ -33,6 +33,23 @@ class ScalePlanTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             matrix('unfrozen')
 
+    def test_targeted_rerun_retains_frozen_workload_and_seed(self):
+        selected = [dict(n=16, policy=policy, seed=7202, scenario='tail') for policy in ('agentcloud', 'cost-aware')]
+        filtered = matrix('workload-matrix', json.dumps(selected))['include']
+        original = matrix('workload-matrix')['include']
+        self.assertEqual(len(filtered), 2)
+        for case in filtered:
+            self.assertIn(case, original)
+            self.assertEqual(case['config'], 'bench/configs/cost-tail-matrix.json')
+        self.assertEqual({c['policy'] for c in filtered}, {'agentcloud', 'cost-aware'})
+
+    def test_targeted_rerun_rejects_empty_duplicate_or_changed_coordinates(self):
+        good = dict(n=16, policy='agentcloud', seed=7202, scenario='tail')
+        for selected in [[], {}, [good, good], [dict(good, n=17)], [dict(good, seed=True)],
+                         [dict(good, config='unfrozen.json')], [dict(good, policy='unknown')]]:
+            with self.subTest(selected=selected), self.assertRaises(ValueError):
+                matrix('workload-matrix', json.dumps(selected))
+
 
 if __name__ == '__main__':
     unittest.main()

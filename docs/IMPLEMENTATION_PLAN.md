@@ -39,7 +39,7 @@ Substrate fencing 使用同一 Actor lease 下可核验的 `expected_uid` 与 `e
 
 ## 实验与资源
 
-日常协议测试使用 CPU。推理调度实验采用真实 native Router 与官方 Mocker；Substrate 快照与恢复实验记录真实宿主、runtime、存储和 WorkerPool。真实模型用于少量 Agent 功能任务与轨迹录制，真实 GPU 实验作为后续独立验收。
+日常协议测试使用 CPU。推理调度实验采用真实 native Router 与官方 Mocker；Substrate 快照与恢复实验记录真实宿主、runtime、存储和 WorkerPool。Azure CPA 真实模型用于多轮 Agent 功能任务与轨迹录制。本地 CUDA 验收测量实际 KV、显存归还、竞争推理与重建成本，原生 Dynamo GPU 引擎联动使用独立验收配置。
 
 时间压缩同步调整到达间隔、工具等待、TTL、半衰期和预计返回时间；真实快照成本独立测量。主要结果包括逻辑准入等待、正确任务 Goodput、Actor 驻留资源积分、恢复延迟和失败率。所有性能结论以实测环境和证据等级为准。
 

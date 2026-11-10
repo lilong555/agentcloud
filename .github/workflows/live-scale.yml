@@ -15,6 +15,10 @@ on:
         description: 'Reuse a successful Native upstream validation run; empty builds native sources'
         type: string
         default: ''
+      trial_filter:
+        description: 'Optional JSON array of existing n/policy/seed/scenario coordinates for a targeted rerun'
+        type: string
+        default: ''
 permissions:
   contents: read
   actions: read
@@ -28,11 +32,14 @@ jobs:
       - id: plan
         env:
           SCOPE: ${{ inputs.scope || 'smoke' }}
+          TRIAL_FILTER: ${{ inputs.trial_filter }}
         run: |
           python3 - <<'PY'
           import json,os
           from bench.scale_plan import matrix
-          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('matrix='+json.dumps(matrix(os.environ['SCOPE']))+'\n')
+          selected=matrix(os.environ['SCOPE'],os.environ.get('TRIAL_FILTER',''))
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('matrix='+json.dumps(selected)+'\n')
+          print(json.dumps(selected))
           PY
   native:
     if: '!inputs.native_run_id'

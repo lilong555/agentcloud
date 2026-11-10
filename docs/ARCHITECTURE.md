@@ -46,7 +46,7 @@ flowchart TB
     C --> E
 ```
 
-[规模矩阵](evidence/scale-summary.json)保存首轮 60 组及两个补充重跑，[故障矩阵](evidence/faults-summary.json)验证 15 个窗口，[阶段测量](evidence/control-plane-summary.json)记录持久化、准入和恢复开销。当前容量证据覆盖同节点两个 Worker 的多租户竞争，跨节点扩展与物理 GPU 资源使用独立配置验收。
+[规模矩阵](evidence/scale-summary.json)保存首轮 60 组及两个补充重跑，[条件成本矩阵](evidence/cost-matrix-1bd80b2-summary.json)记录另外 36 组对照，[故障矩阵](evidence/faults-32e3d6e-summary.json)验证 16 个窗口，[阶段测量](evidence/control-plane-summary.json)记录持久化、准入和恢复开销。当前容量证据覆盖同节点两个 Worker 的多租户竞争，跨节点扩展使用独立配置验收。[CUDA 实测](GPU_VALIDATION.md)提供本地物理 KV、竞争吞吐和重建成本。
 
 ## 控制面事务
 

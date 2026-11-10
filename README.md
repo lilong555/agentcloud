@@ -2,9 +2,11 @@
 
 AgentCloud 将 Agent 执行生命周期与 LLM 准入调度连接起来。Go 协调器根据真实排队、Worker 容量与恢复成本自动选择驻留、挂起和恢复；PostgreSQL 增量实体事务保存请求、工具回执与恢复 manifest。Dynamo 原生 Rust 扩展向 ThunderAgent 提供执行反馈和有界会话回收，Substrate 扩展提供 Actor 身份 fencing、快照持久化与实际恢复回执。
 
-Azure CPA 的真实 `gpt-6-luna` 已完成多文件 Coding 修复与 DeerFlow 研究任务。Coding Agent 经过 8 轮推理和 11 次工具调用修改两个源码文件，原有 4 项测试通过，8 次 gVisor MEMORY 恢复保持内存状态连续。DeerFlow 完成两个并发子任务、文件上传、70 个 PostgreSQL 图检查点与新进程恢复。[完整真实模型证据](docs/evidence/deep-agents-summary.json)保留全部验收尝试和清理结果。
+Azure CPA 的真实 `gpt-6-luna` 已完成多文件 Coding 修复与 DeerFlow 研究任务。[自主 Coding](docs/evidence/real-model/realmodel-f1c226e84ad1/acceptance.json)经过 8 轮推理和 10 次工具调用修改两个源码文件，原有 4 项测试通过，8 次 gVisor MEMORY 恢复保持内存状态连续，外部观察器的 Actor GET 为零。DeerFlow 完成两个并发子任务、文件上传、70 个 PostgreSQL 图检查点与新进程恢复。[真实模型验收索引](docs/evidence/deep-agents-summary.json)保留任务轨迹和清理结果。
 
-规模验收已完成 60 组首轮运行、10,765/10,800 请求；两个失败配置经定向重跑完成 432/432 请求；AgentCloud 的 12/12 组全部通过，15/15 类实机故障和等待／内存热力图 126/126 窗口均通过。N=32/64 时，相比 TTL=15 秒，闲置预留分别减少 53.5%/50.1%，Goodput 提高 24.8%/11.7%，交互 p95 同时改善。TTL=2 秒在当前负载下仍有较低资源占用和较高 Goodput。[完整对照与置信区间](docs/EXPERIMENTS.md)保留全部策略、首轮失败和重跑。
+基础规模验收完成 60 组首轮运行、10,765/10,800 请求；两个失败配置经定向重跑完成 432/432 请求；AgentCloud 的 12/12 组全部通过，16/16 类实机故障和等待／内存热力图 126/126 窗口均通过。N=32/64 时，相比 TTL=15 秒，闲置预留分别减少 53.5%/50.1%，Goodput 提高 24.8%/11.7%，交互 p95 同时改善。TTL=2 秒在该负载下具有较低资源占用和较高 Goodput。[完整对照与置信区间](docs/EXPERIMENTS.md)保留全部策略、首轮失败和重跑。
+
+可选 `cost-aware` 策略的 [36 组对照](docs/COST_SCHEDULING.md)完成 9,865/10,368 个请求；其六组均完成，长尾和分布变化样本呈现资源与延迟取舍。默认策略为 `observed`。[本地 CUDA 测量](docs/GPU_VALIDATION.md)使用 RTX 4070 与真实 OPT-125M KV：高显存压力下，释放闲置 KV 并计入全部重建成本，总耗时下降约 22.5%；低压力下保留 KV 更快。
 
 ## 快速运行
 
@@ -93,7 +95,7 @@ make live-suite
 
 `make live-bench` 单独执行真实 Substrate / Dynamo 消融。实验记录首 token、容量排队、MEMORY 恢复、Worker 保留内存积分和响应丢失后的幂等恢复，输出 JSON、CSV 与独立图表。
 
-大规模验收使用 GitHub Actions 的 `Real Actor scale experiments` 和 `Live fault and break-even acceptance`：四租户、两 Worker、N=8/16/32/64、六轮 1K～16K 上下文、TTL=0/2/5/15s 与自主调度，以及 15 类真实故障和等待／内存热力图。工作流复用经过源码摘要核验的原生 wheel；每个 runner 独立创建和清理数据库、Actor、Tag 与 Kind 集群。最新完成状态见[交付状态](docs/STATUS.md)。
+大规模验收使用 GitHub Actions 的 `Real Actor scale experiments` 和 `Live fault and break-even acceptance`：四租户、两 Worker、N=8/16/32/64、六轮 1K～16K 上下文、TTL=0/2/5/15s 与自主调度，以及 16 类真实故障和等待／内存热力图。工作流复用经过源码摘要核验的原生 wheel；每个 runner 独立创建和清理数据库、Actor、Tag 与 Kind 集群。最新完成状态见[交付状态](docs/STATUS.md)。
 
 普通 CI 执行契约、构建、竞态、源码还原以及锁定 DeerFlow／PostgreSQL 契约；重型工作流提供真实 Kind/gVisor、Rust Frontend 与 CPU Mocker 的运行证据。
 

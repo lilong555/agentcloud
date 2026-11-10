@@ -7,17 +7,17 @@ AgentCloud 提供持久协调器、Dynamo 原生反馈、Substrate 生命周期�
 | Go 协调器 | PostgreSQL 增量实体事务、revision CAS、提交读隔离、幂等回执、UNKNOWN 保留、服务端观测与迟滞调度 | [Go、PostgreSQL、竞态与静态检查](evidence/local-contract.json) |
 | Dynamo Rust | 认证控制通道、opaque session / inference lease、原生 ACTING 预算、TTL 回退、暂停、取消、final；有界回收与 HTTP 401 拒收旧 lease | [65 项原生 Router 测试](evidence/upstream-patches-native-tests.json)、[16 项真实进程验收](evidence/dynamo-native-mocker.json)、[64 轮回收](evidence/native-run-42698285379.json) |
 | Substrate | 同 lease UID/version fencing、指定快照 durable、Tag 来源核验、实际恢复 fidelity | [PostgreSQL 与运行时测试矩阵](evidence/substrate-test-matrix.json) |
-| 真实 In-Actor | 真实模型 8 轮推理、10 次工具调用，修改两个源码文件，原有测试通过；自主调度完成 8 次 MEMORY 恢复，保持 AST／上下文对象身份，观察器 Actor GET 为零 | [自主调度真实任务](evidence/real-model/realmodel-ab7bd4e7b2bb/acceptance.json) |
+| 真实 In-Actor | 真实模型 8 轮推理、10 次工具调用，修改两个源码文件，原有测试通过；自主调度完成 8 次 MEMORY 恢复，保持 AST／上下文对象身份，观察器 Actor GET 为零 | [自主调度真实任务](evidence/real-model/realmodel-f1c226e84ad1/acceptance.json) |
 | 真实外置客户端 | HTTP 写入、安全点、挂起期间推理完成、MEMORY 恢复、跨 epoch 原回执读取，最终释放 Worker | [完整服务验收](evidence/service-substrate.json) |
 | 独立快照副本 | Tag UID、源 Actor UID、源 snapshot UUID/generation 与 manifest 一致，独立存储对象 COMPLETED | [原生 GetTag 核验](evidence/substrate-retained-tag.json) |
 | DeerFlow | 真实模型、两个并发子任务、文件上传、70 个 PostgreSQL 图检查点、两阶段 manifest、新进程恢复与 MEMORY | [真实研究 Agent](evidence/real-model/realmodel-74bd7470d2c7/deerflow.json) |
-| Python Runtime | 持久终态发布、只读控制面观察、跨 epoch 回执、具备能力协商的有界传输恢复与 attach 安全点保护；锁定 DeerFlow 环境 20 项全部通过 | [通用契约](evidence/local-contract.json)、[独立 CI](evidence/ci-run-42750472998.json)、[协议](../runtime/README.md) |
+| Python Runtime | 持久终态发布、只读控制面观察、跨 epoch 回执、具备能力协商的有界传输恢复与 attach 安全点保护；锁定 DeerFlow 环境 20 项全部通过 | [通用契约](evidence/local-contract.json)、[独立 CI](evidence/ci-run-42755373452.json)、[协议](../runtime/README.md) |
 | 成本协调 | 原生 classifier 排队观测、等待与快照成本估计、最小驻留、恢复冷却、并发操作排他 | [真实 HTTP 策略验收](evidence/service-scheduling.json) |
 | 条件成本策略 | 可选 `cost-aware`：含删失样本的条件等待预测、固定释放期限、恢复需求容量成本、重启持久化与竞态契约 | [策略与实机验收协议](COST_SCHEDULING.md)、[观察快照微基准](evidence/scheduling-snapshot-benchmark.json) |
 | CUDA 物理 KV | RTX 4070 Laptop、预训练 OPT-125M、12 组 KEEP/释放对照；固定 3 GiB 显存预算，真实 KV、竞争推理、重建成本与进程退出 | [物理 GPU 验证](GPU_VALIDATION.md) |
 | 规模实验 | 四租户、两 Worker、N=8/16/32/64，60 组首轮中 58 组通过，10,765/10,800 请求；AgentCloud 12/12 组通过 | [完整矩阵与区间](evidence/scale-summary.json) |
 | 条件成本规模实验 | N=32/64、六策略、三个种子，30/36 组通过，9,865/10,368 请求；cost-aware 6/6 组、1,728/1,728 请求 | [完整结果与失败分母](evidence/cost-matrix-1bd80b2-summary.json) |
-| 故障矩阵 | 16/16 类真实注入通过；容量等待跨协调器重启恢复，PENDING、UID/epoch、lease、未知结果与事务失败保持安全状态，全部分片清理通过 | [逐项审计](evidence/faults-d3b0566-summary.json) |
+| 故障矩阵 | 16/16 类真实注入通过；容量等待跨协调器重启恢复，PENDING、UID/epoch、lease、未知结果与事务失败保持安全状态，全部分片清理通过 | [逐项审计](evidence/faults-32e3d6e-summary.json) |
 | 等待／内存热力图 | 9/9 trial、126/126 窗口，三个工作集与七档等待；同步报告资源收益和返回延迟 | [热力图](evidence/heatmap-summary.json) |
 | 控制面开销 | N=64 协调器平均 0.173 CPU 核，采样峰值 RSS 71.71 MiB；提交 p95/p99 为 19.037/97.197 ms | [阶段测量](evidence/control-plane-summary.json) |
 | 源码复现 | 固定上游 SHA、完整修改文件与摘要，在全新 checkout 还原并核验 | [源码复现](evidence/source-reproduction.json) |
@@ -33,10 +33,12 @@ AgentCloud 提供持久协调器、Dynamo 原生反馈、Substrate 生命周期�
 | [等待／内存热力图](https://github.com/lilong555/agentcloud/actions/runs/42694984376) | `dc9081f` | 热力图 126/126 窗口通过；同一历史 workflow 的故障分片保留失败状态 |
 | [15 类实机故障](https://github.com/lilong555/agentcloud/actions/runs/42706024235) | `d1223e3` | 15/15 通过，四个分片资源清理通过 |
 | [16 类实机故障](https://github.com/lilong555/agentcloud/actions/runs/42750623733) | `d3b0566` | 16/16 通过，包含真实槽位饱和、持久等待、重启与同操作恢复；四分片清理通过 |
+| [运行时重试协议下的 16 类故障](https://github.com/lilong555/agentcloud/actions/runs/42755459432) | `32e3d6e` | 16/16 通过，四个分片与资源清理全部通过 |
 | [当前运行时烟雾测试](https://github.com/lilong555/agentcloud/actions/runs/42701929437) | `717d0ea` | 48/48 请求完成，两个 Worker，清理通过 |
 | [条件成本烟雾对照](https://github.com/lilong555/agentcloud/actions/runs/42740998570) | `e966b47` | TTL2、observed、cost-aware 三组，144/144 请求及清理通过 |
 | [三场景烟雾首轮](https://github.com/lilong555/agentcloud/actions/runs/42742201307) | `1bd80b2` | 7/9 trial、426/432 请求，9/9 清理；原始失败和分母保留 |
 | [真实 Coding 自主调度](https://github.com/lilong555/agentcloud/actions/runs/42746880453) | `a25010f` | `gpt-6-luna` 完成多文件修复，8 次 MEMORY 恢复、持久终态与资源清理通过 |
+| [运行时重试协议下的真实 Coding](https://github.com/lilong555/agentcloud/actions/runs/42755477699) | `32e3d6e` | 8 轮模型、10 次工具调用、两个文件修复、8 次 MEMORY 恢复；观察器 Actor GET 为零，清理通过 |
 | [条件成本完整矩阵](https://github.com/lilong555/agentcloud/actions/runs/42743170099) | `1bd80b2` | 30/36 trial、9,865/10,368 请求；36/36 runner 清理通过，六组失败保留 |
 | [条件成本烟雾对照](https://github.com/lilong555/agentcloud/actions/runs/42746882665) | `a25010f` | 三策略 144/144 请求与清理通过 |
 | [三场景烟雾对照](https://github.com/lilong555/agentcloud/actions/runs/42746885292) | `a25010f` | 八组完成 384 请求；长尾 observed 在环境准备阶段退出，48 个未投递请求保留，9/9 清理通过 |

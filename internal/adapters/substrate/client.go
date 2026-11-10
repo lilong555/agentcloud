@@ -110,11 +110,17 @@ func (c *Client) Create(ctx context.Context, name, template string) (Summary, er
 	return summarize(actor), err
 }
 func (c *Client) Suspend(ctx context.Context, name, uid string, version int64) (Summary, error) {
-	resp, err := c.control.SuspendActor(ctx, &ateapi.SuspendActorRequest{Actor: c.ref(name), ExpectedUid: uid, ExpectedVersion: version, Options: &ateapi.SuspendOptions{Mode: ateapi.DurabilityMode_DURABILITY_MODE_ASYNCHRONOUS}})
+	request := &ateapi.SuspendActorRequest{Actor: c.ref(name), ExpectedUid: uid, ExpectedVersion: version, Options: &ateapi.SuspendOptions{Mode: ateapi.DurabilityMode_DURABILITY_MODE_ASYNCHRONOUS}}
+	resp, err := actorLeaseCall(ctx, uid, version, func() (*ateapi.SuspendActorResponse, error) {
+		return c.control.SuspendActor(ctx, request)
+	})
 	return summarize(resp.GetActor()), err
 }
 func (c *Client) Resume(ctx context.Context, name, uid string, version int64) (Summary, error) {
-	resp, err := c.control.ResumeActor(ctx, &ateapi.ResumeActorRequest{Actor: c.ref(name), ExpectedUid: uid, ExpectedVersion: version})
+	request := &ateapi.ResumeActorRequest{Actor: c.ref(name), ExpectedUid: uid, ExpectedVersion: version}
+	resp, err := actorLeaseCall(ctx, uid, version, func() (*ateapi.ResumeActorResponse, error) {
+		return c.control.ResumeActor(ctx, request)
+	})
 	summary := summarize(resp.GetActor())
 	summary.Resumed = resp.GetResumed()
 	applyRestore(&summary, resp.GetRestore())

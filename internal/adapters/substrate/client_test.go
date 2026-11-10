@@ -91,7 +91,7 @@ func (s *testControl) CreateTag(_ context.Context, r *ateapi.CreateTagRequest) (
 	return s.tag, nil
 }
 
-func testClient(t *testing.T, s *testControl) *Client {
+func testClient(t *testing.T, s ateapi.ControlServer) *Client {
 	t.Helper()
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
