@@ -7,6 +7,7 @@ import io
 import json
 import os
 from pathlib import Path
+import platform
 import subprocess
 import sys
 import urllib.request
@@ -83,6 +84,7 @@ def main(argv=None):
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=UPSTREAM, text=True).strip()
     report = provenance(wheels[0], head, digest(ROOT / "integrations/dynamo/manifest.json"))
     report.update(build_command=command, protoc_sha256=PROTOC_SHA,
+                  build_libc=dict(zip(("name", "version"), platform.libc_ver())),
                   project_commit=subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip())
     (output / "provenance.json").write_text(json.dumps(report, indent=2) + "\n")
     (output / "indexer-help.txt").write_text(smoke.stdout)

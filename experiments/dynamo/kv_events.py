@@ -245,6 +245,10 @@ def preflight(args):
         core_files = [dist.locate_file(p) for p in dist.files or [] if str(p).endswith(".so") and "_core" in str(p)]
         check("installed_native_core", len(core_files) == 1 and sha(core_files[0]) == proof["core_sha256"],
               [str(p) for p in core_files])
+        native_import = subprocess.run([sys.executable, "-c", "import dynamo._core"],
+                                       capture_output=True, text=True, timeout=20)
+        check("native_runtime_loadable", native_import.returncode == 0,
+              {"exit_code": native_import.returncode, "stderr": native_import.stderr[-2000:]})
     except (OSError, KeyError, ValueError, metadata.PackageNotFoundError, subprocess.SubprocessError) as exc:
         check("native_wheel_provenance", False, str(exc))
     available = memory()["MemAvailable"] / 2**20
