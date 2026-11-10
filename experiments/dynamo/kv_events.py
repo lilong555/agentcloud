@@ -254,7 +254,9 @@ def preflight(args):
         check("native_wheel_provenance", False, str(exc))
     available = memory()["MemAvailable"] / 2**20
     free_disk = shutil.disk_usage(ROOT).free / 2**30
-    check("host_headroom", available >= args.min_available_mib, available)
+    required_headroom = args.min_available_mib + args.max_pss_mib
+    check("host_headroom", available >= required_headroom,
+          {"available_mib": available, "required_start_mib": required_headroom})
     check("disk_headroom", free_disk >= 12, free_disk)
     try:
         gpu = gpu_read()
@@ -595,7 +597,7 @@ def arguments(argv=None):
     parser.add_argument("--pressure-requests", type=int, default=12)
     parser.add_argument("--freshness-seconds", type=float, default=5)
     args = parser.parse_args(argv)
-    if not (512 <= args.max_rss_mib <= 4096 and 512 <= args.max_pss_mib <= 2560 and
+    if not (512 <= args.max_rss_mib <= 4608 and 512 <= args.max_pss_mib <= 3072 and
             1536 <= args.min_available_mib and
             512 <= args.gpu_budget_mib <= 3072 and 4 <= args.pressure_requests <= 32 and
             0 < args.freshness_seconds <= 30):
