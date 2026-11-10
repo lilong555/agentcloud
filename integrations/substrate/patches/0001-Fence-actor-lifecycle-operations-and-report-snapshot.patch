@@ -1,4 +1,4 @@
-From e181dcecc70c943eac330cd845e473cf49be1af9 Mon Sep 17 00:00:00 2001
+From 017027a03c05fa8c4a409859ac8bd96dfaa2c0ee Mon Sep 17 00:00:00 2001
 From: lilong555 <173714821+lilong555@users.noreply.github.com>
 Date: Tue, 10 Nov 2026 00:00:00 +0000
 Subject: [PATCH 1/2] Fence actor lifecycle operations and report snapshot
@@ -5416,10 +5416,10 @@ index 5ac0b4fe4648a71decaec5c6e2bd10c6332e464c..0fec77e5023d422f503f57a741267632
  			return nil, store.ErrNotFound
 diff --git a/cmd/ateapi/internal/store/atepg/actor_read_retry_test.go b/cmd/ateapi/internal/store/atepg/actor_read_retry_test.go
 new file mode 100644
-index 0000000000000000000000000000000000000000..d45e6fdc3e9afe87d93cc566f1814aa575c21b63
+index 0000000000000000000000000000000000000000..ff87ee46e15d50010d641874a0924b19442becb5
 --- /dev/null
 +++ b/cmd/ateapi/internal/store/atepg/actor_read_retry_test.go
-@@ -0,0 +1,138 @@
+@@ -0,0 +1,157 @@
 +// Copyright 2026 The Agent Substrate Authors
 +//
 +// Licensed under the Apache License, Version 2.0 (the "License");
@@ -5439,8 +5439,8 @@ index 0000000000000000000000000000000000000000..d45e6fdc3e9afe87d93cc566f1814aa5
 +import (
 +	"context"
 +	"errors"
++	"io"
 +	"net"
-+	"os"
 +	"strings"
 +	"sync/atomic"
 +	"testing"
@@ -5455,15 +5455,23 @@ index 0000000000000000000000000000000000000000..d45e6fdc3e9afe87d93cc566f1814aa5
 +)
 +
 +type queryReadFault struct {
-+	prefix   string
-+	queries  atomic.Int32
-+	pending  atomic.Bool
-+	injected atomic.Int32
++	prefix          string
++	queries         atomic.Int32
++	pending         atomic.Bool
++	injected        atomic.Int32
++	firstBackendPID atomic.Uint32
++	retryBackendPID atomic.Uint32
 +}
 +
-+func (f *queryReadFault) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
-+	if strings.HasPrefix(strings.TrimSpace(data.SQL), f.prefix) && f.queries.Add(1) == 1 {
-+		f.pending.Store(true)
++func (f *queryReadFault) TraceQueryStart(ctx context.Context, conn *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
++	if strings.HasPrefix(strings.TrimSpace(data.SQL), f.prefix) {
++		switch f.queries.Add(1) {
++		case 1:
++			f.firstBackendPID.Store(conn.PgConn().PID())
++			f.pending.Store(true)
++		case 2:
++			f.retryBackendPID.Store(conn.PgConn().PID())
++		}
 +	}
 +	return ctx
 +}
@@ -5479,7 +5487,9 @@ index 0000000000000000000000000000000000000000..d45e6fdc3e9afe87d93cc566f1814aa5
 +	n, err := c.Conn.Read(data)
 +	if n > 0 && c.fault.pending.CompareAndSwap(true, false) {
 +		c.fault.injected.Add(1)
-+		return 0, &net.OpError{Op: "read", Net: "tcp", Err: os.ErrDeadlineExceeded}
++		// The response bytes are lost, so terminate this protocol exchange.
++		_ = c.Conn.Close()
++		return 0, io.EOF
 +	}
 +	return n, err
 +}
@@ -5527,6 +5537,10 @@ index 0000000000000000000000000000000000000000..d45e6fdc3e9afe87d93cc566f1814aa5
 +	if err != nil || !proto.Equal(actual, actor) || fault.queries.Load() != 2 || fault.injected.Load() != 1 {
 +		t.Fatalf("read did not recover the original record: actor=%v error=%v queries=%d faults=%d", actual, err, fault.queries.Load(), fault.injected.Load())
 +	}
++	firstPID, retryPID := fault.firstBackendPID.Load(), fault.retryBackendPID.Load()
++	if firstPID == 0 || retryPID == 0 || firstPID == retryPID {
++		t.Fatalf("read retry did not acquire a new PostgreSQL connection: first_pid=%d retry_pid=%d", firstPID, retryPID)
++	}
 +	_, err = reader.GetActor(ctx, resources.ActorRef{Atespace: "team-read-retry", Name: "missing"})
 +	if !errors.Is(err, store.ErrNotFound) || fault.queries.Load() != 3 {
 +		t.Fatalf("missing row was retried or remapped: error=%v queries=%d", err, fault.queries.Load())
@@ -5553,7 +5567,12 @@ index 0000000000000000000000000000000000000000..d45e6fdc3e9afe87d93cc566f1814aa5
 +	if err == nil || mutations != 1 || fault.queries.Load() != 1 || fault.injected.Load() != 1 {
 +		t.Fatalf("ambiguous write was replayed: mutations=%d queries=%d faults=%d error=%v", mutations, fault.queries.Load(), fault.injected.Load(), err)
 +	}
-+	stored, err := s.GetActor(ctx, resources.ActorRefFromActor(actor))
++	if ctx.Err() != nil {
++		t.Fatalf("write transport fault exhausted the operation context: error=%v context=%v", err, ctx.Err())
++	}
++	verifyCtx, verifyCancel := context.WithTimeout(t.Context(), 10*time.Second)
++	defer verifyCancel()
++	stored, err := s.GetActor(verifyCtx, resources.ActorRefFromActor(actor))
 +	if err != nil || stored.GetMetadata().GetVersion() != actor.GetMetadata().GetVersion()+1 || stored.GetStatus().GetState() != ateapi.ActorState_ACTOR_STATE_SUSPENDED {
 +		t.Fatalf("lost write response did not preserve one committed mutation: actor=%v error=%v", stored, err)
 +	}
