@@ -10,7 +10,7 @@ import shutil
 import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
-REPORTS = {'scale': 'result.json', 'faults': 'fault-matrix.json', 'heatmap': 'heatmap.json'}
+REPORTS = {'scale': 'result.json', 'faults': 'fault-matrix.json', 'heatmap': 'heatmap.json', 'real-model': 'acceptance.json'}
 
 
 def reports_for_run(source, kind, run_id, attempt=None):

@@ -47,6 +47,8 @@ class Acceptance:
         self.report = dict(schema_version=1, run_id=self.run_id, status='failed',
             generated_at=datetime.now(timezone.utc).isoformat(),
             execution_kind='real-model-substrate-memory-postgresql', model=self.settings['model'],
+            lifecycle_policy=args.lifecycle_policy, github_run_id=os.getenv('GITHUB_RUN_ID'),
+            github_run_attempt=os.getenv('GITHUB_RUN_ATTEMPT'),
             source_commit=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
             source_sha256={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest()
                 for p in list((ROOT/'runtime').rglob('*.py'))+list((ROOT/'adapters/deerflow').glob('*.py'))
@@ -92,6 +94,8 @@ class Acceptance:
     def forward(self, service, port):
         try:
             with socket.create_connection(('127.0.0.1', port), timeout=.2):
+                if self.args.reuse_port_forwards:
+                    return
                 raise RuntimeError(f'port {port} already has a listener; use an isolated acceptance run')
         except (ConnectionRefusedError, socket.timeout):
             pass
@@ -118,8 +122,11 @@ class Acceptance:
         self.env.update(AGENTCLOUD_TOKEN=token, AGENTCLOUD_RUNTIME_TOKEN=runtime_token,
             AGENTCLOUD_TOKENS=token + '=tenant-a', AGENTCLOUD_MODEL_API_KEY=self.settings['api_key'])
         if self.args.ssh_host:
-            self.spawn('cpa-relay', [sys.executable, 'scripts/cpa_ssh_relay.py',
-                '--model-config', str(self.args.model_config), '--ssh-host', self.args.ssh_host])
+            command = [sys.executable, 'scripts/cpa_ssh_relay.py',
+                '--model-config', str(self.args.model_config), '--ssh-host', self.args.ssh_host]
+            if self.args.ssh_config:
+                command += ['--ssh-config', str(self.args.ssh_config)]
+            self.spawn('cpa-relay', command)
         model = Client(self.settings['base_url'], self.settings['api_key'], timeout=45)
         deadline = time.monotonic() + 60
         while True:
@@ -158,6 +165,8 @@ class Acceptance:
             '--model-timeout', '300s', '--actor-coordinator-url', 'http://coordinator.agentcloud.test:8092',
             '--substrate-ca', str(client / 'ca.pem'), '--substrate-token-file', str(client / 'token'),
             '--substrate-client-cert', str(client / 'router-cert.pem'), '--substrate-client-key', str(client / 'router-key.pem')]
+        if self.args.lifecycle_policy != 'manual':
+            command += ['--enable-autonomous-scheduler', '--scheduler-policy', self.args.lifecycle_policy]
         process = self.spawn('coordinator', command)
         self.cloud = Client('http://127.0.0.1:8092', token, timeout=60)
         deadline = time.monotonic() + 30
@@ -168,6 +177,10 @@ class Acceptance:
                 caps = self.cloud.call('GET', '/v1/capabilities')
                 if caps['execution_backend'] != 'substrate' or caps['journal_backend'] != 'postgresql':
                     raise RuntimeError('acceptance requires real Substrate and PostgreSQL')
+                if caps.get('autonomous_scheduler_enabled') != (self.args.lifecycle_policy != 'manual'):
+                    raise RuntimeError('coordinator autonomous scheduler configuration differs')
+                if self.args.lifecycle_policy != 'manual' and caps.get('scheduler_policy') != self.args.lifecycle_policy:
+                    raise RuntimeError('coordinator policy differs from selected acceptance')
                 self.report['capabilities'] = caps
                 self.ready = True
                 return
@@ -181,6 +194,7 @@ class Acceptance:
             path = self.output / 'coding.json'
             self.run_command('coding', [sys.executable, '-m', 'runtime.coding.agent_demo',
                 '--run-id', self.run_id, '--actor-name', actor, '--model-name', self.settings['model'],
+                '--lifecycle-policy', self.args.lifecycle_policy,
                 '--runtime-header', 'ate-target-actor=agentcloud/' + actor,
                 '--timeout', str(self.args.timeout), '--output', str(path)], self.args.timeout + 30)
             evidence = json.loads(path.read_text())
@@ -195,9 +209,16 @@ class Acceptance:
             final=evidence['after']['repository_memory']['source_sha256']
             if any(final.get(name)!=sha for name,sha in original.items() if name.startswith('tests/')):
                 raise RuntimeError('original acceptance tests were modified')
+            continuity = evidence['continuity']
+            if continuity['resumed_turns'] < 1:
+                raise RuntimeError('coding acceptance requires an observed MEMORY resume during the real task')
+            if self.args.lifecycle_policy != 'manual' and (evidence['observation']['actor_get_requests'] != 0 or
+                    evidence['observation']['source'] != 'durable_control_receipt'):
+                raise RuntimeError('autonomous acceptance requires control-plane-only observation')
             self.report['components']['coding'] = dict(status='passed', evidence=str(path.relative_to(ROOT)),
                 model_turns=evidence['after']['autonomous_model_turns'], tool_calls=len(trace),
-                modified_files=evidence['after']['modified_files'], memory_resumes=len(evidence['lifecycle']))
+                modified_files=evidence['after']['modified_files'], memory_resumes=continuity['resumed_turns'],
+                kept_model_turns=continuity['kept_turns'], actor_get_requests=evidence['observation']['actor_get_requests'])
         if 'deerflow' in self.args.components:
             path = self.output / 'deerflow.json'
             command = [str(ROOT / 'adapters/deerflow/.venv/bin/python'), '-m', 'adapters.deerflow.substrate_smoke',
@@ -285,6 +306,9 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--model-config', type=Path, required=True)
     p.add_argument('--ssh-host')
+    p.add_argument('--ssh-config', type=Path)
+    p.add_argument('--reuse-port-forwards', action='store_true')
+    p.add_argument('--lifecycle-policy', choices=('manual', 'observed', 'cost-aware'), default='manual')
     p.add_argument('--client-dir', type=Path, default=ROOT / 'artifacts/substrate/client')
     p.add_argument('--template', type=Path, default=ROOT / 'artifacts/substrate/runtime-spec/actor-template.json')
     p.add_argument('--output-dir', type=Path, default=ROOT / 'docs/evidence/real-model')
@@ -297,6 +321,8 @@ def main():
     args.components = args.components.split(',')
     if not args.components or any(item not in ('coding', 'deerflow') for item in args.components):
         p.error('components must contain coding and/or deerflow')
+    if args.lifecycle_policy != 'manual' and args.components != ['coding']:
+        p.error('autonomous lifecycle acceptance selects the coding component')
     os.chdir(ROOT)
     return Acceptance(args).run()
 

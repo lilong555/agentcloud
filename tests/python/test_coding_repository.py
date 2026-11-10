@@ -14,6 +14,7 @@ class CodingRepositoryTests(unittest.TestCase):
         class KeptCoordinator:
             def __init__(self,tools): self.tools=tools;self.payloads={}
             def session(self,sid): return dict(epoch=1,state='RUNNING')
+            session_status=session
             def tool(self,sid,epoch,op,kind,**args): return self.tools.execute(dict(epoch=epoch,tool_op_id=op,kind=kind,**args))
             def request(self,sid,identity,payload): self.payloads[identity]=payload;return {'status':'PENDING'}
             def get_request(self,sid,identity): return {'status':'COMPLETED'}
@@ -108,6 +109,7 @@ class CodingRepositoryTests(unittest.TestCase):
         class ToolCallingModel:
             def __init__(self,tools): self.tools=tools;self.epoch=1;self.payloads={}
             def session(self,sid): return dict(epoch=self.epoch,state='RUNNING',actual_fidelity='MEMORY')
+            session_status=session
             def tool(self,sid,epoch,op,kind,**args): return self.tools.execute(dict(epoch=epoch,tool_op_id=op,kind=kind,**args))
             def request(self,sid,logical,payload): self.payloads[logical]=payload;return {'status':'PENDING'}
             def get_request(self,sid,logical): return {'status':'COMPLETED'}

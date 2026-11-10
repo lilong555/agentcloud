@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from pathlib import Path
 import re
 import threading
 import time
@@ -52,7 +53,7 @@ class ActorAgentRuntime:
     def memory_metrics(self):
         values={}
         try:
-            for line in open('/proc/self/status'):
+            for line in Path('/proc/self/status').read_text().splitlines():
                 key, _, value=line.partition(':')
                 if key in ('VmRSS', 'VmSize'):
                     values[key]=int(value.strip().split()[0])*1024

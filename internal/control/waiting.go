@@ -109,6 +109,11 @@ func (c *Controller) waitHistoryLocked(s *Session, now time.Time) (string, time.
 		}
 	}
 	if active == nil {
+		// The Actor can be computing between HTTP tools. Only registered model
+		// waits and explicit idle windows identify its safe waiting phase.
+		if s.Mode == "in-actor" {
+			return "in_actor_execution", time.Time{}, nil
+		}
 		for _, window := range s.IdleWindows {
 			if window.FinishedAt == nil && window.StartedAt.Equal(started) && !now.Before(window.ExpiresAt) {
 				return "expired_idle", time.Time{}, nil

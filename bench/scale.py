@@ -16,6 +16,7 @@ from types import SimpleNamespace
 import uuid
 
 from bench.analysis.resources import integrate
+from bench.scale_validation import autonomous_evidence, record_failure
 from bench.postgres import connection, execute
 from bench.substrate_live import Evidence, clean, quantile, timestamp, write_json
 from bench.worker_readiness import current_workers, placement_capacity
@@ -333,6 +334,14 @@ class Trial:
         objects={};states=[];diagnostics={};journal={}
         for entry in self.sessions:
             try:
+                # A task can fail before issuing its terminal inference turn.
+                # The control plane retires only bindings with resolved model
+                # outcomes; UNKNOWN remains available for reconciliation.
+                if self.native:
+                    try:
+                        self.client(entry).call('POST',self.client(entry).path(entry['id'])+'/finalize',{})
+                    except Exception as exc:
+                        self.event('native_cleanup_finalize_error',session_id=entry['id'],error=str(exc))
                 state=self.client(entry).session(entry['id']);states.append(clean(state));entry['state']=state
                 actor=state['actor']
                 if actor.get('uid'): objects[actor['uid']]=dict(kind='actor',name=actor['name'],uid=actor['uid'])
@@ -395,14 +404,13 @@ class Trial:
             report.update(requests=self.rows,resumes=self.resumes,sessions=[dict(id=e['id'],tenant=e['tenant'],status=e.get('status'),error=e.get('error')) for e in self.sessions])
             try:
                 states,traces=self.cleanup()
-                decisions=[d for s in states for d in s.get('scheduling',{}).values()]
-                report['autonomous_decisions']=dict(total=len(decisions),suspend=sum(d['decision']['action']=='SUSPEND' for d in decisions),all_server_observed=all(d.get('estimate_source')=='server_observed' for d in decisions))
-                if self.policy in AUTONOMOUS_POLICIES and (not decisions or not report['autonomous_decisions']['all_server_observed']):
-                    report['status']='failed';report['error']='autonomous decisions lack server observation evidence'
+                report['autonomous_decisions']=autonomous_evidence(states)
+                if self.policy in AUTONOMOUS_POLICIES and not report['autonomous_decisions']['server_observation_complete']:
+                    record_failure(report,'autonomous decisions lack server observation evidence')
                 if self.native:
                     report['final_native_capabilities']=self.native.control_call('capabilities')[1]
                     if report['final_native_capabilities'].get('active_bindings')!=0:
-                        report['status']='failed';report['error']='native binding capacity remains allocated after terminal turns'
+                        record_failure(report,'native binding capacity remains allocated after terminal turns')
             except Exception as exc: report['cleanup_error']=str(exc);report['status']='failed'
             for process in (self.probe,self.coordinator):
                 if process and process.poll() is None:

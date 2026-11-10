@@ -11,7 +11,7 @@ AgentCloud 提供持久协调器、Dynamo 原生反馈、Substrate 生命周期�
 | 真实外置客户端 | HTTP 写入、安全点、挂起期间推理完成、MEMORY 恢复、跨 epoch 原回执读取，最终释放 Worker | [完整服务验收](evidence/service-substrate.json) |
 | 独立快照副本 | Tag UID、源 Actor UID、源 snapshot UUID/generation 与 manifest 一致，独立存储对象 COMPLETED | [原生 GetTag 核验](evidence/substrate-retained-tag.json) |
 | DeerFlow | 真实模型、两个并发子任务、文件上传、70 个 PostgreSQL 图检查点、两阶段 manifest、新进程恢复与 MEMORY | [真实研究 Agent](evidence/real-model/realmodel-74bd7470d2c7/deerflow.json) |
-| Python Runtime | 通用运行时 29 项通过；锁定 DeerFlow 环境 20 项全部通过，含 PostgreSQL、新连接恢复、并发子任务与上传 | [通用契约](evidence/local-contract.json)、[DeerFlow 契约](evidence/deerflow-contracts-final.json)、[TLS](evidence/agents-runtime-tls.json) |
+| Python Runtime | 持久终态发布、只读控制面观察、跨 epoch 回执；锁定 DeerFlow 环境 20 项全部通过，含 PostgreSQL、新连接恢复、并发子任务与上传 | [通用契约](evidence/local-contract.json)、[独立 CI](evidence/ci-run-42742116903.json)、[TLS](evidence/agents-runtime-tls.json) |
 | 成本协调 | 原生 classifier 排队观测、等待与快照成本估计、最小驻留、恢复冷却、并发操作排他 | [真实 HTTP 策略验收](evidence/service-scheduling.json) |
 | 条件成本策略 | 可选 `cost-aware`：含删失样本的条件等待预测、固定释放期限、恢复需求容量成本、重启持久化与竞态契约 | [策略与实机验收协议](COST_SCHEDULING.md)、[观察快照微基准](evidence/scheduling-snapshot-benchmark.json) |
 | 规模实验 | 四租户、两 Worker、N=8/16/32/64，60 组首轮中 58 组通过，10,765/10,800 请求；AgentCloud 12/12 组通过 | [完整矩阵与区间](evidence/scale-summary.json) |
@@ -31,8 +31,12 @@ AgentCloud 提供持久协调器、Dynamo 原生反馈、Substrate 生命周期�
 | [等待／内存热力图](https://github.com/lilong555/agentcloud/actions/runs/42694984376) | `dc9081f` | 热力图 126/126 窗口通过；同一历史 workflow 的故障分片保留失败状态 |
 | [15 类实机故障](https://github.com/lilong555/agentcloud/actions/runs/42706024235) | `d1223e3` | 15/15 通过，四个分片资源清理通过 |
 | [当前运行时烟雾测试](https://github.com/lilong555/agentcloud/actions/runs/42701929437) | `717d0ea` | 48/48 请求完成，两个 Worker，清理通过 |
+| [条件成本烟雾对照](https://github.com/lilong555/agentcloud/actions/runs/42740998570) | `e966b47` | TTL2、observed、cost-aware 三组，144/144 请求及清理通过 |
+| [三场景烟雾首轮](https://github.com/lilong555/agentcloud/actions/runs/42742201307) | `1bd80b2` | 7/9 trial、426/432 请求，9/9 清理；原始失败和分母保留 |
 
 N=32 和 N=64 时，AgentCloud 相比 TTL15 的 Stranded、Goodput 与交互 p95 达到预声明联合区间判据。闲置预留分别减少 53.52%/50.08%，Goodput 提高 24.81%/11.68%。TTL2 在当前负载下仍具有较低资源成本和较高 Goodput；全部策略及置信区间见[实验报告](EXPERIMENTS.md)。N=64 为四槽位饱和配置，交互 p95 为 237.983 秒，生产容量需要按业务 SLO 规划。
+
+`cost-aware` 的初次 N=8 单种子试验相对 observed 降低 Stranded 24.4%、交互 p95 23.6%；TTL2 的 Stranded 仍更低。三场景的原始报告及失败诊断见[条件成本对照](COST_SCHEDULING.md)。默认策略保持 `observed`。
 
 ## 实测环境
 

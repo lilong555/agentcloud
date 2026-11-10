@@ -84,8 +84,14 @@ class Client:
     def session(self, session_id: str) -> dict:
         return self.call('GET', self.path(session_id))
 
+    def session_status(self, session_id: str) -> dict:
+        return self.call('GET', self.path(session_id) + '/status')
+
     def tool(self, session_id: str, epoch: int, tool_op_id: str, kind: str, **kwargs) -> dict:
         return self.call('POST', self.path(session_id) + '/tools', dict(epoch=epoch, tool_op_id=tool_op_id, kind=kind, **kwargs))
+
+    def tool_receipt(self, session_id: str, tool_op_id: str) -> dict:
+        return self.call('GET', self.path(session_id) + '/tools/' + urllib.parse.quote(tool_op_id, safe=''))
 
     def lifecycle(self, session_id: str, action: str, epoch: int, operation_id: str) -> dict:
         return self.call('POST', self.path(session_id) + '/' + action, dict(expected_epoch=epoch, operation_id=operation_id))

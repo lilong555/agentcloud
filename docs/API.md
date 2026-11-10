@@ -12,7 +12,9 @@
 | `POST /v1/sessions` | `session_id`、`workspace_id`、`mode`（`external` / `in-actor`）、可选 `profile` 与实验 `ablation_group` |
 | `GET /v1/sessions` | 当前租户会话列表 |
 | `GET /v1/sessions/{id}` | 状态、epoch、gate、Actor、manifest 与回执 |
+| `GET /v1/sessions/{id}/status` | 有界轮询字段：状态、epoch、gate、活跃工具数、fidelity 与 manifest |
 | `POST /v1/sessions/{id}/tools` | `tool_op_id`、`epoch`、`kind` 与工具输入 |
+| `GET /v1/sessions/{id}/tools/{tool_op_id}` | 读取单条持久工具回执，保持 Actor 当前状态 |
 | `POST /v1/sessions/{id}/checkpoint` | `operation_id`、`expected_epoch`、可选 `checkpoint_id` |
 | `POST /v1/sessions/{id}/suspend` | `operation_id`、`expected_epoch` |
 | `POST /v1/sessions/{id}/resume` | `operation_id`、`expected_epoch` |
@@ -20,6 +22,7 @@
 | `POST /v1/sessions/{id}/requests` | `logical_request_id`、OpenAI `payload` |
 | `GET /v1/sessions/{id}/requests/{request_id}` | 观察持久请求状态、首 token 与到达时间 |
 | `POST /v1/sessions/{id}/requests/{request_id}/claim` | 使用当前 `epoch` 认领完成结果 |
+| `POST /v1/sessions/{id}/return-demand` | `operation_id`、`expected_epoch`、可选 `after_model_request` |
 | `GET /v1/events?after_seq=N` | 租户事件；保留窗口缺口返回 410 |
 | `GET /metrics` | 认证后的 Prometheus 文本指标 |
 
@@ -32,6 +35,8 @@
 ## 持久语义
 
 工具 ID 绑定业务输入，同一输入重试返回原持久回执。恢复后的新 epoch 可读取同一 ID 的原结果。新工具须使用当前 epoch，并通过 OPEN gate。工具执行前记录 RUNNING；完成后发布终态与连续 receipt 水位。
+
+单条工具查询经过租户鉴权和持久提交读隔离，直接读取回执。挂起后的观察保持 Sandbox 休眠。自主调度的 `return-demand` 可附带 `after_model_request`：协调器在模型登记使用的同一临界区内，核验指定请求属于本会话且已完成，并确认所有模型结果已确定。条件满足后登记恢复需求，新的模型登记消费该需求；同一操作重放返回原回执。条件失效返回 `409 return_condition_unmet`，保留当前等待阶段。
 
 Checkpoint 先关闭准入，等待已准入工具完成，再生成快照和 COMMITTED manifest。会话进入 `CHECKPOINTED` 并保持 CLOSED。Suspend 可复用此安全点；Resume 在 manifest、Actor UID、快照身份和水位核验通过后增加 epoch，并打开 gate。Substrate manifest 还绑定独立保留 Tag 的 UID。外置 Harness 的 `checkpoint_id` 对应其持久图检查点。
 

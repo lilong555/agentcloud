@@ -31,7 +31,7 @@ with response:
 
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--model-config',type=Path,required=True);p.add_argument('--ssh-host',required=True);p.add_argument('--port',type=int,default=18317);args=p.parse_args()
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--model-config',type=Path,required=True);p.add_argument('--ssh-host',required=True);p.add_argument('--ssh-config',type=Path);p.add_argument('--port',type=int,default=18317);args=p.parse_args()
     config=json.loads(args.model_config.read_text());key=config['api_key']
     slots=threading.BoundedSemaphore(4)
     class Handler(http.server.BaseHTTPRequestHandler):
@@ -50,7 +50,8 @@ def main():
                 print(json.dumps(dict(event='request_read',bytes=len(body))),file=sys.stderr,flush=True)
                 data=dict(method=self.command,path=self.path,body=base64.b64encode(body).decode(),key=key)
                 proxy='ProxyCommand='+shlex.quote(sys.executable)+' '+shlex.quote(str(Path(__file__).with_name('ssh_transport.py')))+' %h %p'
-                result=subprocess.run(['ssh','-T','-o','BatchMode=yes','-o','ConnectTimeout=10','-o',proxy,args.ssh_host,'python3 -c '+shlex.quote(REMOTE)],input=json.dumps(data)+'\n',capture_output=True,text=True,timeout=300)
+                command=['ssh']+(['-F',str(args.ssh_config)] if args.ssh_config else [])
+                result=subprocess.run(command+['-T','-o','BatchMode=yes','-o','ConnectTimeout=10','-o',proxy,args.ssh_host,'python3 -c '+shlex.quote(REMOTE)],input=json.dumps(data)+'\n',capture_output=True,text=True,timeout=300)
                 print(json.dumps(dict(event='upstream_complete',returncode=result.returncode,seconds=time.monotonic()-started)),file=sys.stderr,flush=True)
                 if result.returncode: raise RuntimeError('upstream SSH request failed')
                 reply=json.loads(result.stdout);payload=base64.b64decode(reply['body'])

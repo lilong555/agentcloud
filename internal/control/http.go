@@ -125,6 +125,22 @@ func (c *Controller) Handler() http.Handler {
 		respond(w, code, receipt)
 		return nil
 	}))
+	mux.HandleFunc("GET /v1/sessions/{id}/status", c.authenticated(func(w http.ResponseWriter, r *http.Request, tenant string) error {
+		result, err := c.SessionStatus(tenant, r.PathValue("id"))
+		if err != nil {
+			return err
+		}
+		respond(w, 200, result)
+		return nil
+	}))
+	mux.HandleFunc("GET /v1/sessions/{id}/tools/{tool}", c.authenticated(func(w http.ResponseWriter, r *http.Request, tenant string) error {
+		receipt, err := c.ToolStatus(tenant, r.PathValue("id"), r.PathValue("tool"))
+		if err != nil {
+			return err
+		}
+		respond(w, 200, receipt)
+		return nil
+	}))
 	for _, action := range []string{"checkpoint", "suspend", "resume"} {
 		mux.HandleFunc("POST /v1/sessions/{id}/"+action, c.authenticated(func(w http.ResponseWriter, r *http.Request, tenant string) error {
 			var input LifecycleRequest

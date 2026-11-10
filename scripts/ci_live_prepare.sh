@@ -30,7 +30,7 @@ for port in (9443,9444):
             if time.monotonic()>deadline:raise
             time.sleep(.1)
 PY
-python3 deploy/substrate/configure-matrix.py --workers 2
+python3 deploy/substrate/configure-matrix.py --workers 2 --worker-memory-mib "${AGENTCLOUD_CI_WORKER_MEMORY_MIB:-768}"
 go build -o artifacts/substrate/bench-worker-probe ./bench/worker_probe
 go build -o artifacts/substrate/bench-cleanup ./bench/cleanup
 df -h /

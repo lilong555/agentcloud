@@ -134,7 +134,7 @@ func (c *Controller) serverEstimateLocked(s *Session, input ModelBoundaryRequest
 	if idleCount == 0 {
 		idleService, idleSource, idleCount = c.scopedMetricEstimateLocked(s, "idle_until_tool_ms", c.cfg.SchedulerIdlePrior.Milliseconds())
 	}
-	if current == nil && !s.IdleSince.IsZero() && idleService > 0 {
+	if current == nil && s.Mode != "in-actor" && !s.IdleSince.IsZero() && idleService > 0 {
 		expected = max(expected, max(int64(0), idleService-now.Sub(s.IdleSince).Milliseconds()))
 		evidence.Sources = append(evidence.Sources, idleSource)
 	}
@@ -406,11 +406,12 @@ func (c *Controller) autonomousStep(snapshot *Session) {
 }
 
 type ReturnDemandReceipt struct {
-	OperationID   string    `json:"operation_id"`
-	ExpectedEpoch uint64    `json:"expected_epoch"`
-	ResultEpoch   uint64    `json:"result_epoch,omitempty"`
-	Status        string    `json:"status"`
-	RequestedAt   time.Time `json:"requested_at"`
+	OperationID       string    `json:"operation_id"`
+	ExpectedEpoch     uint64    `json:"expected_epoch"`
+	AfterModelRequest string    `json:"after_model_request,omitempty"`
+	ResultEpoch       uint64    `json:"result_epoch,omitempty"`
+	Status            string    `json:"status"`
+	RequestedAt       time.Time `json:"requested_at"`
 }
 
 func (c *Controller) requestReturnLocked(s *Session, input LifecycleRequest) (*ReturnDemandReceipt, error) {
@@ -421,8 +422,8 @@ func (c *Controller) requestReturnLocked(s *Session, input LifecycleRequest) (*R
 		s.ReturnDemands = map[string]*ReturnDemandReceipt{}
 	}
 	if prior := s.ReturnDemands[input.OperationID]; prior != nil {
-		if prior.ExpectedEpoch != input.ExpectedEpoch {
-			return nil, problem(409, "payload_conflict", "return operation belongs to another epoch")
+		if prior.ExpectedEpoch != input.ExpectedEpoch || prior.AfterModelRequest != input.AfterModelRequest {
+			return nil, problem(409, "payload_conflict", "return operation has another epoch or model condition")
 		}
 		return copyValue(prior), nil
 	}
@@ -432,12 +433,26 @@ func (c *Controller) requestReturnLocked(s *Session, input LifecycleRequest) (*R
 	if s.State == "RECOVERY_REQUIRED" || s.State == "CREATING" {
 		return nil, problem(409, "recovery_required", "return requires a reconciled session")
 	}
+	// Check the observer's condition in the same critical section as Submit.
+	// A completed model can wake its tool/publication continuation without
+	// accidentally cancelling the safe wait of a newly registered model.
+	if input.AfterModelRequest != "" {
+		r := c.state.Requests[key(s.TenantID, input.AfterModelRequest)]
+		if r == nil || r.SessionID != s.SessionID || r.Status != "COMPLETED" {
+			return nil, problem(409, "return_condition_unmet", "the referenced model request must be completed in this session")
+		}
+		for _, pending := range c.state.Requests {
+			if pending.TenantID == s.TenantID && pending.SessionID == s.SessionID && (pending.Status == "PENDING" || pending.Status == "DISPATCHING" || pending.Status == "OUTCOME_UNKNOWN") {
+				return nil, problem(409, "return_condition_unmet", "all model outcomes in this session must be resolved")
+			}
+		}
+	}
 	if len(s.ReturnDemands) >= 4096 {
 		return nil, problem(429, "return_demand_quota", "return demand capacity reached")
 	}
 	now := time.Now().UTC()
 	resetReleasePlan(s)
-	receipt := &ReturnDemandReceipt{OperationID: input.OperationID, ExpectedEpoch: input.ExpectedEpoch, Status: "PENDING", RequestedAt: now}
+	receipt := &ReturnDemandReceipt{OperationID: input.OperationID, ExpectedEpoch: input.ExpectedEpoch, AfterModelRequest: input.AfterModelRequest, Status: "PENDING", RequestedAt: now}
 	if s.Autonomous == nil {
 		s.Autonomous = &AutonomousState{Epoch: s.Epoch}
 	}
@@ -452,7 +467,7 @@ func (c *Controller) requestReturnLocked(s *Session, input LifecycleRequest) (*R
 	return copyValue(receipt), nil
 }
 func (c *Controller) ReturnDemand(ctx context.Context, tenant, id string, input LifecycleRequest) (*ReturnDemandReceipt, error) {
-	if !validID(input.OperationID) || input.ExpectedEpoch == 0 {
+	if !validID(input.OperationID) || input.ExpectedEpoch == 0 || input.AfterModelRequest != "" && !validID(input.AfterModelRequest) {
 		return nil, problem(400, "invalid_operation", "operation_id and expected_epoch are required")
 	}
 	ctx = c.operationContext(ctx, tenant, id, input.OperationID)

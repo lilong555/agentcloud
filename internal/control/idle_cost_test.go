@@ -134,6 +134,25 @@ func TestCostReleaseRespectsSafetyAndWaitingReturnCapacity(t *testing.T) {
 	}
 }
 
+func TestCostCapacityUsesObservedActorMemoryLimit(t *testing.T) {
+	now := time.Now().UTC()
+	c, s, cfg := costFixture(now)
+	s.Actor.AssignedMemoryBytes = 256 * 1024 * 1024
+	for i := 0; i < 4; i++ {
+		peer := &Session{TenantID: "peer", SessionID: fmt.Sprint(i), State: "SUSPENDED", Autonomous: &AutonomousState{ReturnDemand: true}}
+		c.state.Sessions[key(peer.TenantID, peer.SessionID)] = peer
+	}
+	e := predictionEvidence(now, -1)
+	e.WorkerCapacity = &CapacityObservation{CapacityActors: 2000, CapacityMemoryBytes: 1024 * 1024 * 1024}
+	if _, err := c.costDecisionLocked(s, ModelBoundaryRequest{}, e, cfg, now); err != nil {
+		t.Fatal(err)
+	}
+	plan := s.Autonomous.ReleasePlan
+	if plan.WorkerSlots != 4 || plan.HoldingRate != 2 || plan.BreakEvenWaitMS != 100 {
+		t.Fatalf("logical actor count hid the physical memory budget: %+v", plan)
+	}
+}
+
 func TestWaitHistoryContainsLiveCensoringAndNoFutureLabels(t *testing.T) {
 	now := time.Now().UTC()
 	c, s, _ := costFixture(now)

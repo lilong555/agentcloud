@@ -33,11 +33,15 @@ candidate_deadlines = start + [ceil(b/2), b, 2b]
 J(delay) = integral(S(a+u)/S(a), u=0..delay) + b*S(a+delay)/S(a)
 ```
 
+`worker_slots` 取 Worker 的 Actor 数量上限与内存容量可容纳当前 Actor 的数量两者中的较小值，按服务端实测容量和 Actor 已分配内存计算，并写入释放计划。
+
 支持充分时选择条件期望成本最低的候选期限；成本相同时选择较晚期限。冷启动及尾部支持不足时采用 `start+b`。后续观测可以提前已经发布的释放期限；最晚期限固定为 `start+2b`。阶段内的成本和容量加价保持初始值，新的阶段重新读取实际观测。
 
 候选预算同时约束恢复后的最短保留时间。安全点、最小驻留、连续有效观测的稳定窗口、epoch fencing 和持久回执继续控制执行。观测失联、执行工具和未知副作用期间保留当前资源；诊断显示原定期限与实际生命周期耗时。该成本采用归一化时间单位，Worker 内存积分和业务 SLO 使用实机测量。
 
 已运行会话收到返回需求后立即保留资源，需求持续到工具准入、下一次模型登记或新的闲置 START。在上游队列观测期间到达的返回需求会在生命周期二次校验中生效。
+
+In-Actor 模式在本地计算期间保持资源，模型登记和显式闲置窗口提供可调度的等待事实。真实 Coding 通过持久 ToolReceipt 发布终态，外部观察保持 Actor 的资源状态；带模型完成条件的恢复需求与新请求登记原子排序。
 
 ## 调度开销
 
@@ -59,7 +63,7 @@ GitHub Actions 的 `Real Actor scale experiments` 提供：
 - `workload-smoke`：长尾、等待分布变化、开放环三类场景，N=8、种子 7201，TTL=2、observed、cost-aware，共 9 个试验。
 - `workload-matrix`：上述三类场景，N=16，种子 7201/7202/7203，四个 TTL、observed、cost-aware，共 54 个试验。
 
-两组均沿用四租户、两 Worker、四 Actor 槽位、真实 gVisor MEMORY、PostgreSQL 与原生 Dynamo CPU Mocker。推理前缀依次为 1K/2K/4K/8K/12K/16K。每个 trial 保存策略、源码提交、配置和清理结果。首轮、失败、未投递及重跑保留各自身份。
+各组均沿用四租户、两 Worker、四 Actor 槽位、真实 gVisor MEMORY、PostgreSQL 与原生 Dynamo CPU Mocker。推理前缀依次为 1K/2K/4K/8K/12K/16K。每个 trial 保存策略、源码提交、配置和清理结果。首轮、失败、未投递及重跑保留各自身份。
 
 主对照为 TTL=2，原 observed 与其余 TTL 单独报告。完整配对组同时检查 Stranded 下降、Goodput 改善及交互 p95 的配对 95% 区间；少于三个完整种子对时只报告描述性结果。推广默认策略前还需在独立的混合长尾、负载变化与开放环到达场景验证资源收益和租户 SLO。
 
@@ -86,7 +90,23 @@ python3 -m bench.analysis.scale \
   --output docs/evidence/cost-open-summary.json
 ```
 
-## 依据
+## 已记录的成本对照
+
+源码 `e966b47` 的 [N=8 初次对照](https://github.com/lilong555/agentcloud/actions/runs/42740998570)完成 144/144 个请求，三个 trial 的 MEMORY、绑定回收与资源清理通过。种子为 7101，统计见[完整汇总](evidence/cost-smoke-summary.json)。
+
+| 策略 | Stranded GB·s | 预留 GB·s | 交互 p95 秒 | Goodput/s |
+| --- | ---: | ---: | ---: | ---: |
+| TTL2 | 19.0695 | 59.7251 | 7.1260 | 0.08878 |
+| observed | 34.4877 | 64.2317 | 9.6699 | 0.08928 |
+| cost-aware | 26.0863 | 56.7868 | 7.3916 | 0.08933 |
+
+该单种子试验中，cost-aware 相比 observed 的 Stranded 降低 24.4%，交互 p95 降低 23.6%；TTL2 的 Stranded 更低。策略推广使用三种子配对区间与独立场景。
+
+源码 `1bd80b2` 的 [三场景初次对照](https://github.com/lilong555/agentcloud/actions/runs/42742201307)完成 426/432 个请求，7/9 trial 通过，九组清理均通过。[长尾](evidence/cost-tail-smoke-summary.json)、[分布变化](evidence/cost-phase-smoke-summary.json)和[开放环](evidence/cost-open-smoke-summary.json)分别保存结果。长尾 observed 完成 48/48 请求并全程 KEEP，历史验收要求至少一次 SUSPEND，原始报告保留该失败；长尾 cost-aware 的首次恢复遇到 Substrate PostgreSQL 读取超时，保留 RECOVERY_REQUIRED 和六个未完成请求。分布变化与开放环中，cost-aware 的 Stranded 分别比 observed 低 74.3% 和 43.8%，TTL2 在两个场景的 Stranded 与交互 p95 更低。
+
+当前验收将有服务端观测证据的 KEEP 纳入有效决策，同时保留首个业务失败和后续清理错误。Actor 绑定回收只处理结果已经确定的模型请求。
+
+## 研究依据
 
 - [Kaplan–Meier：不完整观测的非参数估计](https://doi.org/10.1080/01621459.1958.10501452)
 - [Keep-Alive Caching for the Hawkes Process，UAI 2023](https://proceedings.mlr.press/v216/narayana23a.html)

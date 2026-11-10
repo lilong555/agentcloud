@@ -1,6 +1,6 @@
 # Actor Agent Runtime
 
-Runtime 在真实 gVisor Actor 内运行 Python Agent、SQLite 工具回执与模型上下文。协调器持久保存模型请求与结果，在每轮模型等待边界关闭 Actor 工具准入、提交 Manifest、执行 MEMORY Suspend/Resume，恢复后由同一逻辑请求认领结果。
+Runtime 在真实 gVisor Actor 内运行 Python Agent、SQLite 工具回执与模型上下文。协调器持久保存模型请求与结果，依据观测选择 KEEP 或提交 Manifest 并执行 MEMORY Suspend/Resume，恢复后由同一逻辑请求认领结果。
 
 ## 模型自主 Coding
 
@@ -12,13 +12,21 @@ Runtime 在真实 gVisor Actor 内运行 Python Agent、SQLite 工具回执与�
 python3 -m runtime.coding.agent_demo \
   --actor-name '<Actor名称>' \
   --runtime-header 'ate-target-actor=agentcloud/<Actor名称>' \
-  --model-name 6luna \
+  --model-name gpt-6-luna --lifecycle-policy cost-aware \
   --output docs/evidence/deep-agents-coding-real-model-substrate.json
 ```
 
 协调器凭据由 `AGENTCLOUD_TOKEN` 提供；Actor入口凭据由 `AGENTCLOUD_RUNTIME_TOKEN` 提供。默认 mTLS 材料来自 `artifacts/substrate/client/`，服务端名称为 `atenet-router.ate-system.svc`。协调器模型入口须连接具备原生工具调用能力的真实模型。
 
 每轮模型等待保留驻留 AST 对象、模型消息列表与上下文 nonce。恢复时核验 AST 指纹、上下文 SHA256、AST 对象 ID 和上下文 nonce。最终测试成功且源码存在实际修改时完成任务，最后 Suspend 释放 Worker。
+
+`--lifecycle-policy observed|cost-aware` 对应协调器同名自主策略。Agent 在本地计算、工具调用和终态发布期间继续运行；已登记的模型请求与显式 idle 窗口提供等待事实。每轮记录 `wait_epoch`、结果 epoch 和 `resumed`，分别统计 KEEP 与实际 MEMORY 恢复。`manual` 用于每轮指定安全点的恢复验收。
+
+自主模式只在启动时调用一次 Actor。Agent 先将固定的终态 JSON、操作 ID 与路径提交到 SQLite，再幂等写入 `agentcloud-reports/<run_id>.json`。外部通过控制面的单条 ToolReceipt 读取同一 JSON，报告上限为 512 KiB。写入响应丢失或发布进程重启时复用原字节；UNKNOWN 和输入冲突进入对账状态。验收记录实际 HTTP 调用数量，自主观察的 Actor GET 为零。
+
+外部驱动重启后，使用相同 `--run-id`、`--actor-name`、`--model-name`、`--lifecycle-policy` 并添加 `--observe-only`，继续读取持久终态。必要时提交带已完成模型条件的返回需求，协调器与新模型登记原子排序。最终结果包括工具轨迹、源文件与测试哈希、物理 Attempt ID、内存连续性和服务端调度证据。
+
+[真实 CPA 工作流](../.github/workflows/real-model.yml)在 GitHub hosted runner 运行完整 Kind/gVisor Coding 验收，要求真实模型先取得失败测试、修改至少两个源文件、保持原测试哈希、复测成功并经历实际 MEMORY 恢复。CPA 凭据配置见[部署说明](../deploy/cpa/README.md)。
 
 ## 深度恢复回归
 

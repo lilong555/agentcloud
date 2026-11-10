@@ -22,6 +22,7 @@ type ReleasePlan struct {
 	BreakEvenWaitMS   int64     `json:"break_even_wait_ms"`
 	HoldingRate       float64   `json:"holding_rate"`
 	ReadyReturns      int       `json:"ready_returns"`
+	WorkerSlots       int64     `json:"worker_slots"`
 	PredictionPhase   string    `json:"prediction_phase"`
 	Selection         string    `json:"selection"`
 	PredictedCostMS   *float64  `json:"predicted_cost_ms,omitempty"`
@@ -75,15 +76,25 @@ func (c *Controller) costDecisionLocked(s *Session, input ModelBoundaryRequest, 
 			started = s.LastResumedAt
 		}
 		ready := c.readyReturnCountLocked()
-		slots := 1
-		if evidence.WorkerCapacity != nil && evidence.WorkerCapacity.CapacityActors > 0 {
-			slots = int(evidence.WorkerCapacity.CapacityActors)
+		slots := int64(1)
+		if capacity := evidence.WorkerCapacity; capacity != nil {
+			if capacity.CapacityActors > 0 {
+				slots = capacity.CapacityActors
+			}
+			if capacity.CapacityMemoryBytes > 0 && s.Actor.AssignedMemoryBytes > 0 {
+				memorySlots := max(int64(1), capacity.CapacityMemoryBytes/s.Actor.AssignedMemoryBytes)
+				if capacity.CapacityActors > 0 {
+					slots = min(slots, memorySlots)
+				} else {
+					slots = memorySlots
+				}
+			}
 		}
 		rate := 1 + min(3.0, float64(ready)/float64(slots))
 		switchCost := max(int64(1), initial.SnapshotCostMS+initial.ResumeCostMS+initial.JournalCostMS)
 		budget := max(int64(1), int64(math.Ceil(float64(switchCost)/rate)))
 		plan = &ReleasePlan{Epoch: s.Epoch, StartedAt: started, ObservedAt: now,
-			SwitchCostMS: switchCost, BreakEvenWaitMS: budget, HoldingRate: rate, ReadyReturns: ready,
+			SwitchCostMS: switchCost, BreakEvenWaitMS: budget, HoldingRate: rate, ReadyReturns: ready, WorkerSlots: slots,
 			EarliestReleaseAt: started.Add(time.Duration(max(int64(1), (budget+1)/2)) * time.Millisecond),
 			PlannedReleaseAt:  started.Add(time.Duration(budget) * time.Millisecond),
 			LatestReleaseAt:   started.Add(time.Duration(2*budget) * time.Millisecond),

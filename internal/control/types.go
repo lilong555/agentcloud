@@ -102,9 +102,10 @@ type ToolReceipt struct {
 	FinishedAt  *time.Time `json:"finished_at,omitempty"`
 }
 type LifecycleRequest struct {
-	OperationID   string `json:"operation_id"`
-	ExpectedEpoch uint64 `json:"expected_epoch"`
-	CheckpointID  string `json:"checkpoint_id,omitempty"`
+	OperationID       string `json:"operation_id"`
+	ExpectedEpoch     uint64 `json:"expected_epoch"`
+	CheckpointID      string `json:"checkpoint_id,omitempty"`
+	AfterModelRequest string `json:"after_model_request,omitempty"`
 }
 type LifecycleReceipt struct {
 	OperationID string    `json:"operation_id"`

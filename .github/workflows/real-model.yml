@@ -1,0 +1,73 @@
+name: Real CPA Coding lifecycle acceptance
+on:
+  workflow_dispatch:
+    inputs:
+      lifecycle_policy:
+        description: 'Server-observed lifecycle policy for the real Coding task'
+        type: choice
+        options: [cost-aware, observed]
+        default: cost-aware
+permissions:
+  contents: read
+jobs:
+  coding:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: agentcloud
+          POSTGRES_PASSWORD: agentcloud-ci
+          POSTGRES_DB: agentcloud_substrate
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U agentcloud -d agentcloud_substrate" --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGUSER: agentcloud
+      PGPASSWORD: agentcloud-ci
+      AGENTCLOUD_DATABASE_URL: postgresql://agentcloud:agentcloud-ci@127.0.0.1:5432/agentcloud_substrate?sslmode=disable
+      AGENTCLOUD_TEST_PG_ADMIN: postgresql://agentcloud:agentcloud-ci@127.0.0.1:5432/agentcloud_substrate?sslmode=disable
+      GOMAXPROCS: '2'
+      AGENTCLOUD_CI_WORKER_MEMORY_MIB: '1536'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare private CPA relay credential
+        env:
+          AGENTCLOUD_CPA_CI_SECRET: ${{ secrets.AGENTCLOUD_CPA_CI }}
+        run: python3 scripts/prepare_cpa_ci.py
+      - name: Prepare Kind, gVisor MEMORY and PostgreSQL
+        run: bash scripts/ci_live_prepare.sh
+      - name: Run real model Coding task under autonomous scheduling
+        env:
+          LIFECYCLE_POLICY: ${{ inputs.lifecycle_policy }}
+        run: >-
+          python3 scripts/real_model_acceptance.py
+          --model-config artifacts/cpa-ci/model.json
+          --ssh-host agentcloud-cpa --ssh-config artifacts/cpa-ci/ssh_config
+          --reuse-port-forwards --components coding --lifecycle-policy "$LIFECYCLE_POLICY"
+          --timeout 1200 --min-available-mib 1536 --max-rss-mib 1536
+      - name: Collect runtime and resource evidence
+        if: always()
+        run: python3 scripts/ci_live_collect.py
+      - name: Release owned background processes and cluster
+        if: always()
+        run: python3 scripts/ci_live_cleanup.py
+      - name: Remove private runner credential
+        if: always()
+        run: rm -rf artifacts/cpa-ci
+      - name: Stage current attempt evidence
+        if: always()
+        run: python3 scripts/stage_live_artifact.py --kind real-model
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: real-cpa-coding-${{ inputs.lifecycle_policy }}
+          path: artifacts/ci-live-evidence/
+          if-no-files-found: error
+          retention-days: 30
