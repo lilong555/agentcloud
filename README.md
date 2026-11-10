@@ -28,6 +28,8 @@ Inference Lease、Model Attempt ID、Actor UID／epoch、工具安全点与 dura
 | 长期容量回收 | `max_sessions=2` 下完成 **64 轮、128 请求**；终态绑定 0、墓碑 2；旧 lease 64/64 返回 401、旧 generation 64/64 返回 409 |
 | 真实 Coding Agent | Azure CPA `gpt-6-luna` 完成 **8 轮模型、10 次工具、2 个文件修复、8 次 MEMORY 恢复**；[任务与清理](docs/evidence/real-model/realmodel-5b80fdc027c8/acceptance.json) |
 
+安全点排空具有 30 秒期限。明确的 `504 DRAIN_TIMEOUT` 经原 operation／epoch／barrier 与可信 Actor UID 取消回执核验后，将挂起标记为 `ABORTED`，保持 RUNNING、重开工具准入，并持久记录冷却和超时计数。`OUTCOME_UNKNOWN` 返回原操作 ID 与 `inspect_workspace_read_only` 提示，Harness 保存对应 tool 消息和恢复状态；写操作保持关闭。[边界协议与专门测试](docs/API.md#安全点超时与未知工具结果)
+
 ## 用轨迹解释调度收益
 
 对旧 cost-aware 的逐条回执与 Worker 采样复算，发现 research 未知等待的 **45/48 次挂起晚于需求返回完成**，N32 工具区间占额外预留资源的 **63.6%**，同时识别出反馈开关和 Program 寿命的配置混杂。`agentcloud-v2` 维护连续、持久的等待 episode，未知等待固定两秒期限，已知等待比较 KEEP 与实际恢复成本；TTL2、旧 cost-aware、v2 和 TTL2-Shadow 使用同 Runner、同种子、统一 E／FINAL 协议配对。
@@ -51,6 +53,21 @@ Inference Lease、Model Attempt ID、Actor UID／epoch、工具安全点与 dura
 
 [轨迹归因](docs/SCHEDULER_DIAGNOSIS.md) · [正式配对数据](docs/evidence/gate2-a7e324a-summary.json) · [Gate 1 与 Shadow](docs/V2_EVALUATION.md#gate-1-实测) · [工作集边界与停止条件](docs/V2_EVALUATION.md#三种子边界确认)
 
+## 完整成本：预留资源、恢复与快照存储
+
+快照数量按已提交恢复点的 Tag UID 去重，并分别记录初始化与运行阶段。下表来自同一冻结源码 `a7e324a` 的原始收据，包含初始恢复点：
+
+| 负载 | v2／TTL2 总 Actor GB·s | v2／TTL2 快照 Tag 数 | 完成情况 |
+| --- | ---: | ---: | --- |
+| Gate 2 N32，五种子均值 | 212.070／220.199 | 144／144 | 双方全部完成 |
+| Gate 2 N64，五种子均值 | 420.748／424.494 | 288／288 | 双方全部完成 |
+| N64，64 MiB／3 s，三种子均值 | 680.986／748.890 | 207.333／448 | 双方全部完成；v2 P95 增加 313.307 s |
+| N64，128 MiB／3 s，种子 7401 | 见逐 trial 资源积分 | 199／434 | v2 完成 384/384；TTL2 完成 370/384 后触发磁盘保护 |
+
+高工作集下，频繁挂起增加恢复点创建与存储保留压力。128 MiB 的三个 TTL2 trial 各留下 434／435／436 个 Tag，并触发 6 GiB 磁盘余量保护。存储汇总同时提供 `snapshot_write_bytes`、`peak_storage_bytes`；历史物理采样缺失项为 `null`，尾部逻辑上传字节单列。v2 的快照次数优势与首轮准入尾延迟共同构成适用边界。[完整成本与原始分母](docs/STORAGE_COSTS.md)
+
+生产生命周期默认每个 Workspace 保留最近 **K=2 个已验证 COMMITTED 恢复点**，保护当前 manifest 和未决操作；旧 Tag 与过期孤儿通过持久删除意图、身份围栏及有界退避回收。历史实验保持其原始保留策略，GC 的行为由独立契约验证。
+
 ## 真实 GPU：收益反转与官方 KV 事件
 
 **真实 CUDA 压力曲线：**RTX 4070 Laptop 8 GiB、OPT-125M、3 GiB allocator 预算，完成 **30/30 组测量**。16／24／32／48／64 个闲置会话下，释放 KV 并计入全部重建后的总耗时变化为 **+44.5%／+58.1%／+70.6%／+26.5%／−22.5%**。高压力下释放 KV 扩大推理 batch，覆盖重建成本；反转位于当前 **48～64 会话**两个离散测点之间。
@@ -60,6 +77,31 @@ Inference Lease、Model Attempt ID、Actor UID／epoch、工具安全点与 dura
 **真实 vLLM 官方事件链路：**`vLLM → ZMQ → relay → KVIndexer → 默认 CACHE Selector` 完成 26 个连续事件 batch、26 个 Stored、287 个 Removed，relay 丢失为 0。三轮热缓存／驱逐对照共六请求，实际命中 **240／0 token**、新增 Prefill **16／256 token**；新增 token 预测 MAE 从完整上下文预算的 **120** 降至事件观测的 **0**。Prefill 中位数为 **8.992／9.213 ms**，差约 **0.221 ms**。该项交付是官方事件集成与物理缓存对账，Actor 生命周期使用已验收的队列和恢复成本策略。
 
 [GPU 曲线、完整分母与原始数据](docs/GPU_VALIDATION.md) · [官方 KV 事件复现](experiments/dynamo/kv_events_README.md)
+
+### Token 与 KV 成本对账
+
+| 证据层 | 观测结果 | 对应作用 |
+| --- | --- | --- |
+| 原生会话身份 | 跨 Actor epoch 保持 `X-Dynamo-Session-ID`，旋转 inference lease | 为恢复后的前缀亲和性保留稳定身份 |
+| 单 Worker vLLM 热缓存 | 256 输入命中 240：**93.75%**；三请求合计避免 **720 个 Re-prefill Token** | 官方 KV 事件与实际 Prefill 交叉核验 |
+| 驱逐后同输入 | 命中 0，重算 256；Prefill 中位数 9.213 ms | 度量缓存消失后的实际工作量 |
+| ThunderAgent acting 配额 | **708 → 0 → 708**，SUSPENDED 回收 708 个逻辑 Token 配额 | 原生 CPU Mocker 的准入预算释放与恢复 |
+
+真实 GPU 命中数据来自独立缓存事件实验；跨 Suspend/Resume 的物理命中率消融字段为 `null`。30 组 CUDA 曲线同时记录 KV 驻留 **576～2,304 MiB** 与重算 **0.179～0.746 s**，支持显存驻留和返回代价的分层核算。[统一 Token 成本 JSON](docs/evidence/gpu/token-cost-summary.json)
+
+## 公开真实轨迹与样本分布
+
+TraceLab v0.0.2 全来源包括 **8,058 会话、52 个贡献者**。预算内完整审核 303 会话，33 个质量合格窗口全部进入探索性回放；其中七个窗口具有多个模型轮次，共 48 个模型阶段、32 次同步工具调用，来自八个贡献者。
+
+| 人口与切分 | 贡献者／窗口 |
+| --- | --- |
+| 全来源 calibration／development／holdout | 31／7／14 个贡献者 |
+| 全部质量合格窗口 | 8 个贡献者、33 个窗口 |
+| 其中 holdout | 2 个贡献者、7 个窗口 |
+
+模型跨度的中位数为 **5.550 s**，P95 为 **90.298 s**；这些窗口保留完整因果依赖，覆盖模型等待。回放使用公开相对时钟、受控工具和真实 MEMORY 生命周期，Observed／TTL15／TTL2／v2 共用相同输入、四槽容量与同一 Runner。来源时间和未来端点由 driver 持有，调度器读取实际已发生的请求、工具与资源观察。
+
+[实机回放与完整样本说明](docs/PUBLIC_TRACE_IMPORT.md) · [33 窗口准入清单](docs/evidence/public-traces/tracelab-v0.0.2-admitted/manifest.json) · [描述统计](docs/evidence/public-traces/tracelab-v0.0.2-descriptive.json) · [独立回放 Actions](.github/workflows/public-trace-replay.yml)
 
 ## 一键运行与复核
 
@@ -87,6 +129,6 @@ make demo
 
 [系统架构](docs/ARCHITECTURE.md) · [服务 API 与故障语义](docs/API.md) · [自主调度](docs/SCHEDULING.md) · [Coding Runtime](runtime/coding/) · [Actor 内运行循环](runtime/in_actor.py)
 
-[公开 Coding Agent 轨迹审查](docs/PUBLIC_TRACE_REVIEW.md)与 [TraceLab 导入审核](docs/PUBLIC_TRACE_IMPORT.md)提供外部工作负载的数据入口，记录许可、来源摘要、时间语义、后台进程终态与留出准入。真实性能回放以审核产物中的 `replay_ready` 为准。
+[公开 Coding Agent 轨迹审查](docs/PUBLIC_TRACE_REVIEW.md)与 [TraceLab 导入审核](docs/PUBLIC_TRACE_IMPORT.md)提供外部工作负载的数据入口，记录许可、来源摘要、时间语义、后台进程终态与质量准入。`replay_ready` 标识输入资格，实际性能与恢复成功率由集群运行报告记录。
 
 根项目采用 Apache-2.0；上游许可证与来源见 [NOTICE](NOTICE) 和 [licenses](licenses/)。完整源码、精确基线、内容哈希和补丁序列见 [integrations](integrations/)。

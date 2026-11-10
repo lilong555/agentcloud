@@ -1,7 +1,37 @@
 """Integrate sampled reservations separately for each Worker, with bounded gaps."""
 from collections import defaultdict
+import math
 
 from bench.substrate_live import timestamp
+
+
+def storage_costs(tag_ids=None, logical_uploads=(), physical_observation=None):
+    """Keep checkpoint counts, logical upload samples and measured physical costs separate.
+
+    ``tag_ids=None`` denotes missing lifecycle evidence. Physical counters are
+    publishable only when explicitly scoped to the whole trial with full
+    coverage; sampled or logical byte counters remain separate observations.
+    """
+    uploads = list(logical_uploads)
+    physical = physical_observation or {}
+    complete = physical.get('scope') == 'trial' and physical.get('coverage_fraction') == 1
+    result = dict(snapshot_tag_count=len(set(tag_ids)) if tag_ids is not None else None,
+                  snapshot_logical_upload_bytes_observed=sum(u['logical_bytes'] for u in uploads),
+                  snapshot_logical_upload_records=len(uploads),
+                  snapshot_write_bytes=None, peak_storage_bytes=None,
+                  snapshot_write_amplification=None,
+                  physical_storage_coverage_fraction=physical.get('coverage_fraction', 0))
+    for key in ('snapshot_write_bytes', 'peak_storage_bytes'):
+        value = physical.get(key)
+        if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float))
+                                  or not math.isfinite(value) or value < 0):
+            raise ValueError('physical storage metrics must be finite nonnegative measurements')
+        if complete:
+            result[key] = value
+    baseline = physical.get('logical_checkpoint_bytes')
+    if complete and result['snapshot_write_bytes'] is not None and isinstance(baseline, (int, float)) and baseline > 0:
+        result['snapshot_write_amplification'] = result['snapshot_write_bytes'] / baseline
+    return result
 
 
 def overlap_union(intervals, start, end):
@@ -53,7 +83,7 @@ def integrate(samples, identities, idle, tools, start, end, expected_workers, ma
     for _,worker,count in sorted(changes,key=lambda v:(v[0],v[2])):
         active[worker]=count;maximum=max(maximum,sum(active.values()))
     required=max(0,end-start)*expected_workers
-    return dict(actor_reserved_gb_s=total,stranded_worker_gb_s=stranded,max_assigned_actors=maximum,
+    return dict(**storage_costs(), actor_reserved_gb_s=total,stranded_worker_gb_s=stranded,max_assigned_actors=maximum,
                 observed_workers=len(by_worker),worker_resource_integrals=workers,
                 resource_coverage_fraction=coverage/required if required else 0,
                 resource_uncovered_worker_seconds=max(0,required-coverage),

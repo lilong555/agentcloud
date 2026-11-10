@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "execution_kind": "token-kv-cost-evidence-reconciliation",
+  "sources": [
+    {
+      "path": "docs/evidence/gpu/kv-events-summary.json",
+      "sha256": "512f4772813e7f6f4ad84e7ebbf04ef67b859b00138db6291339fc28e34807ed"
+    },
+    {
+      "path": "docs/evidence/gpu/cuda-kv-pressure-curve.json",
+      "sha256": "076afed4665b2e8bf513bfab05d443181e208fd1c8639ad00066a05463b6146b"
+    },
+    {
+      "path": "docs/evidence/dynamo-native-mocker.json",
+      "sha256": "da51c2ba8e915e967874ff7bcabff07979b2b842bef5926cf61d4b9d532618e8"
+    }
+  ],
+  "physical_prefix": {
+    "workers": 1,
+    "requests": 6,
+    "hot": {
+      "prompt_tokens": [
+        256,
+        256,
+        256
+      ],
+      "computed_tokens": [
+        16.0,
+        16.0,
+        16.0
+      ],
+      "hit_tokens": [
+        240.0,
+        240.0,
+        240.0
+      ],
+      "actual_prefix_hit_fraction": [
+        0.9375,
+        0.9375,
+        0.9375
+      ],
+      "avoided_reprefill_tokens": [
+        240.0,
+        240.0,
+        240.0
+      ],
+      "avoided_reprefill_tokens_total": 720.0,
+      "prefill_ms": [
+        9.068258000297647,
+        8.992175999992469,
+        8.793746999799623
+      ],
+      "prefill_median_ms": 8.992175999992469,
+      "client_ttft_median_ms": 21.141686999726517
+    },
+    "evicted": {
+      "prompt_tokens": [
+        256,
+        256,
+        256
+      ],
+      "computed_tokens": [
+        256.0,
+        256.0,
+        256.0
+      ],
+      "hit_tokens": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "actual_prefix_hit_fraction": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "avoided_reprefill_tokens": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "avoided_reprefill_tokens_total": 0.0,
+      "prefill_ms": [
+        9.155603000181145,
+        9.21287300025142,
+        9.583371999724477
+      ],
+      "prefill_median_ms": 9.21287300025142,
+      "client_ttft_median_ms": 22.43083600023965
+    },
+    "cross_suspend_resume_gpu_hit_fraction": null,
+    "lifecycle_integration": false
+  },
+  "cuda_pressure": {
+    "completed_trials": 30,
+    "context_tokens_per_session": 1024,
+    "points": [
+      {
+        "idle_sessions": 16,
+        "kv_mib": 576.0,
+        "recompute_seconds": 0.17941568899550475,
+        "release_overhead_seconds": 0.21294080799998483,
+        "keep_seconds": 0.9038516739965416,
+        "release_seconds": 1.3064779540000018,
+        "total_time_change_percent": 44.54561424035164
+      },
+      {
+        "idle_sessions": 24,
+        "kv_mib": 864.0,
+        "recompute_seconds": 0.2907744949998232,
+        "release_overhead_seconds": 0.24451765899993916,
+        "keep_seconds": 0.9374280050001289,
+        "release_seconds": 1.4824103359992478,
+        "total_time_change_percent": 58.13591316797111
+      },
+      {
+        "idle_sessions": 32,
+        "kv_mib": 1152.0,
+        "recompute_seconds": 0.38929729500023313,
+        "release_overhead_seconds": 0.26223246900008235,
+        "keep_seconds": 0.9234794220001277,
+        "release_seconds": 1.5755029410001953,
+        "total_time_change_percent": 70.60509454426993
+      },
+      {
+        "idle_sessions": 48,
+        "kv_mib": 1728.0,
+        "recompute_seconds": 0.6061316699997406,
+        "release_overhead_seconds": 0.260217499999726,
+        "keep_seconds": 1.4308775829999831,
+        "release_seconds": 1.8099110889993426,
+        "total_time_change_percent": 26.48958307143763
+      },
+      {
+        "idle_sessions": 64,
+        "kv_mib": 2304.0,
+        "recompute_seconds": 0.7458882440041634,
+        "release_overhead_seconds": 0.23364061000029324,
+        "keep_seconds": 2.433961280999938,
+        "release_seconds": 1.8871452270032023,
+        "total_time_change_percent": -22.46609501413632
+      }
+    ]
+  },
+  "native_acting_quota": {
+    "gpu_execution": false,
+    "before_tokens": 708,
+    "suspended_tokens": 0,
+    "released_tokens": 708,
+    "resumed_tokens": 708,
+    "scope": "one native CPU Mocker Program SUSPENDED/RESUMING observation; quota tokens"
+  },
+  "session_identity": {
+    "header": "X-Dynamo-Session-ID",
+    "scope": "same live binding across Actor epochs",
+    "inference_lease_rotates": true,
+    "native_source": "integrations/dynamo/files/lib/router-plugins/builtin/src/thunderagent/execution_control.rs",
+    "gpu_session_identity_ablation": "not_collected"
+  }
+}

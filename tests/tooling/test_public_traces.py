@@ -6,7 +6,8 @@ import unittest
 
 from bench.public_traces.schema import policy_events, interval_ms, overlap_ms
 from bench.public_traces.tracelab import (DEFAULT_CONFIG, assign_splits, command_status, identity,
-    normalize_session, run, scan, select_sessions, timestamp_ms)
+    normalize_session, run, scan, select_sessions, timestamp_ms, validate_config)
+from bench.public_traces.describe import describe
 
 
 def ts(seconds):
@@ -247,6 +248,36 @@ class PublicTraceTests(unittest.TestCase):
             self.assertNotIn('PRIVATE', file.read_text())
             self.assertNotIn('contributor-a', file.read_text())
         self.assertEqual({p.name for p in output.iterdir()}, {'manifest.json', 'audit.json', 'sessions.jsonl', 'events.jsonl'})
+
+    def test_sample_size_describes_inference_and_never_blocks_quality_eligible_execution(self):
+        assessment=validate_config(self.config,14)
+        self.assertTrue(assessment['configuration_valid'])
+        self.assertEqual(assessment['inference_reference_holdout_families'],32)
+        self.assertFalse(assessment['inference_reference_met_with_current_split'])
+        self.assertFalse(assessment['sample_size_blocks_execution'])
+        self.config['analysis_mode']='confirmatory'
+        self.assertTrue(validate_config(self.config,14)['configuration_valid'])
+        self.assertTrue(validate_config(self.config,32)['inference_reference_met_with_current_split'])
+
+    def test_split_configuration_is_validated_and_used(self):
+        self.config['split_percent']=[70,20,20]
+        with self.assertRaises(ValueError): validate_config(self.config)
+        self.config['split_percent']=[1,1,98]
+        sessions,_,_,_=scan(self.source(completed_rows()),self.config)
+        assign_splits(sessions,self.config)
+        self.assertEqual(next(iter(sessions.values()))['split'],'holdout')
+
+    def test_archived_description_keeps_nested_units_and_evaluator_tokens_offline(self):
+        output=self.root/'descriptive-source'
+        run(self.source(completed_rows()),output,self.config,sample=True)
+        before=(output/'events.jsonl').read_bytes()
+        report=describe(output,self.config)
+        self.assertEqual(report['populations']['all']['windows'],1)
+        self.assertEqual(report['populations']['all']['contributor_families'],1)
+        self.assertEqual(report['populations']['all']['source_rows'],2)
+        self.assertEqual(report['populations']['all']['model_spans'],2)
+        self.assertFalse(report['replay_ready'])
+        self.assertEqual(before,(output/'events.jsonl').read_bytes())
 
     def test_safe_wait_coverage_uses_explicit_eligible_denominators(self):
         rows = completed_rows()

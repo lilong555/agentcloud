@@ -52,6 +52,40 @@ Worker 容量拒绝后，协调器重新读取 Substrate Actor。权威读取确
 
 PostgreSQL 日志使用独占 advisory lock 与 revision CAS；本地开发日志使用文件锁、原子替换和 fsync。协调器采用单写者模式，日志异常会使 readiness 失败并要求重启核验。默认容量为 256 个会话、4096 个模型请求、每会话 4096 个工具回执和每租户 64 个待处理模型请求。
 
+## 安全点超时与未知工具结果
+
+Coordinator 和 Runtime 的工具排空默认均有 30 秒期限。Runtime 明确返回 `504 DRAIN_TIMEOUT` 时，Coordinator 使用独立的五秒上下文取消原屏障；请求与回执核验 operation ID、epoch、barrier generation 和可信 Actor UID。取消确认后，生命周期与关联 ModelBoundary 回执在同一事务标为 `ABORTED`，会话保持原 epoch、RUNNING／OPEN。已准入工具继续完成，快照和安全点 manifest 保持未创建。
+
+会话持久字段 `quiesce_retry_after`、`quiesce_timeouts` 与 Prometheus `quiesce_timeout_total` 分别提供默认 30 秒冷却、累计超时数和运行指标；重复操作读取原 ABORTED 错误及冷却时间。取消响应丢失、Actor 身份冲突或传输结果未知时进入 RECOVERY_REQUIRED，保留后续对账材料。
+
+Python Client 默认 HTTP 预算为 60 秒，覆盖排空、取消确认与持久提交。调用方显式配置更短期限时，使用原操作 ID 查询最终回执。
+
+`OUTCOME_UNKNOWN` 阻止生成安全点，新写入及 shell 返回结构化错误。已确认 Actor 仍在运行且生命周期结果确定时，可以执行 `file_read` 检查工作区；检查后原未知回执和水位保持不变。缺失文件返回 `result.error.code=FILE_NOT_FOUND`，可与空文件区分。
+
+```json
+{
+  "error": {
+    "code": "OUTCOME_UNKNOWN",
+    "message": "工具结果需要只读检查与对账，安全点及写操作保持关闭",
+    "details": {
+      "epoch": 3,
+      "recovery": {
+        "code": "OUTCOME_UNKNOWN",
+        "unknown_operations": ["original-write-id"],
+        "automatic_retry": false,
+        "allowed_tools": ["file_read"],
+        "next_action": "inspect_workspace_read_only",
+        "message": "先读取工作区文件并核对原操作回执，完成对账后再决定写入。"
+      }
+    }
+  }
+}
+```
+
+工具回执的 `recovery` 与错误中的 `details.recovery` 具有相同语义。Harness 将恢复信息写入原 `tool_call_id` 对应的模型工具消息，保存 RECOVERY_REQUIRED 并暂停自动重放，供上层恢复流程查询和检查。[Go 边界测试](../internal/control/quiesce_test.go)与 [Runtime 契约测试](../tests/python/test_runtime.py)覆盖超时、身份替换、取消丢响应、未知结果及重启重放。
+
+COMMITTED Tag 采用每 Workspace 默认 K=2 的恢复点轮转；生命周期、未知结果和当前 manifest 的引用具有保护优先级。配置、删除身份围栏与成本口径见[快照治理](STORAGE_COSTS.md#恢复点轮转)。
+
 ## 执行反馈
 
 配置 `AGENTCLOUD_DYNAMO_TOKEN` 与 `--dynamo-control-url` 后，协调器预登记可信 Actor 绑定，并使用原生返回的 opaque session 与 inference lease 发起推理。状态变化和每 2 秒心跳携带持久 sequence，默认 TTL 为 5 秒。Dynamo 校验租户、workspace、source、Actor UID、epoch 与 sequence，应用到原生 ThunderAgent 的 ACTING 逻辑预算。

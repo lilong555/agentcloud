@@ -250,6 +250,27 @@ func TestSnapshotGCBoundsDeletionBatchAndMetadataReads(t *testing.T) {
 	}
 }
 
+func TestSnapshotGCPinsRuntimeOnlyUnknownRecoveryAndSchedulingReferences(t *testing.T) {
+	for _, kind := range []string{"runtime-only-recovery", "other-session-scheduling"} {
+		t.Run(kind, func(t *testing.T) {
+			c, backend := snapshotTestController(t, "")
+			manifests := seedCommittedSnapshots(t, c, backend, "tenant-a", "workspace", 3)
+			createTestSession(t, c, "tenant-b", "other")
+			c.lock()
+			if kind == "runtime-only-recovery" {
+				c.state.Sessions[key("tenant-a", "workspace")].ToolRecovery = toolRecoveryHint([]string{"runtime-only-operation"})
+			} else {
+				c.state.Sessions[key("tenant-b", "other")].Scheduling = map[string]*BoundaryDecision{"pending": {OperationID: "pending", Status: "OUTCOME_UNKNOWN", Manifest: manifests[0]}}
+			}
+			c.mu.Unlock()
+			c.collectSessionSnapshots(context.Background(), key("tenant-a", "workspace"), 8)
+			if len(backend.deleted) != 0 {
+				t.Fatalf("referenced recovery point deleted: %v", backend.deleted)
+			}
+		})
+	}
+}
+
 func TestSnapshotGCDeleteFailureAndLostResponseSurviveRestart(t *testing.T) {
 	for _, lost := range []bool{false, true} {
 		t.Run(fmt.Sprintf("lost-response-%t", lost), func(t *testing.T) {

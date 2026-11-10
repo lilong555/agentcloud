@@ -178,6 +178,9 @@ func (c *Controller) reconcileSnapshotGCLocked(s *Session) {
 }
 
 func snapshotGCUnsettled(s *Session) bool {
+	if s.ToolRecovery != nil {
+		return true
+	}
 	switch s.State {
 	case "CREATING", "QUIESCING", "SUSPENDING", "RESUMING", "RECOVERY_REQUIRED":
 		return true
@@ -219,6 +222,17 @@ func (c *Controller) snapshotProtectedLocked(name, uid string) bool {
 			return true
 		}
 		for _, r := range s.Lifecycle {
+			if r == nil || r.Status == "COMPLETED" || r.Status == "ABORTED" || r.Status == "FAILED" {
+				continue
+			}
+			if snapshotTagName(s, r.OperationID) == name {
+				return true
+			}
+			if m := r.Manifest; m != nil && (m.RetainedTag == name || uid != "" && m.RetainedTagUID == uid) {
+				return true
+			}
+		}
+		for _, r := range s.Scheduling {
 			if r == nil || r.Status == "COMPLETED" || r.Status == "ABORTED" || r.Status == "FAILED" {
 				continue
 			}

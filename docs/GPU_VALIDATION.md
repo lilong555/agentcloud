@@ -53,6 +53,22 @@ python3 -m bench.analysis.cuda_kv \
 
 脚本持续核验主机和显卡余量：主机保留至少 2,304 MiB 可用内存与 12 GiB 磁盘，显卡保留至少 1,536 MiB 空闲显存；参数校验将单进程显存预算限制在 4 GiB 以内。外层保护器对整个进程组执行内存、日志和运行时限检查。运行使用现有依赖和模型缓存，退出时释放本次 CUDA 上下文。
 
+## Token 重算与原生预算
+
+[统一成本汇总](evidence/gpu/token-cost-summary.json)将 CUDA 压力、实际 Prefix 命中和原生逻辑配额按来源摘要连接。30 组测量的会话上下文均为 1,024 token，下表给出每个压力点的中位成本：
+
+| 闲置会话 | KV 驻留 MiB | 全部会话 KV 重算 s | KEEP／释放并重建总耗时 s | 总耗时变化 |
+| ---: | ---: | ---: | ---: | ---: |
+| 16 | 576 | 0.179 | 0.904／1.306 | +44.5% |
+| 24 | 864 | 0.291 | 0.937／1.482 | +58.1% |
+| 32 | 1,152 | 0.389 | 0.923／1.576 | +70.6% |
+| 48 | 1,728 | 0.606 | 1.431／1.810 | +26.5% |
+| 64 | 2,304 | 0.746 | 2.434／1.887 | −22.5% |
+
+原生 ThunderAgent 在同一绑定跨 Actor epoch 时保持 `X-Dynamo-Session-ID`，并旋转 inference lease。稳定路由身份为前缀亲和性提供连续键；原生测试验证身份连续和旧 lease 失效。真实 GPU 的热缓存命中由下节独立事件实验测得，跨 Suspend/Resume 的物理命中率消融尚未采集，汇总中为 `null`。
+
+[原生 CPU Mocker 回执](evidence/dynamo-native-mocker.json)记录 acting 逻辑配额 **708 → 0 → 708**：SUSPENDED 释放 708 个配额 Token，RESUMING 恢复预算。它度量 Program 准入可用量；CUDA 张量、vLLM block 与物理 Prefill 使用各自观测。
+
 ## 官方 Dynamo KV 事件与真实 vLLM
 
 源码 `6512813` 在同一台 RTX 4070 Laptop 上完成官方事件链路与三轮 Prefill 对账。环境为 vLLM 0.33.0、PyTorch 2.14.0+cu130、Dynamo runtime 1.7.0；Dynamo 源码固定为 `c5680e573b86623df3b6b017a408373aeba93469`。本节使用真实分页 KV 引擎，前述 30 组压力曲线使用独立 Transformers CUDA 后端。
@@ -74,6 +90,7 @@ Selector 使用上游 `dynamo-default-cost-fn`，启用 CACHE 输入；独立官
 | 官方索引前缀 | 冷请求前 0 → 热请求前 256 → 驱逐后 0 → 重新生成后 256 token |
 | 默认 Selector | 热请求返回实际 Worker ID，`kv_hit_rate=1.0` |
 | 热请求实际计算 | 三轮均命中 240 token、计算 16 token |
+| 实际 Prefix Cache 命中率 | 三轮均为 240/256＝93.75%；三次热请求合计避免重算 720 token |
 | 驱逐后实际计算 | 三轮均命中 0 token、计算 256 token |
 | 新计算 token 观测误差 | 六次请求：完整上下文预算 MAE 120 token；官方缓存观测 MAE 0 token |
 | Prefill 时间 | 热请求中位数 8.992 ms；驱逐后 9.213 ms；逐对差值全部保留 |
@@ -92,4 +109,5 @@ vLLM 为输出 logits 保留至少一个待计算 token，复用按完整 block 
 
 ```bash
 python3 -m bench.analysis.kv_events
+python3 -m bench.analysis.token_costs
 ```

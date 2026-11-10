@@ -1,6 +1,6 @@
 # AgentCloud：上游源码审计、架构裁决与分阶段实施计划
 
-**设计基线日期：2026-11-09。当前实现、部署验收和实验结果见[交付状态](docs/STATUS.md)与[实验报告](docs/EXPERIMENTS.md)。**
+**设计基线日期：2026-11-09。本文使用 D0～D6 表示设计构建顺序。正式交付统一使用 P0 原生正确性与真实 Agent、P1 调度性能、P2 物理 GPU、P3 封版；定义见[实施计划](docs/IMPLEMENTATION_PLAN.md)。当前实现、部署验收和实验结果见[交付状态](docs/STATUS.md)、[实验报告](docs/EXPERIMENTS.md)与[中文简历要点](docs/RESUME_ZH.md)。**
 
 **证据规则：** `[已验证事实]` 表示在本次固定版本源码或官方文档中核对到的行为，不表示已经在本机运行成功；`[合理推断]` 表示由证据推导的设计裁决；`[待验证假设]` 表示需要后续实验验证的能力或收益。设计接口、目录、命令与验收标准不代表已有实现。本文所有性能收益均待测，简历中的 `[X]` 必须在真实实验后替换。
 
@@ -18,7 +18,7 @@
 4. 当前线协议没有所提 `trajectory_final`、`kv_hints.evict_trajectory`；`nvext.agent_context` 有明确拒绝测试。暂停、Final 和物理 KV 驱逐是不同操作。[D3][D4][D6]
 5. AX、kagent 已实现大量 Workspace、Session、模板和快照恢复能力；kagent 也已有闲置挂起和跨存储恢复边界。[A1][A2][K1][K2]
 
-**[合理推断] 推荐主线：一个可控 Synthetic Runtime + 一个真实 DeerFlow Harness。** Synthetic 支持 Mode A/Mode B 对照；DeerFlow 默认采用外置 Harness，仅将工具放进 Actor。P0 失败时允许删除假设 A 或 B，不以堆叠组件维持原定位。
+**[合理推断] 推荐主线：一个可控 Synthetic Runtime + 一个真实 DeerFlow Harness。** Synthetic 支持 Mode A/Mode B 对照；DeerFlow 默认采用外置 Harness，仅将工具放进 Actor。D0 失败时允许删除假设 A 或 B，不以堆叠组件维持原定位。
 
 ### 1.2 Goals / Non-Goals
 
@@ -30,7 +30,7 @@
 | 首版安全边界 | [合理推断] 单开发者环境中的多个逻辑租户；验证身份隔离、配额和受控工具权限。不声称已完成生产多租户安全认证。 |
 | 浏览器 | [合理推断] 属于后续能力声明项；首版只验 Shell/文件。浏览器进程可快照不等于远端登录态、WebSocket 和外部服务会话可续接。 |
 
-**[合理推断] 技术栈裁剪：** Go 实现协调器、网关和实验控制；Python 实现 Synthetic/DeerFlow 适配；复用 PostgreSQL、Substrate、Dynamo 和 OpenTelemetry。Kubernetes 只承担上游组件部署及 WorkerPool 配置，不为每个会话创建 CRD。先选一种可运行沙箱后端；Rust 仅在 P0 证明扩展必要且边界明确后引入。单实例首版不额外引入 Redis、Kafka 或自研 Operator。
+**[合理推断] 技术栈裁剪：** Go 实现协调器、网关和实验控制；Python 实现 Synthetic/DeerFlow 适配；复用 PostgreSQL、Substrate、Dynamo 和 OpenTelemetry。Kubernetes 只承担上游组件部署及 WorkerPool 配置，不为每个会话创建 CRD。先选一种可运行沙箱后端；Rust 仅在 D0 证明扩展必要且边界明确后引入。单实例首版不额外引入 Redis、Kafka 或自研 Operator。
 
 ## 2. 上游源码审计与证据索引
 
@@ -48,7 +48,7 @@
 
 **[已验证事实] 这些 SHA 不是已通过联调的版本组合。** Substrate 的 `go.mod` 要求 Go 1.27.0、toolchain 1.27.3；AX 使用 Go 1.27.1 和 Substrate `v1.0.0-rc.1`；kagent 使用 Go 1.27.3、Substrate `v1.0.0`，并 `replace` 到 `github.com/kagent-dev/substrate v1.0.0`。Dynamo 固定 Rust toolchain 1.96.1；DeerFlow 要求 Python ≥3.12 并有 `uv.lock`。[V1][V2][V3][V4][V5]
 
-**[合理推断]** P0 产出兼容矩阵，至少固定 API client、server SHA、镜像 digest、沙箱 runtime 版本、Dynamo backend 版本和 tokenizer revision。每次升级只重新验证受影响边界，不默认追踪所有仓库 `main`。
+**[合理推断]** D0 产出兼容矩阵，至少固定 API client、server SHA、镜像 digest、沙箱 runtime 版本、Dynamo backend 版本和 tokenizer revision。每次升级只重新验证受影响边界，不默认追踪所有仓库 `main`。
 
 ### 2.2 Substrate：控制面、运行链与恢复边界
 
@@ -90,11 +90,11 @@
 | 容量来源 | [已验证事实] 原生按 worker/rank 的 GPU block 数×block size 做逻辑预算，不去重共享 prefix、不计 host cache；Python 原型可计入 HiCache host 容量。不能交叉引用两者实验。[D1][D2] |
 | 准入 API | [已验证事实] 内部 `RequestClassifier::classify(&mut self, request: ClassifyRequest, workers: WorkerCandidates<'_>) -> ClassifyFuture`；事件为 Sent/Responding/Completed/Aborted。未发现公开原子 probe/reserve/commit 或持久异步准入通知。[D5][D5b] |
 | 取消语义 | [已验证事实] pending Future 的 Drop guard 回滚新建/原有 program 的准入状态。这是进程内取消清理，不是后端执行撤销或持久请求去重。[D4] |
-| Final | [已验证事实] 原生 Final 删除 program accounting；Python 对 Final 有不调用 engine 的 short-circuit，原生 classifier 之后仍进入正常 pipeline。[待验证假设] 原生专用 Final 请求是否产生 backend 调用必须 P0 实测；不能承诺零 token 成本。[D4] |
+| Final | [已验证事实] 原生 Final 删除 program accounting；Python 对 Final 有不调用 engine 的 short-circuit，原生 classifier 之后仍进入正常 pipeline。[待验证假设] 原生专用 Final 请求是否产生 backend 调用必须 D0 实测；不能承诺零 token 成本。[D4] |
 | KV hints | [已验证事实] 当前私有 `KvHint{protocol_version,message_id,actions}` 含 `kv.fetch@1.0` 和 block hashes；hint 不是 pin，也不是按会话驱逐。vLLM/SGLang forwarding 都受 backend capability 限制。[D6][D6b][D6c] |
 | 可复用反馈 | [已验证事实] `nvext.agent_hints` 有 priority、strict_priority、osl、speculative_prefill。SGLang 有请求优先级相关缓存策略；Dynamo 官方能力表仍将 vLLM cache eviction priority 标为 Planned。请求 priority 不等于静默期外部改缓存权重。[D7] |
 | 状态可见性 | [已验证事实] 原生状态在单 frontend 内，非集群全局；有 DEBUG 状态日志，没有 Python 原型的独立状态端点。内部 session-prefix 索引可追踪 lineage/residency，但不自动成为公开物理 KV 指标。[D1][D8] |
-| 无卡路径 | [已验证事实] 已有 `dynamo.mocker`，可使用 file discovery，发布真实 router 所需的 worker、KV events 和容量信息。无需另造 ZMQ/gRPC engine；真实编译和运行成功仍待 P0 验证。[D9] |
+| 无卡路径 | [已验证事实] 已有 `dynamo.mocker`，可使用 file discovery，发布真实 router 所需的 worker、KV events 和容量信息。无需另造 ZMQ/gRPC engine；真实编译和运行成功仍待 D0 验证。[D9] |
 
 **[已验证事实] 文档冲突应进入审计清单。** 同一 SHA 的 SGLang agents 文档仍描述 `nvext.session_control` 等接口，但当前 `NvExt`/adapter 不实现这些字段；adapter 明确不能把普通 session ID 映射成需预先 open 的 `session_params.id`。以实现和测试为准，不采用该旧接口。[D10][D10b]
 
@@ -211,7 +211,7 @@ C_{offload}=p_hBH+C_{D2H}
 
 **[合理推断]** 比较增量机会成本：没有 GPU 压力时 \(p_g\) 可以接近零；已有共享块不能重复计费；“lower-tier 命中概率”必须进入卸载模型。只有 backfill 真实改善、恢复 TTFT 不超预算，反馈才值得保留。
 
-**[合理推断] 扩展规模不能承诺几十行。** 一个可信 lifecycle event 至少要处理身份、epoch、事件序号、重放/失联、状态过期、取消、并行会话、测试和指标；物理 KV 控制还涉及后端共享块引用及异步完成。优先贡献原生调度决策观测或修正文档，P3 不通过则只交付 KV 归因报告。
+**[合理推断] 扩展规模不能承诺几十行。** 一个可信 lifecycle event 至少要处理身份、epoch、事件序号、重放/失联、状态过期、取消、并行会话、测试和指标；物理 KV 控制还涉及后端共享块引用及异步完成。优先贡献原生调度决策观测或修正文档，D3 不通过则只交付 KV 归因报告。
 
 ### 3.3 假设 C：保留协议一致性，拒绝“快照包治恢复”
 
@@ -309,7 +309,7 @@ stateDiagram-v2
 | `GET /runtime/v1/capabilities` | 支持的 snapshot fidelity、后台进程策略、可取消工具、流重放、模型调用所在位置；不能省略未知能力。 |
 | `GET /healthz` / `GET /readyz` | 存活、沙箱启动就绪与业务写准入分开。wakeupProbe 使用的 readyz 在服务已启动但写 gate 仍关闭时即可返回 200；不能等 attach，否则与 ResumeActor 等 probe 互相等待。控制器巡检用 ateapi，避免意外唤醒。 |
 | `POST /runtime/v1/quiesce` | 输入 operation_id、expected_epoch、barrier_generation；drain 已准入操作，返回匹配 barrier 的工具/子任务/文件上传水位；不等待自身 Suspend 完成。 |
-| `POST /runtime/v1/attach` | 校验新 epoch、manifest、Actor UID、boot_id 与恢复证明；验证通过前保持写入口关闭。实际恢复 fidelity 的观测接缝要在 P0 验证，不能从 snapshot.fidelity 直接推定。 |
+| `POST /runtime/v1/attach` | 校验新 epoch、manifest、Actor UID、boot_id 与恢复证明；验证通过前保持写入口关闭。实际恢复 fidelity 的观测接缝要在 D0 验证，不能从 snapshot.fidelity 直接推定。 |
 | `POST /v1/model-requests` | 输入稳定 logical_request_id、payload_hash、trajectory、deadline；持久接收后返回 receipt。 |
 | `GET /v1/model-requests/{id}` | 查询状态/完整结果；不把“观察”实现成隐式重新派发。 |
 | `GET /v1/model-requests/{id}/events?after_seq=N` | 重放已持久化的事件；返回明确的 gap/不完整状态，不伪装上游推理续传。 |
@@ -332,7 +332,7 @@ flowchart TD
 
 **[合理推断]** Mode A 首先只支持受控程序在模型边界主动交出等待；不对任意未修改 Harness 宣称透明改造。Mode B 无需为普通模型等待保存外部 Python 栈；要恢复 Harness 自身崩溃时，再依赖 graph checkpoint 和明确的执行恢复边界。
 
-**[已验证事实]** ResumeActorResponse 没有单独的“本次实际恢复 fidelity”字段；workflow 可能将 MEMORY snapshot 以 ROOTFS/VOLUMES 恢复，`snapshot.fidelity` 仍描述快照本身。[S12] **[待验证假设]** P0 用受控 Runtime 的 RAM nonce、boot generation 与上游 wire-fidelity 遥测交叉验收；证据不足时 Mode A 拒绝宣称内存连续恢复。
+**[已验证事实]** ResumeActorResponse 没有单独的“本次实际恢复 fidelity”字段；workflow 可能将 MEMORY snapshot 以 ROOTFS/VOLUMES 恢复，`snapshot.fidelity` 仍描述快照本身。[S12] **[待验证假设]** D0 用受控 Runtime 的 RAM nonce、boot generation 与上游 wire-fidelity 遥测交叉验收；证据不足时 Mode A 拒绝宣称内存连续恢复。
 
 ### 5.2 正常等待外移时序
 
@@ -370,7 +370,7 @@ sequenceDiagram
     J-->>R: 重放已提交结果
 ```
 
-**[合理推断]** 首个 P2 版本只做非流式完整结果，随后增加有界 chunk spool。持久化成功后才能对消费者 ACK；限制每租户待处理数、请求体、结果体、chunk retention 和总字节数。容量满时停止接收新请求，不能无限缓冲。
+**[合理推断]** 首个 D2 版本只做非流式完整结果，随后增加有界 chunk spool。持久化成功后才能对消费者 ACK；限制每租户待处理数、请求体、结果体、chunk retention 和总字节数。容量满时停止接收新请求，不能无限缓冲。
 
 **[合理推断]** admission 的 gate 检查与操作登记必须原子完成，关闭 gate 才能与已受理集合形成确定边界；“先读 open 再稍后启动”仍有竞态。Quiesce 使用独立 `barrier_generation`，保留当前 execution epoch 供此前已受理操作提交终态回执；恢复 attach 时才切换 epoch。gate 关闭期间的新操作返回可重试状态，不潜伏在 Actor ingress 触发自动唤醒。
 
@@ -477,9 +477,9 @@ sequenceDiagram
     P->>P: 取消过期策略，记录重算和回传成本
 ```
 
-**[合理推断]** P3 第一版固定为 Observe → Shadow → Enabled 三步；shadow 不改变路由，不将预测收益算成实测。缺失物理执行证据时只能报告 logical admission 或 request priority 变化。
+**[合理推断]** D3 第一版固定为 Observe → Shadow → Enabled 三步；shadow 不改变路由，不将预测收益算成实测。缺失物理执行证据时只能报告 logical admission 或 request priority 变化。
 
-## 6. 工程目录与分阶段实施路线 P0～P6
+## 6. 工程目录与分阶段实施路线 D0～D6
 
 ### 6.1 目录是后续编码合同
 
@@ -500,9 +500,9 @@ sequenceDiagram
 | `deploy/local/` | 后续本地环境配置；优先引用上游安装流程，不抄大型 Helm。 |
 | `docs/evidence/`、`docs/adr/` | SHA/依赖锁、原始日志索引、裁决记录、失败与零结果。 |
 
-**[合理推断]** P1 起表中 `make ...` 是要求后续实现的项目验收入口，当前不存在；它们不是上游已有命令。P0 下列上游测试名和模块路径已核对，但本次未执行，依赖/权限不足或测试被 skip 都不能记为通过。
+**[合理推断]** D1 起表中 `make ...` 是要求后续实现的项目验收入口，当前不存在；它们不是上游已有命令。D0 下列上游测试名和模块路径已核对，但本次未执行，依赖/权限不足或测试被 skip 都不能记为通过。
 
-### 6.2 P0：先否证关键能力
+### 6.2 D0：先否证关键能力
 
 **[待验证假设] 前置条件：** Linux 开发环境、匹配工具链；测试容器需要 Docker/Podman 与可取镜像；真实 gVisor/microVM 需要上游要求的宿主能力。无 GPU 不等于无需运行时权限、编译依赖和模型 tokenizer 文件。
 
@@ -539,7 +539,7 @@ PYTHONPATH=. uv run --frozen pytest -q -m 'not live and not integration' \
 
 **[已验证事实]** Substrate ControlAPI 的 store 测试可能使用 PostgreSQL Testcontainer；以上不能替代真实 sandbox 对网络和快照的实验。[S11] Dynamo 原生测试包括 pending cancellation rollback、pressure pause、timeout release、Final 等待在途请求等案例。[D4]
 
-**[合理推断] 无卡真实 Router 最小运行配方：** 先按固定 SHA 的 [Dynamo 源码构建说明][D11] 构建 bindings 并安装 editable components；准备本地 tokenizer/config，不下载模型权重也可使用 Mocker。以下文件内容和命令是后续 P0 操作，不在本次执行。
+**[合理推断] 无卡真实 Router 最小运行配方：** 先按固定 SHA 的 [Dynamo 源码构建说明][D11] 构建 bindings 并安装 editable components；准备本地 tokenizer/config，不下载模型权重也可使用 Mocker。以下文件内容和命令是后续 D0 操作，不在本次执行。
 
 ```yaml
 # experiments/p0/thunderagent.yaml
@@ -575,24 +575,24 @@ curl -N http://127.0.0.1:8000/v1/chat/completions \
 
 **[已验证事实]** Mocker 自带 file discovery、默认本地 event path 和 KV/capacity 发布；上述容量数字仅是计划中的测试输入，不是性能数据。[D9]
 
-**[待验证假设] Go/No-Go：** 必须能区分“逻辑暂停/物理缓存”“快照本地完成/远端 durable”“取消等待/未执行”；至少一个受控组合出现可回收驻留窗口且正确性不变量成立。P0 不要求先取得 GPU 收益。若所有现实配置都被快照开销抵消，停止 A 的产品化；若 B 缺后端执行器，P3 默认只观测。
+**[待验证假设] Go/No-Go：** 必须能区分“逻辑暂停/物理缓存”“快照本地完成/远端 durable”“取消等待/未执行”；至少一个受控组合出现可回收驻留窗口且正确性不变量成立。D0 不要求先取得 GPU 收益。若所有现实配置都被快照开销抵消，停止 A 的产品化；若 B 缺后端执行器，D3 默认只观测。
 
 **[合理推断] 失败降级：** 编译失败先用真实 Rust scheduler 单测验证状态机；宿主不支持沙箱则只做 Level 1，并标明还没验证 Substrate 恢复。不得用 Docker pause/SIGSTOP 冒充真实 Substrate MEMORY snapshot 的性能。
 
-### 6.3 P1～P6 的明确任务与准入
+### 6.3 D1～D6 的明确任务与准入
 
 **[合理推断]** 每一阶段的验证入口必须输出机器可读报告，包含配置、SHA、种子、执行状态、失败与缺失指标。性能门槛是未来验收标准，以下没有任何已测结果。
 
 | 阶段 | 前置条件、核心任务与建议文件 | 最小验收入口（待实现） | Go / No-Go | 失败降级 |
 |---|---|---|---|---|
-| **P1 最小端到端** | [合理推断] P0 基础接口可用。实现身份映射、一个 Actor、Shell/文件、受控模型调用、持久目录恢复；`internal/adapters/substrate/`、`runtime/synthetic/`、`tests/contract/`。 | `make p1-smoke MODE=external` | [待验证假设] 写文件→挂起→恢复→读回一致；租户串访被拒绝；能识别 cold boot；日志可关联同一 run。 | 只支持 VOLUMES 与应用级重启；不承诺 MEMORY 连续执行。 |
-| **P2 等待与准入协调** | [合理推断] P1 完成。先非流式 Journal、唯一结果提交、UNKNOWN；再 safe-point、成本策略、Mode A 等待外移；`internal/journal/`、`internal/lifecycle/`、`internal/inference/`。 | `make p2-smoke MODE=in-actor`；`make fault CASE=dispatch-ack-loss` | [待验证假设] 入口重复提交不产生第二逻辑任务；发出后崩溃不盲重试；C/D 对照中存在净收益窗口。未获收益不继续加复杂预测器。 | Mode B + 普通工具闲置休眠；保留请求可观测性与 unknown 对账。 |
-| **P3 KV 生命周期反馈** | [合理推断] 先有请求/缓存归因。实现 capabilities、Observe/Shadow；复用已支持 priority/hints；`internal/policy/kv/`、`docs/adr/kv-feedback.md`。物理控制是独立分支。 | `make p3-shadow`；有后端能力后 `make p3-capability BACKEND=...` | [待验证假设] 必须有真实执行回执/事件，并优于 D 组；逻辑下降不可充当物理回收。 | E 组标 N/A 或 shadow-only，结论明确 B 未通过；不造假的 evict 接口。 |
-| **P4 真实 Harness** | [合理推断] P1/P2 契约稳定。用嵌入式 DeerFlowClient；实现 Provider、Sandbox、extension，工具/模型 ID 分层；先主链后子任务；`adapters/deerflow/`。 | `make p4-smoke`；`make p4-concurrency` | [待验证假设] 不改核心 loop；并行工具/上传不能穿过 gate；get_scoped 不做 RPC；run 级 lease 被保留；限定恢复边界通过故障验证。 | 仅整个 run 结束或用户离开后休眠；无活跃子 agent 时恢复。不要为了展示再接第二个真实框架。 |
-| **P5 消融与故障** | [合理推断] 选择已通过阶段的特性。实现 A～E、关键 2×2、open-loop 回放、资源积分、故障矩阵；`bench/`、`tests/faults/`。 | `make bench SUITE=core LEVEL=1`；`make faults SUITE=boundary`；具备设备后 `LEVEL=2/3` | [待验证假设] 所有组配置可复现；失败/拒绝不从分母删除；关键差值有独立重复和区间；实际完成的层级写清。 | 发布零结果及协议可靠性报告；不为追求漂亮数字删不利负载。 |
-| **P6 求职打包** | [合理推断] 实验及边界可信。README、架构图、操作录屏、原始结果索引、复现指令、ADR、真实 PR 记录；`docs/results.md`、`docs/demo.md`。 | `make repro-check`；`make evidence-audit` | [待验证假设] 每条简历数字可定位到原始 run/config；复现入口无私密凭证；全部占位符已替换或明确删除。 | 仅包装最小可交付版，不声称尚未做的 GPU/HA/物理 KV 能力。 |
+| **D1 最小端到端** | [合理推断] D0 基础接口可用。实现身份映射、一个 Actor、Shell/文件、受控模型调用、持久目录恢复；`internal/adapters/substrate/`、`runtime/synthetic/`、`tests/contract/`。 | `make p1-smoke MODE=external` | [待验证假设] 写文件→挂起→恢复→读回一致；租户串访被拒绝；能识别 cold boot；日志可关联同一 run。 | 只支持 VOLUMES 与应用级重启；不承诺 MEMORY 连续执行。 |
+| **D2 等待与准入协调** | [合理推断] D1 完成。先非流式 Journal、唯一结果提交、UNKNOWN；再 safe-point、成本策略、Mode A 等待外移；`internal/journal/`、`internal/lifecycle/`、`internal/inference/`。 | `make p2-smoke MODE=in-actor`；`make fault CASE=dispatch-ack-loss` | [待验证假设] 入口重复提交不产生第二逻辑任务；发出后崩溃不盲重试；C/D 对照中存在净收益窗口。未获收益不继续加复杂预测器。 | Mode B + 普通工具闲置休眠；保留请求可观测性与 unknown 对账。 |
+| **D3 KV 生命周期反馈** | [合理推断] 先有请求/缓存归因。实现 capabilities、Observe/Shadow；复用已支持 priority/hints；`internal/policy/kv/`、`docs/adr/kv-feedback.md`。物理控制是独立分支。 | `make p3-shadow`；有后端能力后 `make p3-capability BACKEND=...` | [待验证假设] 必须有真实执行回执/事件，并优于 D 组；逻辑下降不可充当物理回收。 | E 组标 N/A 或 shadow-only，结论明确 B 未通过；不造假的 evict 接口。 |
+| **D4 真实 Harness** | [合理推断] D1/D2 契约稳定。用嵌入式 DeerFlowClient；实现 Provider、Sandbox、extension，工具/模型 ID 分层；先主链后子任务；`adapters/deerflow/`。 | `make p4-smoke`；`make p4-concurrency` | [待验证假设] 不改核心 loop；并行工具/上传不能穿过 gate；get_scoped 不做 RPC；run 级 lease 被保留；限定恢复边界通过故障验证。 | 仅整个 run 结束或用户离开后休眠；无活跃子 agent 时恢复。不要为了展示再接第二个真实框架。 |
+| **D5 消融与故障** | [合理推断] 选择已通过阶段的特性。实现 A～E、关键 2×2、open-loop 回放、资源积分、故障矩阵；`bench/`、`tests/faults/`。 | `make bench SUITE=core LEVEL=1`；`make faults SUITE=boundary`；具备设备后 `LEVEL=2/3` | [待验证假设] 所有组配置可复现；失败/拒绝不从分母删除；关键差值有独立重复和区间；实际完成的层级写清。 | 发布零结果及协议可靠性报告；不为追求漂亮数字删不利负载。 |
+| **D6 求职打包** | [合理推断] 实验及边界可信。README、架构图、操作录屏、原始结果索引、复现指令、ADR、真实 PR 记录；`docs/results.md`、`docs/demo.md`。 | `make repro-check`；`make evidence-audit` | [待验证假设] 每条简历数字可定位到原始 run/config；复现入口无私密凭证；全部占位符已替换或明确删除。 | 仅包装最小可交付版，不声称尚未做的 GPU/HA/物理 KV 能力。 |
 
-**[合理推断]** 阶段间没有“为了完成七阶段必须实现所有候选特性”的义务。P0 证伪 B 后可直接转 P4；P2 无净收益时，P5 应报告为什么上游/简单策略已经足够。
+**[合理推断]** 阶段间没有“为了完成七阶段必须实现所有候选特性”的义务。D0 证伪 B 后可直接转 D4；D2 无净收益时，D5 应报告为什么上游/简单策略已经足够。
 
 ## 7. Benchmark、消融与三级评测
 
@@ -691,16 +691,16 @@ L_{transfer}=B/BW+L_0.
 
 | 严重度 | 风险 | 验证方式 | 规避 / 降级 |
 |---|---|---|---|
-| P0 | [已验证事实] 假定的 API 缺失或 native/prototype 混用。 | 固定 SHA，签名/反序列化测试，能力探测。 | 用当前 headers 与真实 Mocker；没有 pre-admission 就外部代持。 |
-| P0 | [合理推断] 未知模型/工具结果被盲重试，产生重复副作用。 | 在发送后/持久回执前 kill Dispatcher。 | UNKNOWN 不自动重发；后端幂等/查询不支持则人工对账。 |
-| P0 | [已验证事实] Suspend 断开 TCP；公开 lifecycle RPC 无外部 epoch 前置条件。 | 延迟旧 Suspend、制造新旧控制器交错。 | 单 actuator、禁止相反操作越过 UNKNOWN；不承诺自动 HA。 |
-| P0 | [合理推断] Checkpoint 与 snapshot 状态撕裂。 | 每个准备/发布窗口崩溃，核对工具水位。 | 仅恢复 COMMITTED manifest；独立保留快照，错配拒绝。 |
-| P1 | [待验证假设] Suspend/Resume 开销倒挂。 | 扫 queue gap、工作集、dirty pages、存储速率。 | 自适应阈值/迟滞；无正收益区就删 A。 |
-| P1 | [已验证事实] MEMORY 可能降级，子 agent 无完整 checkpoint。 | 强制不兼容 runtime；活跃 subagent 时请求 quiesce。 | 首版 VOLUMES+应用恢复；仅全局安全点；Mode A 严格验 fidelity。 |
-| P1 | [合理推断] 两层调度振荡、恢复风暴、双队列。 | 突发/容量下降/信号延迟实验。 | 单向小步策略、cooldown、恢复并发上限；失效信号只回退本地 idle 策略。 |
-| P1 | [合理推断] KV 归因错误或可回收缓存被称为浪费。 | 校核 unique blocks、refs、backend events 与逻辑账本。 | 指标不足降级 token·s；不宣传物理 GPU 释放。 |
-| P1 | [待验证假设] 本地机器缺少 runtime 权限、内存或编译条件。 | P0 capability matrix，记录 failed/skip。 | 先 Level 1；Level 2 明确未完成，不假冒部署成功。 |
-| P2 | [合理推断] 与 AX/kagent/DeerFlow 重复过多，展示只剩集成。 | 每项代码对应新增协议/实验，比较强基线。 | 删 UI/通用平台；贡献最小上游修复和真实负结果。 |
+| D0 | [已验证事实] 假定的 API 缺失或 native/prototype 混用。 | 固定 SHA，签名/反序列化测试，能力探测。 | 用当前 headers 与真实 Mocker；没有 pre-admission 就外部代持。 |
+| D0 | [合理推断] 未知模型/工具结果被盲重试，产生重复副作用。 | 在发送后/持久回执前 kill Dispatcher。 | UNKNOWN 不自动重发；后端幂等/查询不支持则人工对账。 |
+| D0 | [已验证事实] Suspend 断开 TCP；公开 lifecycle RPC 无外部 epoch 前置条件。 | 延迟旧 Suspend、制造新旧控制器交错。 | 单 actuator、禁止相反操作越过 UNKNOWN；不承诺自动 HA。 |
+| D0 | [合理推断] Checkpoint 与 snapshot 状态撕裂。 | 每个准备/发布窗口崩溃，核对工具水位。 | 仅恢复 COMMITTED manifest；独立保留快照，错配拒绝。 |
+| D1 | [待验证假设] Suspend/Resume 开销倒挂。 | 扫 queue gap、工作集、dirty pages、存储速率。 | 自适应阈值/迟滞；无正收益区就删 A。 |
+| D1 | [已验证事实] MEMORY 可能降级，子 agent 无完整 checkpoint。 | 强制不兼容 runtime；活跃 subagent 时请求 quiesce。 | 首版 VOLUMES+应用恢复；仅全局安全点；Mode A 严格验 fidelity。 |
+| D1 | [合理推断] 两层调度振荡、恢复风暴、双队列。 | 突发/容量下降/信号延迟实验。 | 单向小步策略、cooldown、恢复并发上限；失效信号只回退本地 idle 策略。 |
+| D1 | [合理推断] KV 归因错误或可回收缓存被称为浪费。 | 校核 unique blocks、refs、backend events 与逻辑账本。 | 指标不足降级 token·s；不宣传物理 GPU 释放。 |
+| D1 | [待验证假设] 本地机器缺少 runtime 权限、内存或编译条件。 | D0 capability matrix，记录 failed/skip。 | 先 Level 1；Level 2 明确未完成，不假冒部署成功。 |
+| D2 | [合理推断] 与 AX/kagent/DeerFlow 重复过多，展示只剩集成。 | 每项代码对应新增协议/实验，比较强基线。 | 删 UI/通用平台；贡献最小上游修复和真实负结果。 |
 
 ### 保底方案
 
@@ -733,8 +733,8 @@ L_{transfer}=B/BW+L_0.
 
 | 梯度 | 最小内容 | 可以怎样描述 |
 |---|---|---|
-| 最小可交付版 | [合理推断] P0/P1、真实工具沙箱、恢复对账、基础 fault cases、Level 1；尚无 Level 2 时明确标注。 | 验证执行与恢复契约，不能写真实 GPU 优化。 |
-| 推荐求职正式版 | [合理推断] P2/P4/P5，真实 Substrate，DeerFlow 主链适配，强基线、四类负载、故障矩阵；有条件加入一次受控 Level 3。 | 以资源时间/Goodput 实测和恢复正确性为主，B 不通过也可交付。 |
+| 最小可交付版 | [合理推断] D0/D1、真实工具沙箱、恢复对账、基础 fault cases、Level 1；尚无 Level 2 时明确标注。 | 验证执行与恢复契约，不能写真实 GPU 优化。 |
+| 推荐求职正式版 | [合理推断] D2/D4/D5，真实 Substrate，DeerFlow 主链适配，强基线、四类负载、故障矩阵；有条件加入一次受控 Level 3。 | 以资源时间/Goodput 实测和恢复正确性为主，B 不通过也可交付。 |
 | 研究扩展版 | [合理推断] 真实 backend lifecycle feedback、共享 KV 归因、更多后端、因子实验、上游 precondition 和自动接管。 | 只有得到真实证据后才谈跨层调度泛化；不作为个人项目起步范围。 |
 
 ### 9.4 中文简历描述草案
@@ -773,9 +773,9 @@ L_{transfer}=B/BW+L_0.
 
 ### 绝对不要做什么
 
-**[合理推断]** 不重建 AX/kagent 式通用控制面；不混用不同版本 API；不把 Actor Suspend 发成 Dynamo Final；不把逻辑 token accounting 当物理显存；不承诺对象存储增量上传、任意 TCP 续传或任意模型 exactly-once；不为凑技术栈加入 Rust/Redis/Operator；不在未过 P0 时开付费资源；不拿 Mock 收益写真实 GPU 简历指标。
+**[合理推断]** 不重建 AX/kagent 式通用控制面；不混用不同版本 API；不把 Actor Suspend 发成 Dynamo Final；不把逻辑 token accounting 当物理显存；不承诺对象存储增量上传、任意 TCP 续传或任意模型 exactly-once；不为凑技术栈加入 Rust/Redis/Operator；不在未过 D0 时开付费资源；不拿 Mock 收益写真实 GPU 简历指标。
 
-### P0 第一天先写哪几行
+### D0 第一天先写哪几行
 
 **[合理推断]** 后续执行者先写只读契约采集脚本，核心是下面几行；今天不写业务功能。源码存在只是第一步，后续必须运行第 6 节的真实测试与最小 PoC。
 
@@ -802,11 +802,11 @@ rg -n 'nvext_agent_context_is_rejected' \
 
 **[合理推断]** 如果 D 只赢常驻弱基线，却赢不了外置 Harness 的简单策略，删除“核心跨层调度创新”叙述；如果 C 已达到同等 Goodput，则交付恢复协议、适配和负结果。若 D 在明确资源区间内稳定胜出且不越过正确性/SLO 预算，这才是值得进入求职正式版的项目证据。
 
-**[已验证事实] 当前完成边界：五个上游固定版本的静态审计与本计划文档。没有执行上述 P0/P1～P6，没有部署付费服务，没有得到任何性能提升实测。**
+**设计审计基线覆盖五个上游固定版本的静态源码与协议。正式运行的完整分母、性能区间和源代码 SHA 由[统一证据索引](docs/evidence/validation-index.json)记录。**
 
 ### 固定版本证据链接
 
-以下链接对应第 2 章审计索引；源码结论只针对列出的 SHA。未克隆审计 vLLM/SGLang 引擎内部实现，因此后端能力仅按 Dynamo adapter/官方兼容说明表述；物理缓存控制仍需 P0/P3 专项验证。
+以下链接对应第 2 章审计索引；源码结论只针对列出的 SHA。未克隆审计 vLLM/SGLang 引擎内部实现，因此后端能力仅按 Dynamo adapter/官方兼容说明表述；物理缓存控制仍需 D0/D3 专项验证。
 
 [S1]: https://github.com/agent-substrate/substrate/blob/94e0a26ac90151886a76410568aaac2664a54d90/api/ateapi/v1/ateapi.proto
 [S2]: https://github.com/agent-substrate/substrate/blob/94e0a26ac90151886a76410568aaac2664a54d90/docs/concepts/architecture.md

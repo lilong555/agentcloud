@@ -42,6 +42,29 @@ TOOL_FIELDS = ('tool_name', 'tool_call_id', 'emitted_at', 'result_at', 'tool_wal
 TIMING_FIELDS = ('event_type', 'timestamp', 'source', 'tool_call_id', 'tool_name')
 
 
+def validate_config(config, available_holdout_families=None):
+    """Execution uses causal quality; contributor counts describe inference scope."""
+    mode = config.get('analysis_mode', 'confirmatory')
+    if mode not in ('exploratory', 'confirmatory'):
+        raise ValueError('analysis_mode must be exploratory or confirmatory')
+    split = config.get('split_percent', [60, 20, 20])
+    if len(split) != 3 or any(not isinstance(v, int) or isinstance(v, bool) or v <= 0 for v in split) or sum(split) != 100:
+        raise ValueError('split_percent must contain three positive integers summing to 100')
+    required = config.get('inference_requirements', {}).get('recommended_independent_holdout_families',
+        config.get('confirmation_requirements', {}).get('minimum_holdout_families',config.get('minimum_holdout_families',32)))
+    if isinstance(required, bool) or not isinstance(required, int) or required < 1:
+        raise ValueError('inference reference requires a positive contributor count')
+    feasible = None if available_holdout_families is None else available_holdout_families >= required
+    included=config.get('replay_admission',{}).get('include_splits',['calibration','development','holdout'])
+    if not included or set(included)-{'calibration','development','holdout'}:
+        raise ValueError('replay admission includes declared source splits')
+    return dict(analysis_mode=mode, configuration_valid=True, inference_reference_holdout_families=required,
+                available_holdout_families=available_holdout_families,
+                inference_reference_met_with_current_split=feasible, sample_size_blocks_execution=False,
+                replay_splits=included,
+                independence_unit='whole_contributor_family')
+
+
 def dump(path, value):
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + '\n')
 
@@ -167,6 +190,8 @@ def scan(path, config):
 
 
 def assign_splits(sessions, config):
+    validate_config(config)
+    calibration, development, _ = config.get('split_percent', [60, 20, 20])
     families = {}
     for session in sessions.values():
         family = session['family_id_hash']
@@ -176,10 +201,10 @@ def assign_splits(sessions, config):
     for session in sessions.values():
         family = session['family_id_hash']
         bucket = int(opaque(config, 'split', config['selection_seed'], family)[:16], 16) % 10000
-        session['split'] = 'calibration' if bucket < 6000 else 'development' if bucket < 8000 else 'holdout'
+        session['split'] = 'calibration' if bucket < calibration*100 else 'development' if bucket < (calibration+development)*100 else 'holdout'
         fraction = rank[family] / max(1, len(families))
-        session['last_seen_contributor_split'] = ('calibration' if fraction < .6 else
-                                                 'development' if fraction < .8 else 'holdout')
+        session['last_seen_contributor_split'] = ('calibration' if fraction < calibration/100 else
+                                                 'development' if fraction < (calibration+development)/100 else 'holdout')
     return families
 
 
@@ -477,6 +502,7 @@ def download(path, config):
 def run(source, output, config, sample=False):
     if output.exists():
         raise ValueError('use a new output directory for each immutable audit')
+    validate_config(config)
     source_sha = digest_file(source)
     if not sample and (source_sha != config['sha256'] or source.stat().st_size != config['bytes']):
         raise ValueError('source checksum or byte count differs from the fixed release')
@@ -484,6 +510,8 @@ def run(source, output, config, sample=False):
         raise ValueError('adapter selection exceeds the fixed audit budget')
     sessions, counts, source_quality, source_schema = scan(source, config)
     families = assign_splits(sessions, config)
+    available_holdout = len({s['family_id_hash'] for s in sessions.values() if s['split'] == 'holdout'})
+    admission = validate_config(config, available_holdout)
     selected = select_sessions(sessions, config)
     output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='.tracelab-audit-', dir=output.parent) as temporary:
@@ -543,8 +571,8 @@ def run(source, output, config, sample=False):
             stops.append('sample_only_source_completeness_unverified')
         if mismatches:
             stops.append('publisher_denominator_mismatch')
-        if len(holdout_families) < config['minimum_holdout_families']:
-            stops.append('fewer_than_32_complete_holdout_families')
+        if not any(w['eligible'] and w['split'] in admission['replay_splits'] for w in windows):
+            stops.append('no_quality_eligible_replay_windows')
         splits = Counter(s['split'] for s in sessions.values())
         family_splits = {name: len({s['family_id_hash'] for s in sessions.values() if s['split'] == name}) for name in splits}
         family_members = defaultdict(set)
@@ -572,7 +600,7 @@ def run(source, output, config, sample=False):
             windows=dict(candidates=len(windows), eligible=sum(w['eligible'] for w in windows),
                 holdout_eligible=len(valid_windows), holdout_families=len(holdout_families),
                 **reason_counts(windows), records=windows),
-            replay_ready=not stops, stopping_reasons=stops,
+            replay_ready=not stops, stopping_reasons=stops, admission=admission,
             interval_semantics='tool and process wall-clock unions; local model spans and observed user-return gaps',
             audit_scope='row quality covers the full source; temporal, concurrency and process checks cover the bounded selection')
         dump(staging / 'audit.json', audit)
@@ -587,7 +615,7 @@ def run(source, output, config, sample=False):
             files=files, source_counts=counts,
             selection_rule='stable session hash order; whole source sessions; session and source-event budgets',
             source_event_definition='one timing_event object or one tool object, including copied observations',
-            split_rule='whole contributor family; stable hash 60/20/20; missing contributor grouped together',
+            split_rule='whole contributor family; stable hash '+ '/'.join(str(v) for v in config['split_percent']) + '; missing contributor grouped together',
             sensitivity_split_rule='whole contributor groups ranked by last observation; histories may overlap in time',
             family_provenance='whole source contributor grouping; session parent graph is not reconstructed; source_schema_presence retains observed field coverage',
             window_rule='whole audited session; bounded duration, user turns and model spans; all dependencies closed',

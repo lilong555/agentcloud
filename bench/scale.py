@@ -204,6 +204,10 @@ class Trial:
         if self.coordinator and self.coordinator.poll() is not None: raise RuntimeError('coordinator exited')
     def log(self,name):
         handle=(self.private/name).open('w');self.handles.append(handle);return handle
+    def model_url(self):
+        return self.native.front
+    def ablation_group(self):
+        return 'E' if self.config.get('comparison_protocol')==SYMMETRIC_PROTOCOL or self.policy in AUTONOMOUS_POLICIES else 'B'
     def start(self):
         self.guard(True)
         options=SimpleNamespace(port=self.args.dynamo_port,control_port=self.args.control_port,
@@ -220,7 +224,7 @@ class Trial:
             '--model-concurrency',str(self.config['model_concurrency']),'--model-timeout',str(self.config['request_deadline_seconds'])+'s',
             '--substrate-ca',str(self.args.client_dir/'ca.pem'),'--substrate-token-file',str(self.args.client_dir/'token'),
             '--substrate-client-cert',str(self.args.client_dir/'router-cert.pem'),'--substrate-client-key',str(self.args.client_dir/'router-key.pem'),
-            '--model-url',self.native.front,'--dynamo-control-url',self.native.control,
+            '--model-url',self.model_url(),'--dynamo-control-url',self.native.control,
             '--dynamo-tenant-tokens-file',str(self.native.runtime_dir/'tenant-tokens.json'),'--enable-experiment-controls']
         flags,expected_policy=scheduler_options(self.policy);command+=flags
         self.coordinator_command=command;self.coordinator_env=env
@@ -386,7 +390,7 @@ class Trial:
         entry=dict(id=name,tenant=tenant,index=index,kind=KINDS[index%len(KINDS)],resident=False,state=None)
         self.sessions.append(entry);self.slots.acquire(name,self.remaining(self.config['request_deadline_seconds']));entry['resident']=True
         entry['state']=self.client(entry).call('POST','/v1/sessions',dict(session_id=name,workspace_id=name,actor_name='ac-'+name,
-            mode='external',profile=entry['kind'],ablation_group='E' if self.config.get('comparison_protocol')==SYMMETRIC_PROTOCOL or self.policy in AUTONOMOUS_POLICIES else 'B'))
+            mode='external',profile=entry['kind'],ablation_group=self.ablation_group()))
         installed=self.client(entry).tool(name,1,'install-workload','file_write',path='actor_mix.py',content=(ROOT/'bench/workloads/actor_mix.py').read_text())
         if installed['status']!='COMPLETED': raise RuntimeError('workload installation failed')
         entry['proof']=self.tool(entry,'start-ram',f'python3 actor_mix.py start --memory-mib {self.config["heap_mib"]}')

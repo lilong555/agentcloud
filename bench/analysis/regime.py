@@ -5,8 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from bench.analysis.hosted import with_cleanup
-from bench.analysis.scale import completed, primary_attempts, summarize
+from bench.analysis.scale import STORAGE_METRICS, completed, primary_attempts, select_trials, summarize
 from bench.substrate_live import quantile
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -15,8 +14,10 @@ ROOT = Path(__file__).resolve().parents[2]
 def analyze(directory, samples, plan_dir=ROOT / "bench/configs", source_commit=None,
             stage=None, github_run_id=None):
     cells = {}
-    for path in sorted(directory.glob("*/result.json")):
-        trial = json.loads(path.read_text())
+    paths=[path for path in sorted(directory.glob("*/result.json"))
+           if json.loads(path.read_text()).get('config',{}).get('experiment_stage') in ('boundary-screen','boundary-confirm')]
+    for path, trial in select_trials(paths,source_commit=source_commit,
+                                    stage=stage,github_run_id=github_run_id):
         trial_stage = trial.get("config", {}).get("experiment_stage")
         if trial_stage not in ("boundary-screen", "boundary-confirm"):
             continue
@@ -27,7 +28,7 @@ def analyze(directory, samples, plan_dir=ROOT / "bench/configs", source_commit=N
         if github_run_id and str(trial.get('github_run_id')) != str(github_run_id):
             continue
         key = (trial_stage, trial["source_commit"], trial["workload_scenario"])
-        cells.setdefault(key, []).append((path, with_cleanup(path, trial)))
+        cells.setdefault(key, []).append((path, trial))
     cohorts = {(s, c) for s, c, _ in cells}
     if stage and source_commit:
         cohorts.add((stage, source_commit))
@@ -172,7 +173,7 @@ def main():
     args.output.write_text(json.dumps(report, indent=2) + "\n")
     columns = ["stage", "source_commit", "scenario", "concurrency", "policy", "trials", "offered", "completed",
                "actor_reserved_gb_s", "stranded_worker_gb_s", "interactive_p95_seconds", "goodput_per_second",
-               "resume_count", "resume_total_seconds"]
+               "resume_count", "resume_total_seconds"] + list(STORAGE_METRICS)
     with args.output.with_suffix(".csv").open("w") as stream:
         writer = csv.DictWriter(stream, fieldnames=columns, lineterminator="\n")
         writer.writeheader()

@@ -1,4 +1,5 @@
 import json
+import hashlib
 from pathlib import Path
 import tempfile
 import unittest
@@ -38,6 +39,34 @@ class ScaleAnalysisTests(unittest.TestCase):
                         request['ttft_seconds']*=latency_scale
                 rows.append(row)
         return rows
+
+    def test_storage_metrics_are_parallel_and_leave_existing_joint_statistics_stable(self):
+        rows=self.paired_v2()
+        before=summarize(rows,samples=20,candidate='agentcloud-v2',matrix_config=self.v2_plan())
+        for row in rows:
+            row['metrics'].update(snapshot_tag_count=5 if row['policy']=='agentcloud-v2' else 8,
+                                  snapshot_write_bytes=None,peak_storage_bytes=None)
+        after=summarize(rows,samples=20,candidate='agentcloud-v2',matrix_config=self.v2_plan())
+        self.assertEqual(before['paired_comparisons'][0]['verdict'],after['paired_comparisons'][0]['verdict'])
+        for key in ('actor_reserved_gb_s','interactive_p95'):
+            self.assertEqual(before['paired_comparisons'][0]['differences'][key],after['paired_comparisons'][0]['differences'][key])
+        self.assertEqual(after['paired_comparisons'][0]['differences']['snapshot_tag_count']['mean_difference'],-3)
+        self.assertEqual(after['groups'][0]['snapshot_tag_count'],5)
+        self.assertIsNone(after['groups'][0]['snapshot_write_bytes'])
+
+    def test_storage_sidecar_is_bound_to_exact_trial_report(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            evidence=Path(tmp)/'evidence';folder=evidence/'scale'/'one';folder.mkdir(parents=True)
+            path=folder/'result.json';path.write_text(json.dumps(trial('one',1)))
+            sidecar=dict(trials=[dict(trial_id='one',snapshot_tag_count=7,snapshot_write_bytes=None,peak_storage_bytes=None,
+                lifecycle_evidence={},physical_storage_evidence={},
+                sources=[dict(path='docs/evidence/scale/one/result.json',sha256=hashlib.sha256(path.read_bytes()).hexdigest())])])
+            (evidence/'snapshot-storage-a7e324a.json').write_text(json.dumps(sidecar))
+            selected=select_trials([path])
+            self.assertEqual(selected[0][1]['metrics']['snapshot_tag_count'],7)
+            sidecar['trials'][0]['sources'][0]['sha256']='wrong'
+            (evidence/'snapshot-storage-a7e324a.json').write_text(json.dumps(sidecar))
+            with self.assertRaises(ValueError):select_trials([path])
 
     def test_joint_acceptance_uses_total_reservation_and_interactive_tail(self):
         for resource,latency,verdict in (

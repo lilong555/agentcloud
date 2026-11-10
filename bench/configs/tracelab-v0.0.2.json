@@ -1,5 +1,6 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
+  "analysis_mode": "exploratory",
   "dataset": "uw-syfi/TraceLab",
   "release": "v0.0.2",
   "url": "https://github.com/uw-syfi/TraceLab/releases/download/v0.0.2/syfi_coding_trace.jsonl.gz",
@@ -19,5 +20,13 @@
   "window_max_user_turns": 2,
   "window_max_models": 8,
   "window_max_ms": 600000,
-  "minimum_holdout_families": 32
+  "replay_admission": {
+    "include_splits": ["calibration", "development", "holdout"],
+    "gate": "causal_timing_dependency_and_safe_lifecycle_quality"
+  },
+  "inference_requirements": {
+    "recommended_independent_holdout_families": 32,
+    "independence_unit": "whole_contributor_family",
+    "blocks_execution": false
+  }
 }

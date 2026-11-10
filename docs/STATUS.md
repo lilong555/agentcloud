@@ -10,6 +10,8 @@ AgentCloud 围绕 64 个有状态 Agent 共享四个 gVisor 槽位，交付持�
 | 真实 In-Actor | 真实模型 8 轮推理、10 次工具调用，修改两个源码文件，原有测试通过；自主调度完成 8 次 MEMORY 恢复，保持 AST／上下文对象身份，观察器 Actor GET 为零 | [自主调度真实任务](evidence/real-model/realmodel-5b80fdc027c8/acceptance.json) |
 | 真实外置客户端 | HTTP 写入、安全点、挂起期间推理完成、MEMORY 恢复、跨 epoch 原回执读取，最终释放 Worker | [完整服务验收](evidence/service-substrate.json) |
 | 独立快照副本 | Tag UID、源 Actor UID、源 snapshot UUID/generation 与 manifest 一致，独立存储对象 COMPLETED | [原生 GetTag 核验](evidence/substrate-retained-tag.json) |
+| 排空与未知结果边界 | 30 秒 DRAIN_TIMEOUT、身份核验取消、原子 ABORTED、冷却指标、结构化只读恢复提示 | [协议](API.md#安全点超时与未知工具结果)、[专门契约](../internal/control/quiesce_test.go) |
+| 恢复点轮转 | 默认保留最近两个已验证 COMMITTED Tag，当前／未知引用保护、持久删除与有界退避、过期孤儿回收 | [存储成本与治理](STORAGE_COSTS.md)、[GC 契约](../internal/control/snapshot_gc_test.go) |
 | DeerFlow | 真实模型、两个并发子任务、文件上传、70 个 PostgreSQL 图检查点、两阶段 manifest、新进程恢复与 MEMORY | [真实研究 Agent](evidence/real-model/realmodel-74bd7470d2c7/deerflow.json) |
 | Python Runtime | 持久终态发布、只读控制面观察、跨 epoch 回执、具备能力协商的有界传输恢复与 attach 安全点保护；锁定 DeerFlow 环境 20 项全部通过 | [通用契约](evidence/local-contract.json)、[独立 CI](evidence/ci-run-42769258508.json)、[协议](../runtime/README.md) |
 | 成本协调 | 原生 classifier 排队观测、等待与快照成本估计、最小驻留、恢复冷却、并发操作排他 | [真实 HTTP 策略验收](evidence/service-scheduling.json) |
@@ -20,7 +22,7 @@ AgentCloud 围绕 64 个有状态 Agent 共享四个 gVisor 槽位，交付持�
 | Gate 1 `a7e324a` | N32／N64 三种子 24/24 trial、6,912/6,912 请求与清理通过；v2 相对旧成本策略两项改善，TTL2 对照保留资源与尾延迟取舍 | [独立 cohort 与完整计划分母](evidence/gate1-a7e324a-summary.json)、[运行身份](evidence/workflow-launch-42800756685.json) |
 | 正式留出与边界确认 | Gate 2 完成 50/50 trial、14,400/14,400 请求与全部清理；边界完成 13/18 trial、6,105/6,912 请求：三个 TTL2 磁盘保护失败、两个后序 v2 未投递，九组集群清理通过 | [正式完整统计](evidence/gate2-a7e324a-summary.json)、[边界及存储归因](V2_EVALUATION.md#三种子边界确认) |
 | 公开 Agent 轨迹审查 | 五类公开源的许可、字段与有限样本核验；TraceLab v0.0.2 与 FreeInference 为独立真实轨迹阶段的数据规格 | [数据审查与采用条件](PUBLIC_TRACE_REVIEW.md)、[来源与摘要](evidence/public-trace-review.json) |
-| TraceLab 离线审核 | 云端完整核验 8,058 会话、665,453 轮、743,819 工具；303 会话深入审核、33 窗口合格；7 留出窗口来自 2 贡献者，32 family 准入门槛保持关闭 | [完整质量结果](PUBLIC_TRACE_IMPORT.md)、[原始证据索引](evidence/public-traces/index.json) |
+| TraceLab 质量与回放准入 | 全来源 8,058 会话、52 贡献者；303 会话深入审核，全部 33 个质量合格窗口准入（7 个多模型轮、48 模型轮、32 工具）；贡献者数量用于解释样本范围 | [质量与实机回放](PUBLIC_TRACE_IMPORT.md)、[原始证据索引](evidence/public-traces/index.json) |
 | CUDA 物理 KV | RTX 4070 Laptop、OPT-125M、30 组 KEEP/释放对照；64 会话总时间 −22.5%，16 会话 +44.5%，反转范围 48～64 会话 | [物理 GPU 验证](GPU_VALIDATION.md) |
 | 官方 KV 事件 | 真实 vLLM、KVIndexer 与默认 Selector；26 个连续事件 batch、Stored/Removed 和 relay 零丢失；六次 Prefill 计算对账全部一致，单 Worker | [事件验收与完整尝试](evidence/gpu/kv-events-summary.json) |
 | 规模实验 | 四租户、两 Worker、N=8/16/32/64，60 组首轮中 58 组通过，10,765/10,800 请求；AgentCloud 12/12 组通过 | [完整矩阵与区间](evidence/scale-summary.json) |
@@ -32,6 +34,8 @@ AgentCloud 围绕 64 个有状态 Agent 共享四个 gVisor 槽位，交付持�
 | 独立审查 | 生命周期与认证审查；成本路径竞争条件回归；源码与公开凭据扫描 | [协议审查](evidence/adversarial-review.json)、[交付审查](evidence/delivery-review.json) |
 
 [证据索引](evidence/validation-index.json)统一记录各阶段的源码、完整计划分母、原始报告摘要及正式配对结论。
+
+正式交付编号为 P0 原生正确性与真实 Agent、P1 调度性能与完整成本、P2 物理 GPU 与官方 KV 事件、P3 边界闭环与求职封版。[实施计划](IMPLEMENTATION_PLAN.md)统一定义阶段与证据映射，历史设计构建顺序采用 D0～D6。
 
 ## 已完成的重型验收
 

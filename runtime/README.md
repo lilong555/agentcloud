@@ -57,6 +57,7 @@ python3 -m runtime.actor_demo \
 | `GET /runtime/v1/capabilities` | 部署 fidelity、进程策略与 Loop 位置 |
 | `POST /runtime/v1/tools` | epoch、稳定工具 ID、文件与 Shell操作 |
 | `POST /runtime/v1/quiesce` | 关闭准入、等待工具完成、提交回执水位 |
+| `POST /runtime/v1/quiesce/cancel` | 使用原屏障身份取消明确失败的排空，返回可信 Actor UID 与 gate 状态 |
 | `POST /runtime/v1/attach` | 核验可信 Actor UID、epoch 与 manifest，激活新代次 |
 | `POST /runtime/v1/agents/start` | `run_id`、`trajectory_id`、`session_id`、`agent_kind`、任务与仓库 |
 | `GET /runtime/v1/agents/{run_id}` | 运行状态、模型轮次、工具轨迹、驻留 AST 与真实进程内存 |
@@ -65,7 +66,11 @@ python3 -m runtime.actor_demo \
 
 Runtime 持久保存最近一次 attach 的 epoch、Actor UID 与 manifest。相同代次和输入重放返回当前 gate，安全点关闭后的 gate 保持 CLOSED；相同代次的输入冲突返回 `ATTACH_PAYLOAD_MISMATCH`。进程重启后 gate 从 CLOSED 开始，恢复准入需要新的 epoch。`readyz` 与 capabilities 的 `idempotent_lifecycle_rpc_version: 1` 声明上述语义，协调器据此开启 attach 的传输重试；旧运行时和旧 MEMORY 快照沿原单次调用协议执行。
 
-工具、quiesce 和具备上述能力的 attach 使用稳定身份恢复传输故障。无应用错误码的 HTTP 502/503/504、连接中断与截断 JSON 最多触发三次额外重试，每次请求最长 10 秒，整体受原操作期限约束。工具返回 `409 RUNNING` 时每秒读取原持久 claim；完成回执直接返回。`OUTCOME_UNKNOWN`、输入冲突、陈旧 epoch 和身份错误立即交给对账处理。工具 ID、业务输入、epoch、安全点代次和 manifest 在重试期间保持一致。
+工具、quiesce 和具备上述能力的 attach 使用稳定身份恢复传输故障。无应用错误码的 HTTP 502/503/504、连接中断与截断 JSON 最多触发三次额外重试。普通 RPC 每次最长 10 秒；quiesce 每次最长 35 秒、整体预算 40 秒，以覆盖 Runtime 的 30 秒排空及终态响应；所有调用同时受原操作期限约束。工具返回 `409 RUNNING` 时每秒读取原持久 claim；完成回执直接返回。`OUTCOME_UNKNOWN`、输入冲突、陈旧 epoch 和身份错误立即交给对账处理。工具 ID、业务输入、epoch、安全点代次和 manifest 在重试期间保持一致。
+
+Runtime 持久保存 `(operation_id, epoch, barrier_generation)` 屏障与取消墓碑。quiesce 和 cancel 在改变 gate 前校验请求 Actor UID 及可信投影。排空超过 30 秒返回 `504 DRAIN_TIMEOUT`，已有 UNKNOWN 返回原未知操作 ID 与只读恢复指引；两种错误均保留无安全点回执的终态。Coordinator 确认取消身份后恢复 RUNNING／OPEN、持久冷却和超时计数；已经 QUIESCED 的屏障保持关闭，迟到和旧代次取消被拒收。重启后的取消回执保持幂等，准入恢复仍经过可信 attach。
+
+未知副作用存在时，工具入口只允许已开闸的 `file_read` 检查；写入和 shell 返回结构化恢复错误。`file_read` 的缺失路径作为 `COMPLETED` 检查结果中的 `FILE_NOT_FOUND` 保存。Harness 保留原 tool call、恢复消息和 RECOVERY_REQUIRED 状态，等待上层只读对账。[Coordinator 协同与错误示例](../docs/API.md#安全点超时与未知工具结果)
 
 文件操作使用相对根目录描述符与 `O_NOFOLLOW`。Shell完成或超时时清理其进程组。超时、输出溢出和重启期间的未知副作用保存为 `OUTCOME_UNKNOWN`，等待对账。Runtime 启动时自动载入未完成运行，恢复后的执行者沿原逻辑请求继续认领。
 

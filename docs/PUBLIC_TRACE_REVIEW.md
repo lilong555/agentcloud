@@ -1,6 +1,6 @@
 # AgentCloud 公开 Coding Agent 轨迹数据审查
 
-**TraceLab v0.0.2 的完整来源核验与数据质量报告已交付，真实性能回放准入保持关闭。** 固定源码 `f73344445265684b8e26908e5e4a46cbd255eaab` 的[完整审核](evidence/public-traces/tracelab-v0.0.2-f733444/audit.json)确认 8,058 会话、665,453 轮、743,819 工具与 52 贡献者；七个合格 holdout 窗口来自两个贡献者，现行门槛要求 32 个具有合格窗口的 holdout contributor family，`replay_ready=false`。实际字段与复现入口见 [TraceLab 导入与质量审核](PUBLIC_TRACE_IMPORT.md)，当前和历史产物见[证据索引](evidence/public-traces/index.json)。
+**TraceLab v0.0.2 的 33 个质量合格窗口已全部获得探索性实机回放准入。** 固定源码 `f73344445265684b8e26908e5e4a46cbd255eaab` 的[完整审核](evidence/public-traces/tracelab-v0.0.2-f733444/audit.json)确认 8,058 会话、665,453 轮、743,819 工具与 52 贡献者。质量准入依据来源摘要、因果时序和完整依赖；贡献者数量用于标注统计范围。实际字段、执行协议与结果见 [TraceLab 导入与回放](PUBLIC_TRACE_IMPORT.md)，当前和历史产物见[证据索引](evidence/public-traces/index.json)。
 
 审查日期：2026-11-10。TraceLab 是本阶段已完整核验的数据源；FreeInference 保留为模型等待与返回间隔的独立确认候选。Copilot2026 可提供生产工作流结构，时间回放先核验起止语义；GATC 适合工具组合与长尾分析，Azure Functions 适合应用到达密度背景对照。当前公开轨迹阶段交付质量报告与数据契约，P1 的 Gate 1/Gate 2 和边界矩阵按[现有协议](V2_EVALUATION.md)独立验收。
 
@@ -12,14 +12,14 @@
 | --- | --- |
 | 完整来源 | 8,058 会话、665,453 轮、743,819 工具、52 贡献者，发布计数全部匹配；2,688,829 timing events，加工具对象共 3,432,648 源对象 |
 | 固定预算深入审核 | 303 个完整会话、19,684 源轮、100,000 源对象；48 会话时序合格，33 个完整窗口合格 |
-| contributor 留出 | calibration/development/holdout 为 31/7/14 个贡献者；合格 holdout 为七窗口/两贡献者；32 contributor family 门槛保持关闭 |
+| contributor 分布 | calibration/development/holdout 为 31/7/14 个贡献者；33 个质量窗口来自八贡献者，合格 holdout 为七窗口/两贡献者；全部 split 质量合格窗口直接回放 |
 | 全部被选会话 | 安全候选覆盖 1.2184%，分母为 303 会话/100,000 对象，包含全部剔除会话的诊断 |
 | 合格窗口 | 安全候选覆盖 99.7523%，分母为 33 窗口/48 源轮/195 源对象；模型候选 925,341 ms、安全 923,049 ms；用户候选与安全均为零 |
 | 云端资源 | ARM64、32 可用 CPU、约 60.6 GiB 内存；审核 70.46 s，峰值组 RSS 138,625,024 B；资源监督通过 |
 
 表中结果来自[当前 audit](evidence/public-traces/tracelab-v0.0.2-f733444/audit.json)、[manifest](evidence/public-traces/tracelab-v0.0.2-f733444/manifest.json)、[host](evidence/public-traces/tracelab-v0.0.2-f733444/host.json)与[resources](evidence/public-traces/tracelab-v0.0.2-f733444/resources.json)。高覆盖来自同步工具、依赖完整、长度受限的强过滤窗口；这些窗口提供模型等待的质量样本，用户等待总体适用性继续保持待验。源码的 24 项时序回归与 148 项 tooling 检查通过，[CI 双 job](https://github.com/lilong555/agentcloud/actions/runs/42813998753)为绿色。
 
-303 会话中，253 会话携带未解决进程终态、79 会话携带未知工具语义、67 会话有源时间逆序、34 会话缺工具结果观察、四会话有工具结果时间冲突、13 会话有同刻用户身份歧义。原因可以重叠，完整交集保留在 audit。公开轨迹的当前交付结论是来源真实可获取、计数可复核、保守安全条件下的合格窗口有限；后续回放继续遵循现行门槛。
+303 会话中，253 会话携带未解决进程终态、79 会话携带未知工具语义、67 会话有源时间逆序、34 会话缺工具结果观察、四会话有工具结果时间冲突、13 会话有同刻用户身份歧义。原因可以重叠，完整交集保留在 audit。质量合格的 33 窗口包括七个多模型轮窗口，共 48 模型轮与 32 同步工具。来源真实性、筛选覆盖与回放效果分别保存对应证据。
 
 ## 可用性与快照
 
@@ -72,19 +72,19 @@ Codex `exec_command` 返回“仍在运行”后可通过 `write_stdin` 继续�
 
 固定 release 的完整扫描已在云端 ARM64 主机完成。配置限制 512 会话/100,000 源对象，以稳定哈希选择完整会话，实际获得 303 会话。贡献者整组按固定哈希阈值划分 calibration/development/holdout=60/20/20，实际为 31/7/14 个贡献者，贡献者跨 fold 泄漏计数为零。`last_seen_contributor_split` 按贡献者最晚时刻排名，保留每个贡献者完整历史，衡量该分组的敏感性。
 
-窗口继续采用完整源会话：至多两次用户到达、八个模型 span、十分钟，最后一条实际观察为响应文本，时间和依赖审核合格。33 合格窗口中的七个 holdout 窗口仅来自两个贡献者，低于 32 个合格 holdout contributor family 的门槛，本阶段据停止条件交付质量报告。门槛、选择规则和 P1 冻结矩阵保持现行定义。
+窗口采用完整源会话：至多两次用户到达、八个模型 span、十分钟，最后一条实际观察为响应文本，时间和依赖审核合格。33 窗口来自八个贡献者，其中七个 holdout 窗口来自两个贡献者。全部质量窗口执行配对回放，统计解释采用探索性范围；32 family 仅为推断规模参考。P1 冻结矩阵保留自身配置和完整种子对判据。
 
 FreeInference 的固定 HF revision 和 gateway 时钟适合作为独立确认候选；当前该源交付官方 schema 与小样本审查，完整回放留待独立准入。Copilot 的时间端点核验和 GATC 的混合间隔分类同属各来源的质量前提。
 
-后续达到准入要求的真实性能回放固定事件 manifest、gVisor 物理成本与完整实验分母，使用[现有双指标判定](V2_EVALUATION.md)报告 Actor 预留 GB·s 与交互 P95。首次容量准入、取得 permit、ReturnDemand 发布与后续复用分别计时，保留 FairSlots 的现行语义。当前归档计量来源与数据质量，性能效应保持待验。
+真实集群回放固定事件 manifest，Observed／TTL15／TTL2／v2 在同一 Runner 随机串行，报告 Actor 预留 GB·s、快照次数、交互延迟与恢复成功率。首次容量准入、取得 permit、ReturnDemand 发布与后续复用分别计时，保留 FairSlots 的现行语义。模型时钟由公开轨迹驱动，执行后端与实际成本由真实 Substrate MEMORY 和 Dynamo CPU Mocker 产生，模型策略只接收截至当前的观察。[执行入口与证据](PUBLIC_TRACE_IMPORT.md)
 
 ## 可以增强的主张
 
 | 证据层 | 可增强的结论 |
 | --- | --- |
 | 当前完整 TraceLab 质量报告 | 固定公开文件真实可获取，发布计数全部匹配；已记录字段、预算内质量缺口与全部剔除分母，合格样本覆盖模型等待 |
-| 当前贡献者留出 | 同一贡献者的完整会话保持 fold 隔离；两个具有合格窗口的 holdout 贡献者支撑当前质量计数，32 family 准入仍关闭 |
-| 后续合格真实 Actor 轨迹回放 | 在独立实测快照/恢复成本、容量压力与状态保持条件下评测冻结策略的资源与延迟效果；当前为待验事项 |
+| 当前贡献者分布 | 同一贡献者的完整会话保持 fold 隔离；全部八个合格贡献者进入探索性回放，两个合格 holdout 贡献者单列 |
+| 真实 Actor 轨迹回放 | 公开时序驱动、真实快照/恢复成本与容量压力共同形成实机证据；完整结果由独立回放报告给出 |
 | P0 真实 Agent 执行与工具回执 | 真实任务的模型调用、工具执行、MEMORY 恢复与故障正确性，继续使用现有 P0 的独立证据 |
 | P2 硬件 KV 曲线与官方事件链 | KV 的物理占用、释放与缓存事件，公开 trace 的 tokens/prefix 结构提供额外输入形状 |
 

@@ -47,8 +47,12 @@ def summarize(directory):
     for phase in ("hot", "replay"):
         rows = [r for r in observations if r["phase"] == phase]
         phases[phase] = {
+            "prompt_tokens": [r["prompt_tokens"] for r in rows],
             "computed_tokens": [r["actual_compute_tokens"] for r in rows],
             "hit_tokens": [r["actual_hit_tokens"] for r in rows],
+            "actual_prefix_hit_fraction": [r["actual_hit_tokens"] / r["prompt_tokens"] for r in rows],
+            "avoided_reprefill_tokens": [r["prompt_tokens"] - r["actual_compute_tokens"] for r in rows],
+            "avoided_reprefill_tokens_total": sum(r["prompt_tokens"] - r["actual_compute_tokens"] for r in rows),
             "prefill_ms": [r["prefill_seconds"] * 1000 for r in rows],
             "prefill_median_ms": statistics.median(r["prefill_seconds"] * 1000 for r in rows),
             "client_ttft_median_ms": statistics.median(r["client_ttft_seconds"] * 1000 for r in rows),
@@ -72,6 +76,8 @@ def summarize(directory):
             phases["replay"]["prefill_ms"][i] - phases["hot"]["prefill_ms"][i] for i in range(3)],
         "timing_population": "three consecutive pairs after the recorded cold/hot/eviction warmup",
         "lifecycle_integration": False, "stage_endpoint": "official events and physical cache accounting",
+        "cross_suspend_resume_gpu_hit_fraction": None,
+        "cross_suspend_resume_gpu_measurement": "not_collected; event observations are a standalone single-worker experiment",
         "cleanup": result["cleanup"],
     }
 

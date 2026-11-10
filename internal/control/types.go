@@ -88,10 +88,16 @@ type ToolRequest struct {
 	TimeoutMS int    `json:"timeout_ms,omitempty"`
 }
 type ToolResult struct {
-	Content  string `json:"content,omitempty"`
-	Stdout   string `json:"stdout,omitempty"`
-	Stderr   string `json:"stderr,omitempty"`
-	ExitCode int    `json:"exit_code"`
+	Content  string           `json:"content,omitempty"`
+	Stdout   string           `json:"stdout,omitempty"`
+	Stderr   string           `json:"stderr,omitempty"`
+	ExitCode int              `json:"exit_code"`
+	Error    *ToolResultError `json:"error,omitempty"`
+}
+type ToolResultError struct {
+	Code    string `json:"code"`
+	Path    string `json:"path,omitempty"`
+	Message string `json:"message"`
 }
 type ToolReceipt struct {
 	Recovery    *ToolRecoveryHint `json:"recovery,omitempty"`

@@ -2,6 +2,7 @@
 import argparse
 import csv
 import json
+import hashlib
 import math
 from pathlib import Path
 import random
@@ -14,6 +15,7 @@ PERCENTILES = (50, 95, 99)
 SCALARS = ('goodput_per_second', 'stranded_worker_gb_s', 'actor_reserved_gb_s',
            'resume_count', 'resume_total_seconds')
 RESOURCE_METRICS = frozenset(('actor_reserved_gb_s', 'stranded_worker_gb_s'))
+STORAGE_METRICS = ('snapshot_tag_count', 'snapshot_write_bytes', 'peak_storage_bytes')
 MIN_RESOURCE_COVERAGE = .9
 
 
@@ -95,6 +97,7 @@ def matrix_coverage(trials, config):
 def select_trials(paths, source_commit=None, scenario=None, stage=None, github_run_id=None):
     """Select a declared evidence cohort before loading its complete request trajectories."""
     selected = []
+    storage_archives = {}
     for path in paths:
         trial = json.loads(path.read_text())
         if source_commit and trial.get('source_commit') != source_commit:
@@ -105,6 +108,19 @@ def select_trials(paths, source_commit=None, scenario=None, stage=None, github_r
             continue
         if github_run_id and str(trial.get('github_run_id')) != str(github_run_id):
             continue
+        archive_path=path.parent.parent.parent/'snapshot-storage-a7e324a.json'
+        if archive_path not in storage_archives:
+            storage_archives[archive_path]=({row['trial_id']:row for row in json.loads(archive_path.read_text())['trials']}
+                                           if archive_path.exists() else {})
+        storage=storage_archives[archive_path].get(trial['trial_id'])
+        if storage:
+            result_hash=hashlib.sha256(path.read_bytes()).hexdigest()
+            if not any(source.get('sha256')==result_hash and source.get('path','').endswith('/'+trial['trial_id']+'/result.json')
+                       for source in storage.get('sources', [])):
+                raise ValueError('storage evidence refers to a different trial report')
+            trial.setdefault('metrics',{}).update({key:storage[key] for key in STORAGE_METRICS})
+            trial['storage_evidence']=dict(sources=storage['sources'],lifecycle=storage['lifecycle_evidence'],
+                                           physical=storage['physical_storage_evidence'])
         selected.append((path, with_cleanup(path, trial)))
     return selected
 
@@ -181,6 +197,13 @@ def summarize(trials, samples=2000, seed=9031, candidate="agentcloud", matrix_co
             resource_observation_complete=group_complete and all(resource_observed(t) for t in group),
             ci95={key: interval(values) for key, values in bootstrap.items()})
         row.update({key: mean_complete([trial_metric(t, key) for t in group]) for key in SCALARS})
+        executed=[t for t in group if t.get('trial_execution_status') not in ('NOT_STARTED','BLOCKED_CLEANUP')]
+        row.update({key:mean_complete([trial_metric(t,key) for t in executed if trial_metric(t,key) is not None])
+                    for key in STORAGE_METRICS})
+        row['storage_observation']={key:dict(observed_trials=sum(trial_metric(t,key) is not None for t in group),
+                                           executed_trials=len(executed),planned_trials=len(expected_seeds),
+                                           population='executed trials with observed metric') for key in STORAGE_METRICS}
+        row['storage_sources']=[t['storage_evidence'] for t in group if t.get('storage_evidence')]
         for key in RESOURCE_METRICS:
             if any(trial_metric(t, key) is None for t in group):
                 row['ci95'][key] = [None, None]
@@ -208,6 +231,15 @@ def summarize(trials, samples=2000, seed=9031, candidate="agentcloud", matrix_co
                 differences = [a-b for a, b in pairs if finite(a) and finite(b)]
                 ci = interval([statistics.mean(rng.choices(differences, k=len(differences))) for _ in range(samples)]) if differences else [None, None]
                 changes[key] = dict(pairs_observed=len(differences), mean_difference=mean_complete(differences), paired_seed_bootstrap_ci95=ci)
+            storage_rng=random.Random(seed)
+            for key in STORAGE_METRICS:
+                values=[trial_metric(autonomous[s],key)-trial_metric(baseline[s],key) for s in seeds
+                        if autonomous[s]['status']==baseline[s]['status']=='passed'
+                        and finite(trial_metric(autonomous[s],key)) and finite(trial_metric(baseline[s],key))]
+                changes[key]=dict(pairs_observed=len(values),mean_difference=mean_complete(values),
+                    paired_seed_bootstrap_ci95=interval([statistics.mean(storage_rng.choices(values,k=len(values)))
+                                                        for _ in range(samples)]) if values else [None,None],
+                    population='both executed and passed trials; failure denominators retained in matrix')
             fully_observed = len(seeds) >= 3 and autonomous.keys() == baseline.keys() and all(
                 autonomous[s]['status'] == baseline[s]['status'] == 'passed'
                 and len(completed(autonomous[s])) == planned(autonomous[s])
@@ -241,6 +273,10 @@ def summarize(trials, samples=2000, seed=9031, candidate="agentcloud", matrix_co
                         'incomplete_planned_pairs' if not planned_pairs_complete else (
                         'insufficient_resource_observations' if not resource_complete else 'tradeoff_or_uncertain')))))))
     return dict(candidate_policy=candidate, groups=groups, paired_comparisons=comparisons, attempt_audit=audit,
+        storage_metrics=dict(snapshot_tag_count='unique retained Tag UIDs, including initial COMMITTED recovery points',
+            snapshot_write_bytes='measured physical trial writes; logical upload samples remain in separate storage evidence',
+            peak_storage_bytes='measured trial-attributed peak storage occupancy',
+            missing_observations=None,physical_io_reduction='requires complete measured physical counters'),
         matrix=matrix,
         acceptance=dict(primary_metrics=['actor_reserved_gb_s', 'interactive_p95'],
                         noninferiority_margin=0, confidence=.95, minimum_complete_seed_pairs=3,
@@ -336,7 +372,7 @@ def main():
         experiment_stage=args.stage, github_run_id_filter=args.github_run_id, sources=[str(path) for path in paths])
     write_json(args.output, result)
     with args.output.with_suffix('.csv').open('w', newline='') as handle:
-        columns = ['concurrency','policy','trials','offered','completed','failed_or_unoffered','ttft_p50','ttft_p95','ttft_p99','resume_p50','resume_p95','resume_p99','interactive_p95_seconds'] + list(SCALARS) + ['cached_tokens']
+        columns = ['concurrency','policy','trials','offered','completed','failed_or_unoffered','ttft_p50','ttft_p95','ttft_p99','resume_p50','resume_p95','resume_p99','interactive_p95_seconds'] + list(SCALARS) + list(STORAGE_METRICS) + ['cached_tokens']
         writer = csv.DictWriter(handle, columns, lineterminator='\n')
         writer.writeheader()
         for row in result['groups']:

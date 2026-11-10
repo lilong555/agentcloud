@@ -1,0 +1,110 @@
+name: Public Trace real Actor paired replay
+on:
+  workflow_dispatch:
+    inputs:
+      native_run_id:
+        description: 'Successful native validation supplying the locked CPU wheel and proof'
+        type: string
+        default: '42769316617'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: agentcloud
+          POSTGRES_PASSWORD: agentcloud-ci
+          POSTGRES_DB: agentcloud_substrate
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U agentcloud -d agentcloud_substrate" --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: '5432'
+      PGUSER: agentcloud
+      PGPASSWORD: agentcloud-ci
+      AGENTCLOUD_DATABASE_URL: postgresql://agentcloud:agentcloud-ci@127.0.0.1:5432/agentcloud_substrate?sslmode=disable
+      AGENTCLOUD_TEST_PG_ADMIN: postgresql://agentcloud:agentcloud-ci@127.0.0.1:5432/agentcloud_substrate?sslmode=disable
+      GOMAXPROCS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v7
+      - name: Record all admitted windows and the paired policy order
+        run: >-
+          python3 -m bench.public_trace_live
+          --input docs/evidence/public-traces/tracelab-v0.0.2-admitted
+          --schedule artifacts/public-trace-schedule.json --plan-only
+      - name: Prepare locked source
+        run: python3 scripts/upstream.py --fetch substrate dynamo
+      - name: Verify selected native run completed successfully
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NATIVE_RUN: ${{ inputs.native_run_id }}
+        run: gh run watch "$NATIVE_RUN" --interval 30 --exit-status
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-cpu-wheel
+          path: artifacts/native-wheels
+          run-id: ${{ inputs.native_run_id }}
+          github-token: ${{ github.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: native-validation-evidence
+          path: artifacts/native-proof
+          run-id: ${{ inputs.native_run_id }}
+          github-token: ${{ github.token }}
+      - name: Validate reused native source and install runtime
+        run: |
+          python3 scripts/verify_native_proof.py artifacts/native-proof --require-runtime
+          uv venv --python 3.12 .venv-dynamo
+          uv pip install --python .venv-dynamo/bin/python -r experiments/dynamo/requirements-cpu.lock artifacts/native-wheels/*.whl
+          uv pip check --python .venv-dynamo/bin/python
+          .venv-dynamo/bin/python scripts/verify_cpu_environment.py
+      - name: Prepare Kind, gVisor MEMORY, durable storage and two Workers
+        run: bash scripts/ci_live_prepare.sh
+      - name: Issue access covering all four policies and cleanup
+        run: >-
+          python3 scripts/ci_substrate_access.py
+          --schedule artifacts/public-trace-schedule.json
+          --job-minutes 90 --workflow-source "$GITHUB_SHA"
+      - name: Replay every admitted window with four serial paired policies
+        run: python3 -m bench.public_trace_live --schedule artifacts/public-trace-schedule.json
+      - name: Collect runtime and resource evidence
+        if: always()
+        run: python3 scripts/ci_live_collect.py
+      - name: Release owned trial processes and databases
+        if: always()
+        run: python3 -m bench.public_trace_live --schedule artifacts/public-trace-schedule.json --cleanup-schedule
+      - name: Release port forwards and Kind cluster
+        if: always()
+        run: python3 scripts/ci_live_cleanup.py
+      - name: Stage current attempt and trace provenance
+        if: always()
+        run: |
+          python3 scripts/stage_live_artifact.py --kind scale
+          python3 - <<'PY'
+          import shutil
+          from pathlib import Path
+          target=Path('artifacts/ci-live-evidence/public-traces')
+          target.mkdir(parents=True,exist_ok=True)
+          for name in ('live-replay.json',):
+              source=Path('docs/evidence/public-traces')/name
+              if source.exists(): shutil.copyfile(source,target/name)
+          shutil.copytree('docs/evidence/public-traces/tracelab-v0.0.2-admitted',target/'input')
+          schedule=Path('artifacts/public-trace-schedule.json')
+          if schedule.exists(): shutil.copyfile(schedule,target/'schedule.json')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: public-trace-real-paired-replay
+          path: artifacts/ci-live-evidence/
+          if-no-files-found: error
+          retention-days: 30

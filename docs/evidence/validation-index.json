@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "execution_kind": "validation-evidence-index",
-  "delivery_status": "validation_complete_with_documented_boundaries",
+  "delivery_status": "finalization_in_progress",
   "p0": {
     "source_commit": "20113d512f4363d4424822329007a3749d2dd268",
     "status": "passed",
@@ -23,7 +23,7 @@
     },
     "gate2": {
       "evidence": "docs/evidence/gate2-a7e324a-summary.json",
-      "sha256": "1a5915fb213a8a5ad9a1fa6bb343e7e5735fba24c2b2cf51f4787a81c2ca3544",
+      "sha256": "b5ec3a076adb0134cc39dd058a47421e23c41aff7165e8983a5ad9803b57236e",
       "matrix": {
         "planned_trials": 50,
         "observed_trials": 50,
@@ -91,7 +91,7 @@
     },
     "boundary": {
       "evidence": "docs/evidence/boundary-confirm-a7e324a-summary.json",
-      "sha256": "c4344be06025020d97b0e3f11027f13efb2704726dc3ea806c4efd35e448e25f",
+      "sha256": "becd0aa9db1db3426d43c39611efba04b5bdbec58c9cc4e0a2dea8decc91008f",
       "matrix": {
         "planned_trials": 18,
         "observed_trials": 18,
@@ -153,7 +153,12 @@
         "sha256": "9a79e0da7b6ccbdb935f9d8d14c7a150fe50ec3b0b97bc5583186f2ec5494949"
       }
     ],
-    "stopping_condition": "one v2 implementation, complete held-out and boundary matrices, no additional heuristic search"
+    "stopping_condition": "one v2 implementation, complete held-out and boundary matrices, no additional heuristic search",
+    "snapshot_storage": {
+      "evidence": "docs/evidence/snapshot-storage-a7e324a.json",
+      "sha256": "96ece64731e0f30434d4b0a21fa323bc7b9fa154938bb13918f3b219b8706447"
+    },
+    "frozen_execution_files_scope": "file digests at experiment source a7e324a7165fa65b697023c9f7a768c9b27610fe; analysis and delivery may have newer source"
   },
   "p2": {
     "cuda_pressure": {
@@ -169,24 +174,36 @@
     },
     "official_kv_events": {
       "evidence": "docs/evidence/gpu/kv-events-summary.json",
-      "sha256": "dfa925dea7af3e35420420794c2634e5fd6d2fbd7a343f30fb661d3e419820f1",
+      "sha256": "512f4772813e7f6f4ad84e7ebbf04ef67b859b00138db6291339fc28e34807ed",
       "source_commit": "65128135fb2adae73d2301b0a4853279c4bf0dcb",
       "workers": 1,
       "lifecycle_integration": false,
       "stage_endpoint": "official events and physical cache reconciliation"
+    },
+    "token_cost_reconciliation": {
+      "evidence": "docs/evidence/gpu/token-cost-summary.json",
+      "sha256": "565990f1f214439737375d42fc8283002b389354376af92b8be78a1bcf3ee904"
     }
   },
   "public_traces": {
     "evidence": "docs/evidence/public-traces/index.json",
-    "sha256": "ec31ea176615997a741b25cfafbea4dfcf0c75874e4c818cf87b4ae6d492a962",
+    "sha256": "4bdd3c0fcd65501ecf878425e839f315f93b4d45de94509cacee4cc68f58ac86",
     "source_commit": "f73344445265684b8e26908e5e4a46cbd255eaab",
-    "replay_ready": false,
-    "deliverable": "full-source counts and causal quality audit"
+    "replay_ready": true,
+    "deliverable": "quality-admitted all-split exploratory replay input",
+    "admission": {
+      "evidence": "docs/evidence/public-traces/tracelab-v0.0.2-admitted/manifest.json",
+      "sha256": "67b7efe95c099bd7a6ed2b1e3b0be22b53f2b5f72533a1686b3c583b41a1d69b"
+    },
+    "description": {
+      "evidence": "docs/evidence/public-traces/tracelab-v0.0.2-descriptive.json",
+      "sha256": "01cfa7df9a6699bfe68b9418352877857d28f82c6b1a5ef282ef38ede5ea16e1"
+    }
   },
   "ci": {
-    "evidence": "docs/evidence/ci-run-42825353054.json",
-    "sha256": "28597679eb954816dce85f21e4dce01edd56c19c9a85b22570894f7892f0c380",
-    "source_commit": "08969abe400b9e99c0681006bde2a0744d44043b",
+    "evidence": "docs/evidence/ci-run-42841436248.json",
+    "sha256": "aae6776f0850320742f1f7a075fe67f5015e25af134304f4069a3327162a95eb",
+    "source_commit": "36ca7d0c89929f897c5188e39e261def833ea19c",
     "status": "passed"
   },
   "documents": [
@@ -196,6 +213,30 @@
     "docs/V2_EVALUATION.md",
     "docs/GPU_VALIDATION.md",
     "docs/INTERVIEW_DEFENSE.md",
-    "docs/PUBLIC_TRACE_IMPORT.md"
-  ]
+    "docs/PUBLIC_TRACE_IMPORT.md",
+    "docs/STORAGE_COSTS.md",
+    "docs/RESUME_ZH.md"
+  ],
+  "stage_definitions": {
+    "p0": "native correctness and real Agent execution",
+    "p1": "paired scheduler performance and complete resource costs",
+    "p2": "physical GPU and official KV events",
+    "p3": "boundary contracts, snapshot governance and final delivery"
+  },
+  "p3": {
+    "boundary_source_commit": "36ca7d0c89929f897c5188e39e261def833ea19c",
+    "boundary_ci": {
+      "evidence": "docs/evidence/ci-run-42841436248.json",
+      "sha256": "aae6776f0850320742f1f7a075fe67f5015e25af134304f4069a3327162a95eb"
+    },
+    "go_top_level_tests": 140,
+    "source_delivery": {
+      "evidence": "docs/evidence/source-reproduction.json",
+      "sha256": "7af8a7df954aa630a17cfd305505683b6eddce21d430ac32db75505ee19fb8ca"
+    },
+    "patch_delivery": {
+      "evidence": "docs/evidence/upstream-patches-reproduction.json",
+      "sha256": "2995146c8e4cc1962815c65d7446b044626c7d94d98ce2809c4f5c97af6c42fa"
+    }
+  }
 }

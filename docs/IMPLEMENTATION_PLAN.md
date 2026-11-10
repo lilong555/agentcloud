@@ -6,15 +6,12 @@ AgentCloud 以执行层与推理准入层的双向状态协同为核心，采用
 
 | 阶段 | 交付内容 | 验收条件 |
 | --- | --- | --- |
-| P0 能力验证 | 固定上游版本、用户空间工具链、环境报告、Substrate 网络/生命周期测试、Dynamo 原生调度测试 | 原始日志、退出码、测试用例数和阻碍可追溯；准确区分源码检查、契约测试与真实系统运行 |
-| P1 状态反馈 | 版本化 `SandboxStateUpdate`；绑定身份、epoch、sequence、TTL；原生调度器动态 ACTING 权重与暂停请求重新评估 | 旧事件、跨租户事件、过期事件被拒绝；反馈失联恢复默认策略；Reasoning 保持完整预算；默认关闭扩展时保持上游行为 |
-| P2 生命周期 | 同一 Actor lease 下核验 UID 与激活代次；等待指定快照 durable；返回实际恢复 fidelity | 迟到 Suspend、同名 Actor 替换、PENDING 持久化、恢复降级均有故障测试；恢复 gate 与工具水位一致 |
-| P3 最小闭环 | 单进程 Go 协调器、工具 admission gate、成本阈值/迟滞；In-Actor 最小持久请求登记与结果认领 | 写文件→安全点→挂起→恢复→读回；单写者；UNKNOWN 请求保留并进入对账；状态变化可关联到调度回执 |
-| P4 Agent 适配 | DeerFlow Provider/Sandbox/extension；轻量 Coding Runtime；固定种子轨迹录制和回放 | 研究与编程任务各有成功案例；并行工具/上传遵守 gate；checkpoint、snapshot 与无洞 receipt 水位对应 |
-| P5 实验 | 四类负载、A～E 与针对性 2×2 对照；最佳 eager/TTL 基线；故障矩阵 | 配对种子、随机运行顺序、独立重复、全量失败分母、原始事件；Mode A/B 分开报告 |
-| P6 复现交付 | 一键复现入口、架构与使用文档、实测结果索引、演示 | 所有数值关联到原始实验；环境、版本、缺失能力可查询 |
+| P0 原生正确性与真实 Agent | PostgreSQL 丢响应、会话绑定回收、UID／epoch、Lease、Safepoint、MEMORY 恢复与真实 Coding | `20113d5`：1,336 项原生测试、16/16 类故障、8 轮模型／10 次工具／8 次 MEMORY 恢复；原始失败与清理独立归档 |
+| P1 调度性能与完整成本 | 统一 E／FINAL、Shadow、单次 v2 方案、Gate 1／Gate 2、容量与存储边界、公开轨迹质量 | `a7e324a`：Gate 2 50/50 trial、14,400/14,400 请求；边界 13/18 trial；GB·s、P95、快照与写放大并列 |
+| P2 物理 GPU 与官方 KV 事件 | RTX 4070 CUDA 压力曲线；真实 vLLM → KVEvent → KVIndexer → 默认 CACHE Selector | 30/30 CUDA 测量；48～64 会话反转；六请求 Prefill 对账，生命周期接入按既定阶段终点停止 |
+| P3 封版与求职交付 | Quiesce 超时／UNKNOWN、Tag 保留与 GC、配置勘误、统一证据索引、中文简历与答辩 | 专门边界契约、`make check`、`make verify-delivery`、`make evidence-audit`、公开主分支与 CI |
 
-P0 与纯 CPU 状态契约实现并行推进。真实系统闭环以对应上游测试和宿主能力通过为前提。优先完成一个可运行链路，再扩展其他能力。
+以上 P0～P3 为全仓库统一交付编号。[设计审计](../AGENTCLOUD_PLAN.md)中的 D0～D6 表示架构构建顺序；原生能力、状态反馈、生命周期和 Agent 适配归入 P0，性能实验归入 P1，物理 GPU 归入 P2，复现与最终交付归入 P3。每项实验的源码身份以[证据索引](evidence/validation-index.json)为准。
 
 ## 核心契约
 

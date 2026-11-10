@@ -67,7 +67,7 @@ class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
 
 
 class Client:
-    def __init__(self, base_url: str, token: str, timeout: float = 30, headers: dict | None = None,
+    def __init__(self, base_url: str, token: str, timeout: float = 60, headers: dict | None = None,
                  *, ca_file: str | None = None, cert_file: str | None = None,
                  key_file: str | None = None, server_name: str | None = None):
         self.base_url, self.token, self.timeout = base_url.rstrip('/'), token, timeout

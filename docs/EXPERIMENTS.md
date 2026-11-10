@@ -49,16 +49,64 @@ N64/7101 的完整四策略独立验证完成 **1,536/1,536 请求、3/4 trial**
 
 [边界确认](https://github.com/lilong555/agentcloud/actions/runs/42815326346) 的九个 Runner 全部结束，完成 **13/18 trial、6,105/6,912 请求**，九组 Kind 清理均通过。16 MiB／1 s 的两项配对区间均跨零；64 MiB／3 s 平均减少 240.667 次恢复、67.904 GB·s，总资源改善伴随 +313.307 s 交互 P95，首轮容量排队占 v2 累计 TTFT 的 98.733%。128 MiB／3 s 的三个 TTL2 trial 分别完成 370／371／372 个请求后触发 6 GiB 磁盘保护；v2 在 7401 完成 384/384，7402／7403 因前序协议清理失败保留为未投递。Actor、Tag、进程、数据库及集群均已销毁。[完整分母](evidence/boundary-confirm-a7e324a-summary.json) · [存储故障原始证据](evidence/boundary-confirm-storage-a7e324a.json) · [正式边界与区间](V2_EVALUATION.md#三种子边界确认)
 
+### 驻留、快照与持久化成本
+
+[完整存储核算](evidence/snapshot-storage-a7e324a.json)按 COMMITTED manifest 的 retained Tag UID 去重，与实际清理回执逐项核验。快照数含初始恢复点；均值采用已执行且可观测的 trial，未投递 trial 的存储指标为 `null`，计划请求分母完整保留。
+
+| 负载与样本 | v2／TTL2 Actor GB·s | v2／TTL2 快照 Tag 数 | `snapshot_write_bytes` | `peak_storage_bytes` |
+| --- | ---: | ---: | --- | --- |
+| Gate 2 N32，五个完整种子对 | 212.070／220.199 | 144／144 | `null` | `null` |
+| Gate 2 N64，五个完整种子对 | 420.748／424.494 | 288／288 | `null` | `null` |
+| N64，16 MiB／1 s，三个完整种子对 | 461.271／442.879 | 128.667／131 | `null` | `null` |
+| N64，64 MiB／3 s，三个完整种子对 | 680.986／748.890 | 207.333／448 | `null` | `null` |
+| N64，128 MiB／3 s，7401 实际执行 | 逐 trial 保留 | 199／434 | `null` | `null` |
+
+Gate 2 中 v2 与 TTL2 的快照次数相同。64 MiB／3 s 的 v2 复用减少平均 240.667 个快照，资源节省与首次准入尾延迟同时报告。128 MiB 的 TTL2 三个 trial 创建 434／435／436 个 Tag，各含 64 个初始恢复点，运行阶段分别创建 370／371／372 个；7401 的 v2 创建 199 个 Tag，其中 135 个位于初始化之后。该种子的 v2 完成 384/384 请求，TTL2 完成 370/384，另外两种子的 v2 保留未投递状态。
+
+atelet 有界日志尾部记录的完整快照逻辑大小约 163～168 MiB，指标 `snapshot_logical_upload_bytes_observed` 附来源和覆盖。历史试验的完整物理写入量、压缩占用峰值和写放大比值保持 `null`，物理 I/O 降幅随相应实测证据报告。当前恢复点轮转治理与冻结实验的保留行为分别归档。[指标定义与 Tag GC](STORAGE_COSTS.md)
+
 
 ## 公开真实轨迹的数据规格
 
 [五源审查](PUBLIC_TRACE_REVIEW.md)推荐 TraceLab v0.0.2 作为工具／用户等待与后台进程的最小数据源，FreeInference 作为 gateway 模型等待的独立确认。[离线导入器](PUBLIC_TRACE_IMPORT.md)提供固定摘要的全量扫描、完整会话筛选、贡献者 family 留出、安全等待覆盖和策略观察截断。独立 Actions 输出全部原始分母与 `replay_ready` 准入结论，已有性能数据采用本页各自注明的实际执行负载。[机器可读来源](evidence/public-trace-review.json)
 
-固定 `f733444` 的云端全量审核与发布分母匹配：8,058 会话、665,453 轮、743,819 工具、52 贡献者。303 个深入审核会话中，48 个时序合格、33 个完整窗口合格；七个留出窗口来自两个贡献者，32 family 门槛保持关闭。这 33 个窗口仅覆盖 195 个源对象、48 源轮，用户候选等待为零；来源整体和合格窗口覆盖率分别为 1.2184% 和 99.7523%，使用各自分母。[完整质量及筛选报告](PUBLIC_TRACE_IMPORT.md) · [当前与历史原文](evidence/public-traces/index.json)
+固定 `f733444` 的云端全量审核与发布分母匹配：8,058 会话、665,453 轮、743,819 工具、52 贡献者；贡献者按 calibration／development／holdout 分为 31／7／14。303 个深入审核会话中，48 个时序合格、33 个完整窗口合格。这 33 个窗口来自八个贡献者，包含七个多模型轮窗口，共 48 模型轮、32 工具与 195 源对象；七个 holdout 窗口来自两个贡献者。
+
+当前[质量准入清单](evidence/public-traces/tracelab-v0.0.2-admitted/manifest.json)对全部合格 split 开放 Observed／TTL15／TTL2／v2 配对回放，`replay_ready=true`、`replay_executed=false`。样本规模描述独立性与推断范围，执行由来源摘要、因果时序、依赖闭合与安全质量决定。原始 `f733444` audit 的停止标记保留其历史身份。策略通过当前时钟的观察投影接收已发生事件；源未来时间、完整模型耗时及 Token 总量由 driver 持有，受控 Actor 工具映射与实际生命周期回执由执行报告保存。
+
+[探索性描述统计](evidence/public-traces/tracelab-v0.0.2-descriptive.json)给出窗口时长中位数 6.756 s、P95 96.082 s，48 个模型 span 的中位数 5.550 s、P95 90.298 s。合格窗口的用户候选等待为零；全部被选会话和合格窗口的安全候选覆盖率分别为 1.2184% 和 99.7523%，使用各自分母。公开轨迹实机结果按实际执行记录报告。[完整质量与筛选](PUBLIC_TRACE_IMPORT.md) · [当前与历史原文](evidence/public-traces/index.json)
 
 ## RTX 4070 真实 CUDA 与官方 KV 事件
 
 独立 OPT-125M CUDA 压力曲线完成 **30/30 组测量**：16/24/32/48/64 会话，KEEP 与释放各三次。64 会话总耗时下降 **22.5%**，16 会话增加 **44.5%**，实测反转范围为 **48～64 会话**。原生 vLLM 的独立单 Worker 验收接通官方 KVEvent、KVIndexer 与默认 Selector；26 个事件 batch 连续、Stored/Removed 到达且 relay 零丢失。三轮热缓存／驱逐后请求分别新增计算 16／256 token，六次前缀驻留预测全部与实际计算量一致。[GPU 完整环境、原文与复现](GPU_VALIDATION.md)
+
+### Prefix 命中与避免的重算 Token
+
+[Token／KV 成本汇总](evidence/gpu/token-cost-summary.json)独立列出物理 Prefix 命中、KV 驻留与重算耗时、原生逻辑 acting 配额。三轮真实 vLLM 热缓存／驱逐对照的输入均为 256 Token：
+
+| 观测 | 热缓存 | 驱逐后 |
+| --- | ---: | ---: |
+| 实际命中 Token／请求 | 240 | 0 |
+| 实际 Prefix 命中率 | 93.75% | 0% |
+| 新增 Prefill Token／请求 | 16 | 256 |
+| 三请求避免的 Re-prefill Token | 720 | 0 |
+| Prefill 中位数 ms | 8.992 | 9.213 |
+
+`X-Dynamo-Session-ID` 保持同一活跃绑定跨 Actor epoch 的会话身份，Inference Lease 随执行代次轮转。上述 GPU 数据来自单 Worker 的热缓存与驱逐对账；跨 Actor Suspend／Resume 的 GPU 命中率及会话身份消融在汇总中为 `null`／未采集。原生 CPU Mocker 的一个 Program 在 SUSPENDED 时将 acting 配额从 708 降至 0，恢复后为 708，实际释放 708 个逻辑配额 Token；该量与物理命中 Token 分别计量。
+
+### KV 驻留与重算延迟的反转
+
+RTX 4070 Laptop 8 GiB、OPT-125M、3 GiB allocator 预算，每个闲置会话保留 1,024 Token KV。以下每点包含 KEEP／释放各三次，释放总耗时已经计入释放开销与全部重建：
+
+| 闲置会话 | KV 驻留 MiB | 重算耗时 s | 释放并重建后的总耗时变化 |
+| ---: | ---: | ---: | ---: |
+| 16 | 576 | 0.179 | +44.5% |
+| 24 | 864 | 0.291 | +58.1% |
+| 32 | 1,152 | 0.389 | +70.6% |
+| 48 | 1,728 | 0.606 | +26.5% |
+| 64 | 2,304 | 0.746 | −22.5% |
+
+64 会话下释放 KV 扩大竞争推理 batch，吞吐收益覆盖重建成本；48 会话仍保留正的总耗时差。当前离散测点将反转定位于 48～64 会话，完整驻留、释放和重建明细保留在同一[成本证据](evidence/gpu/token-cost-summary.json)。
 
 ## 历史多租户规模与静态 TTL 对照
 

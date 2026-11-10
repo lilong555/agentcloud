@@ -18,13 +18,25 @@
 
 | 围栏 | 保护的状态 | 源码入口 |
 | --- | --- | --- |
-| Tool Safepoint | 工具准入、连续 receipt 水位和未知副作用 | [Tool](../internal/control/controller.go#L462)、[lifecycle](../internal/control/controller.go#L625) |
+| Tool Safepoint | 工具准入、连续 receipt 水位和未知副作用 | [Tool](../internal/control/controller.go#L479)、[lifecycle](../internal/control/controller.go#L660) |
 | Model Attempt ID | 物理发送意图至结果落库的故障窗口 | [dispatchOne](../internal/control/inference.go#L165) |
-| Actor UID／epoch | 同名重建、旧执行代次和迟到生命周期操作 | [lifecycle](../internal/control/controller.go#L625) |
-| MEMORY manifest | snapshot UUID／generation、独立 Tag UID、实际恢复 fidelity | [Checkpoint](../internal/control/substrate.go#L233)、[Resume](../internal/control/substrate.go#L279) |
+| Actor UID／epoch | 同名重建、旧执行代次和迟到生命周期操作 | [lifecycle](../internal/control/controller.go#L660) |
+| MEMORY manifest | snapshot UUID／generation、独立 Tag UID、实际恢复 fidelity | [Checkpoint](../internal/control/substrate.go#L234)、[Resume](../internal/control/substrate.go#L280) |
 | Inference Lease／generation | Dynamo 终结、旧身份拒收和容量回收 | [Rust finalize](../integrations/dynamo/files/lib/router-plugins/builtin/src/thunderagent/execution_control.rs#L409) |
 
 外部服务执行成功、协调器尚未收到结果时，系统保存 `OUTCOME_UNKNOWN` 并保持闭闸，通过目标服务的幂等键或结果查询完成对账。Exactly-Once 外部副作用需要目标服务参与；确定性恢复来自持久回执、身份围栏和明确的未知状态处理。
+
+### 安全点排空超时的处理
+
+“我把工具执行与挂起意图区分为两个持久操作。排空等待超过 30 秒，Runtime 返回 `504 DRAIN_TIMEOUT`；Coordinator 用独立五秒上下文取消原屏障，核验 operation、epoch、generation 和可信 Actor UID 后，将生命周期与调度回执同事务标为 ABORTED。Actor 保持 RUNNING，工具 gate 重开，原工具继续执行；epoch 和连续水位保持原值。系统记录默认 30 秒冷却及 timeout 指标，后续调度遵守冷却。取消结果未知则保留 RECOVERY_REQUIRED。”
+
+[Runtime 屏障](../runtime/tools_server.py#L184) · [取消证明](../internal/control/substrate_quiesce.go#L12) · [原子 ABORTED 提交](../internal/control/quiesce.go#L113) · [边界测试](../internal/control/quiesce_test.go)
+
+### 工具结果未知时给模型什么反馈
+
+“返回 `OUTCOME_UNKNOWN`、原工具 ID、`automatic_retry=false` 和 `inspect_workspace_read_only`，Harness 将它持久保存为原 tool call 的结构化结果。已确认 Actor 仍运行且生命周期确定时允许 file_read 检查，未知副作用继续阻止写操作和安全点。读取缺失路径会明确返回 FILE_NOT_FOUND；检查本身保持原未知回执与水位，最终对账依赖目标服务结果或幂等键。”
+
+[只读检查准入](../internal/control/quiesce.go#L77) · [原未知 ID 合并](../internal/control/quiesce.go#L47) · [Harness 错误结构](../runtime/client.py#L21) · [API 示例](API.md#安全点超时与未知工具结果)
 
 源码 `20113d5` 的 [16/16 类实机故障](evidence/faults-20113d5-summary.json)及四个分片的资源清理全部通过：
 
@@ -46,7 +58,7 @@ PENDING 上传由 [WaitActorSnapshotDurable](../integrations/substrate/files/cmd
 
 PostgreSQL 丢响应注入在服务端完成 SELECT／UPDATE 后关闭连接并返回 EOF。读路径识别 `pgconn.ErrConnClosed`，使用新 backend PID 重读；写路径保持单次发送，再用独立上下文确认版本只增加一次。两个用例各重复三次通过。[读注入](../integrations/substrate/files/cmd/ateapi/internal/store/atepg/actor_read_retry_test.go#L100) · [写注入](../integrations/substrate/files/cmd/ateapi/internal/store/atepg/actor_read_retry_test.go#L128)
 
-持久化按脏实体提交：[entityChanges](../internal/control/persistence.go#L65)生成增量，[SaveEntities](../internal/journal/entities.go#L31)在单事务执行 revision CAS 和实体写入。[persistContext](../internal/control/controller.go#L231)在数据库 I/O 时释放状态锁，由提交 gate 保护可见性。每个数据库保持单写者顺序，扩容可按 Workspace 所有权划分日志。
+持久化按脏实体提交：[entityChanges](../internal/control/persistence.go#L65)生成增量，[SaveEntities](../internal/journal/entities.go#L31)在单事务执行 revision CAS 和实体写入。[persistContext](../internal/control/controller.go#L248)在数据库 I/O 时释放状态锁，由提交 gate 保护可见性。每个数据库保持单写者顺序，扩容可按 Workspace 所有权划分日志。
 
 ## 轨迹如何定位调度问题
 
@@ -58,7 +70,7 @@ research 未知分支晚完成 **45/48 次**，对应已覆盖 Worker 样本的 
 
 ## v2 的机制、强基线与适用条件
 
-[v2 episode](../internal/control/scheduler_v2.go#L78)将模型等待和连续 idle 合并为一个持久时段，两秒未知期限从真实事件起点计算。工具准入、返回需求和 epoch 变化使 episode 失效；重启还原原始时钟。有充分条件分布时，[成本选择](../internal/control/scheduler_v2.go#L213)比较多个释放时刻与持续 KEEP，纳入快照、durable、resume-ready 和 journal 成本。每个动作仍经过安全点、稳定确认及 [ModelBoundary 二次核验](../internal/control/scheduling.go#L119)。
+[v2 episode](../internal/control/scheduler_v2.go#L78)将模型等待和连续 idle 合并为一个持久时段，两秒未知期限从真实事件起点计算。工具准入、返回需求和 epoch 变化使 episode 失效；重启还原原始时钟。有充分条件分布时，[成本选择](../internal/control/scheduler_v2.go#L213)比较多个释放时刻与持续 KEEP，纳入快照、durable、resume-ready 和 journal 成本。每个动作仍经过安全点、稳定确认及 [ModelBoundary 二次核验](../internal/control/scheduling.go#L124)。
 
 **实验类型：CPU Mocker＋真实 Substrate MEMORY。** 四租户、两 Worker、四槽位；相同 `(N, Seed)` 在同 Runner 随机串行，策略统一使用 E 组、feedback on、Program 跨轮持续和末轮 FINAL。TTL2-Shadow 计算旧 cost-aware、执行 TTL2，用于测量观测计算开销。主指标为总 Actor 预留 GB·s 与交互 TTFT P95，按完整种子对计算候选减基线差值。
 
@@ -79,6 +91,22 @@ research 未知分支晚完成 **45/48 次**，对应已覆盖 Worker 样本的 
 
 **磁盘包络决定高工作集实验的完成边界。** 正式 128 MiB／3 s 使用相同 2,400 s 预算，三个 TTL2 trial 在完成 370／371／372 个请求后触发 6 GiB 磁盘保护。v2 在 7401 完成 384/384，7402／7403 因前序协议清理失败而未投递。各 TTL2 trial 保留 434～436 个独立快照 Tag，物理资源最终全部销毁。三个坐标合计 13/18 trial、6,105/6,912 请求，九组集群清理通过；高工作集性能结论保留双边样本完整性要求。[原始失败链与清理](evidence/boundary-confirm-storage-a7e324a.json) · [全部确认与边界](V2_EVALUATION.md#三种子边界确认)
 
+### v2 与 TTL2 的帕累托取舍
+
+“TTL2 是有力的短等待基线。Gate 2 N32 中，v2 节省 8.129 GB·s，P95 配对区间跨零；N64 中，P95 增加 18.836 秒有区间支持。两者在 Gate 2 的快照次数相同。高工作集下，64 MiB／3 s 的 v2 快照均值降到 207.333，TTL2 为 448，同时 v2 首次准入更慢。我的结论同时保留资源、尾延迟与快照频率，按业务 SLO 和恢复成本选择适用区域。”
+
+### 首次准入队列的 HoL 阻塞
+
+“64 MiB／3 s 的 v2 首轮前置排队占累计 TTFT 的 98.733%。已有 Actor 复用内存减少恢复，新 Actor 在 Runner 的 FairSlots FIFO 等待四个槽位；ReturnDemand 在获得 permit 后才登记，所以协调器看不到尚未入场的需求。这个位置使持有槽位的长驻留任务延迟后续首次准入。诊断将首次排队、恢复、模型首 token 和工具阶段分列，避免把全部尾延迟归到 WAITING_CAPACITY 的重试。当前交付保留已冻结的 v2；后续架构若扩展，可把首次准入和恢复放到同一容量视图，再单独验证公平性与 SLO。”
+
+[公平槽位](../bench/scale.py#L142) · [原始逐轮容量分解](evidence/boundary-confirm-a7e324a-summary.json)
+
+### 为什么 GB·s 之外还要记录快照成本
+
+“快速挂起可以降低驻留，却增加快照持久化与恢复。完整成本是 Actor GB·s、快照 Tag 数、物理写入字节、峰值存储和恢复延迟的向量。128 MiB 的 TTL2 保留 434～436 个 Tag 后触发磁盘保护，7401 的 v2 为 199 个并完成全部请求。历史物理 I/O 缺测字段保留 null，压缩前逻辑日志单列。生产 Tag GC 默认保留最近两个已验证 COMMITTED 点，保护当前与未知操作引用，通过 UID/version 围栏、持久删除意图和退避处理失败。GC 控制保留占用，快照次数继续反映累计写入压力。”
+
+[成本定义与所有分母](STORAGE_COSTS.md) · [GC 引用保护](../internal/control/snapshot_gc.go#L180) · [删除前持久声明](../internal/control/snapshot_gc.go#L412)
+
 ## 真实 GPU 的物理证据
 
 **CUDA 压力曲线。** RTX 4070 Laptop 8 GiB、OPT-125M、3 GiB allocator 预算，每会话 1,024-token KV，竞争负载为 32 请求、每请求生成 32 token。五个压力点 KEEP／释放各三次，共 **30/30 组**；耗时计入竞争推理、释放和全部会话 KV 重建，恢复后 continuation 保持一致。
@@ -96,6 +124,8 @@ research 未知分支晚完成 **45/48 次**，对应已覆盖 Worker 样本的 
 **官方 KV 事件对账。** 独立 vLLM 单 Worker、32 MiB KV pool，通过互异前缀产生真实驱逐。链路为 `vLLM → ZMQ KVEvent → 原生 relay → 官方 KVIndexer → 默认 CACHE Selector`，另用独立官方索引和 Prometheus 交叉核验。实测 **26 个连续 batch、26 个 BlockStored、287 个 BlockRemoved、relay 零丢失**，事件观察延迟为 0.482～0.849 ms。
 
 三轮热请求／驱逐后请求共六次：相同 256-token 输入实际命中 **240／0 token**，新增 Prefill **16／256 token**。vLLM 为 logits 保留至少一个待计算 token，缓存按完整 16-token block 复用；[观测公式](../experiments/dynamo/kv_events.py#L109)据此将完整上下文预算的 MAE **120 token** 降至 **0 token**。Prefill 中位数为 **8.992／9.213 ms**，差约 **0.221 ms**。
+
+“热请求的实际命中率为 **93.75%**，三次合计避免重算 **720 token**。跨 Actor epoch 保持 X-Dynamo-Session-ID 的原生契约为前缀亲和性提供稳定身份，物理命中数据来自独立单 Worker 缓存实验。ThunderAgent acting 配额则实测 708→0→708，记录逻辑容量释放；三类证据分别对应会话身份、GPU 工作量与准入预算。”[Token 成本汇总](evidence/gpu/token-cost-summary.json)
 
 该项实测支持官方事件集成、物理驻留和重算工作量的准确对账。Actor 生命周期继续采用独立验收的队列与恢复成本策略；原始汇总明确记录 `lifecycle_integration=false`。单 Worker 缓存对账与前述 Transformers CUDA 压力曲线分别归档，接入过程的 **11 次尝试、2 次通过、9 次失败**均保留。[官方事件完整分母](evidence/gpu/kv-events-summary.json) · [环境与复现](GPU_VALIDATION.md)
 

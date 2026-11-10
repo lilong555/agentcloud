@@ -316,3 +316,20 @@ func TestUnknownBoundaryReplayPreservesRecoveryIdentity(t *testing.T) {
 		t.Fatalf("unknown replay changed recovery contract: %+v %+v", replayed, api.Details)
 	}
 }
+
+func TestReadOnlyInspectionPreservesMissingFileResult(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/runtime/v1/tools" {
+			t.Fatalf("unexpected path: %s", r.URL.Path)
+		}
+		_ = json.NewEncoder(w).Encode(map[string]any{"tool_op_id": "inspect", "epoch": 2, "status": "COMPLETED",
+			"result": map[string]any{"error": map[string]any{"code": "FILE_NOT_FOUND", "path": "effect.txt", "message": "file is absent"}}})
+	}))
+	defer server.Close()
+	b := &SubstrateBackend{cfg: SubstrateConfig{GatewayURL: server.URL}, http: server.Client()}
+	result, err := b.Tool(context.Background(), &Session{Epoch: 2, Actor: Actor{Name: "actor"}},
+		ToolRequest{ID: "inspect", Epoch: 2, Kind: "file_read", Path: "effect.txt"})
+	if err != nil || result.Error == nil || result.Error.Code != "FILE_NOT_FOUND" || result.Error.Path != "effect.txt" {
+		t.Fatalf("inspection hid a missing file: %+v %v", result, err)
+	}
+}
