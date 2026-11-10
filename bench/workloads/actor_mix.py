@@ -19,9 +19,23 @@ import uuid
 PORT = 18771
 
 
+def random_heap(mib):
+    # Fill the retained allocation directly: initialization has no second full-size copy.
+    heap = bytearray(mib * 2**20)
+    view = memoryview(heap)
+    with open('/dev/urandom', 'rb', buffering=0) as source:
+        offset = 0
+        while offset < len(view):
+            count = source.readinto(view[offset:])
+            if not count:
+                raise OSError('random source ended before every RAM page was initialized')
+            offset += count
+    return heap
+
+
 def memory_server(mib):
     # Random data materializes every page and exercises snapshot transfer cost.
-    heap = bytearray(os.urandom(mib * 2**20))
+    heap = random_heap(mib)
     tree = ast.parse('def value(x):\n    return x * 7 + 11\n')
     nonce = uuid.uuid4().hex
     context = {'turns': 0, 'workspace_nonce': nonce}
