@@ -24,6 +24,8 @@ import (
 	"syscall"
 	"testing"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 func TestReadRetryTransportClassification(t *testing.T) {
@@ -37,11 +39,13 @@ func TestReadRetryTransportClassification(t *testing.T) {
 		{"truncated", io.ErrUnexpectedEOF, 2},
 		{"reset", syscall.ECONNRESET, 2},
 		{"closed", net.ErrClosed, 2},
+		{"driver-closed", pgconn.ErrConnClosed, 2},
 		{"broken-pipe", syscall.EPIPE, 2},
 		{"canceled", context.Canceled, 1},
 		{"deadline", context.DeadlineExceeded, 1},
 		{"query", errors.New("syntax error"), 1},
 		{"message-only", errors.New("timeout: read tcp"), 1},
+		{"closed-message-only", errors.New("conn closed"), 1},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			calls := 0

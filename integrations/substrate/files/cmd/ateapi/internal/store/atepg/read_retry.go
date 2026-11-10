@@ -22,6 +22,8 @@ import (
 	"net"
 	"syscall"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // retryRead accepts a side-effect-free SELECT outside a transaction. Each
@@ -57,6 +59,7 @@ func readTransportError(err error) bool {
 	}
 	var networkError net.Error
 	return errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) ||
+		errors.Is(err, pgconn.ErrConnClosed) ||
 		errors.Is(err, net.ErrClosed) || errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.EPIPE) ||
 		(errors.As(err, &networkError) && networkError.Timeout())
 }

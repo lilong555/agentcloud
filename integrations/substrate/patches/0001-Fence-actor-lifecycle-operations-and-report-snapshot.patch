@@ -1,4 +1,4 @@
-From 017027a03c05fa8c4a409859ac8bd96dfaa2c0ee Mon Sep 17 00:00:00 2001
+From 00401548dcc0b7152ce7a4e2072146def533cc03 Mon Sep 17 00:00:00 2001
 From: lilong555 <173714821+lilong555@users.noreply.github.com>
 Date: Tue, 10 Nov 2026 00:00:00 +0000
 Subject: [PATCH 1/2] Fence actor lifecycle operations and report snapshot
@@ -5579,10 +5579,10 @@ index 0000000000000000000000000000000000000000..ff87ee46e15d50010d641874a0924b19
 +}
 diff --git a/cmd/ateapi/internal/store/atepg/read_retry.go b/cmd/ateapi/internal/store/atepg/read_retry.go
 new file mode 100644
-index 0000000000000000000000000000000000000000..6bca77cc794dbca919515abf3a7ed4825fd92346
+index 0000000000000000000000000000000000000000..b22760c56ef512844f4e845b73d02d1f070778c5
 --- /dev/null
 +++ b/cmd/ateapi/internal/store/atepg/read_retry.go
-@@ -0,0 +1,62 @@
+@@ -0,0 +1,65 @@
 +// Copyright 2026 The Agent Substrate Authors
 +//
 +// Licensed under the Apache License, Version 2.0 (the "License");
@@ -5607,6 +5607,8 @@ index 0000000000000000000000000000000000000000..6bca77cc794dbca919515abf3a7ed482
 +	"net"
 +	"syscall"
 +	"time"
++
++	"github.com/jackc/pgx/v5/pgconn"
 +)
 +
 +// retryRead accepts a side-effect-free SELECT outside a transaction. Each
@@ -5642,15 +5644,16 @@ index 0000000000000000000000000000000000000000..6bca77cc794dbca919515abf3a7ed482
 +	}
 +	var networkError net.Error
 +	return errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) ||
++		errors.Is(err, pgconn.ErrConnClosed) ||
 +		errors.Is(err, net.ErrClosed) || errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.EPIPE) ||
 +		(errors.As(err, &networkError) && networkError.Timeout())
 +}
 diff --git a/cmd/ateapi/internal/store/atepg/read_retry_test.go b/cmd/ateapi/internal/store/atepg/read_retry_test.go
 new file mode 100644
-index 0000000000000000000000000000000000000000..70053bfa4737c098a166b7758d129bfff2426188
+index 0000000000000000000000000000000000000000..c67bc2a44e2e74a6526d113bbea2f995dead711a
 --- /dev/null
 +++ b/cmd/ateapi/internal/store/atepg/read_retry_test.go
-@@ -0,0 +1,87 @@
+@@ -0,0 +1,91 @@
 +// Copyright 2026 The Agent Substrate Authors
 +//
 +// Licensed under the Apache License, Version 2.0 (the "License");
@@ -5677,6 +5680,8 @@ index 0000000000000000000000000000000000000000..70053bfa4737c098a166b7758d129bff
 +	"syscall"
 +	"testing"
 +	"time"
++
++	"github.com/jackc/pgx/v5/pgconn"
 +)
 +
 +func TestReadRetryTransportClassification(t *testing.T) {
@@ -5690,11 +5695,13 @@ index 0000000000000000000000000000000000000000..70053bfa4737c098a166b7758d129bff
 +		{"truncated", io.ErrUnexpectedEOF, 2},
 +		{"reset", syscall.ECONNRESET, 2},
 +		{"closed", net.ErrClosed, 2},
++		{"driver-closed", pgconn.ErrConnClosed, 2},
 +		{"broken-pipe", syscall.EPIPE, 2},
 +		{"canceled", context.Canceled, 1},
 +		{"deadline", context.DeadlineExceeded, 1},
 +		{"query", errors.New("syntax error"), 1},
 +		{"message-only", errors.New("timeout: read tcp"), 1},
++		{"closed-message-only", errors.New("conn closed"), 1},
 +	} {
 +		t.Run(test.name, func(t *testing.T) {
 +			calls := 0
