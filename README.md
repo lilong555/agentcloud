@@ -25,7 +25,7 @@ flowchart LR
 
 ## 可复核的实验基础
 
-四租户、两 Worker、四 Actor 槽位，真实 gVisor MEMORY、PostgreSQL 和 Dynamo CPU Mocker。基础矩阵覆盖 60 组首轮；条件成本与泛化矩阵分别覆盖 36 和 54 组。各版本及失败记录独立归档。最新冻结 `32e3d6e` 的固定矩阵完成 **35/36 trial、10,367/10,368 请求**；调度诊断使用其中 TTL2、Observed、cost-aware 的 18 个 trial。GPU 实验使用独立的真实 CUDA 后端。
+四租户、两 Worker、四 Actor 槽位，真实 gVisor MEMORY、PostgreSQL 和 Dynamo CPU Mocker。历史基础矩阵覆盖 60 组首轮，条件成本与泛化矩阵分别覆盖 36 和 54 组；统一协议下的 v2 采用 Gate 1、留出种子确认和工作集／等待边界三个阶段。各实验固定源码、完整分母和重验身份。调度诊断基线 `32e3d6e` 完成 **35/36 trial、10,367/10,368 请求**，其中 TTL2、Observed、cost-aware 的 18 个 trial 用于归因。GPU 实验使用独立的真实 CUDA 后端。
 
 [验收状态与源码身份](docs/STATUS.md) · [实验数据](docs/EXPERIMENTS.md) · [三分钟答辩](docs/INTERVIEW_DEFENSE.md)
 
