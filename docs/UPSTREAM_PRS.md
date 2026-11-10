@@ -4,7 +4,7 @@ Substrate 固定基线为 `94e0a26ac90151886a76410568aaac2664a54d90`，Dynamo �
 
 | 上游 | 补丁目录 | 完整文件 | 原生测试映射 |
 |---|---|---:|---|
-| Substrate | `integrations/substrate/patches/` | 34 | `integrations/substrate/test-map.json` |
+| Substrate | `integrations/substrate/patches/` | 38 | `integrations/substrate/test-map.json` |
 | Dynamo | `integrations/dynamo/patches/` | 13 | `integrations/dynamo/test-map.json` |
 
 `python3 scripts/upstream_patches.py verify` 在独立的锁定基线 checkout 执行 `git am`，逐文件校验内容 SHA256，并比较完整 Git tree 与独立构造的完整源码覆盖 tree。Git tree 比较覆盖所有基线文件，交付文件的执行位按 Git 的 `100644` / `100755` 表示。完整源码 manifest 另外保存文件权限。
@@ -19,7 +19,9 @@ Actor 生命周期操作在持有 Actor lease 时校验调用者观察到的 UID
 
 恢复响应从 worker 经 atelet 传递实际 fidelity，并将快照 UUID/generation 或 cold-start 标记持久化到 `ActorStatus.last_restore`。两类 worker 通过共享的 `ateworker.RestoreWorkloadResult` 构造 wire 收据。旧 worker 的响应对应 `UNSPECIFIED` fidelity。
 
-原生 Go 回归覆盖 lease 内 UID/version 变化、Tag 来源变化、持久化状态变化、恢复 fidelity 降级、cold start、已运行 Actor 的历史收据、真实 PostgreSQL 的 finalize/tag 持久化，以及 worker→atelet 回执和旧 wire 响应兼容性。PostgreSQL 测试通过 `SUBSTRATE_TEST_DATABASE_URL` 使用独立测试服务，每个用例创建并删除唯一数据库。
+PostgreSQL `GetActor` 的只读 SELECT 对连接超时、断开和截断响应执行有界重试，最多额外三次，累计退避 350 ms。各次查询保留原 Actor 引用、重新获取池连接并遵守原上下文。SQL、缺失记录和写入错误保留原有语义。
+
+原生 Go 回归覆盖 lease 内 UID/version 变化、Tag 来源变化、持久化状态变化、恢复 fidelity 降级、cold start、已运行 Actor 的历史收据、真实 PostgreSQL 的 finalize/tag 持久化，以及 worker→atelet 回执和旧 wire 响应兼容性。只读连接故障测试丢弃真实 PostgreSQL 的 SELECT 响应，核验原记录读取成功；写入测试丢弃已提交 UPDATE 的响应，核验修改执行一次并保留错误。Workflow 测试通过 `SUBSTRATE_TEST_DATABASE_URL` 使用独立测试服务，每个用例创建并删除唯一数据库；存储测试使用自动清理的独立 PostgreSQL 容器。
 
 AI 使用说明：使用 Codex 审查生命周期与恢复协议、编写回归测试和整理交付源码；提交者负责审查与执行验证。补丁保持提交者身份，DCO 签署由提交者完成。
 

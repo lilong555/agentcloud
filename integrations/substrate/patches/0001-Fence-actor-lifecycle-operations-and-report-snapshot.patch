@@ -1,4 +1,4 @@
-From 8e109e0cb35aa4f8a9ce423fcf0f4844061d5c41 Mon Sep 17 00:00:00 2001
+From e181dcecc70c943eac330cd845e473cf49be1af9 Mon Sep 17 00:00:00 2001
 From: lilong555 <173714821+lilong555@users.noreply.github.com>
 Date: Tue, 10 Nov 2026 00:00:00 +0000
 Subject: [PATCH 1/2] Fence actor lifecycle operations and report snapshot
@@ -5398,6 +5398,327 @@ index 87ebe7fcfcf1a4427cbb853f4d4f174da14a671d..eb9660a0442125c18266fbb0f03e6dab
  			if code := apierror.Code(err); code != tt.wantCode {
  				t.Fatalf("TagActorSnapshot error = %v (code %v), want code %v", err, code, tt.wantCode)
  			}
+diff --git a/cmd/ateapi/internal/store/atepg/actor.go b/cmd/ateapi/internal/store/atepg/actor.go
+index 5ac0b4fe4648a71decaec5c6e2bd10c6332e464c..0fec77e5023d422f503f57a741267632ea96da92 100644
+--- a/cmd/ateapi/internal/store/atepg/actor.go
++++ b/cmd/ateapi/internal/store/atepg/actor.go
+@@ -65,7 +65,10 @@ func (p *Persistence) CreateActor(ctx context.Context, actor *ateapi.Actor) (*at
+ 
+ func (p *Persistence) GetActor(ctx context.Context, actorRef resources.ActorRef) (*ateapi.Actor, error) {
+ 	var protoBytes []byte
+-	err := p.pool.QueryRow(ctx, `SELECT proto FROM actors WHERE atespace = $1 AND name = $2`, actorRef.Atespace, actorRef.Name).Scan(&protoBytes)
++	err := retryRead(ctx, "GetActor", func() error {
++		protoBytes = nil
++		return p.pool.QueryRow(ctx, `SELECT proto FROM actors WHERE atespace = $1 AND name = $2`, actorRef.Atespace, actorRef.Name).Scan(&protoBytes)
++	})
+ 	if err != nil {
+ 		if errors.Is(err, pgx.ErrNoRows) {
+ 			return nil, store.ErrNotFound
+diff --git a/cmd/ateapi/internal/store/atepg/actor_read_retry_test.go b/cmd/ateapi/internal/store/atepg/actor_read_retry_test.go
+new file mode 100644
+index 0000000000000000000000000000000000000000..d45e6fdc3e9afe87d93cc566f1814aa575c21b63
+--- /dev/null
++++ b/cmd/ateapi/internal/store/atepg/actor_read_retry_test.go
+@@ -0,0 +1,138 @@
++// Copyright 2026 The Agent Substrate Authors
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++package atepg
++
++import (
++	"context"
++	"errors"
++	"net"
++	"os"
++	"strings"
++	"sync/atomic"
++	"testing"
++	"time"
++
++	"github.com/jackc/pgx/v5"
++	"github.com/jackc/pgx/v5/pgxpool"
++	"go.ate.dev/substrate/api/ateapi/v1"
++	"go.ate.dev/substrate/cmd/ateapi/internal/store"
++	"go.ate.dev/substrate/internal/resources"
++	"google.golang.org/protobuf/proto"
++)
++
++type queryReadFault struct {
++	prefix   string
++	queries  atomic.Int32
++	pending  atomic.Bool
++	injected atomic.Int32
++}
++
++func (f *queryReadFault) TraceQueryStart(ctx context.Context, _ *pgx.Conn, data pgx.TraceQueryStartData) context.Context {
++	if strings.HasPrefix(strings.TrimSpace(data.SQL), f.prefix) && f.queries.Add(1) == 1 {
++		f.pending.Store(true)
++	}
++	return ctx
++}
++
++func (*queryReadFault) TraceQueryEnd(context.Context, *pgx.Conn, pgx.TraceQueryEndData) {}
++
++type queryFaultConn struct {
++	net.Conn
++	fault *queryReadFault
++}
++
++func (c *queryFaultConn) Read(data []byte) (int, error) {
++	n, err := c.Conn.Read(data)
++	if n > 0 && c.fault.pending.CompareAndSwap(true, false) {
++		c.fault.injected.Add(1)
++		return 0, &net.OpError{Op: "read", Net: "tcp", Err: os.ErrDeadlineExceeded}
++	}
++	return n, err
++}
++
++func actorReadFaultPool(t *testing.T, source *pgxpool.Pool, fault *queryReadFault) *pgxpool.Pool {
++	t.Helper()
++	config := source.Config()
++	config.MaxConns, config.MinConns, config.MinIdleConns = 1, 0, 0
++	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
++	config.ConnConfig.Tracer = fault
++	dial := config.ConnConfig.DialFunc
++	config.ConnConfig.DialFunc = func(ctx context.Context, network, address string) (net.Conn, error) {
++		conn, err := dial(ctx, network, address)
++		if err != nil {
++			return nil, err
++		}
++		return &queryFaultConn{Conn: conn, fault: fault}, nil
++	}
++	pool, err := pgxpool.NewWithConfig(t.Context(), config)
++	if err != nil {
++		t.Fatal(err)
++	}
++	t.Cleanup(pool.Close)
++	if err := pool.Ping(t.Context()); err != nil {
++		t.Fatal(err)
++	}
++	return pool
++}
++
++func TestGetActorRecoversReadTransport(t *testing.T) {
++	s := setupPostgresPersistence(t)
++	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
++	defer cancel()
++	createTestAtespace(t, s, "team-read-retry")
++	actor, err := s.CreateActor(ctx, &ateapi.Actor{
++		Metadata: &ateapi.ResourceMetadata{Atespace: "team-read-retry", Name: "actor"},
++		Status:   &ateapi.ActorStatus{State: ateapi.ActorState_ACTOR_STATE_SUSPENDING},
++	})
++	if err != nil {
++		t.Fatal(err)
++	}
++	fault := &queryReadFault{prefix: "SELECT proto FROM actors"}
++	reader := &Persistence{pool: actorReadFaultPool(t, s.pool, fault)}
++	actual, err := reader.GetActor(ctx, resources.ActorRefFromActor(actor))
++	if err != nil || !proto.Equal(actual, actor) || fault.queries.Load() != 2 || fault.injected.Load() != 1 {
++		t.Fatalf("read did not recover the original record: actor=%v error=%v queries=%d faults=%d", actual, err, fault.queries.Load(), fault.injected.Load())
++	}
++	_, err = reader.GetActor(ctx, resources.ActorRef{Atespace: "team-read-retry", Name: "missing"})
++	if !errors.Is(err, store.ErrNotFound) || fault.queries.Load() != 3 {
++		t.Fatalf("missing row was retried or remapped: error=%v queries=%d", err, fault.queries.Load())
++	}
++}
++
++func TestActorWriteTransportRemainsSingleAttempt(t *testing.T) {
++	s := setupPostgresPersistence(t)
++	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
++	defer cancel()
++	createTestAtespace(t, s, "team-write-unknown")
++	actor, err := s.CreateActor(ctx, &ateapi.Actor{Metadata: &ateapi.ResourceMetadata{Atespace: "team-write-unknown", Name: "actor"}})
++	if err != nil {
++		t.Fatal(err)
++	}
++	fault := &queryReadFault{prefix: "UPDATE actors"}
++	writer := &Persistence{pool: actorReadFaultPool(t, s.pool, fault)}
++	mutations := 0
++	_, err = writer.UpdateActor(ctx, resources.ActorRefFromActor(actor), store.PreconditionFrom(actor), func(current *ateapi.Actor) error {
++		mutations++
++		current.Status = &ateapi.ActorStatus{State: ateapi.ActorState_ACTOR_STATE_SUSPENDED}
++		return nil
++	})
++	if err == nil || mutations != 1 || fault.queries.Load() != 1 || fault.injected.Load() != 1 {
++		t.Fatalf("ambiguous write was replayed: mutations=%d queries=%d faults=%d error=%v", mutations, fault.queries.Load(), fault.injected.Load(), err)
++	}
++	stored, err := s.GetActor(ctx, resources.ActorRefFromActor(actor))
++	if err != nil || stored.GetMetadata().GetVersion() != actor.GetMetadata().GetVersion()+1 || stored.GetStatus().GetState() != ateapi.ActorState_ACTOR_STATE_SUSPENDED {
++		t.Fatalf("lost write response did not preserve one committed mutation: actor=%v error=%v", stored, err)
++	}
++}
+diff --git a/cmd/ateapi/internal/store/atepg/read_retry.go b/cmd/ateapi/internal/store/atepg/read_retry.go
+new file mode 100644
+index 0000000000000000000000000000000000000000..6bca77cc794dbca919515abf3a7ed4825fd92346
+--- /dev/null
++++ b/cmd/ateapi/internal/store/atepg/read_retry.go
+@@ -0,0 +1,62 @@
++// Copyright 2026 The Agent Substrate Authors
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++package atepg
++
++import (
++	"context"
++	"errors"
++	"io"
++	"log/slog"
++	"net"
++	"syscall"
++	"time"
++)
++
++// retryRead accepts a side-effect-free SELECT outside a transaction. Each
++// attempt acquires its connection through the pool, which retires connections
++// whose protocol exchange failed. Lifecycle writes and whole workflows retain
++// their original uncertain-outcome semantics.
++func retryRead(ctx context.Context, operation string, read func() error) error {
++	for attempt := 0; ; attempt++ {
++		if err := ctx.Err(); err != nil {
++			return err
++		}
++		err := read()
++		if err == nil || attempt == 3 || !readTransportError(err) {
++			return err
++		}
++		if contextErr := ctx.Err(); contextErr != nil {
++			return contextErr
++		}
++		slog.WarnContext(ctx, "Retrying read-only PostgreSQL query", "operation", operation, "retry", attempt+1, "err", err)
++		timer := time.NewTimer(50 * time.Millisecond << attempt)
++		select {
++		case <-ctx.Done():
++			timer.Stop()
++			return ctx.Err()
++		case <-timer.C:
++		}
++	}
++}
++
++func readTransportError(err error) bool {
++	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
++		return false
++	}
++	var networkError net.Error
++	return errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) ||
++		errors.Is(err, net.ErrClosed) || errors.Is(err, syscall.ECONNRESET) || errors.Is(err, syscall.EPIPE) ||
++		(errors.As(err, &networkError) && networkError.Timeout())
++}
+diff --git a/cmd/ateapi/internal/store/atepg/read_retry_test.go b/cmd/ateapi/internal/store/atepg/read_retry_test.go
+new file mode 100644
+index 0000000000000000000000000000000000000000..70053bfa4737c098a166b7758d129bfff2426188
+--- /dev/null
++++ b/cmd/ateapi/internal/store/atepg/read_retry_test.go
+@@ -0,0 +1,87 @@
++// Copyright 2026 The Agent Substrate Authors
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++package atepg
++
++import (
++	"context"
++	"errors"
++	"fmt"
++	"io"
++	"net"
++	"os"
++	"syscall"
++	"testing"
++	"time"
++)
++
++func TestReadRetryTransportClassification(t *testing.T) {
++	for _, test := range []struct {
++		name string
++		err  error
++		want int
++	}{
++		{"timeout", &net.OpError{Op: "read", Net: "tcp", Err: os.ErrDeadlineExceeded}, 2},
++		{"EOF", io.EOF, 2},
++		{"truncated", io.ErrUnexpectedEOF, 2},
++		{"reset", syscall.ECONNRESET, 2},
++		{"closed", net.ErrClosed, 2},
++		{"broken-pipe", syscall.EPIPE, 2},
++		{"canceled", context.Canceled, 1},
++		{"deadline", context.DeadlineExceeded, 1},
++		{"query", errors.New("syntax error"), 1},
++		{"message-only", errors.New("timeout: read tcp"), 1},
++	} {
++		t.Run(test.name, func(t *testing.T) {
++			calls := 0
++			err := retryRead(t.Context(), "test", func() error {
++				calls++
++				if calls == 1 {
++					return fmt.Errorf("query failed: %w", test.err)
++				}
++				return nil
++			})
++			if calls != test.want || test.want == 1 && !errors.Is(err, test.err) || test.want == 2 && err != nil {
++				t.Fatalf("calls=%d error=%v; want calls=%d", calls, err, test.want)
++			}
++		})
++	}
++}
++
++func TestReadRetryBoundAndContext(t *testing.T) {
++	calls := 0
++	err := retryRead(t.Context(), "test", func() error { calls++; return io.EOF })
++	if calls != 4 || !errors.Is(err, io.EOF) {
++		t.Fatalf("unbounded read retry: calls=%d error=%v", calls, err)
++	}
++	for _, duringRead := range []bool{false, true} {
++		ctx, cancel := context.WithCancel(t.Context())
++		if !duringRead {
++			cancel()
++		}
++		calls = 0
++		err = retryRead(ctx, "test", func() error { calls++; cancel(); return io.EOF })
++		cancel()
++		if !errors.Is(err, context.Canceled) || !duringRead && calls != 0 || duringRead && calls != 1 {
++			t.Fatalf("cancellation ignored: during=%v calls=%d error=%v", duringRead, calls, err)
++		}
++	}
++	ctx, cancel := context.WithTimeout(t.Context(), 10*time.Millisecond)
++	defer cancel()
++	calls = 0
++	err = retryRead(ctx, "test", func() error { calls++; return io.EOF })
++	if calls != 1 || !errors.Is(err, context.DeadlineExceeded) {
++		t.Fatalf("backoff exceeded original deadline: calls=%d error=%v", calls, err)
++	}
++}
 diff --git a/cmd/ateapi/internal/store/storetest/storetest.go b/cmd/ateapi/internal/store/storetest/storetest.go
 index 362652e5cc8da63d86ae1653009485748069eb7b..09370476d5b87a41e9bb48224f5450acc032aea1 100644
 --- a/cmd/ateapi/internal/store/storetest/storetest.go

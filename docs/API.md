@@ -44,6 +44,8 @@ Checkpoint 先关闭准入，等待已准入工具完成，再生成快照和 CO
 
 Substrate 在获取租约时返回明确的 `Aborted: another operation is in progress` 拒绝时，具备前置条件的调用最多额外尝试五次，累计退避上限 2.5 秒，并遵守原操作期限。Suspend/Resume 保留 UID 和版本；durable 等待保留 Actor UID、snapshot UUID/generation；Tag 保留还固定原名称，并处理执行前的 Actor/Tag 租约竞争。全部尝试使用原请求，期间发生的身份或快照变化继续由原前置条件拒绝。工作流中途错误、未知传输结果和其他 Aborted 保留原错误语义。重试计入 `substrate_actor_lease_retry` 观测。
 
+原生 PostgreSQL `GetActor` 查询在连接超时、断开或响应截断时，通过连接池重新执行同一只读 SELECT，最多额外三次，退避为 50/100/200 ms。每次尝试清空读取缓冲并检查原上下文，取消和期限持续生效。SQL 错误、缺失记录与生命周期写入保留原语义；原生日志记录查询操作名、重试次数与传输错误。
+
 Worker 容量拒绝后，协调器重新读取 Substrate Actor。权威读取确认 Actor 仍处于原 SUSPENDED 状态，UID、版本、快照与分配信息均保持一致时，Resume 回执进入 `WAITING_CAPACITY`，会话保留原状态、epoch、barrier 与 manifest。响应为 `409 resume_capacity_wait`，携带 `Retry-After: 1`；回执保存 `capacity_wait` 身份证明、`attempt_count` 与 `retry_after`。客户端在重试时间到达后使用原操作 ID 和原输入继续，自主调度器自动复用同一回执和待处理返回需求。容量拒绝耗时独立于成功恢复成本样本。读取失败、身份或版本变化，以及有界恢复后仍然超时或缺失的回执保持 `OUTCOME_UNKNOWN`，进入对账流程。
 
 模型请求在持久登记后由协调器发起一次物理请求。模型可在 Actor 挂起期间执行，完成结果由恢复后的 Runtime 认领。登记后的重复观察与认领均读取日志。进程在发送意图持久化后崩溃，或工具执行后丢失终态，相关记录进入 `OUTCOME_UNKNOWN`，保留原 ID 和 attempt ID 供对账。未知工具结果关闭 gate 并阻止发布安全点。
