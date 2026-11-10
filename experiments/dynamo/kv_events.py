@@ -195,6 +195,36 @@ def gpu_read():
     return {"used_mib": int(used), "free_mib": int(free)}
 
 
+def prepare_model(args):
+    if sha(args.model_dir / "pytorch_model.bin") != WEIGHTS_SHA:
+        raise ValueError("model weights differ from the frozen OPT revision")
+    args.output_dir.mkdir(parents=True, exist_ok=False)
+    for name in ("config.json", "vocab.json", "merges.txt"):
+        shutil.copyfile(args.model_dir / name, args.output_dir / name)
+    (args.output_dir / "pytorch_model.bin").symlink_to(args.model_dir / "pytorch_model.bin")
+    from transformers import AutoTokenizer
+    fast = AutoTokenizer.from_pretrained(args.model_dir, use_fast=True, local_files_only=True)
+    slow = AutoTokenizer.from_pretrained(args.model_dir, use_fast=False, local_files_only=True)
+    if not fast.is_fast:
+        raise ValueError("a fast tokenizer is required for the native Rust frontend")
+    texts = ["Hello world", " a  b\n", "AgentCloud 缓存验证", "<pad></s>"]
+    for text in texts:
+        if fast.encode(text, add_special_tokens=False) != slow.encode(text, add_special_tokens=False):
+            raise ValueError("fast and source tokenizer encodings differ")
+    ids = [2, 77, 101, 1000, 50265 - 1]
+    if fast.decode(ids) != slow.decode(ids):
+        raise ValueError("fast and source tokenizer decoding differs")
+    fast.save_pretrained(args.output_dir)
+    proof = {"model_revision": REVISION, "weights_sha256": WEIGHTS_SHA,
+             "transformers_version": metadata.version("transformers"),
+             "tokenizer_sha256": sha(args.output_dir / "tokenizer.json"),
+             "source_tokenizer_files": {name: sha(args.model_dir / name) for name in
+                                        ("vocab.json", "merges.txt", "tokenizer_config.json")},
+             "encoding_checks": len(texts), "decode_check": True}
+    write(args.output_dir / "model-provenance.json", proof)
+    return proof
+
+
 def preflight(args):
     checks, versions = [], {}
     def check(name, passed, detail):
@@ -221,7 +251,7 @@ def preflight(args):
               versions["transformers"])
     except (ImportError, metadata.PackageNotFoundError) as exc:
         check("transformers", False, str(exc))
-    for file in ("config.json", "pytorch_model.bin", "tokenizer_config.json", "vocab.json", "merges.txt"):
+    for file in ("config.json", "pytorch_model.bin", "tokenizer_config.json", "tokenizer.json", "vocab.json", "merges.txt"):
         check("model_" + file, (args.model_dir / file).is_file(), str(args.model_dir / file))
     try:
         config = json.loads((args.model_dir / "config.json").read_text())
@@ -387,11 +417,14 @@ class Stack:
 
     def start(self):
         env = {k: v for k, v in os.environ.items()
-               if not k.startswith(("DYN_", "VLLM_", "NIXL_", "LMCACHE_"))}
+               if not k.startswith(("DYN_", "VLLM_", "NIXL_", "LMCACHE_")) and
+               k.lower() not in ("http_proxy", "https_proxy", "all_proxy", "no_proxy")}
         env.update(PYTHONPATH=str(UPSTREAM / "components/src") + os.pathsep + str(ROOT),
                    DYN_NAMESPACE="kv-events-" + uuid.uuid4().hex[:12],
                    DYN_FILE_KV=str(self.args.output_dir / "discovery"),
                    DYN_COMPUTE_THREADS="1", DYN_SYSTEM_THREADS="1", DYN_LOG="info",
+                   DYN_SYSTEM_HOST="127.0.0.1", DYN_TCP_RPC_HOST="127.0.0.1",
+                   DYN_EVENT_PLANE_HOST="127.0.0.1", NO_PROXY="127.0.0.1,localhost",
                    HF_HUB_OFFLINE="1", TRANSFORMERS_OFFLINE="1", CUDA_VISIBLE_DEVICES="0",
                    OMP_NUM_THREADS="1", MKL_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1",
                    TORCHINDUCTOR_COMPILE_THREADS="1", MAX_JOBS="1",
@@ -515,6 +548,7 @@ def run(args, ready):
               "audit_indexer": "official standalone KVIndexer through engine ZMQ",
               "source_sha256": {str(p.relative_to(ROOT)): sha(p) for p in (Path(__file__), POLICY)},
               "model_revision": REVISION, "model_weights_sha256": sha(args.model_dir / "pytorch_model.bin"),
+              "model_tokenizer_sha256": sha(args.model_dir / "tokenizer.json"),
               "python": sys.version,
               "distributions": {d.metadata["Name"]: d.version for d in metadata.distributions()
                                 if d.metadata.get("Name")}}
@@ -600,9 +634,9 @@ def run(args, ready):
 
 def arguments(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=("preflight", "run"))
+    parser.add_argument("action", choices=("prepare-model", "preflight", "run"))
     parser.add_argument("--model-dir", type=Path, default=MODEL)
-    parser.add_argument("--output-dir", type=Path, default=ROOT / "artifacts/kv-events-single-worker")
+    parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--wheel-provenance", type=Path, default=ROOT / "artifacts/kv-event-wheel/provenance.json")
     parser.add_argument("--max-rss-mib", type=int, default=5120)
     parser.add_argument("--max-pss-mib", type=int, default=3584)
@@ -616,13 +650,17 @@ def arguments(argv=None):
             512 <= args.gpu_budget_mib <= 3072 and 4 <= args.pressure_requests <= 32 and
             0 < args.freshness_seconds <= 30):
         parser.error("resource and workload limits exceed the single-worker experiment contract")
-    args.output_dir = args.output_dir.resolve()
+    args.output_dir = (args.output_dir or ROOT / ("artifacts/kv-event-model" if args.action == "prepare-model"
+                                                else "artifacts/kv-events-single-worker")).resolve()
     args.model_dir = args.model_dir.resolve()
     return args
 
 
 def main(argv=None):
     args = arguments(argv)
+    if args.action == "prepare-model":
+        print(json.dumps(prepare_model(args), indent=2))
+        return 0
     ready = preflight(args)
     if args.action == "preflight" or ready["status"] != "passed":
         print(json.dumps(ready, indent=2))
