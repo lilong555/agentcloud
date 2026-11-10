@@ -106,6 +106,15 @@ def overlap(query, worker):
     return int(query.get("scores", {}).get(str(worker), {}).get("0", 0))
 
 
+def observed_prefill_tokens(prompt_tokens, indexed_tokens, block_size=16):
+    """Apply vLLM's full-block hit limit: one prompt token must produce logits."""
+    if prompt_tokens < 1 or indexed_tokens < 0 or block_size < 1:
+        raise ValueError("invalid prefix observation")
+    maximum_hit = (prompt_tokens - 1) // block_size * block_size
+    usable_hit = min(indexed_tokens // block_size * block_size, maximum_hit)
+    return prompt_tokens - usable_hit
+
+
 def occupancy(dump, worker):
     """Count the official current-state dump, with no local cache index."""
     blocks = 0
@@ -604,6 +613,45 @@ def run(args, ready):
         replay = stack.infer(tokens, "replay")
         stack.wait(lambda: query(tokens), lambda q: overlap(q, worker) >= 240)
         snapshot("after_replay", tokens, worker)
+        # The first sequence also warms both full-prefill and cached-tail kernels.
+        # Fixed repeated pairs retain every measurement, including slow outliers.
+        observations = []
+        for cycle in range(args.observation_rounds):
+            prefix = f"observation_{cycle:02d}"
+            for phase in ("hot", "replay"):
+                if phase == "replay":
+                    for i in range(args.pressure_requests):
+                        pressure = [2] + [2000 + cycle * args.pressure_requests + i] * 255
+                        stack.infer(pressure, f"{prefix}_pressure_{i:02d}")
+                        if overlap(query(tokens), worker) == 0:
+                            break
+                    stack.wait(lambda: query(tokens), lambda q: overlap(q, worker) == 0)
+                before = snapshot(f"{prefix}_before_{phase}", tokens, worker)
+                predicted = observed_prefill_tokens(len(tokens), before["prefix_tokens"])
+                measured = stack.infer(tokens, f"{prefix}_{phase}")
+                actual = measured["metric_deltas"]["vllm:request_prefill_kv_computed_tokens_sum"]
+                hits = measured["metric_deltas"]["vllm:prefix_cache_hits_total"]
+                row = {"round": cycle, "phase": phase, "prompt_tokens": len(tokens),
+                       "indexed_prefix_tokens": before["prefix_tokens"],
+                       "event_predicted_compute_tokens": predicted,
+                       "full_context_budget_tokens": len(tokens), "actual_compute_tokens": actual,
+                       "actual_hit_tokens": hits,
+                       "prefill_seconds": measured["metric_deltas"]["vllm:request_prefill_time_seconds_sum"],
+                       "client_ttft_seconds": measured["client_ttft_seconds"]}
+                observations.append(row)
+                write(args.output_dir / "observations.json", observations)
+                require(f"{prefix}_{phase}_prefill_accounting", actual is not None and
+                        hits is not None and actual + hits == len(tokens), row)
+                stack.wait(lambda: query(tokens), lambda q: overlap(q, worker) >= 240)
+        report["observation_summary"] = {
+            "planned_pairs": args.observation_rounds, "observed_requests": len(observations),
+            "baseline": "full context token budget without cache residency information",
+            "event_compute_mae_tokens": sum(abs(r["event_predicted_compute_tokens"] -
+                                                r["actual_compute_tokens"]) for r in observations) / len(observations),
+            "budget_compute_mae_tokens": sum(abs(r["full_context_budget_tokens"] -
+                                                 r["actual_compute_tokens"]) for r in observations) / len(observations),
+            "actor_lifecycle_integration": False,
+        }
         evidence = observer.snapshot()
         for name, passed, detail in event_checks(evidence, args.freshness_seconds):
             require(name, passed, detail)
@@ -644,11 +692,13 @@ def arguments(argv=None):
     parser.add_argument("--min-available-mib", type=int, default=1536)
     parser.add_argument("--gpu-budget-mib", type=int, default=3072)
     parser.add_argument("--pressure-requests", type=int, default=12)
+    parser.add_argument("--observation-rounds", type=int, default=3)
     parser.add_argument("--freshness-seconds", type=float, default=5)
     args = parser.parse_args(argv)
     if not (512 <= args.max_rss_mib <= 5120 and 512 <= args.max_pss_mib <= 3584 and
             1536 <= args.min_available_mib and
             512 <= args.gpu_budget_mib <= 3072 and 4 <= args.pressure_requests <= 32 and
+            1 <= args.observation_rounds <= 3 and
             0 < args.freshness_seconds <= 30):
         parser.error("resource and workload limits exceed the single-worker experiment contract")
     args.output_dir = (args.output_dir or ROOT / ("artifacts/kv-event-model" if args.action == "prepare-model"

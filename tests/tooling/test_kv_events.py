@@ -11,6 +11,15 @@ from experiments.dynamo import kv_events_build as build
 
 
 class KVEventContractTests(unittest.TestCase):
+    def test_indexed_prefix_preserves_vllm_logits_suffix_and_block_alignment(self):
+        self.assertEqual(experiment.observed_prefill_tokens(256, 256), 16)
+        self.assertEqual(experiment.observed_prefill_tokens(256, 0), 256)
+        self.assertEqual(experiment.observed_prefill_tokens(257, 999), 1)
+        self.assertEqual(experiment.observed_prefill_tokens(256, 31), 240)
+        self.assertEqual(experiment.observed_prefill_tokens(1, 16), 1)
+        with self.assertRaises(ValueError):
+            experiment.observed_prefill_tokens(0, 0)
+
     def test_system_ports_fit_native_signed_i16_and_remain_distinct(self):
         ports = experiment.ports(6)
         self.assertEqual(len(set(ports)), 6)
@@ -83,6 +92,7 @@ dynamo_component_kv_publisher_zmq_events_total{stage="accepted",event_type="remo
     def test_limits_are_checked_without_importing_gpu_libraries(self):
         for flags in (["--gpu-budget-mib", "4000"], ["--max-rss-mib", "9999"],
                       ["--max-pss-mib", "9999"],
+                      ["--observation-rounds", "4"],
                       ["--pressure-requests", "100"], ["--freshness-seconds", "0"]):
             with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
                 experiment.arguments(["run", *flags])
