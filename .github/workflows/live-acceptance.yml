@@ -8,7 +8,7 @@ on:
         required: true
       suite:
         type: choice
-        options: [all, faults, heatmap]
+        options: [all, faults, heatmap, capacity]
         default: all
       max_parallel:
         type: number
@@ -33,6 +33,8 @@ jobs:
           matrix=[]
           if os.environ['SUITE'] in ('all','faults'):
               matrix += [dict(suite='faults',name='faults-'+str(i),cases=','.join(cases[i::4]),heap=0,seed=7101) for i in range(4)]
+          if os.environ['SUITE'] == 'capacity':
+              matrix += [dict(suite='faults',name='resume-capacity',cases='resume_capacity_wait',heap=0,seed=7101)]
           if os.environ['SUITE'] in ('all','heatmap'):
               matrix += [dict(suite='heatmap',name=f'heatmap-{heap}-{seed}',cases='',heap=heap,seed=seed) for heap,seed in itertools.product([16,64,128],[7101,7102,7103])]
           with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('matrix='+json.dumps({'include':matrix})+'\n')

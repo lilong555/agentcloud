@@ -7,6 +7,7 @@ export DOCKER_CONFIG="$project_root/artifacts/docker-client"
 export KUBECONFIG="$project_root/artifacts/substrate/kubeconfig"
 export GOMAXPROCS=2
 export GOFLAGS=-p=2
+python3 scripts/ci_disk_prepare.py
 df -h /
 python3 scripts/disk_guard.py
 if ! command -v rg >/dev/null; then

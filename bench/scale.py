@@ -214,7 +214,18 @@ class Trial:
                     demand=state.get('return_demands',{}).get(operation,demand)
                 state=self.client(entry).session(entry['id'])
             else:
-                state=self.client(entry).lifecycle(entry['id'],'resume',state['epoch'],operation)
+                deadline=time.monotonic()+self.config['request_deadline_seconds']
+                while True:
+                    try:
+                        state=self.client(entry).lifecycle(entry['id'],'resume',state['epoch'],operation)
+                        break
+                    except CloudError as exc:
+                        if exc.code!='resume_capacity_wait': raise
+                        self.event('resume_capacity_wait',session_id=entry['id'],operation_id=operation)
+                        self.guard()
+                        remaining=deadline-time.monotonic()
+                        if remaining<=0: raise TimeoutError('Worker capacity return deadline') from exc
+                        time.sleep(min(1.,remaining))
             entry['state']=state
             if state['state']!='RUNNING' or state['actual_fidelity']!='MEMORY': raise RuntimeError('MEMORY restore was not observed')
             self.resumes.append(dict(session_id=entry['id'],seconds=time.time()-begin,gateway_queue_seconds=queue))

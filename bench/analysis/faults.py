@@ -26,6 +26,7 @@ CASE_LABELS = {
     'cross_tenant_identity': '跨租户会话、请求与追踪隔离',
     'retained_tag_replacement': '保留 Tag 替换后的恢复拦截',
     'postgres_commit_failure': '数据库提交失败与副作用隔离',
+    'resume_capacity_wait': '容量拒绝、持久等待、重启与同操作 MEMORY 恢复',
 }
 EXECUTION_KIND = 'real-substrate-memory-postgresql-native-dynamo-faults'
 
@@ -87,7 +88,7 @@ def summarize(reports):
         unexecuted_cases=sum(row['check_status'] == 'not_attempted' for row in cases),
         cases=cases, attempt_audit=attempts,
         primary_selection='earliest scheduled run per case, independent of outcome; missing checks remain in the denominator',
-        acceptance='all 15 first scheduled cases pass in successful runs with successful cleanup',
+        acceptance=f'all {len(CASE_LABELS)} first scheduled cases pass in successful runs with successful cleanup',
         all_attempts=dict(scheduled=len(attempts), attempted=sum(a['check_status'] != 'not_attempted' for a in attempts),
             passed=sum(a['status'] == 'passed' for a in attempts),
             failed=sum(a['status'] == 'failed' for a in attempts),

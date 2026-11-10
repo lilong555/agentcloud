@@ -35,6 +35,9 @@ func failure(w http.ResponseWriter, err error) {
 	if !errors.As(err, &api) {
 		api = &APIError{"internal_error", "request could not be durably completed", 500}
 	}
+	if api.Code == "resume_capacity_wait" {
+		w.Header().Set("Retry-After", "1")
+	}
 	respond(w, api.Status, map[string]any{"error": map[string]string{"code": api.Code, "message": api.Message}})
 }
 

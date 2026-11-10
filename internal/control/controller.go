@@ -664,13 +664,15 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 			c.mu.Unlock()
 			return nil, nil, problem(409, "payload_conflict", "operation ID has another payload")
 		}
-		if prior.Status != "COMPLETED" {
+		if prior.Status == "COMPLETED" {
+			out, manifest := copyValue(s), copyValue(prior.Manifest)
+			c.mu.Unlock()
+			return out, manifest, nil
+		}
+		if action != "resume" || prior.Status != "WAITING_CAPACITY" {
 			c.mu.Unlock()
 			return nil, nil, problem(409, "lifecycle_unknown", "lifecycle operation requires reconciliation")
 		}
-		out, manifest := copyValue(s), copyValue(prior.Manifest)
-		c.mu.Unlock()
-		return out, manifest, nil
 	}
 	if s.Epoch != input.ExpectedEpoch {
 		c.mu.Unlock()
@@ -688,8 +690,19 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 		c.mu.Unlock()
 		return nil, nil, problem(409, "invalid_state", "resume requires a suspended session")
 	}
+	if prior := s.Lifecycle[input.OperationID]; prior != nil && time.Now().Before(prior.RetryAfter) {
+		c.mu.Unlock()
+		return nil, nil, problem(409, "resume_capacity_wait", "resume is waiting for Worker capacity; retry the same operation after retry_after")
+	}
+	previousState, previousBarrier := s.State, s.BarrierGeneration
 	prepared := s.State == "CHECKPOINTED"
-	receipt := &LifecycleReceipt{OperationID: input.OperationID, Action: action, Epoch: s.Epoch, PayloadHash: hash, Status: "RUNNING"}
+	receipt := s.Lifecycle[input.OperationID]
+	if receipt == nil {
+		receipt = &LifecycleReceipt{OperationID: input.OperationID, Action: action, Epoch: s.Epoch, PayloadHash: hash}
+	}
+	receipt.Status, receipt.Error, receipt.CapacityWait = "RUNNING", "", nil
+	receipt.AttemptCount++
+	receipt.LastAttemptAt, receipt.RetryAfter = time.Now().UTC(), time.Time{}
 	s.Lifecycle[input.OperationID] = receipt
 	s.Gate = "CLOSED"
 	if !prepared {
@@ -769,7 +782,9 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 			} else {
 				started := time.Now()
 				actor, err = c.cfg.Backend.Resume(ctx, snapshot)
-				observability.Observe(ctx, "resume_ready_ms", float64(time.Since(started))/float64(time.Millisecond), "backend_resume_attach_completion")
+				if err == nil {
+					observability.Observe(ctx, "resume_ready_ms", float64(time.Since(started))/float64(time.Millisecond), "backend_resume_attach_completion")
+				}
 			}
 		default:
 			err = errors.New("unknown lifecycle action")
@@ -777,6 +792,22 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 	}
 	c.lock()
 	if err != nil {
+		var waiting *resumeCapacityWaitError
+		if action == "resume" && errors.As(err, &waiting) && waiting.proof.matches(snapshot) {
+			receipt.Status, receipt.Error = "WAITING_CAPACITY", err.Error()
+			receipt.CapacityWait = copyValue(&waiting.proof)
+			receipt.RetryAfter = time.Now().UTC().Add(resumeCapacityRetryDelay)
+			s.State, s.Gate, s.BarrierGeneration = previousState, "CLOSED", previousBarrier
+			c.event(s, "lifecycle.resume.waiting_capacity", input.OperationID)
+			persistErr := c.persistContext(ctx)
+			out := copyValue(s)
+			c.mu.Unlock()
+			if persistErr != nil {
+				return nil, nil, persistErr
+			}
+			c.signalContext(ctx, out, "SUSPENDED")
+			return nil, nil, problem(409, "resume_capacity_wait", "resume was rejected before Actor mutation; retry the same operation after retry_after")
+		}
 		receipt.Status = "OUTCOME_UNKNOWN"
 		c.markEntity("lifecycle", key(tenant, id)+"/"+input.OperationID)
 		receipt.Error = err.Error()

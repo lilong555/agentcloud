@@ -7,7 +7,7 @@ AgentCloud 提供持久协调器、Dynamo 原生反馈、Substrate 生命周期�
 | Go 协调器 | PostgreSQL 增量实体事务、revision CAS、提交读隔离、幂等回执、UNKNOWN 保留、服务端观测与迟滞调度 | [Go、PostgreSQL、竞态与静态检查](evidence/local-contract.json) |
 | Dynamo Rust | 认证控制通道、opaque session / inference lease、原生 ACTING 预算、TTL 回退、暂停、取消、final；有界回收与 HTTP 401 拒收旧 lease | [65 项原生 Router 测试](evidence/upstream-patches-native-tests.json)、[16 项真实进程验收](evidence/dynamo-native-mocker.json)、[64 轮回收](evidence/native-run-42698285379.json) |
 | Substrate | 同 lease UID/version fencing、指定快照 durable、Tag 来源核验、实际恢复 fidelity | [PostgreSQL 与运行时测试矩阵](evidence/substrate-test-matrix.json) |
-| 真实 In-Actor | 真实模型 8 轮推理、11 次工具调用，修改两个源码文件，原有 4 项测试通过，8 次 MEMORY 恢复保持 AST／上下文对象身份 | [真实模型完整记录](evidence/real-model/realmodel-51e68254a65c/coding.json) |
+| 真实 In-Actor | 真实模型 8 轮推理、10 次工具调用，修改两个源码文件，原有测试通过；自主调度完成 8 次 MEMORY 恢复，保持 AST／上下文对象身份，观察器 Actor GET 为零 | [自主调度真实任务](evidence/real-model/realmodel-ab7bd4e7b2bb/acceptance.json) |
 | 真实外置客户端 | HTTP 写入、安全点、挂起期间推理完成、MEMORY 恢复、跨 epoch 原回执读取，最终释放 Worker | [完整服务验收](evidence/service-substrate.json) |
 | 独立快照副本 | Tag UID、源 Actor UID、源 snapshot UUID/generation 与 manifest 一致，独立存储对象 COMPLETED | [原生 GetTag 核验](evidence/substrate-retained-tag.json) |
 | DeerFlow | 真实模型、两个并发子任务、文件上传、70 个 PostgreSQL 图检查点、两阶段 manifest、新进程恢复与 MEMORY | [真实研究 Agent](evidence/real-model/realmodel-74bd7470d2c7/deerflow.json) |
@@ -33,6 +33,7 @@ AgentCloud 提供持久协调器、Dynamo 原生反馈、Substrate 生命周期�
 | [当前运行时烟雾测试](https://github.com/lilong555/agentcloud/actions/runs/42701929437) | `717d0ea` | 48/48 请求完成，两个 Worker，清理通过 |
 | [条件成本烟雾对照](https://github.com/lilong555/agentcloud/actions/runs/42740998570) | `e966b47` | TTL2、observed、cost-aware 三组，144/144 请求及清理通过 |
 | [三场景烟雾首轮](https://github.com/lilong555/agentcloud/actions/runs/42742201307) | `1bd80b2` | 7/9 trial、426/432 请求，9/9 清理；原始失败和分母保留 |
+| [真实 Coding 自主调度](https://github.com/lilong555/agentcloud/actions/runs/42746880453) | `a25010f` | `gpt-6-luna` 完成多文件修复，8 次 MEMORY 恢复、持久终态与资源清理通过 |
 
 N=32 和 N=64 时，AgentCloud 相比 TTL15 的 Stranded、Goodput 与交互 p95 达到预声明联合区间判据。闲置预留分别减少 53.52%/50.08%，Goodput 提高 24.81%/11.68%。TTL2 在当前负载下仍具有较低资源成本和较高 Goodput；全部策略及置信区间见[实验报告](EXPERIMENTS.md)。N=64 为四槽位饱和配置，交互 p95 为 237.983 秒，生产容量需要按业务 SLO 规划。
 

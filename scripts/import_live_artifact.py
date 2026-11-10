@@ -122,7 +122,7 @@ def main():
         for original in sorted(path.parent.iterdir()):
             if original.is_symlink() or not original.is_file():
                 parser.error('unexpected experiment evidence entry: '+str(original))
-            compress = original != path
+            compress = original != path and not (args.kind == 'real-model' and original.name in ('coding.json', 'deerflow.json'))
             destination = ROOT/'docs/evidence'/folder/trial_id/(original.name+('.gz' if compress else ''))
             files.append(archive_file(original, destination, compress))
     artifact_dir = ROOT/'docs/evidence/live-runs'/str(args.run_id)/str(args.artifact_id)

@@ -15,11 +15,11 @@ def measured(cases=None, run=1, **overrides):
 
 
 class FaultAuditTests(unittest.TestCase):
-    def test_four_shards_cover_all_fifteen_cases(self):
+    def test_four_shards_cover_all_sixteen_cases(self):
         names = list(CASE_LABELS)
         result = summarize([measured(names[i::4], run=i+1) for i in range(4)])
-        self.assertEqual((result['status'], result['passed_cases'], result['attempted_cases']), ('passed', 15, 15))
-        self.assertEqual(result['all_attempts']['scheduled'], 15)
+        self.assertEqual((result['status'], result['passed_cases'], result['attempted_cases']), ('passed', 16, 16))
+        self.assertEqual(result['all_attempts']['scheduled'], 16)
 
     def test_successful_rerun_keeps_failed_first_attempt(self):
         first = measured(status='failed')
@@ -29,20 +29,20 @@ class FaultAuditTests(unittest.TestCase):
         self.assertEqual((case['status'], case['attempts'], case['github_run_id']), ('failed', 2, '1'))
         self.assertEqual(case['error'], 'late suspend accepted')
         self.assertEqual(result['status'], 'incomplete')
-        self.assertEqual(sum(row['primary'] for row in result['attempt_audit']), 15)
+        self.assertEqual(sum(row['primary'] for row in result['attempt_audit']), 16)
 
     def test_unexecuted_plans_and_absent_shards_stay_in_denominator(self):
         names = list(CASE_LABELS)
         first = measured(names[:2], status='failed', checks=[], error='runtime startup failed')
         result = summarize([first, measured(names[:2], run=2)])
-        self.assertEqual((result['planned_cases'], result['scheduled_cases'], result['unexecuted_cases']), (15, 2, 15))
+        self.assertEqual((result['planned_cases'], result['scheduled_cases'], result['unexecuted_cases']), (16, 2, 16))
         self.assertEqual(result['cases'][0]['status'], 'not_attempted')
         self.assertEqual(result['cases'][2]['status'], 'not_scheduled')
         self.assertEqual(result['cases'][0]['run_errors'], {'error': 'runtime startup failed'})
 
     def test_cleanup_failure_invalidates_successful_checks(self):
         result = summarize([measured(cleanup_error='owned Actor remains allocated')])
-        self.assertEqual((result['passed_cases'], result['failed_cases']), (0, 15))
+        self.assertEqual((result['passed_cases'], result['failed_cases']), (0, 16))
         self.assertTrue(all(row['check_status'] == 'passed' for row in result['cases']))
 
     def test_rejects_mixed_sources_and_ambiguous_checks(self):

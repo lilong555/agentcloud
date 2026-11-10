@@ -40,6 +40,8 @@
 
 Checkpoint 先关闭准入，等待已准入工具完成，再生成快照和 COMMITTED manifest。会话进入 `CHECKPOINTED` 并保持 CLOSED。Suspend 可复用此安全点；Resume 在 manifest、Actor UID、快照身份和水位核验通过后增加 epoch，并打开 gate。Substrate manifest 还绑定独立保留 Tag 的 UID。外置 Harness 的 `checkpoint_id` 对应其持久图检查点。
 
+Worker 容量拒绝后，协调器重新读取 Substrate Actor。权威读取确认 Actor 仍处于原 SUSPENDED 状态，UID、版本、快照与分配信息均保持一致时，Resume 回执进入 `WAITING_CAPACITY`，会话保留原状态、epoch、barrier 与 manifest。响应为 `409 resume_capacity_wait`，携带 `Retry-After: 1`；回执保存 `capacity_wait` 身份证明、`attempt_count` 与 `retry_after`。客户端在重试时间到达后使用原操作 ID 和原输入继续，自主调度器自动复用同一回执和待处理返回需求。容量拒绝耗时独立于成功恢复成本样本。读取失败、身份或版本变化、运行时超时和响应丢失保持 `OUTCOME_UNKNOWN`，进入对账流程。
+
 模型请求在持久登记后由协调器发起一次物理请求。模型可在 Actor 挂起期间执行，完成结果由恢复后的 Runtime 认领。登记后的重复观察与认领均读取日志。进程在发送意图持久化后崩溃，或工具执行后丢失终态，相关记录进入 `OUTCOME_UNKNOWN`，保留原 ID 和 attempt ID 供对账。未知工具结果关闭 gate 并阻止发布安全点。
 
 PostgreSQL 日志使用独占 advisory lock 与 revision CAS；本地开发日志使用文件锁、原子替换和 fsync。协调器采用单写者模式，日志异常会使 readiness 失败并要求重启核验。默认容量为 256 个会话、4096 个模型请求、每会话 4096 个工具回执和每租户 64 个待处理模型请求。

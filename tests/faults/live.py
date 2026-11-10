@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fifteen fault windows on real Substrate MEMORY Actors, PostgreSQL and native Dynamo."""
+"""Fault windows on real Substrate MEMORY Actors, PostgreSQL and native Dynamo."""
 from __future__ import annotations
 import argparse
 from concurrent.futures import ThreadPoolExecutor
@@ -25,7 +25,8 @@ from scripts.resource_guard import stop
 CASES=('return_during_suspend','stale_epoch_tool','stale_substrate_suspend','pending_snapshot_tag',
        'rootfs_downgrade','dispatch_crash_unknown','frontend_restart','retired_lease_generation',
        'concurrent_duplicate_model','model_payload_conflict','concurrent_duplicate_tool',
-       'tool_payload_conflict','cross_tenant_identity','retained_tag_replacement','postgres_commit_failure')
+       'tool_payload_conflict','cross_tenant_identity','retained_tag_replacement','postgres_commit_failure',
+       'resume_capacity_wait')
 
 
 def wait_for(callback,predicate,timeout=90):
@@ -304,6 +305,60 @@ class Matrix:
         observed=self.tool(e,'db-inspect','file_read',path='database.txt')
         assert observed['result']['content']=='original'
         return dict(rejection=error,uncommitted_effect_absent=True)
+
+    def resume_capacity_wait(self,e):
+        c=self.t.client(e)
+        suspended=self.t.suspend(e,'capacity-suspend')
+        native_before=self.probe('inspect',e)['actor']
+        holders=[]
+        try:
+            for index in range(self.t.config['worker_slots']):
+                name=e['id']+'-capacity-holder-'+str(index)
+                holder=dict(id=name,tenant=e['tenant'],resident=False)
+                self.t.sessions.append(holder);holders.append(holder)
+                holder['state']=c.call('POST','/v1/sessions',dict(session_id=name,workspace_id=name,
+                    actor_name='ac-'+name,mode='external',profile='coding',ablation_group='B'))
+                assert holder['state']['state']=='RUNNING'
+            operation='capacity-return'
+            request=lambda:c.lifecycle(e['id'],'resume',suspended['epoch'],operation)
+            error=rejected(request)
+            assert error['code']=='resume_capacity_wait',error
+            waiting=self.state(e);receipt=waiting['lifecycle'][operation]
+            assert waiting['state']=='SUSPENDED' and waiting['gate']=='CLOSED'
+            assert waiting['epoch']==suspended['epoch'] and waiting['manifest']==suspended['manifest']
+            assert waiting['barrier_generation']==suspended['barrier_generation']
+            assert receipt['status']=='WAITING_CAPACITY' and receipt['attempt_count']==1
+            assert receipt['capacity_wait']['actor_uid']==native_before['uid']
+            assert receipt['capacity_wait']['actor_version']==native_before['version']
+            self.restart_coordinator()
+            reopened=self.state(e)
+            assert reopened['state']=='SUSPENDED' and reopened['lifecycle'][operation]==receipt
+            holder=holders[0]
+            c.lifecycle(holder['id'],'suspend',holder['state']['epoch'],'release-capacity')
+            deadline=time.monotonic()+60
+            while True:
+                try:
+                    restored=request()
+                    break
+                except CloudError as exc:
+                    if exc.code!='resume_capacity_wait' or time.monotonic()>deadline: raise
+                    time.sleep(1)
+            e['state']=restored
+            assert restored['epoch']==suspended['epoch']+1 and restored['actual_fidelity']=='MEMORY'
+            assert restored['lifecycle'][operation]['status']=='COMPLETED'
+            assert restored['lifecycle'][operation]['attempt_count']>=2
+            proof=self.t.tool(e,'capacity-memory-proof','python3 actor_mix.py proof')
+            for field in ('nonce','pid','heap_bytes','heap_sha256','ast_identity','ast_sha256'):
+                assert proof[field]==e['proof'][field],field
+            assert request()['epoch']==restored['epoch']
+            return dict(rejection=error,capacity_holders=len(holders),durable_wait=receipt,
+                coordinator_restart_preserved_wait=True,restored_epoch=restored['epoch'],
+                actual_fidelity=restored['actual_fidelity'],ram_continuity=True,
+                completed_receipt=restored['lifecycle'][operation])
+        finally:
+            for holder in holders:
+                try: c.call('POST',c.path(holder['id'])+'/finalize',{})
+                except CloudError: pass
 
     def collect_objects(self):
         objects={};states=[]

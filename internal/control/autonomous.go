@@ -2,6 +2,7 @@ package control
 
 import (
 	"context"
+	"errors"
 	"math"
 	"sort"
 	"time"
@@ -360,6 +361,16 @@ func (c *Controller) autonomousStep(snapshot *Session) {
 	} else if !costWaiting && (action != "KEEP" || reason != "stable_wait_confirmation") {
 		a.CandidateSince = time.Time{}
 	}
+	var retry *LifecycleReceipt
+	if action == "RESUME" {
+		prior := s.Lifecycle[a.LastOperationID]
+		if prior != nil && prior.Action == "resume" && prior.Epoch == s.Epoch && prior.Status == "WAITING_CAPACITY" {
+			retry = prior
+			if now.Before(prior.RetryAfter) {
+				action, reason = "KEEP", "await_worker_capacity_retry"
+			}
+		}
+	}
 	a.LastAction, a.Reason = action, reason
 	if action == "KEEP" {
 		if action != previousAction || reason != previousReason {
@@ -373,6 +384,9 @@ func (c *Controller) autonomousStep(snapshot *Session) {
 	}
 	request.ServerEvidence = evidence
 	operation := "auto-" + newID()
+	if retry != nil {
+		operation = retry.OperationID
+	}
 	a.LastOperationID = operation
 	request.OperationID = operation
 	c.event(s, "autonomous."+action, operation)
@@ -397,7 +411,13 @@ func (c *Controller) autonomousStep(snapshot *Session) {
 			current.Autonomous.CandidateSince = time.Time{}
 		}
 		if err != nil {
-			current.Autonomous.Reason = "lifecycle_requires_reconciliation"
+			var apiErr *APIError
+			if errors.As(err, &apiErr) && apiErr.Code == "resume_capacity_wait" {
+				current.Autonomous.LastAction = "KEEP"
+				current.Autonomous.Reason = "await_worker_capacity_retry"
+			} else {
+				current.Autonomous.Reason = "lifecycle_requires_reconciliation"
+			}
 		}
 		c.markSession(current)
 		_ = c.persistContext(c.operationContext(ctx, snapshot.TenantID, snapshot.SessionID, "autonomous"))

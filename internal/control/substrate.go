@@ -276,6 +276,17 @@ func (b *SubstrateBackend) Resume(ctx context.Context, s *Session) (Actor, error
 	}
 	restored, err := b.cfg.Client.Resume(ctx, current.Name, current.UID, current.Version)
 	if err != nil {
+		if status.Code(err) == codes.ResourceExhausted {
+			probe, cancel := context.WithTimeout(ctx, 2*time.Second)
+			after, readErr := b.cfg.Client.GetActor(probe, current.Name)
+			cancel()
+			if readErr == nil && unchangedSuspendedActor(current, after) {
+				return Actor{}, &resumeCapacityWaitError{cause: err, proof: ResumeCapacityProof{
+					ActorUID: after.UID, ActorVersion: after.Version, SnapshotUUID: after.SnapshotUUID,
+					SnapshotGeneration: int64(after.SnapshotGeneration), ObservedAt: time.Now().UTC(),
+				}}
+			}
+		}
 		return Actor{}, err
 	}
 	if restored.ColdStarted || restored.RestoredSnapshotUUID != manifest.SnapshotUUID || int64(restored.RestoredSnapshotGeneration) != manifest.SnapshotGeneration {
