@@ -2,6 +2,7 @@
 import argparse
 import csv
 import json
+import math
 from pathlib import Path
 import random
 import statistics
@@ -12,6 +13,8 @@ from bench.analysis.hosted import with_cleanup
 PERCENTILES = (50, 95, 99)
 SCALARS = ('goodput_per_second', 'stranded_worker_gb_s', 'actor_reserved_gb_s',
            'resume_count', 'resume_total_seconds')
+RESOURCE_METRICS = frozenset(('actor_reserved_gb_s', 'stranded_worker_gb_s'))
+MIN_RESOURCE_COVERAGE = .9
 
 
 def interval(values):
@@ -19,11 +22,23 @@ def interval(values):
 
 
 def mean_complete(values):
-    return statistics.mean(values) if values and all(v is not None for v in values) else None
+    return statistics.mean(values) if values and all(finite(v) for v in values) else None
+
+
+def finite(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+
+
+def resource_observed(trial):
+    metrics = trial.get('metrics', {})
+    coverage = metrics.get('resource_coverage_fraction')
+    return finite(coverage) and MIN_RESOURCE_COVERAGE <= coverage <= 1.000000001 and all(
+        finite(metrics.get(key)) and metrics[key] >= 0 for key in RESOURCE_METRICS)
 
 
 def completed(trial):
-    return [r for r in trial.get('requests', []) if r.get('status') == 'COMPLETED' and r.get('ttft_seconds') is not None]
+    return [r for r in trial.get('requests', []) if r.get('status') == 'COMPLETED'
+            and finite(r.get('ttft_seconds')) and r['ttft_seconds'] >= 0]
 
 
 def planned(trial):
@@ -31,6 +46,8 @@ def planned(trial):
 
 
 def trial_metric(trial, key):
+    if key in RESOURCE_METRICS and not resource_observed(trial):
+        return None
     if key == 'resume_count':
         return len(trial.get('resumes', []))
     if key == 'resume_total_seconds':
@@ -41,7 +58,8 @@ def trial_metric(trial, key):
         return quantile([r['ttft_seconds'] for r in completed(trial) if r['workload'] == 'interactive'], .95)
     if key == 'completion_fraction':
         return len(completed(trial)) / planned(trial)
-    return trial.get('metrics', {}).get(key)
+    value = trial.get('metrics', {}).get(key)
+    return value if finite(value) else None
 
 
 def primary_attempts(trials):
@@ -63,6 +81,8 @@ def matrix_coverage(trials, config):
     observed = {(t['concurrency'], t['policy'], t['seed']) for t in primary}
     if observed - expected:
         raise ValueError('observed trials differ from the frozen planned matrix')
+    if any(t['config']['context_tokens'] != config['context_tokens'] for t in primary):
+        raise ValueError('request rounds differ from the frozen planned matrix')
     offered = sum(n * len(config['context_tokens']) for n, _, _ in expected)
     done = sum(len(completed(t)) for t in primary)
     return dict(planned_trials=len(expected), observed_trials=len(primary),
@@ -89,17 +109,17 @@ def select_trials(paths, source_commit=None, scenario=None, stage=None, github_r
     return selected
 
 
-def summarize(trials, samples=2000, seed=9031, candidate="agentcloud"):
-    if not trials or samples < 1:
-        raise ValueError('at least one trial and positive bootstrap count required')
+def summarize(trials, samples=2000, seed=9031, candidate="agentcloud", matrix_config=None):
+    if (not trials and matrix_config is None) or samples < 1:
+        raise ValueError('trials or a frozen matrix and a positive bootstrap count are required')
     provenance = {json.dumps(t.get('source_sha256', {}), sort_keys=True) for t in trials}
-    if len(provenance) != 1:
+    if len(provenance) > 1:
         raise ValueError('source digests differ; select one frozen experiment source with --source-commit')
-    if len({t.get('source_commit') for t in trials}) != 1:
+    if len({t.get('source_commit') for t in trials}) > 1:
         raise ValueError('source commits differ; select one frozen experiment source with --source-commit')
     selectors={'concurrency','paired_seeds','policies'}
     configurations={json.dumps({k:v for k,v in t['config'].items() if k not in selectors},sort_keys=True) for t in trials}
-    if len(configurations) != 1:
+    if len(configurations) > 1:
         raise ValueError('resource or workload configurations differ; select a common frozen configuration')
     if any(t.get('arrival_trace_sha256') for t in trials):
         for n,s in {(t['concurrency'],t['seed']) for t in trials}:
@@ -107,8 +127,12 @@ def summarize(trials, samples=2000, seed=9031, candidate="agentcloud"):
             if None in traces or len(traces)!=1:
                 raise ValueError('paired arrival traces differ; compare the same planned workload')
     primary, audit = primary_attempts(trials)
+    matrix = matrix_coverage(trials, matrix_config) if matrix_config is not None else None
+    planned_seeds = sorted(matrix_config['paired_seeds']) if matrix_config is not None else None
+    combinations = ({(n, p) for n in matrix_config['concurrency'] for p in matrix_config['policies']}
+                    if matrix_config is not None else {(t['concurrency'], t['policy']) for t in primary})
     rng, groups = random.Random(seed), []
-    for concurrency, policy in sorted({(t['concurrency'], t['policy']) for t in primary}):
+    for concurrency, policy in sorted(combinations):
         group = [t for t in primary if (t['concurrency'], t['policy']) == (concurrency, policy)]
         requests = [r for t in group for r in completed(t)]
         resumes = [r for t in group for r in t.get('resumes', [])]
@@ -122,10 +146,10 @@ def summarize(trials, samples=2000, seed=9031, candidate="agentcloud"):
             clusters.append(list(workspaces.values()))
         names = [f'{kind}_p{p}' for kind in ('ttft', 'resume') for p in PERCENTILES]
         bootstrap = {name: [] for name in names + ['interactive_p95', 'completion_fraction'] + list(SCALARS)}
-        for _ in range(samples):
+        for _ in range(samples if group else 0):
             indexes = rng.choices(range(len(group)), k=len(group))
             selected = [cluster for i in indexes for cluster in rng.choices(clusters[i], k=len(clusters[i]))] if all(clusters) else []
-            rows = [r for c in selected for r in c['requests'] if r.get('status') == 'COMPLETED' and r.get('ttft_seconds') is not None]
+            rows = [r for c in selected for r in completed({'requests': c['requests']})]
             restore = [r['seconds'] for c in selected for r in c['resumes']]
             for p in PERCENTILES:
                 for kind, values in [('ttft', [r['ttft_seconds'] for r in rows]), ('resume', restore)]:
@@ -139,42 +163,49 @@ def summarize(trials, samples=2000, seed=9031, candidate="agentcloud"):
                 value = mean_complete([trial_metric(group[i], key) for i in indexes])
                 if value is not None:
                     bootstrap[key].append(value)
-        planned_count = sum(planned(t) for t in group)
+        expected_seeds = planned_seeds if planned_seeds is not None else sorted(t['seed'] for t in group)
+        planned_count = (concurrency * len(matrix_config['context_tokens']) * len(expected_seeds)
+                         if matrix_config is not None else sum(planned(t) for t in group))
+        group_complete = len(group) == len(expected_seeds) and len(requests) == planned_count
         row = dict(concurrency=concurrency, policy=policy, trials=len(group), seeds=[t['seed'] for t in group],
-            status='passed' if all(t['status'] == 'passed' for t in group) else 'failed',
+            planned_trials=len(expected_seeds), planned_seeds=expected_seeds,
+            status=('missing' if not group else 'failed' if any(t['status'] != 'passed' for t in group)
+                    else 'passed' if group_complete else 'incomplete'),
             offered=planned_count, completed=len(requests), failed_or_unoffered=planned_count-len(requests),
-            completion_fraction=len(requests)/planned_count,
+            completion_fraction=len(requests)/planned_count if planned_count else 0,
             ttft_seconds={f'p{p}': quantile([r['ttft_seconds'] for r in requests], p/100) for p in PERCENTILES},
             resume_seconds={f'p{p}': quantile([r['seconds'] for r in resumes], p/100) for p in PERCENTILES},
             interactive_p95_seconds=quantile([r['ttft_seconds'] for r in requests if r['workload'] == 'interactive'], .95),
             cached_tokens=sum(t.get('metrics', {}).get('cached_tokens', 0) for t in group),
-            trials_with_resource_observation=sum(t.get('metrics', {}).get('resource_coverage_fraction', 0) >= .9 for t in group),
+            trials_with_resource_observation=sum(resource_observed(t) for t in group),
+            resource_observation_complete=group_complete and all(resource_observed(t) for t in group),
             ci95={key: interval(values) for key, values in bootstrap.items()})
         row.update({key: mean_complete([trial_metric(t, key) for t in group]) for key in SCALARS})
+        for key in RESOURCE_METRICS:
+            if any(trial_metric(t, key) is None for t in group):
+                row['ci95'][key] = [None, None]
         row['native_pause_events'] = sum(t.get('metrics', {}).get('native_pause_events', 0) for t in group)
         row['autonomous_decisions'] = sum(t.get('autonomous_decisions', {}).get('total', 0) for t in group)
         row['service_process_resources'] = {}
         for service in ('coordinator', 'native_frontend', 'native_mocker'):
             observed = [t.get('metrics', {}).get('service_process_resources', {}).get(service) for t in group]
             measurements = [m for m in observed if m is not None]
-            row['service_process_resources'][service] = dict(observed_trials=len(measurements), planned_trials=len(group),
-                mean_cpu_cores=mean_complete([m.get('mean_cpu_cores') if m else None for m in observed]),
-                cpu_seconds_total=sum(m['cpu_seconds'] for m in measurements) if len(measurements)==len(group) else None,
+            row['service_process_resources'][service] = dict(observed_trials=len(measurements), planned_trials=len(expected_seeds),
+                mean_cpu_cores=mean_complete([m.get('mean_cpu_cores') if m else None for m in observed]) if group_complete else None,
+                cpu_seconds_total=sum(m['cpu_seconds'] for m in measurements) if group and group_complete and len(measurements)==len(group) else None,
                 peak_resident_bytes=max((m['peak_resident_bytes'] for m in measurements), default=None),
                 source='Linux /proc; CPU averaged across seed trials; peak RSS is the maximum observed sample')
         groups.append(row)
     comparisons = []
-    for concurrency in sorted({t['concurrency'] for t in primary}):
+    for concurrency in sorted({n for n, _ in combinations}):
         autonomous = {t['seed']: t for t in primary if t['concurrency'] == concurrency and t['policy'] == candidate}
-        for policy in sorted({t['policy'] for t in primary if t['policy'] != candidate}):
+        for policy in sorted({p for n, p in combinations if n == concurrency and p != candidate}):
             baseline = {t['seed']: t for t in primary if t['concurrency'] == concurrency and t['policy'] == policy}
             seeds = sorted(autonomous.keys() & baseline.keys())
-            if not seeds:
-                continue
             changes = {}
             for key in list(SCALARS) + ['completion_fraction', 'interactive_p95'] + [f'ttft_p{p}' for p in PERCENTILES]:
                 pairs = [(trial_metric(autonomous[s], key), trial_metric(baseline[s], key)) for s in seeds]
-                differences = [a-b for a, b in pairs if a is not None and b is not None]
+                differences = [a-b for a, b in pairs if finite(a) and finite(b)]
                 ci = interval([statistics.mean(rng.choices(differences, k=len(differences))) for _ in range(samples)]) if differences else [None, None]
                 changes[key] = dict(pairs_observed=len(differences), mean_difference=mean_complete(differences), paired_seed_bootstrap_ci95=ci)
             fully_observed = len(seeds) >= 3 and autonomous.keys() == baseline.keys() and all(
@@ -190,22 +221,32 @@ def summarize(trials, samples=2000, seed=9031, candidate="agentcloud"):
             protocol_required = candidate == 'agentcloud-v2' or any(
                 autonomous[s].get('comparison_protocol') == 'symmetric-program-v1'
                 or baseline[s].get('comparison_protocol') == 'symmetric-program-v1' for s in seeds)
-            comparable = fully_observed and (paired_runners or not protocol_required)
-            joint = comparable and all(changes[k]['pairs_observed'] == len(seeds)
+            planned_pairs_complete = planned_seeds is not None and set(seeds) == set(planned_seeds)
+            resource_complete = bool(seeds) and all(resource_observed(t) for s in seeds
+                for t in (autonomous[s], baseline[s]))
+            comparable = fully_observed and planned_pairs_complete and (paired_runners or not protocol_required)
+            joint = comparable and resource_complete and all(changes[k]['pairs_observed'] == len(seeds)
                                        for k in ('actor_reserved_gb_s', 'interactive_p95'))
             if joint:
                 resource_upper = changes['actor_reserved_gb_s']['paired_seed_bootstrap_ci95'][1]
                 latency_upper = changes['interactive_p95']['paired_seed_bootstrap_ci95'][1]
                 joint = resource_upper <= 0 and latency_upper <= 0 and (resource_upper < 0 or latency_upper < 0)
             comparisons.append(dict(concurrency=concurrency, candidate=candidate, baseline=policy, paired_seeds=seeds, differences=changes,
-                same_runner_symmetric_protocol=bool(paired_runners),
+                planned_paired_seeds=planned_seeds, planned_pairs_complete=planned_pairs_complete,
+                resource_observation_complete=resource_complete, same_runner_symmetric_protocol=bool(seeds and paired_runners),
                 verdict='supported_joint_improvement' if joint else (
                     'insufficient_complete_pairs' if not fully_observed else (
-                        'incomparable_protocol_or_runner' if not comparable else 'tradeoff_or_uncertain'))))
+                        'incomparable_protocol_or_runner' if protocol_required and not paired_runners else (
+                        'unverified_matrix_plan' if planned_seeds is None else (
+                        'incomplete_planned_pairs' if not planned_pairs_complete else (
+                        'insufficient_resource_observations' if not resource_complete else 'tradeoff_or_uncertain')))))))
     return dict(candidate_policy=candidate, groups=groups, paired_comparisons=comparisons, attempt_audit=audit,
+        matrix=matrix,
         acceptance=dict(primary_metrics=['actor_reserved_gb_s', 'interactive_p95'],
                         noninferiority_margin=0, confidence=.95, minimum_complete_seed_pairs=3,
-                        rule='both paired difference upper bounds <= 0; at least one < 0; all planned requests complete',
+                        matrix_plan_verified=matrix_config is not None,
+                        minimum_resource_coverage=MIN_RESOURCE_COVERAGE,
+                        rule='all frozen seed pairs and requests complete; finite resource measurements with >=90% coverage; both paired difference upper bounds <=0 and at least one <0',
                         v2_protocol='same Runner within each seed and symmetric-program-v1'),
         all_attempts=dict(trials=len(trials), failed_trials=sum(t['status'] != 'passed' for t in trials),
             planned_requests=sum(planned(t) for t in trials), completed_requests=sum(len(completed(t)) for t in trials)),
@@ -288,9 +329,9 @@ def main():
     paths = sorted(args.input_dir.rglob('result.json'))
     selected = select_trials(paths, args.source_commit, args.scenario, args.stage, args.github_run_id)
     paths,trials=zip(*selected) if selected else ([],[])
-    result = summarize(trials, args.bootstrap_samples, candidate=args.candidate)
-    result['matrix'] = matrix_coverage(trials, json.loads(args.matrix_config.read_text()))
-    result.update(schema_version=2, execution_kind='real-substrate-memory-native-dynamo-cpu-mocker',
+    result = summarize(trials, args.bootstrap_samples, candidate=args.candidate,
+                       matrix_config=json.loads(args.matrix_config.read_text()))
+    result.update(schema_version=3, execution_kind='real-substrate-memory-native-dynamo-cpu-mocker',
         upstream_execution=True, gpu_execution=False, source_commit_filter=args.source_commit, workload_scenario=args.scenario,
         experiment_stage=args.stage, github_run_id_filter=args.github_run_id, sources=[str(path) for path in paths])
     write_json(args.output, result)

@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "execution_kind": "frozen-gate2-entry-evidence",
+  "source_commit": "a7e324a7165fa65b697023c9f7a768c9b27610fe",
+  "gate1_run_id": 42800756685,
+  "gate1_summary": "docs/evidence/gate1-a7e324a-qualification.json",
+  "gate1_summary_sha256": "226ae32dbf6a1fd5651d89f5d5c86a90d36459b014fd07db1b8011846541fcfa",
+  "matrix": {
+    "planned_trials": 24,
+    "observed_trials": 24,
+    "passed_trials": 24,
+    "planned_requests": 6912,
+    "completed_requests": 6912,
+    "failed_or_unoffered_requests": 0,
+    "missing_trials": [],
+    "status": "passed"
+  },
+  "baseline_validation": [
+    {
+      "concurrency": 32,
+      "baseline": "cost-aware",
+      "verdict": "supported_joint_improvement",
+      "same_runner_symmetric_protocol": true
+    },
+    {
+      "concurrency": 64,
+      "baseline": "cost-aware",
+      "verdict": "supported_joint_improvement",
+      "same_runner_symmetric_protocol": true
+    }
+  ],
+  "ttl2_verdicts": [
+    {
+      "concurrency": 32,
+      "baseline": "static-2",
+      "verdict": "tradeoff_or_uncertain"
+    },
+    {
+      "concurrency": 64,
+      "baseline": "static-2",
+      "verdict": "tradeoff_or_uncertain"
+    }
+  ],
+  "frozen_paths": [
+    "internal/control",
+    "integrations",
+    "bench/scale.py",
+    "bench/workloads",
+    "bench/configs/gate2.json",
+    "bench/configs/boundary-confirm.json"
+  ],
+  "comparison_protocol": "symmetric-program-v1",
+  "confirmation_scope": [
+    "gate2",
+    "boundary-confirm"
+  ],
+  "stopping_rule": "one frozen v2 implementation; report holdout and regime tradeoffs without new heuristics"
+}

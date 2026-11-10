@@ -6,53 +6,64 @@ import json
 from pathlib import Path
 
 from bench.analysis.hosted import with_cleanup
-from bench.analysis.scale import completed, matrix_coverage, primary_attempts, summarize
+from bench.analysis.scale import completed, primary_attempts, summarize
 from bench.substrate_live import quantile
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def analyze(directory, samples, plan_dir=ROOT / "bench/configs"):
+def analyze(directory, samples, plan_dir=ROOT / "bench/configs", source_commit=None,
+            stage=None, github_run_id=None):
     cells = {}
     for path in sorted(directory.glob("*/result.json")):
         trial = json.loads(path.read_text())
-        stage = trial.get("config", {}).get("experiment_stage")
-        if stage not in ("boundary-screen", "boundary-confirm"):
+        trial_stage = trial.get("config", {}).get("experiment_stage")
+        if trial_stage not in ("boundary-screen", "boundary-confirm"):
             continue
-        key = (stage, trial["source_commit"], trial["workload_scenario"])
+        if source_commit and trial['source_commit'] != source_commit:
+            continue
+        if stage and trial_stage != stage:
+            continue
+        if github_run_id and str(trial.get('github_run_id')) != str(github_run_id):
+            continue
+        key = (trial_stage, trial["source_commit"], trial["workload_scenario"])
         cells.setdefault(key, []).append((path, with_cleanup(path, trial)))
+    cohorts = {(s, c) for s, c, _ in cells}
+    if stage and source_commit:
+        cohorts.add((stage, source_commit))
     groups = []
-    for (stage, commit, scenario), entries in sorted(cells.items()):
-        trials = [trial for _, trial in entries]
-        plan_path = plan_dir / (stage + ".json")
+    for cohort_stage, commit in sorted(cohorts):
+        plan_path = plan_dir / (cohort_stage + ".json")
         plan = json.loads(plan_path.read_text())
-        coordinates = {f'boundary-h{c["heap_mib"]}-w{c["wait_seconds"]}'
-                       for c in plan["boundary_coordinates"]}
-        if scenario not in coordinates:
+        coordinates = {f'boundary-h{c["heap_mib"]}-w{c["wait_seconds"]}': c
+                       for c in plan['boundary_coordinates']}
+        observed = {scenario for s, c, scenario in cells if (s, c) == (cohort_stage, commit)}
+        if observed - coordinates.keys():
             raise ValueError("boundary coordinate differs from the declared plan")
-        matrix = {**trials[0]["config"], **{key: plan[key]
-                  for key in ("concurrency", "policies", "paired_seeds")}}
-        report = summarize(trials, samples, candidate="agentcloud-v2")
-        report.update(stage=stage, source_commit=commit, scenario=scenario,
-                      heap_mib=trials[0]["config"]["heap_mib"],
-                      wait_seconds=trials[0]["config"]["wait_seconds"],
-                      matrix=matrix_coverage(trials, matrix),
+        for scenario, coordinate in sorted(coordinates.items()):
+            entries = cells.get((cohort_stage, commit, scenario), [])
+            trials = [trial for _, trial in entries]
+            if any(t['config'].get(key) != value for t in trials for key, value in coordinate.items()):
+                raise ValueError('observed working set or wait differs from its boundary coordinate')
+            report = summarize(trials, samples, candidate='agentcloud-v2', matrix_config=plan)
+            report.update(stage=cohort_stage, source_commit=commit, scenario=scenario,
+                      heap_mib=coordinate['heap_mib'], wait_seconds=coordinate['wait_seconds'],
                       matrix_plan={"path": str(plan_path.relative_to(ROOT)) if plan_path.is_relative_to(ROOT) else str(plan_path),
                                    "sha256": hashlib.sha256(plan_path.read_bytes()).hexdigest()},
                       sources=[{"path": str(p), "sha256": hashlib.sha256(p.read_bytes()).hexdigest()}
                                for p, _ in entries])
-        primary, _ = primary_attempts(trials)
-        profiles = {}
-        for policy in sorted({t["policy"] for t in primary}):
-            rows = [row for trial in primary if trial["policy"] == policy for row in completed(trial)]
-            profile = []
-            for number in range(len(trials[0]["config"]["context_tokens"])):
-                selected = [r for r in rows if r["round"] == number]
-                queues = [r["gateway_queue_seconds"] for r in selected
-                          if r.get("gateway_queue_seconds") is not None]
-                ttft_total = sum(r["ttft_seconds"] for r in selected)
-                queue_total = sum(queues) if len(queues) == len(selected) else None
-                profile.append({"round": number, "completed_requests": len(selected),
+            primary, _ = primary_attempts(trials)
+            profiles = {}
+            for policy in plan['policies']:
+                rows = [row for trial in primary if trial['policy'] == policy for row in completed(trial)]
+                profile = []
+                for number in range(len(plan['context_tokens'])):
+                    selected = [r for r in rows if r['round'] == number]
+                    queues = [r['gateway_queue_seconds'] for r in selected
+                              if r.get('gateway_queue_seconds') is not None]
+                    ttft_total = sum(r['ttft_seconds'] for r in selected)
+                    queue_total = sum(queues) if selected and len(queues) == len(selected) else None
+                    profile.append({"round": number, "completed_requests": len(selected),
                     "ttft_p50_seconds": quantile([r["ttft_seconds"] for r in selected], .5),
                     "ttft_p95_seconds": quantile([r["ttft_seconds"] for r in selected], .95),
                     "slot_queue_p95_seconds": quantile(queues, .95),
@@ -61,13 +72,27 @@ def analyze(directory, samples, plan_dir=ROOT / "bench/configs"):
                     "slot_queue_total_seconds": queue_total,
                     "slot_queue_share_of_ttft": queue_total / ttft_total
                         if queue_total is not None and ttft_total > 0 else None})
-            profiles[policy] = profile
-        report["round_profiles"] = profiles
-        groups.append(report)
+                profiles[policy] = profile
+            report['round_profiles'] = profiles
+            groups.append(report)
     if not groups:
         raise ValueError("no boundary trials found")
-    return {"schema_version": 1, "execution_kind": "real-actor-paired-boundary-summary",
+    cohort_matrices = []
+    for cohort_stage, commit in sorted(cohorts):
+        selected = [g for g in groups if (g['stage'], g['source_commit']) == (cohort_stage, commit)]
+        summary = {key: sum(g['matrix'][key] for g in selected) for key in
+                   ('planned_trials', 'observed_trials', 'passed_trials', 'planned_requests',
+                    'completed_requests', 'failed_or_unoffered_requests')}
+        summary.update(stage=cohort_stage, source_commit=commit,
+            planned_coordinates=len(selected), observed_coordinates=sum(g['matrix']['observed_trials'] > 0 for g in selected),
+            missing_trials=[dict(scenario=g['scenario'], **t) for g in selected for t in g['matrix']['missing_trials']],
+            status='passed' if all(g['matrix']['status'] == 'passed' for g in selected) else 'incomplete')
+        cohort_matrices.append(summary)
+    return {"schema_version": 2, "execution_kind": "real-actor-paired-boundary-summary",
             "gpu_execution": False, "groups": groups,
+            'cohort_matrices': cohort_matrices,
+            'matrix': cohort_matrices[0] if len(cohort_matrices) == 1 else None,
+            'filters': dict(source_commit=source_commit, stage=stage, github_run_id=github_run_id),
             "all_attempts": {key: sum(g["all_attempts"][key] for g in groups)
                              for key in ("trials", "failed_trials", "planned_requests", "completed_requests")},
             "selection": "earliest attempt within each source, coordinate, policy and seed; all reruns retained",
@@ -75,34 +100,52 @@ def analyze(directory, samples, plan_dir=ROOT / "bench/configs"):
             "cross_source_pooling": False}
 
 
+def figure_groups(report):
+    cohorts = {(g['stage'], g['source_commit']) for g in report['groups']}
+    if len(cohorts) != 1:
+        raise ValueError('select one boundary stage and source before rendering figures')
+    return sorted(report['groups'], key=lambda g: (g['heap_mib'], g['wait_seconds']))
+
+
 def figures(report, stem):
+    selected = figure_groups(report)
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    selected = [g for g in report["groups"] if g["stage"] == "boundary-screen" and
-                g["scenario"] == "boundary-h64-w3" and g["source_commit"].startswith("52af93d")]
-    if len(selected) != 1 or selected[0]["matrix"]["status"] != "passed":
-        raise ValueError("the fixed complete admission-profile pair is required")
-    group = selected[0]
     plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 10, "svg.fonttype": "none"})
-    fig, axes = plt.subplots(1, 2, figsize=(10.6, 4.1), constrained_layout=True)
-    for index, (policy, label, color) in enumerate((
-            ("static-2", "TTL 2s", "#c75427"), ("agentcloud-v2", "AgentCloud v2", "#2451a4"))):
-        profile = group["round_profiles"][policy]
-        axes[0].plot([r["round"] + 1 for r in profile], [r["ttft_p95_seconds"] for r in profile],
-                     "o-", color=color, label=label)
-        row = next(r for r in group["groups"] if r["policy"] == policy)
-        axes[1].bar(index, row["actor_reserved_gb_s"], color=color, width=.58)
-        axes[1].text(index, row["actor_reserved_gb_s"] + 12, f'{row["actor_reserved_gb_s"]:.1f}', ha="center")
-    axes[0].set(xlabel="Request round (initial admission included)", ylabel="All-workload TTFT p95 (s)",
-                title="Reuse benefit and admission tail", xticks=range(1, 7), ylim=(0, None))
-    axes[0].legend(frameon=False)
-    axes[1].set(xticks=[0, 1], xticklabels=["TTL 2s", "AgentCloud v2"],
-                ylabel="Total Actor reservation (GB·s)", title="Complete paired resource cost", ylim=(0, 820))
-    for ax in axes:
-        ax.spines[["top", "right"]].set_visible(False)
-        ax.grid(axis="y", alpha=.15)
-    fig.suptitle("N=64 / 4 slots · 64 MiB working set · 3s wait · seed 7101 · CPU Mocker")
+    fig, axes = plt.subplots(len(selected), 2, figsize=(10.6, 3.8 * len(selected)),
+                             squeeze=False, constrained_layout=True)
+    for number, group in enumerate(selected):
+        left, right = axes[number]
+        complete_pair = all(g['status'] == 'passed' and g['resource_observation_complete'] for g in group['groups'])
+        for index, (policy, label, color) in enumerate((
+                ('static-2', 'TTL 2s', '#c75427'), ('agentcloud-v2', 'AgentCloud v2', '#2451a4'))):
+            profile = group['round_profiles'][policy]
+            points = [r for r in profile if r['ttft_p95_seconds'] is not None]
+            if points:
+                left.plot([r['round'] + 1 for r in points], [r['ttft_p95_seconds'] for r in points],
+                          'o-', color=color, label=label)
+            row = next(r for r in group['groups'] if r['policy'] == policy)
+            if complete_pair:
+                right.bar(index, row['actor_reserved_gb_s'], color=color, width=.58)
+                right.annotate(f"{row['actor_reserved_gb_s']:.1f}\n{row['resume_count']:.1f} resumes",
+                               (index, row['actor_reserved_gb_s']), xytext=(0, 5), textcoords='offset points', ha='center')
+        if not complete_pair:
+            right.text(.5, .5, 'Complete trials and resource observations required',
+                       transform=right.transAxes, ha='center', wrap=True)
+        left.set(xlabel='Request round (initial admission included)', ylabel='Completed-workload TTFT p95 (s)',
+                 title=f"{group['heap_mib']} MiB / {group['wait_seconds']}s · {group['matrix']['completed_requests']}/{group['matrix']['planned_requests']} requests",
+                 xticks=range(1, len(next(iter(group['round_profiles'].values()))) + 1), ylim=(0, None))
+        if left.lines:
+            left.legend(frameon=False)
+        right.set(xticks=[0, 1], xticklabels=['TTL 2s', 'AgentCloud v2'],
+                  ylabel='Mean total Actor reservation (GB·s)', title='Reservation and mean resume count', ylim=(0, None))
+        right.margins(y=.25)
+        for ax in (left, right):
+            ax.spines[['top', 'right']].set_visible(False)
+            ax.grid(axis='y', alpha=.15)
+    seeds = ', '.join(map(str, selected[0]['groups'][0]['planned_seeds']))
+    fig.suptitle(f"{selected[0]['stage']} · source {selected[0]['source_commit'][:7]} · seeds {seeds}\nCPU Mocker + gVisor MEMORY; pooled round p95, paired acceptance in JSON")
     for extension in ("svg", "png", "pdf"):
         fig.savefig(stem.with_suffix("." + extension), dpi=180)
     plt.close(fig)
@@ -114,9 +157,13 @@ def main():
     parser.add_argument("--output", type=Path, default=Path("docs/evidence/v2-boundary-summary.json"))
     parser.add_argument("--bootstrap-samples", type=int, default=2000)
     parser.add_argument("--plan-dir", type=Path, default=ROOT / "bench/configs")
+    parser.add_argument('--source-commit')
+    parser.add_argument('--stage', choices=['boundary-screen', 'boundary-confirm'])
+    parser.add_argument('--github-run-id')
     parser.add_argument("--skip-figures", action="store_true")
     args = parser.parse_args()
-    report = analyze(args.input_dir, args.bootstrap_samples, args.plan_dir)
+    report = analyze(args.input_dir, args.bootstrap_samples, args.plan_dir,
+                     args.source_commit, args.stage, args.github_run_id)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
     columns = ["stage", "source_commit", "scenario", "concurrency", "policy", "trials", "offered", "completed",
                "actor_reserved_gb_s", "stranded_worker_gb_s", "interactive_p95_seconds", "goodput_per_second",
@@ -129,7 +176,7 @@ def main():
                 merged = {**group, **row}
                 writer.writerow({key: merged[key] for key in columns})
     if not args.skip_figures:
-        figures(report, args.output.with_name("v2-boundary-admission"))
+        figures(report, args.output.with_name(args.output.stem.removesuffix('-summary') + '-admission'))
     print(json.dumps({"coordinate_source_groups": len(report["groups"]), **report["all_attempts"]}))
 
 

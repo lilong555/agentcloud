@@ -15,7 +15,9 @@ POLICIES = {
 
 
 def complete(row):
-    return row["status"] == "passed" and row["completed"] == row["offered"]
+    return (row["status"] == "passed" and row["completed"] == row["offered"]
+            and row.get('resource_observation_complete') is True
+            and row['trials'] == row.get('planned_trials'))
 
 
 def render(report, output):
@@ -61,7 +63,7 @@ def render(report, output):
         missing = [f'{POLICIES[r["policy"]][0]}: {r["completed"]}/{r["offered"]}'
                    for r in rows if not complete(r)]
         if missing:
-            top.text(.03, .97, "Incomplete, excluded from frontier:\n" + "\n".join(missing),
+            top.text(.03, .97, "Incomplete trials or resource observations:\n" + "\n".join(missing),
                      transform=top.transAxes, va="top", fontsize=8, color="#8d4141")
         top.set(title=f"N={n} / 4 slots · complete-trial frontier",
                 xlabel="Mean total Actor reservation (GB·s)",

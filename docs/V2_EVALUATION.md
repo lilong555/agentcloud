@@ -44,7 +44,7 @@ Gate 2 使用 Gate 1 确认有效后冻结的代码。边界确认覆盖短等�
 
 ## 联合验收
 
-主指标为 **总 Actor 预留 GB·s** 与 **交互 TTFT P95**。每个规模至少三个完整种子对，全部计划请求正确完成；v2 比较同时要求相同配对 UUID 和统一协议。对每个种子计算候选减基线的差值，两个指标的配对 95% bootstrap 区间上界均不大于零，至少一项严格小于零，才报告 `supported_joint_improvement`。
+主指标为 **总 Actor 预留 GB·s** 与 **交互 TTFT P95**。每个规模至少三个完整种子对，固定计划中的全部种子与请求正确完成；Gate 2 使用全部五个留出种子。v2 比较同时要求相同配对 UUID 和统一协议。总资源须为有限非负实测值，每个 trial 的资源采样覆盖率至少 90%；缺测保留为空并退出联合判定。对每个种子计算候选减基线的差值，两个指标的配对 95% bootstrap 区间上界均不大于零，至少一项严格小于零，才报告 `supported_joint_improvement`。
 
 Stranded GB·s、Goodput、恢复次数、恢复耗时、控制面 CPU/RSS 和资源采样覆盖单独报告。主图显示各 trial 资源均值与合并请求的交互 P95；联合判定使用逐 seed 的 P95 配对差值。首个尝试独立于结果选入主统计，后续重跑保留完整身份与分母。[统计实现与图表](../bench/analysis/scale.py)
 
@@ -52,15 +52,39 @@ Stranded GB·s、Goodput、恢复次数、恢复耗时、控制面 CPU/RSS 和�
 
 ## Gate 1 实测
 
-`a7e324a` 的独立 cohort 使用相同冻结调度器与三种子，运行身份为 [42800756685](https://github.com/lilong555/agentcloud/actions/runs/42800756685)。N32 的 **12/12 trial、2,304/2,304 请求**和全部清理通过；N64 三组仍在执行，完整矩阵保留 24 trial／6,912 请求分母。[当前统计](evidence/gate1-a7e324a-summary.json)
+`a7e324a` 的独立 cohort 使用相同冻结调度器与三种子，运行身份为 [42800756685](https://github.com/lilong555/agentcloud/actions/runs/42800756685)。N32／N64 的三种子完成 **24/24 trial、6,912/6,912 请求**，全部清理通过。[当前统计](evidence/gate1-a7e324a-summary.json)
 
-| N32 配对基线 | v2 总资源差 GB·s，95% CI | v2 交互 P95 差 s，95% CI | 判定 |
+| 规模／配对基线 | v2 总资源差 GB·s，95% CI | v2 交互 P95 差 s，95% CI | 判定 |
 | --- | ---: | ---: | --- |
-| 旧 cost-aware | −24.871 [−31.002, −21.006] | −34.756 [−45.966, −26.088] | 两项改善 |
-| TTL2 | −1.724 [−6.038, +5.685] | +8.897 [+2.553, +13.776] | 资源区间跨零，P95 较高 |
-| TTL2-Shadow | −13.804 [−18.123, −6.576] | −16.270 [−33.110, +5.176] | 资源改善，P95 区间跨零 |
+| N32／旧 cost-aware | −24.871 [−31.002, −21.006] | −34.756 [−45.966, −26.088] | 两项改善 |
+| N32／TTL2 | −1.724 [−6.038, +5.685] | +8.897 [+2.553, +13.776] | 资源区间跨零，P95 较高 |
+| N32／TTL2-Shadow | −13.804 [−18.123, −6.576] | −16.270 [−33.110, +5.176] | 资源改善，P95 区间跨零 |
+| N64／旧 cost-aware | −57.959 [−89.810, −28.796] | −53.641 [−126.680, −5.379] | 两项改善 |
+| N64／TTL2 | −6.683 [−15.116, +9.062] | +5.253 [−8.286, +15.149] | 两项区间均跨零 |
+| N64／TTL2-Shadow | −33.182 [−57.143, −18.146] | +0.635 [−9.256, +10.702] | 资源改善，P95 区间跨零 |
 
-相对 TTL2，v2 的平均恢复次数减少 0.667 次，累计恢复耗时增加 49.795 秒 [41.782, 54.180]；该观察与资源／尾延迟取舍一同保留。下面的早期 cohort 与独立重验按各自运行身份列出。
+相对 TTL2，N32 的 v2 平均恢复次数减少 0.667 次，累计恢复耗时增加 49.795 秒 [41.782, 54.180]；N64 分别为减少 10.333 次、增加 88.556 秒 [64.129, 115.068]。恢复次数与每次恢复代价分别保留。
+
+![完整 Gate 1 资源与尾延迟](evidence/gate1-a7e324a-frontier.png)
+
+[进入确认阶段的证据](evidence/gate2-entry-a7e324a.json)固定这批完整结果和相同调度源码。正式 [Gate 2](https://github.com/lilong555/agentcloud/actions/runs/42815241918) 使用 7301～7305、10 个 Runner、50 trial／14,400 请求；[边界确认](https://github.com/lilong555/agentcloud/actions/runs/42815326346) 使用 7401～7403、9 个 Runner、18 trial／6,912 请求。
+
+### 正式留出结果
+
+N32 的五个留出种子完成 **25/25 trial、4,800/4,800 请求**，全部清理通过。以下为 v2 减基线的配对均值与 95% bootstrap 区间：
+
+| 基线 | 总 Actor 预留差 GB·s | 交互 P95 差 s |
+| --- | ---: | ---: |
+| TTL15 | −167.968 [−172.784, −163.749] | −43.165 [−60.249, −25.865] |
+| Observed | −49.661 [−56.791, −42.963] | −14.706 [−18.329, −10.844] |
+| 旧 cost-aware | −29.171 [−35.120, −23.320] | −23.226 [−35.439, −10.232] |
+| TTL2 | −8.129 [−11.686, −4.572] | +0.126 [−10.375, +10.047] |
+
+前三个基线达到联合改善判据。TTL2 对照显示资源减少，交互 P95 区间跨零；v2 与 TTL2 均为平均 112 次恢复，v2 累计恢复耗时增加 32.945 秒 [27.169, 38.352]。N64 仍在执行，[正式汇总](evidence/gate2-a7e324a-summary.json)始终保留完整 50 trial／14,400 请求计划。
+
+16 MiB／1 s 边界完成三种子、6/6 trial、2,304/2,304 请求；v2−TTL2 总资源为 +18.393 GB·s [−16.494, +48.876]，交互 P95 为 +3.104 s [−10.951, +25.153]。两个指标区间均跨零。[边界确认汇总](evidence/boundary-confirm-a7e324a-summary.json)保留全部三个坐标；128 MiB／3 s 的 7402／7403 在先行 TTL2 运行中触发 6 GiB 磁盘余量保护，随后 v2 因前序协议清理未通过而保留为未投递。独立资源销毁成功，原失败及未投递分母完整归档；其余组继续执行。
+
+早期 cohort 与独立重验按各自运行身份列出。
 
 [原始运行](https://github.com/lilong555/agentcloud/actions/runs/42772928305)固定实验源码 `52af93d`、7101～7103，首轮完成 **23/24 trial、6,717/6,912 请求**。N32 的四策略均完成 576/576 请求；N64 的 v2/7101 发生 CI 访问令牌过期，完成 189/384，其余策略和种子全部完成。[完整首轮分母](evidence/gate1-summary.json)
 
@@ -76,12 +100,14 @@ N32 的差值采用每个种子 v2 减去基线，负数表示减少：
 
 Shadow 与 TTL2 由相同 runner 端的两秒动作执行，只增加服务端旧成本策略的观测、计算与有界诊断；计算得到的生命周期动作由 Shadow gate 抑制。[实现](../internal/control/autonomous.go#L386)
 
+以下为完整 `a7e324a` Gate 1 的三种子配对统计：
+
 | 并发 | 协调器平均 CPU，TTL2 / Shadow | Shadow−TTL2 总预留 GB·s，95% CI | Shadow−TTL2 交互 P95 秒，95% CI |
 | --- | --- | --- | --- |
-| 32 | 0.0942 / 0.1304 核 | +4.399 [−10.914, +15.667] | +8.444 [+1.934, +18.436] |
-| 64 | 0.1263 / 0.1644 核 | +25.706 [+17.507, +34.200] | −18.267 [−24.676, −12.658] |
+| 32 | 0.1080 / 0.1441 核 | +12.080 [+0.537, +22.397] | +25.167 [−2.623, +46.886] |
+| 64 | 0.1371 / 0.1803 核 | +26.499 [+10.261, +42.027] | +4.618 [−1.804, +14.688] |
 
-这组测量把观察与计算的 CPU 成本单独暴露出来，同时保留它对端到端排队时序的实际影响。N64 的资源与延迟变化方向相反；两项主指标和控制开销分别报告。[Shadow 完整统计](evidence/gate1-shadow-summary.json)
+两种规模的观察与计算均增加协调器 CPU 和总 Actor 预留；尾延迟差值的区间跨零。CPU、资源积分和排队时序分别报告。[当前 Shadow 完整统计](evidence/gate1-a7e324a-shadow-summary.json) · [早期 cohort](evidence/gate1-shadow-summary.json)
 
 ### 长时间配对运行的访问有效期
 
@@ -128,20 +154,23 @@ N64、四槽位、种子 7101 的初筛覆盖九个坐标。16/64 MiB 的六对�
 ```bash
 gh workflow run live-scale.yml -f scope=gate1 -f max_parallel=6 \
   -f native_run_id=42769316617 \
-  -f source_ref=52af93d9389c1103af941ec72b885d50ad47e284
+  -f source_ref=a7e324a7165fa65b697023c9f7a768c9b27610fe
 
 python3 -m bench.analysis.scale --candidate agentcloud-v2 \
-  --source-commit 52af93d9389c1103af941ec72b885d50ad47e284 \
-  --stage gate1 --scenario fixed --github-run-id 42772928305 \
+  --source-commit a7e324a7165fa65b697023c9f7a768c9b27610fe \
+  --stage gate1 --scenario fixed --github-run-id 42800756685 \
   --matrix-config bench/configs/gate1.json \
-  --output docs/evidence/gate1-summary.json
+  --output docs/evidence/gate1-a7e324a-summary.json
 
-python3 -m bench.analysis.regime
+python3 -m bench.analysis.regime --stage boundary-confirm \
+  --source-commit a7e324a7165fa65b697023c9f7a768c9b27610fe \
+  --github-run-id 42815326346 \
+  --output docs/evidence/boundary-confirm-a7e324a-summary.json
 
-python3 -m bench.analysis.frontier --input docs/evidence/gate1-summary.json \
-  --output docs/evidence/gate1-frontier
+python3 -m bench.analysis.frontier --input docs/evidence/gate1-a7e324a-summary.json \
+  --output docs/evidence/gate1-a7e324a-frontier
 ```
 
-`--github-run-id` 选择明确工作流的独立统计；省略时，最早尝试始终进入主统计，后续尝试进入审计。边界统计从冻结计划读取完整种子集合，缺失种子和未执行请求保留在分母。
+`--github-run-id` 选择明确工作流的独立统计；省略时，最早尝试始终进入主统计，后续尝试进入审计。边界统计从冻结计划读取完整种子和坐标集合，缺失整个坐标时仍保留该坐标全部 trial 与请求分母。正式图按同一 stage／源码／运行筛选生成，混合来源保持独立；缺测和未完成的资源比较留空。
 
 [完整诊断](SCHEDULER_DIAGNOSIS.md)提供 v2 的量化依据：未知预测晚完成与工具区间资源占用是主导问题；B/E 配置混杂由本协议统一控制。GPU 事件与物理 KV 测量使用[独立实验入口](GPU_VALIDATION.md)，其环境准备和结果归档独立于本阶段验收。

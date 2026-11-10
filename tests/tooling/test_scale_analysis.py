@@ -4,7 +4,9 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from bench.analysis.regime import analyze as analyze_regimes
+from bench.analysis.regime import analyze as analyze_regimes, figure_groups
+from bench.analysis.frontier import complete as frontier_complete
+from bench.analysis.resources import integrate
 from bench.analysis.scale import select_trials, summarize, matrix_coverage, trial_metric
 
 
@@ -18,6 +20,11 @@ def trial(identity, at, status='passed', policy='agentcloud', seed=7101):
 
 
 class ScaleAnalysisTests(unittest.TestCase):
+    @staticmethod
+    def v2_plan(seeds=(7101, 7102, 7103)):
+        return dict(concurrency=[2], policies=['agentcloud-v2', 'static-2'],
+                    paired_seeds=list(seeds), context_tokens=[1024])
+
     def paired_v2(self, resource=2, latency_scale=1):
         rows=[]
         for seed in (7101,7102,7103):
@@ -41,9 +48,57 @@ class ScaleAnalysisTests(unittest.TestCase):
             (2,1.1,'tradeoff_or_uncertain'),
         ):
             with self.subTest(resource=resource,latency=latency):
-                report=summarize(self.paired_v2(resource,latency),samples=30,candidate='agentcloud-v2')
+                report=summarize(self.paired_v2(resource,latency),samples=30,candidate='agentcloud-v2',
+                                 matrix_config=self.v2_plan())
                 self.assertEqual(report['paired_comparisons'][0]['verdict'],verdict)
                 self.assertEqual(report['acceptance']['primary_metrics'],['actor_reserved_gb_s','interactive_p95'])
+
+    def test_three_good_pairs_cannot_satisfy_a_five_seed_plan(self):
+        report = summarize(self.paired_v2(resource=2, latency_scale=.8), samples=20,
+                           candidate='agentcloud-v2', matrix_config=self.v2_plan(range(7101, 7106)))
+        self.assertEqual(report['matrix']['planned_trials'], 10)
+        self.assertEqual(report['matrix']['planned_requests'], 20)
+        self.assertEqual(report['matrix']['status'], 'incomplete')
+        self.assertEqual(report['paired_comparisons'][0]['verdict'], 'incomplete_planned_pairs')
+        for group in report['groups']:
+            self.assertEqual((group['trials'], group['planned_trials']), (3, 5))
+            self.assertEqual((group['completed'], group['offered']), (6, 10))
+            self.assertFalse(frontier_complete(group))
+
+    def test_joint_verdict_requires_an_independently_declared_matrix(self):
+        report = summarize(self.paired_v2(), samples=10, candidate='agentcloud-v2')
+        self.assertEqual(report['paired_comparisons'][0]['verdict'], 'unverified_matrix_plan')
+
+    def test_missing_low_coverage_and_nonfinite_resources_cannot_be_savings(self):
+        cases = [integrate([], set(), [], [], 0, 1, 2),
+                 dict(actor_reserved_gb_s=0, resource_coverage_fraction=.899),
+                 dict(actor_reserved_gb_s=float('nan')), dict(actor_reserved_gb_s=float('inf')),
+                 dict(actor_reserved_gb_s=-1), dict(resource_coverage_fraction=None)]
+        for metrics in cases:
+            with self.subTest(metrics=metrics):
+                rows = self.paired_v2()
+                for item in rows:
+                    if item['policy'] == 'agentcloud-v2':
+                        item['metrics'].update(metrics)
+                report = summarize(rows, samples=10, candidate='agentcloud-v2', matrix_config=self.v2_plan())
+                comparison = report['paired_comparisons'][0]
+                self.assertEqual(comparison['verdict'], 'insufficient_resource_observations')
+                resource = comparison['differences']['actor_reserved_gb_s']
+                self.assertEqual(resource['pairs_observed'], 0)
+                self.assertIsNone(resource['mean_difference'])
+                self.assertEqual(resource['paired_seed_bootstrap_ci95'], [None, None])
+                group = next(g for g in report['groups'] if g['policy'] == 'agentcloud-v2')
+                self.assertIsNone(group['actor_reserved_gb_s'])
+                self.assertEqual(group['ci95']['actor_reserved_gb_s'], [None, None])
+                self.assertFalse(frontier_complete(group))
+
+    def test_no_observations_still_preserve_the_whole_matrix(self):
+        report = summarize([], samples=10, candidate='agentcloud-v2', matrix_config=self.v2_plan())
+        self.assertEqual(report['matrix']['planned_trials'], 6)
+        self.assertEqual(report['matrix']['completed_requests'], 0)
+        self.assertEqual(len(report['matrix']['missing_trials']), 6)
+        self.assertTrue(all(g['status'] == 'missing' for g in report['groups']))
+        self.assertFalse(any(c['verdict'] == 'supported_joint_improvement' for c in report['paired_comparisons']))
 
     def test_v2_requires_same_runner_and_symmetric_protocol(self):
         for field,value in (('paired_runner_id','different'),('paired_runner_id',None),
@@ -122,7 +177,7 @@ class ScaleAnalysisTests(unittest.TestCase):
                 root = Path(directory)
                 policies = ['static-2', 'agentcloud-v2']
                 plan = dict(concurrency=[2], policies=policies, paired_seeds=[7401, 7402, 7403],
-                            boundary_coordinates=[dict(heap_mib=16, wait_seconds=1)])
+                            context_tokens=[1024], boundary_coordinates=[dict(heap_mib=16, wait_seconds=1)])
                 (root / 'boundary-confirm.json').write_text(json.dumps(plan))
                 for seed in seeds:
                     for policy in policies:
@@ -142,6 +197,59 @@ class ScaleAnalysisTests(unittest.TestCase):
                 self.assertEqual(matrix['planned_requests'], 12)
                 self.assertEqual(matrix['failed_or_unoffered_requests'], 12 - 2 * expected_observed)
                 self.assertEqual(matrix['status'], expected_status)
+
+    def test_boundary_plan_includes_entirely_absent_coordinates(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            plan = dict(concurrency=[2], policies=['static-2', 'agentcloud-v2'],
+                        paired_seeds=[7401, 7402, 7403], context_tokens=[1024],
+                        boundary_coordinates=[dict(heap_mib=h, wait_seconds=w) for h, w in ((16, 1), (64, 3), (128, 3))])
+            (root / 'boundary-confirm.json').write_text(json.dumps(plan))
+            for seed in plan['paired_seeds']:
+                for policy in plan['policies']:
+                    item = trial(f'{policy}-{seed}', seed, policy=policy, seed=seed)
+                    item.update(source_commit='frozen', workload_scenario='boundary-h16-w1',
+                                paired_runner_id=f'runner-{seed}', comparison_protocol='symmetric-program-v1')
+                    item['config'].update(experiment_stage='boundary-confirm', heap_mib=16, wait_seconds=1)
+                    for request in item['requests']:
+                        request['round'] = 0
+                    path = root / item['trial_id']
+                    path.mkdir()
+                    (path / 'result.json').write_text(json.dumps(item))
+            report = analyze_regimes(root, 10, root, source_commit='frozen', stage='boundary-confirm')
+            self.assertEqual(len(report['groups']), 3)
+            self.assertEqual((report['matrix']['observed_trials'], report['matrix']['planned_trials']), (6, 18))
+            self.assertEqual((report['matrix']['completed_requests'], report['matrix']['planned_requests']), (12, 36))
+            self.assertEqual(report['matrix']['status'], 'incomplete')
+            self.assertEqual(len(report['matrix']['missing_trials']), 12)
+            empty = [g for g in report['groups'] if g['matrix']['observed_trials'] == 0]
+            self.assertEqual(len(empty), 2)
+            self.assertTrue(all(g['matrix']['status'] == 'incomplete' for g in empty))
+
+    def test_boundary_confirmation_and_figures_select_the_same_source(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            plan = dict(concurrency=[2], policies=['static-2', 'agentcloud-v2'],
+                        paired_seeds=[7101], context_tokens=[1024],
+                        boundary_coordinates=[dict(heap_mib=16, wait_seconds=1)])
+            for stage, commit in (('boundary-screen', 'historical'), ('boundary-confirm', 'frozen')):
+                (root / (stage + '.json')).write_text(json.dumps(plan))
+                for policy in plan['policies']:
+                    item = trial(f'{stage}-{policy}', 1, policy=policy)
+                    item.update(source_commit=commit, workload_scenario='boundary-h16-w1')
+                    item['config'].update(experiment_stage=stage, heap_mib=16, wait_seconds=1)
+                    for request in item['requests']:
+                        request['round'] = 0
+                    path = root / item['trial_id']
+                    path.mkdir()
+                    (path / 'result.json').write_text(json.dumps(item))
+            report = analyze_regimes(root, 10, root, source_commit='frozen', stage='boundary-confirm')
+            self.assertEqual(report['all_attempts']['trials'], 2)
+            self.assertEqual({g['stage'] for g in figure_groups(report)}, {'boundary-confirm'})
+            self.assertEqual({g['source_commit'] for g in figure_groups(report)}, {'frozen'})
+            mixed = analyze_regimes(root, 10, root)
+            with self.assertRaisesRegex(ValueError, 'one boundary stage and source'):
+                figure_groups(mixed)
 
     def test_resume_intervals_and_failed_pair_prevent_improvement_verdict(self):
         trials=[trial('auto-'+str(s),s,seed=s) for s in (7101,7102,7103)]

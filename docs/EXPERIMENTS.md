@@ -17,17 +17,33 @@
 
 首轮 **23/24 trial、6,717/6,912 请求**完成。N32 的 v2 相对旧 cost-aware 平均节省 **21.614 GB·s、27.066 秒交互 P95**，两项配对 95% 区间均改善；相对 TTL2 分别节省 8.660 GB·s、4.988 秒，区间跨零。N64/7101 的 v2 在第四个串行策略期间遇到一小时 CI 访问令牌过期，该 trial 的 195 个失败／未投递请求完整保留。[Gate 1 数据](evidence/gate1-summary.json) · [有效期轨迹与安全状态](evidence/gate1-credential-expiry.json)
 
-Shadow 将服务端观测与计算成本单独纳入对照：协调器平均 CPU 在 N32 从 0.0942 增到 0.1304 核，N64 从 0.1263 增到 0.1644 核。端到端资源和时延差异及其置信区间分别保存。[Shadow 数据](evidence/gate1-shadow-summary.json) · [完整机制、协议与验证](V2_EVALUATION.md)
+`a7e324a` 的完整 Shadow 对照中，协调器平均 CPU 在 N32 从 0.1080 增到 0.1441 核，N64 从 0.1371 增到 0.1803 核；Shadow 相对 TTL2 的总资源配对均值分别增加 12.080／26.499 GB·s。端到端资源和时延差异及其置信区间分别保存。[当前 Shadow 数据](evidence/gate1-a7e324a-shadow-summary.json) · [完整机制、协议与验证](V2_EVALUATION.md)
 
 边界坐标为 16/64/128 MiB × 1/3/6 秒等待。每个坐标按自身源码和 Runner 保留完整请求分母、资源积分、P95、恢复次数及逐轮容量等待；工作集初始化与运行时限故障保留独立验证记录。[边界汇总](evidence/v2-boundary-summary.json)
 
 N64/7101 的完整四策略独立验证完成 **1,536/1,536 请求、3/4 trial**，访问有效期与清理通过。v2 最终释放与自主挂起预留竞争，Runner 的失败记录与最终已提交 MEMORY 状态一同归档。[独立统计](evidence/gate1-revalidation-summary.json) · [竞态回执与时间](evidence/gate1-lifecycle-race.json)
 
-`a7e324a` 的独立 Gate 1 cohort 在 [42800756685](https://github.com/lilong555/agentcloud/actions/runs/42800756685) 执行。N32 的三种子完成 **12/12 trial、2,304/2,304 请求**，清理全部通过。v2 相对 oldCost 的总资源差为 **−24.871 GB·s [−31.002, −21.006]**，交互 P95 差为 **−34.756 s [−45.966, −26.088]**；相对 TTL2 分别为 **−1.724 GB·s [−6.038, +5.685]**、**+8.897 s [+2.553, +13.776]**。N64 三组继续纳入同一 24 trial／6,912 请求计划分母。[当前 cohort 原始统计](evidence/gate1-a7e324a-summary.json)
+`a7e324a` 的独立 Gate 1 cohort 在 [42800756685](https://github.com/lilong555/agentcloud/actions/runs/42800756685) 完成 **24/24 trial、6,912/6,912 请求**，清理全部通过。以下为三个种子中 v2 减基线的配对均值与 95% bootstrap 区间：
+
+| 规模／基线 | 总 Actor 预留差 GB·s | 交互 P95 差 s |
+| --- | ---: | ---: |
+| N32／旧 cost-aware | −24.871 [−31.002, −21.006] | −34.756 [−45.966, −26.088] |
+| N32／TTL2 | −1.724 [−6.038, +5.685] | +8.897 [+2.553, +13.776] |
+| N64／旧 cost-aware | −57.959 [−89.810, −28.796] | −53.641 [−126.680, −5.379] |
+| N64／TTL2 | −6.683 [−15.116, +9.062] | +5.253 [−8.286, +15.149] |
+
+两种规模对旧成本策略均达到联合改善判据；TTL2 对照保留资源与延迟取舍。[完整统计](evidence/gate1-a7e324a-summary.json) · [帕累托图与配对区间](evidence/gate1-a7e324a-frontier.png)
+
+[Gate 2](https://github.com/lilong555/agentcloud/actions/runs/42815241918) 使用冻结的相同源码、7301～7305 和五个策略，50 trial／14,400 请求。N32 已完成 25/25 trial、4,800/4,800 请求与全部清理；v2 相对旧 cost-aware 平均节省 29.171 GB·s、23.226 秒交互 P95，两项配对区间均改善。相对 TTL2，资源减少 8.129 GB·s [4.572, 11.686]，交互 P95 差为 +0.126 s [−10.375, +10.047]。N64 仍在执行。[完整计划与已归档结果](evidence/gate2-a7e324a-summary.json)
+
+[边界确认](https://github.com/lilong555/agentcloud/actions/runs/42815326346) 使用 7401～7403 的三个关键坐标，18 trial／6,912 请求。16 MiB／1 s 完成三种子、6/6 trial、2,304/2,304 请求，两项对 TTL2 的配对区间均跨零。128 MiB／3 s 的两个先行 TTL2 trial 触发磁盘余量保护，后续 v2 因前序协议清理失败退出投递；资源销毁成功，失败与未投递保留在分母。其余组继续执行。[完整分母](evidence/boundary-confirm-a7e324a-summary.json) · [指标、区间与协议](V2_EVALUATION.md#正式留出结果)
+
 
 ## 公开真实轨迹的数据规格
 
 [五源审查](PUBLIC_TRACE_REVIEW.md)推荐 TraceLab v0.0.2 作为工具／用户等待与后台进程的最小数据源，FreeInference 作为 gateway 模型等待的独立确认。[离线导入器](PUBLIC_TRACE_IMPORT.md)提供固定摘要的全量扫描、完整会话筛选、贡献者 family 留出、安全等待覆盖和策略观察截断。独立 Actions 输出全部原始分母与 `replay_ready` 准入结论，已有性能数据采用本页各自注明的实际执行负载。[机器可读来源](evidence/public-trace-review.json)
+
+固定 `f733444` 的云端全量审核与发布分母匹配：8,058 会话、665,453 轮、743,819 工具、52 贡献者。303 个深入审核会话中，48 个时序合格、33 个完整窗口合格；七个留出窗口来自两个贡献者，32 family 门槛保持关闭。这 33 个窗口仅覆盖 195 个源对象、48 源轮，用户候选等待为零；来源整体和合格窗口覆盖率分别为 1.2184% 和 99.7523%，使用各自分母。[完整质量及筛选报告](PUBLIC_TRACE_IMPORT.md) · [当前与历史原文](evidence/public-traces/index.json)
 
 ## RTX 4070 真实 CUDA 与官方 KV 事件
 
