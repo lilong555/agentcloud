@@ -15,6 +15,10 @@ on:
         description: 'Reuse a successful Native upstream validation run; empty builds native sources'
         type: string
         default: ''
+      source_ref:
+        description: 'Frozen experiment source ref; empty uses the workflow commit'
+        type: string
+        default: ''
       trial_filter:
         description: 'JSON coordinates: paired scopes use complete n/seed/scenario groups; legacy scopes also require policy'
         type: string
@@ -29,6 +33,8 @@ jobs:
       matrix: ${{ steps.plan.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref || github.sha }}
       - id: plan
         env:
           SCOPE: ${{ inputs.scope || 'smoke' }}
@@ -72,6 +78,8 @@ jobs:
       GOMAXPROCS: '2'
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref || github.sha }}
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -119,6 +127,16 @@ jobs:
           .venv-dynamo/bin/python scripts/verify_cpu_environment.py
       - name: Prepare Kind, gVisor MEMORY, durable storage and two Workers
         run: bash scripts/ci_live_prepare.sh
+      - name: Issue bounded access covering the paired job budget
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WORKFLOW_SOURCE: ${{ github.sha }}
+          JOB_MINUTES: ${{ matrix.timeout_minutes || 120 }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/contents/scripts/ci_substrate_access.py?ref=$WORKFLOW_SOURCE" \
+            --jq '.content' | base64 -d > artifacts/ci_substrate_access.py
+          python3 artifacts/ci_substrate_access.py --schedule artifacts/scale-schedule.json \
+            --job-minutes "$JOB_MINUTES" --workflow-source "$WORKFLOW_SOURCE"
       - name: Run paired policies serially on this Runner
         run: python3 -m bench.scale --schedule artifacts/scale-schedule.json
       - name: Collect runtime and resource evidence
