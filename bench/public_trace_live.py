@@ -26,7 +26,7 @@ from runtime.client import CloudError
 
 POLICIES = ('agentcloud', 'static-15', 'static-2', 'agentcloud-v2')
 LABELS = dict(zip(POLICIES, ('Observed', 'TTL15', 'TTL2', 'agentcloud-v2')))
-PUBLIC_PROTOCOL = 'public-source-symmetric-finalize-v1'
+PUBLIC_PROTOCOL = 'public-source-symmetric-terminal-v1'
 DEFAULT_INPUT = ROOT/'docs/evidence/public-traces/tracelab-v0.0.2-admitted'
 DEFAULT_SUMMARY = ROOT/'docs/evidence/public-traces/live-replay.json'
 
@@ -40,7 +40,8 @@ def request_rows(windows, trial_id, tenants=4):
                 workspace_index=i,workload='interactive',round=turn,status='NOT_OFFERED',
                 window_id=window['window_id'],source_operation_id=span['operation_id'],
                 source_start_ms=span['start_ms'],context_tokens=tokens['executed_input_tokens'],
-                token_mapping=tokens,logical_request_id=f'{trial_id}-w{i}-r{turn}'))
+                token_mapping=tokens,logical_request_id=f'{trial_id}-w{i}-r{turn}',
+                terminal_turn=turn==len(window['model_spans'])-1))
     return rows
 
 
@@ -192,12 +193,12 @@ class PublicTraceTrial(Trial):
                         # admitted. Re-entering its wrapper would nest proof loops.
                         Trial.resume(self,entry,retry)
                 time.sleep(self.config['poll_seconds'])
-    def admit_request(self, entry, operation, payload, lifecycle_lock):
+    def admit_request(self, entry, operation, payload, lifecycle_lock, *, terminal_turn=False):
         while True:
             self.guard()
             try:
                 return self.client(entry).call('POST',self.client(entry).path(entry['id'])+'/requests',
-                    dict(logical_request_id=operation,payload=payload,terminal_turn=False))
+                    dict(logical_request_id=operation,payload=payload,terminal_turn=terminal_turn))
             except CloudError as exc:
                 if exc.code.lower() not in ('admission_closed','stale_epoch'):
                     raise
@@ -298,7 +299,8 @@ class PublicTraceTrial(Trial):
                     self.verify_ram(entry,proof)
                     payload,_=payload_for(entry['index'],span)
                     row.update(status='FAILED',submitted_at=time.time())
-                    self.admit_request(entry,row['logical_request_id'],payload,lifecycle_lock)
+                    self.admit_request(entry,row['logical_request_id'],payload,lifecycle_lock,
+                                       terminal_turn=row['terminal_turn'])
                     pending.append(row)
                     idle_range[0]=dict(uid=entry['state']['actor']['uid'],start=row['submitted_at'],end=None)
                     self.idle.append(idle_range[0])
@@ -357,7 +359,8 @@ class PublicTraceTrial(Trial):
             protocol=report.get('program_protocol') or {}
             protocol.update(protocol=PUBLIC_PROTOCOL,expected_model_requests=len(self.rows),
                 completed_model_requests=sum(r['status']=='COMPLETED' and r.get('ram_continuity') for r in self.rows),
-                terminal_model_request=False,explicit_workspace_finalize=True)
+                terminal_model_request=True,terminal_model_requests=sum(r['terminal_turn'] for r in self.rows),
+                control_model_requests=0,explicit_workspace_finalize=True)
             report['program_protocol']=protocol
             if not protocol.get('symmetric_program_complete') or protocol['completed_model_requests']!=len(self.rows):
                 report['status']='failed'; report.setdefault('error','public trace E feedback, FINAL, or durable request/RAM proof incomplete')
@@ -390,6 +393,7 @@ def prepare(args):
             model_timing='driver-private proxy delays native-generated SSE; source model spans never enter scheduler observations',
             tokens='source input totals clipped to 8192; native output fixed to 8; source and executed counts retained',
             initialization='one common MEMORY bootstrap per window, reported separately',
+            termination='final original model request carries terminal_turn; subsequent RAM proof and explicit binding retirement',
             policy_input='actual Coordinator tools, durable requests, native queue and current Worker observations'))
     for item in schedule['order']:
         folder=args.output_dir/item['trial_id']; folder.mkdir(parents=True,exist_ok=False)

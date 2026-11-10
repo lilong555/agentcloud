@@ -100,3 +100,18 @@ python3 -m bench.public_traces.replay \
   --archive docs/evidence/public-traces/tracelab-v0.0.2-f733444 \
   --output artifacts/public-traces/tracelab-v0.0.2-admitted
 ```
+
+## 真实集群配对协议与复现
+
+[Public Trace real Actor paired replay](../.github/workflows/public-trace-replay.yml)在同一 GitHub Runner 上按固定种子 9031 随机顺序串行运行 Observed、TTL15、TTL2、v2。每种策略使用全部 33 窗口、48 次模型请求、四租户、两个 Worker、四个并发槽位和 16 MiB RAM 工作集。PostgreSQL、Substrate／gVisor MEMORY 与原生 Dynamo CPU Mocker 共同执行；四策略统一使用 E 组与执行反馈，每个窗口的最后一次源模型请求携带 `terminal_turn=true`，由原生 FINAL 移除 Program，再通过 Workspace `/finalize` 回收绑定。48 次源请求中有 33 个终结请求，其余 15 个保持跨轮 Program。
+
+每个窗口经过相同的初始 MEMORY 快照。源相对时钟从首次获取容量后开始，首次排队单独记录并计入首轮 TTFT；公开模型起止和首输出时刻由私有 driver 延迟真实原生 SSE 来重现。执行输入截断至 8,192 token，输出固定为八个原生生成 token，源 Token 与执行 Token 分列。同步工具使用仓库固定工作负载保留源执行间隔。每次恢复及最终完成都核验 RAM nonce、PID、heap 和 AST 身份，并在当前 epoch 认领所有原模型回执。
+
+报告区分工作阶段 Actor GB·s、含初始化的总预留积分、bootstrap／运行阶段快照数、TTFT／完成分位数和恢复成功率。所有 192 个模型请求与 132 个窗口预先进入分母，失败及未投递项保留；每组结束核验 33 个 FINAL、零原生绑定与所属资源清理。固定输入、随机顺序、源码摘要和实际硬件信息随原始结果归档。
+
+```bash
+gh workflow run public-trace-replay.yml --ref main \
+  -f native_run_id=42769316617
+```
+
+该入口复用已验证的锁定原生 wheel；Runner 完成集群准备、四策略串行执行、证据上传和清理。单策略预算 900 秒，清理预算 120 秒，整个 Job 上限 90 分钟。

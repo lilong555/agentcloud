@@ -51,9 +51,10 @@ class PublicTraceLiveTests(unittest.TestCase):
                 report=json.loads((root/'results'/item['trial_id']/'result.json').read_text()); reports.append(report)
                 self.assertEqual(report['github_run_id'],'123'); self.assertEqual(report['github_run_attempt'],'1')
                 self.assertEqual(report['source_commit'],'frozen-source')
-                self.assertEqual(report['comparison_protocol'],'public-source-symmetric-finalize-v1')
+                self.assertEqual(report['comparison_protocol'],'public-source-symmetric-terminal-v1')
                 self.assertEqual(report['metrics']['offered'],48)
                 self.assertEqual(len(report['requests']),48)
+                self.assertEqual(sum(r['terminal_turn'] for r in report['requests']),33)
                 self.assertTrue(all(r['status']=='NOT_OFFERED' for r in report['requests']))
                 self.assertTrue(report['source_sha256'])
             summary=summarize(plan,reports)
@@ -109,7 +110,7 @@ class PublicTraceLiveTests(unittest.TestCase):
         self.assertTrue(any("'batch'" in command for command in commands))
         self.assertTrue(all('original dataset command' not in command for command in commands))
         registration=[call for call in client.call.call_args_list if call.args[1].endswith('/requests')][0]
-        self.assertFalse(registration.args[2]['terminal_turn'])
+        self.assertTrue(registration.args[2]['terminal_turn'])
         self.assertTrue(trial.rows[0]['ram_continuity'])
 
     def test_model_admission_preserves_payload_and_stops_on_unknown(self):
@@ -119,12 +120,82 @@ class PublicTraceLiveTests(unittest.TestCase):
         trial.client=Mock(return_value=client)
         client.call.side_effect=[CloudError('admission_closed','quiescing',423),{'status':'PENDING'}]
         payload,_=payload_for(0,span()); entry={'id':'one'}
-        self.assertEqual(trial.admit_request(entry,'logical-original',payload,threading.RLock()),{'status':'PENDING'})
+        self.assertEqual(trial.admit_request(entry,'logical-original',payload,threading.RLock(),terminal_turn=True),{'status':'PENDING'})
         self.assertEqual(client.call.call_args_list[0].args,client.call.call_args_list[1].args)
         self.assertEqual(client.call.call_args.args[2]['logical_request_id'],'logical-original')
+        self.assertTrue(client.call.call_args.args[2]['terminal_turn'])
         client.call.reset_mock(); client.call.side_effect=CloudError('OUTCOME_UNKNOWN','inspect',409)
         with self.assertRaises(CloudError): trial.admit_request(entry,'logical-original',payload,threading.RLock())
         self.assertEqual(client.call.call_count,1)
+
+    def test_two_turn_native_program_contract_and_post_terminal_ram_resume(self):
+        # Native retire_execution_binding rejects a retained Program even when
+        # no request remains. Only Completed(session_final=true) ends it.
+        for force_nonterminal in (False,True):
+            with self.subTest(force_nonterminal=force_nonterminal):
+                trial=object.__new__(PublicTraceTrial); w=windows()[0]
+                trial.windows=[w]; trial.rows=request_rows([w],'trial'); trial.id='trial'; trial.seed=9031
+                if force_nonterminal:
+                    for row in trial.rows: row['terminal_turn']=False
+                trial.policy='agentcloud'; trial.config={'poll_seconds':.001}; trial.started=time.time()
+                trial.idle=[]; trial.tools=[]; trial.snapshot=Mock(); trial.guard=Mock(); trial.event=Mock(); trial.suspend=Mock()
+                proof={k:'stable' for k in ('nonce','pid','heap_bytes','heap_sha256','ast_identity','ast_sha256')}
+                state=dict(state='RUNNING',gate='OPEN',epoch=1,actor={'uid':'actor'})
+                entry=dict(id='trial-w0',tenant='tenant-a',index=0,state=state,proof=proof)
+                trial.refresh=Mock(return_value=state)
+                def resume(entry,operation):
+                    if operation=='trace-final-proof-return': state['epoch']=2
+                    return 0
+                trial.resume=Mock(side_effect=resume)
+                trial.tool=Mock(return_value=proof)
+                class NativeContract:
+                    def __init__(self):
+                        self.requests={}; self.registrations=[]; self.active=set(); self.program=False
+                        self.final_events=0; self.claims=[]; self.finalized_epoch=None
+                    def path(self,sid): return '/session'
+                    def call(self,method,path,body):
+                        if path.endswith('/requests'):
+                            operation=body['logical_request_id']; self.registrations.append(body)
+                            self.requests[operation]=dict(terminal=body['terminal_turn'],completed=False)
+                            self.active.add(operation)
+                            if not body['terminal_turn']: self.program=True
+                            return {'status':'PENDING'}
+                        if path.endswith('/finalize'):
+                            if self.program or self.active:
+                                raise CloudError('native_program_active','Dynamo finalization requires no program and no active requests',409)
+                            self.finalized_epoch=state['epoch']; return {'finalized':True}
+                        return {'epoch':state['epoch']}
+                    def get_request(self,sid,operation):
+                        request=self.requests[operation]
+                        if not request['completed']:
+                            if request['terminal']:
+                                self.program=False; self.final_events+=1
+                            request['completed']=True; self.active.remove(operation)
+                        return dict(status='COMPLETED',first_token='native-token',first_token_kind='content',
+                            first_token_at='2026-11-10T00:00:00+00:00',updated_at='2026-11-10T00:00:00+00:00',
+                            result={'usage':{'prompt_tokens':32,'completion_tokens':8}})
+                    def claim(self,sid,operation,epoch):
+                        if not self.requests[operation]['completed'] or epoch!=state['epoch']:
+                            raise CloudError('stale_epoch','claim requires current epoch',409)
+                        self.claims.append((operation,epoch)); return {'status':'COMPLETED'}
+                native=NativeContract(); trial.client=Mock(return_value=native)
+                trial.session_run(entry)
+                self.assertEqual(len(native.registrations),2)
+                self.assertEqual([r['terminal_turn'] for r in native.registrations],
+                                 [False,False] if force_nonterminal else [False,True])
+                self.assertTrue(all(r['ram_continuity'] for r in trial.rows))
+                self.assertEqual([r['final_claim_epoch'] for r in trial.rows],[2,2])
+                self.assertIn(('trial-w0-r1',2),native.claims)
+                self.assertTrue(any(call.args[1]=='trace-final-proof' for call in trial.tool.call_args_list))
+                if force_nonterminal:
+                    self.assertEqual(entry['status'],'failed')
+                    self.assertIn('native_program_active',entry['error'])
+                    self.assertEqual(native.final_events,0)
+                else:
+                    self.assertEqual(entry['status'],'passed',entry.get('error'))
+                    self.assertEqual(native.final_events,1)
+                    self.assertFalse(native.program)
+                    self.assertEqual(native.finalized_epoch,2)
 
     def test_memory_proof_repeated_gate_rejection_resumes_iteratively(self):
         trial=object.__new__(PublicTraceTrial); trial.guard=Mock(); trial.config={'poll_seconds':0}

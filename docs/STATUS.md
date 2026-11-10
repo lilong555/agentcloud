@@ -4,7 +4,7 @@ AgentCloud 围绕 64 个有状态 Agent 共享四个 gVisor 槽位，交付持�
 
 | 组件 | 已验证能力 | 证据 |
 | --- | --- | --- |
-| Go 协调器 | PostgreSQL 增量实体事务、revision CAS、提交读隔离、幂等回执、UNKNOWN 保留、服务端观测与迟滞调度 | [a7e324a：117 项 Go 测试，含 10 项 PostgreSQL；竞态与静态检查](evidence/ci-run-42800618978.json) |
+| Go 协调器 | PostgreSQL 增量实体事务、revision CAS、提交读隔离、幂等回执、UNKNOWN 保留、排空取消、恢复点 GC 与服务端调度 | [fbf5a7c：142 项 Go 测试、竞态、静态检查、源码还原与证据审计](evidence/ci-run-42844407703.json) |
 | Dynamo Rust | 认证控制通道、opaque session / inference lease、原生 ACTING 预算、TTL 回退、暂停、取消、final；有界回收与 HTTP 401 拒收旧 lease | [65 项原生 Router 测试](evidence/upstream-patches-native-tests.json)、[16 项真实进程验收](evidence/dynamo-native-mocker.json)、[64 轮回收](evidence/native-run-42769316617.json) |
 | Substrate | 同 lease UID/version fencing、指定快照 durable、Tag 来源核验、实际恢复 fidelity | [PostgreSQL 与运行时测试矩阵](evidence/substrate-test-matrix.json) |
 | 真实 In-Actor | 真实模型 8 轮推理、10 次工具调用，修改两个源码文件，原有测试通过；自主调度完成 8 次 MEMORY 恢复，保持 AST／上下文对象身份，观察器 Actor GET 为零 | [自主调度真实任务](evidence/real-model/realmodel-5b80fdc027c8/acceptance.json) |

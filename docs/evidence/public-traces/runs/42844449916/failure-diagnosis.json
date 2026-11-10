@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "execution_kind": "public-trace-replay-failure-diagnosis",
+  "source_commit": "fbf5a7c1a011257218067b86309762140541124b",
+  "github_run_id": 42844449916,
+  "status": "failed",
+  "planned_trials": 4,
+  "passed_trials": 0,
+  "planned_requests": 192,
+  "completed_model_requests": 48,
+  "failed_or_unoffered_requests": 144,
+  "source_model_request_completion_distinct_from_window_finalization": true,
+  "root_cause": {
+    "code": "native_program_active",
+    "condition": "all model requests declared terminal_turn=false, so native E Program remains present and /finalize rejects binding reclamation",
+    "native_final_events": 0,
+    "affected_windows": 33,
+    "source_locations": [
+      "bench/public_trace_live.py:admit_request",
+      "internal/control/inference.go:dispatchHTTP",
+      "internal/control/dynamo.go:Finalize"
+    ]
+  },
+  "subsequent_policy_admission": "three policies blocked after unresolved prior native binding cleanup",
+  "cluster_cleanup": {
+    "status": "passed",
+    "remaining_containers": [],
+    "evidence": "docs/evidence/live-runs/42844449916/13779516403/ci-live-cleanup.json"
+  },
+  "performance_claim_scope": "diagnostic run excluded from comparative policy claims",
+  "trials": [
+    {
+      "trial_id": "scale-public-agentcloud-87bf7e725d45",
+      "policy": "agentcloud",
+      "status": "failed",
+      "trial_execution_status": "FAILED",
+      "planned_requests": 48,
+      "completed_model_requests": 48,
+      "window_statuses": {
+        "passed": 0,
+        "failed": 33
+      },
+      "resume_attempts": 47,
+      "resume_successes": 47,
+      "snapshot_tag_count": 80,
+      "cleanup_success": false,
+      "error": "session failure; planned requests retained in denominator",
+      "evidence": "docs/evidence/scale/scale-public-agentcloud-87bf7e725d45/result.json",
+      "sha256": "33e890b61cbb4da09198e55f8bc1fe9c42a86f52d338e3f792f7ccbac2f0c93c"
+    },
+    {
+      "trial_id": "scale-public-static-15-d7e8f01e7b01",
+      "policy": "static-15",
+      "status": "failed",
+      "trial_execution_status": "BLOCKED_CLEANUP",
+      "planned_requests": 48,
+      "completed_model_requests": 0,
+      "window_statuses": {
+        "passed": 0,
+        "failed": 0
+      },
+      "resume_attempts": null,
+      "resume_successes": null,
+      "snapshot_tag_count": null,
+      "cleanup_success": false,
+      "error": "prior cleanup failed; planned windows retained",
+      "evidence": "docs/evidence/scale/scale-public-static-15-d7e8f01e7b01/result.json",
+      "sha256": "bc5915c8ea51e1621a8dcd5b7ab81ad27927c0c7afe8a46348eef147783799b6"
+    },
+    {
+      "trial_id": "scale-public-agentcloud-v2-aa64547e5fda",
+      "policy": "agentcloud-v2",
+      "status": "failed",
+      "trial_execution_status": "BLOCKED_CLEANUP",
+      "planned_requests": 48,
+      "completed_model_requests": 0,
+      "window_statuses": {
+        "passed": 0,
+        "failed": 0
+      },
+      "resume_attempts": null,
+      "resume_successes": null,
+      "snapshot_tag_count": null,
+      "cleanup_success": false,
+      "error": "prior cleanup failed; planned windows retained",
+      "evidence": "docs/evidence/scale/scale-public-agentcloud-v2-aa64547e5fda/result.json",
+      "sha256": "ed5d6ccf5f34c376d31cac7243b3686885fb98dbfb18e3e63a82b68e0e03e570"
+    },
+    {
+      "trial_id": "scale-public-static-2-a515cce18945",
+      "policy": "static-2",
+      "status": "failed",
+      "trial_execution_status": "BLOCKED_CLEANUP",
+      "planned_requests": 48,
+      "completed_model_requests": 0,
+      "window_statuses": {
+        "passed": 0,
+        "failed": 0
+      },
+      "resume_attempts": null,
+      "resume_successes": null,
+      "snapshot_tag_count": null,
+      "cleanup_success": false,
+      "error": "prior cleanup failed; planned windows retained",
+      "evidence": "docs/evidence/scale/scale-public-static-2-a515cce18945/result.json",
+      "sha256": "14b0785e5a317ceb96ce0bfd1d8f4d323e984501ed92d1f94e54e25a2b556093"
+    }
+  ]
+}
