@@ -4,7 +4,7 @@ AgentCloud 围绕 64 个有状态 Agent 共享四个 gVisor 槽位，交付持�
 
 | 组件 | 已验证能力 | 证据 |
 | --- | --- | --- |
-| Go 协调器 | PostgreSQL 增量实体事务、revision CAS、提交读隔离、幂等回执、UNKNOWN 保留、排空取消、恢复点 GC 与服务端调度 | [d7862cc：142 项 Go 测试、竞态、静态检查、源码还原与证据审计](evidence/ci-run-42849681472.json) |
+| Go 协调器 | PostgreSQL 增量实体事务、revision CAS、提交读隔离、幂等回执、UNKNOWN 保留、排空取消、恢复点 GC 与服务端调度 | [8a3e15f：142 项 Go 测试、竞态、静态检查、源码还原与证据审计](evidence/ci-run-42858398008.json) |
 | Dynamo Rust | 认证控制通道、opaque session / inference lease、原生 ACTING 预算、TTL 回退、暂停、取消、final；有界回收与 HTTP 401 拒收旧 lease | [65 项原生 Router 测试](evidence/upstream-patches-native-tests.json)、[16 项真实进程验收](evidence/dynamo-native-mocker.json)、[64 轮回收](evidence/native-run-42769316617.json) |
 | Substrate | 同 lease UID/version fencing、指定快照 durable、Tag 来源核验、实际恢复 fidelity | [PostgreSQL 与运行时测试矩阵](evidence/substrate-test-matrix.json) |
 | 真实 In-Actor | 真实模型 8 轮推理、10 次工具调用，修改两个源码文件，原有测试通过；自主调度完成 8 次 MEMORY 恢复，保持 AST／上下文对象身份，观察器 Actor GET 为零 | [自主调度真实任务](evidence/real-model/realmodel-5b80fdc027c8/acceptance.json) |
@@ -13,7 +13,7 @@ AgentCloud 围绕 64 个有状态 Agent 共享四个 gVisor 槽位，交付持�
 | 排空与未知结果边界 | 30 秒 DRAIN_TIMEOUT、身份核验取消、原子 ABORTED、冷却指标、结构化只读恢复提示 | [协议](API.md#安全点超时与未知工具结果)、[专门契约](../internal/control/quiesce_test.go) |
 | 恢复点轮转 | 默认保留最近两个已验证 COMMITTED Tag，当前／未知引用保护、持久删除与有界退避、过期孤儿回收 | [存储成本与治理](STORAGE_COSTS.md)、[GC 契约](../internal/control/snapshot_gc_test.go) |
 | DeerFlow | 真实模型、两个并发子任务、文件上传、70 个 PostgreSQL 图检查点、两阶段 manifest、新进程恢复与 MEMORY | [真实研究 Agent](evidence/real-model/realmodel-74bd7470d2c7/deerflow.json) |
-| Python Runtime | 持久终态发布、只读控制面观察、跨 epoch 回执、具备能力协商的有界传输恢复与 attach 安全点保护；锁定 DeerFlow 环境 20 项全部通过 | [通用契约](evidence/local-contract.json)、[独立 CI](evidence/deerflow-contracts/42849681472/result.json)、[协议](../runtime/README.md) |
+| Python Runtime | 持久终态发布、只读控制面观察、跨 epoch 回执、具备能力协商的有界传输恢复与 attach 安全点保护；锁定 DeerFlow 环境 20 项全部通过 | [通用契约](evidence/local-contract.json)、[独立 CI](evidence/deerflow-contracts/42858398008/result.json)、[协议](../runtime/README.md) |
 | 成本协调 | 原生 classifier 排队观测、等待与快照成本估计、最小驻留、恢复冷却、并发操作排他 | [真实 HTTP 策略验收](evidence/service-scheduling.json) |
 | 条件成本策略 | 可选 `cost-aware`：含删失样本的条件等待预测、固定释放期限、恢复需求容量成本、重启持久化与竞态契约 | [策略与实机验收协议](COST_SCHEDULING.md)、[观察快照微基准](evidence/scheduling-snapshot-benchmark.json) |
 | v2 成本策略 | 持久等待 episode、真实事件起点的两秒未知期限、条件 KEEP 比较与恢复冷却；统一 E/FINAL 协议、同 Runner 配对与 TTL2-Shadow | [诊断](SCHEDULER_DIAGNOSIS.md)、[机制与配对验收](V2_EVALUATION.md) |
@@ -22,7 +22,7 @@ AgentCloud 围绕 64 个有状态 Agent 共享四个 gVisor 槽位，交付持�
 | Gate 1 `a7e324a` | N32／N64 三种子 24/24 trial、6,912/6,912 请求与清理通过；v2 相对旧成本策略两项改善，TTL2 对照保留资源与尾延迟取舍 | [独立 cohort 与完整计划分母](evidence/gate1-a7e324a-summary.json)、[运行身份](evidence/workflow-launch-42800756685.json) |
 | 正式留出与边界确认 | Gate 2 完成 50/50 trial、14,400/14,400 请求与全部清理；边界完成 13/18 trial、6,105/6,912 请求：三个 TTL2 磁盘保护失败、两个后序 v2 未投递，九组集群清理通过 | [正式完整统计](evidence/gate2-a7e324a-summary.json)、[边界及存储归因](V2_EVALUATION.md#三种子边界确认) |
 | 公开 Agent 轨迹审查 | 五类公开源的许可、字段与有限样本核验；TraceLab v0.0.2 与 FreeInference 为独立真实轨迹阶段的数据规格 | [数据审查与采用条件](PUBLIC_TRACE_REVIEW.md)、[来源与摘要](evidence/public-trace-review.json) |
-| TraceLab 质量与回放准入 | 全来源 8,058 会话、52 贡献者；303 会话深入审核，全部 33 个质量合格窗口准入（7 个多模型轮、48 模型轮、32 工具）；贡献者数量用于解释样本范围 | [质量与实机回放](PUBLIC_TRACE_IMPORT.md)、[原始证据索引](evidence/public-traces/index.json) |
+| TraceLab 真实集群回放 | 全来源 8,058 会话、52 贡献者；33 合格窗口来自八个贡献者；四策略 192/192 请求、132/132 窗口、230/230 次 MEMORY 恢复，全部清理 | [实测与样本说明](PUBLIC_TRACE_IMPORT.md)、[原始结果](evidence/public-traces/live-replay.json) |
 | CUDA 物理 KV | RTX 4070 Laptop、OPT-125M、30 组 KEEP/释放对照；64 会话总时间 −22.5%，16 会话 +44.5%，反转范围 48～64 会话 | [物理 GPU 验证](GPU_VALIDATION.md) |
 | 官方 KV 事件 | 真实 vLLM、KVIndexer 与默认 Selector；26 个连续事件 batch、Stored/Removed 和 relay 零丢失；六次 Prefill 计算对账全部一致，单 Worker | [事件验收与完整尝试](evidence/gpu/kv-events-summary.json) |
 | 规模实验 | 四租户、两 Worker、N=8/16/32/64，60 组首轮中 58 组通过，10,765/10,800 请求；AgentCloud 12/12 组通过 | [完整矩阵与区间](evidence/scale-summary.json) |

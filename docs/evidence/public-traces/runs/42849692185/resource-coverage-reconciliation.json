@@ -1,0 +1,1534 @@
+{
+  "schema_version": 1,
+  "execution_kind": "archived-resource-coverage-bounds-audit",
+  "github_run_id": "42849692185",
+  "source_commit": "d7862cca525e94c6a3db07131a8511379ceae5fd",
+  "source_run_status": "incomplete",
+  "status": "passed",
+  "planned_model_requests": 192,
+  "completed_model_requests": 185,
+  "clock_semantics": "Collector and Worker UTC on the same Runner; finite timestamp precision padding; no independently calibrated clock-skew bound",
+  "integration_semantics": "per Worker adjacent left samples, 300 ms bounded gaps; byte reservation uses decimal GB",
+  "bound_semantics": "inner interval coverage divided by longest possible Worker-duration is a conservative lower bound; outer interval provides resource upper bounds",
+  "exact_total_coverage_recovered": false,
+  "claim_scope": "resource-observation reconciliation only; source run completion retains its independent status and denominator",
+  "total_coverage_lower_bound_at_least_90_percent": true,
+  "trials": [
+    {
+      "trial_id": "scale-public-agentcloud-51af4e45a3ac",
+      "policy": "agentcloud",
+      "source_commit": "d7862cca525e94c6a3db07131a8511379ceae5fd",
+      "source_trial_status": "passed",
+      "trial_execution_status": "COMPLETED",
+      "planned_requests": 48,
+      "completed_requests": 48,
+      "status": "passed",
+      "checks": {
+        "work_integral_matches": true,
+        "total_integral_within_bounds": true,
+        "work_coverage_matches": true
+      },
+      "exact_initialization_start_recovered": false,
+      "exact_working_start_recovered": true,
+      "initialization_clock_bounds": {
+        "lower_event": {
+          "at": 1794326991.935139,
+          "workers": [
+            "4955479a-1687-4f18-8c12-3cc15b0412d4",
+            "af6396de-0b88-4ba2-9757-0a9903c87b5e"
+          ],
+          "line": 9
+        },
+        "upper_event": {
+          "at": 1794326992.049542,
+          "line": 13,
+          "kind": "owned_actor_assignment_observed"
+        },
+        "derivation": "worker_capacity_preflight is emitted before start() returns; the first owned assignment or start-ram receipt is observed after provisioning began",
+        "precision_padding_seconds": 1e-05
+      },
+      "workers": [
+        "4955479a-1687-4f18-8c12-3cc15b0412d4",
+        "af6396de-0b88-4ba2-9757-0a9903c87b5e"
+      ],
+      "sample_counts": {
+        "4955479a-1687-4f18-8c12-3cc15b0412d4": 5335,
+        "af6396de-0b88-4ba2-9757-0a9903c87b5e": 5335
+      },
+      "phases": {
+        "initialization": {
+          "start_epoch_bounds": [
+            1794326991.935129,
+            1794326992.049552
+          ],
+          "end_epoch_bounds": [
+            1794327162.3706453,
+            1794327162.3706453
+          ],
+          "duration_seconds_bounds": [
+            170.32109332084656,
+            170.43551635742188
+          ],
+          "actor_reserved_gb_s_bounds": [
+            152.56093324800025,
+            152.56122739200023
+          ],
+          "coverage_fraction_bounds": [
+            0.9943505718324332,
+            0.9956903920741629
+          ],
+          "conservative_coverage_lower_bound": 0.9943505718324332,
+          "uncovered_worker_seconds_bounds": [
+            1.468034267425537,
+            1.9257264137268066
+          ],
+          "outer_interval_sampling": {
+            "actor_reserved_gb_s": 152.56122739200023,
+            "covered_worker_seconds": 339.1741523742676,
+            "worker_integrals": {
+              "4955479a-1687-4f18-8c12-3cc15b0412d4": {
+                "actor_reserved_gb_s": 73.54400889600004,
+                "covered_seconds": 169.6951174736023,
+                "uncovered_seconds": 0.7403988838195801
+              },
+              "af6396de-0b88-4ba2-9757-0a9903c87b5e": {
+                "actor_reserved_gb_s": 79.0172184960002,
+                "covered_seconds": 169.47903490066528,
+                "uncovered_seconds": 0.9564814567565918
+              }
+            },
+            "uncovered_interval_count": 16,
+            "largest_uncovered_intervals": [
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794327070.886394,
+                "end": 1794327071.302289,
+                "seconds": 0.4158949851989746
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327070.919138,
+                "end": 1794327071.3255,
+                "seconds": 0.40636205673217773
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794326994.165794,
+                "end": 1794326994.35159,
+                "seconds": 0.18579602241516113
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327150.06474,
+                "end": 1794327150.180366,
+                "seconds": 0.11562609672546387
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794327150.059196,
+                "end": 1794327150.167497,
+                "seconds": 0.10830092430114746
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327013.760345,
+                "end": 1794327013.863743,
+                "seconds": 0.10339808464050293
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794326994.285352,
+                "end": 1794326994.375486,
+                "seconds": 0.0901339054107666
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327050.091006,
+                "end": 1794327050.151487,
+                "seconds": 0.06048107147216797
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327130.087859,
+                "end": 1794327130.137774,
+                "seconds": 0.04991507530212402
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794327050.066128,
+                "end": 1794327050.098527,
+                "seconds": 0.03239893913269043
+              }
+            ]
+          },
+          "endpoint_uncertainty_seconds": 0.11442303657531738
+        },
+        "working": {
+          "start_epoch_bounds": [
+            1794327162.3706453,
+            1794327162.3706453
+          ],
+          "end_epoch_bounds": [
+            1794327521.6018934,
+            1794327521.6018934
+          ],
+          "duration_seconds_bounds": [
+            359.2312481403351,
+            359.2312481403351
+          ],
+          "actor_reserved_gb_s_bounds": [
+            285.47324147200027,
+            285.47324147200027
+          ],
+          "coverage_fraction_bounds": [
+            0.9930712524997286,
+            0.9930712524997286
+          ],
+          "conservative_coverage_lower_bound": 0.9930712524997286,
+          "uncovered_worker_seconds_bounds": [
+            4.978045225143433,
+            4.978045225143433
+          ],
+          "outer_interval_sampling": {
+            "actor_reserved_gb_s": 285.47324147200027,
+            "covered_worker_seconds": 713.4844510555267,
+            "worker_integrals": {
+              "4955479a-1687-4f18-8c12-3cc15b0412d4": {
+                "actor_reserved_gb_s": 141.784439552,
+                "covered_seconds": 357.05583667755127,
+                "uncovered_seconds": 2.1754114627838135
+              },
+              "af6396de-0b88-4ba2-9757-0a9903c87b5e": {
+                "actor_reserved_gb_s": 143.6888019200003,
+                "covered_seconds": 356.42861437797546,
+                "uncovered_seconds": 2.802633762359619
+              }
+            },
+            "uncovered_interval_count": 56,
+            "largest_uncovered_intervals": [
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327311.70645,
+                "end": 1794327312.156675,
+                "seconds": 0.4502251148223877
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794327311.804158,
+                "end": 1794327312.191842,
+                "seconds": 0.3876841068267822
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327422.121602,
+                "end": 1794327422.293378,
+                "seconds": 0.17177605628967285
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794327422.1629179,
+                "end": 1794327422.329684,
+                "seconds": 0.16676616668701172
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794327353.986359,
+                "end": 1794327354.152976,
+                "seconds": 0.16661715507507324
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327431.515828,
+                "end": 1794327431.681069,
+                "seconds": 0.16524100303649902
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327162.960794,
+                "end": 1794327163.125217,
+                "seconds": 0.16442298889160156
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327345.759829,
+                "end": 1794327345.908161,
+                "seconds": 0.148331880569458
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794327345.75351,
+                "end": 1794327345.894255,
+                "seconds": 0.14074492454528809
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327358.17348,
+                "end": 1794327358.312634,
+                "seconds": 0.13915395736694336
+              }
+            ]
+          },
+          "endpoint_uncertainty_seconds": 0.0
+        },
+        "total_including_initialization": {
+          "start_epoch_bounds": [
+            1794326991.935129,
+            1794326992.049552
+          ],
+          "end_epoch_bounds": [
+            1794327521.6018934,
+            1794327521.6018934
+          ],
+          "duration_seconds_bounds": [
+            529.5523414611816,
+            529.666764497757
+          ],
+          "actor_reserved_gb_s_bounds": [
+            438.0341747200008,
+            438.0344688640008
+          ],
+          "coverage_fraction_bounds": [
+            0.9934829102922698,
+            0.9939136521662972
+          ],
+          "conservative_coverage_lower_bound": 0.9934829102922698,
+          "uncovered_worker_seconds_bounds": [
+            6.44607949256897,
+            6.903771638870239
+          ],
+          "outer_interval_sampling": {
+            "actor_reserved_gb_s": 438.0344688640008,
+            "covered_worker_seconds": 1052.6586034297943,
+            "worker_integrals": {
+              "4955479a-1687-4f18-8c12-3cc15b0412d4": {
+                "actor_reserved_gb_s": 215.32844844800016,
+                "covered_seconds": 526.7509541511536,
+                "uncovered_seconds": 2.9158103466033936
+              },
+              "af6396de-0b88-4ba2-9757-0a9903c87b5e": {
+                "actor_reserved_gb_s": 222.70602041600068,
+                "covered_seconds": 525.9076492786407,
+                "uncovered_seconds": 3.759115219116211
+              }
+            },
+            "uncovered_interval_count": 72,
+            "largest_uncovered_intervals": [
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327311.70645,
+                "end": 1794327312.156675,
+                "seconds": 0.4502251148223877
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794327070.886394,
+                "end": 1794327071.302289,
+                "seconds": 0.4158949851989746
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327070.919138,
+                "end": 1794327071.3255,
+                "seconds": 0.40636205673217773
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794327311.804158,
+                "end": 1794327312.191842,
+                "seconds": 0.3876841068267822
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794326994.165794,
+                "end": 1794326994.35159,
+                "seconds": 0.18579602241516113
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327422.121602,
+                "end": 1794327422.293378,
+                "seconds": 0.17177605628967285
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794327422.1629179,
+                "end": 1794327422.329684,
+                "seconds": 0.16676616668701172
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794327353.986359,
+                "end": 1794327354.152976,
+                "seconds": 0.16661715507507324
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327431.515828,
+                "end": 1794327431.681069,
+                "seconds": 0.16524100303649902
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327162.960794,
+                "end": 1794327163.125217,
+                "seconds": 0.16442298889160156
+              }
+            ]
+          },
+          "endpoint_uncertainty_seconds": 0.11442303657531738
+        }
+      },
+      "reported_metrics": {
+        "actor_total_reserved_gb_s": 438.0344688640001,
+        "actor_work_reserved_gb_s": 285.47324147200135,
+        "work_resource_coverage_fraction": 0.9930712524997286
+      },
+      "missing_samples_present": true,
+      "total_coverage_at_least_90_percent": true,
+      "sources": {
+        "docs/evidence/scale/scale-public-agentcloud-51af4e45a3ac/result.json": "21a978dd713d91455ea48fddcbdff14ea1580305b062c4803e99c4a2cf316890",
+        "docs/evidence/scale/scale-public-agentcloud-51af4e45a3ac/events.jsonl.gz": "1c9de606fe25e0b95b3c0d7f84ed7af87caaa0424e3b6cdce002a085297f63d4",
+        "docs/evidence/scale/scale-public-agentcloud-51af4e45a3ac/final-state.json.gz": "5409206acbe1c79e26aa396933a9fb83433d3d3c400bd2d1de439bd7f88fc18c",
+        "docs/evidence/scale/scale-public-agentcloud-51af4e45a3ac/arrival-trace.json.gz": "25b7a3f3f81dbb1e5ec7324277a1467045b80c9561628ed499fa7968db86b347"
+      }
+    },
+    {
+      "trial_id": "scale-public-static-15-cd816877bc4c",
+      "policy": "static-15",
+      "source_commit": "d7862cca525e94c6a3db07131a8511379ceae5fd",
+      "source_trial_status": "passed",
+      "trial_execution_status": "COMPLETED",
+      "planned_requests": 48,
+      "completed_requests": 48,
+      "status": "passed",
+      "checks": {
+        "work_integral_matches": true,
+        "total_integral_within_bounds": true,
+        "work_coverage_matches": true
+      },
+      "exact_initialization_start_recovered": false,
+      "exact_working_start_recovered": true,
+      "initialization_clock_bounds": {
+        "lower_event": {
+          "at": 1794327544.629057,
+          "workers": [
+            "4955479a-1687-4f18-8c12-3cc15b0412d4",
+            "af6396de-0b88-4ba2-9757-0a9903c87b5e"
+          ],
+          "line": 9
+        },
+        "upper_event": {
+          "at": 1794327545.162422,
+          "line": 13,
+          "kind": "owned_actor_assignment_observed"
+        },
+        "derivation": "worker_capacity_preflight is emitted before start() returns; the first owned assignment or start-ram receipt is observed after provisioning began",
+        "precision_padding_seconds": 1e-05
+      },
+      "workers": [
+        "4955479a-1687-4f18-8c12-3cc15b0412d4",
+        "af6396de-0b88-4ba2-9757-0a9903c87b5e"
+      ],
+      "sample_counts": {
+        "4955479a-1687-4f18-8c12-3cc15b0412d4": 4591,
+        "af6396de-0b88-4ba2-9757-0a9903c87b5e": 4591
+      },
+      "phases": {
+        "initialization": {
+          "start_epoch_bounds": [
+            1794327544.629047,
+            1794327545.162432
+          ],
+          "end_epoch_bounds": [
+            1794327706.2739437,
+            1794327706.2739437
+          ],
+          "duration_seconds_bounds": [
+            161.1115117073059,
+            161.64489674568176
+          ],
+          "actor_reserved_gb_s_bounds": [
+            144.69258585600005,
+            144.69275276800005
+          ],
+          "coverage_fraction_bounds": [
+            0.9883446235039169,
+            0.9935942437513691
+          ],
+          "conservative_coverage_lower_bound": 0.9883446235039169,
+          "uncovered_worker_seconds_bounds": [
+            2.064082145690918,
+            3.768064260482788
+          ],
+          "outer_interval_sampling": {
+            "actor_reserved_gb_s": 144.69275276800005,
+            "covered_worker_seconds": 320.1589412689209,
+            "worker_integrals": {
+              "4955479a-1687-4f18-8c12-3cc15b0412d4": {
+                "actor_reserved_gb_s": 70.58754271999999,
+                "covered_seconds": 160.20631408691406,
+                "uncovered_seconds": 1.4385826587677002
+              },
+              "af6396de-0b88-4ba2-9757-0a9903c87b5e": {
+                "actor_reserved_gb_s": 74.10521004800007,
+                "covered_seconds": 159.95262718200684,
+                "uncovered_seconds": 1.6922695636749268
+              }
+            },
+            "uncovered_interval_count": 35,
+            "largest_uncovered_intervals": [
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794327660.7968109,
+                "end": 1794327661.190259,
+                "seconds": 0.3934481143951416
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327660.946339,
+                "end": 1794327661.206818,
+                "seconds": 0.260479211807251
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327544.950149,
+                "end": 1794327545.170899,
+                "seconds": 0.2207498550415039
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794327620.746788,
+                "end": 1794327620.966888,
+                "seconds": 0.22009992599487305
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794327544.944846,
+                "end": 1794327545.162121,
+                "seconds": 0.21727514266967773
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327620.767694,
+                "end": 1794327620.982356,
+                "seconds": 0.2146620750427246
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327597.451355,
+                "end": 1794327597.653234,
+                "seconds": 0.20187902450561523
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327676.2180529,
+                "end": 1794327676.362004,
+                "seconds": 0.1439511775970459
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794327638.682438,
+                "end": 1794327638.786989,
+                "seconds": 0.10455107688903809
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327656.062195,
+                "end": 1794327656.16186,
+                "seconds": 0.09966492652893066
+              }
+            ]
+          },
+          "endpoint_uncertainty_seconds": 0.5333850383758545
+        },
+        "working": {
+          "start_epoch_bounds": [
+            1794327706.2739437,
+            1794327706.2739437
+          ],
+          "end_epoch_bounds": [
+            1794328001.4878438,
+            1794328001.4878438
+          ],
+          "duration_seconds_bounds": [
+            295.2139000892639,
+            295.2139000892639
+          ],
+          "actor_reserved_gb_s_bounds": [
+            226.0634789760004,
+            226.0634789760004
+          ],
+          "coverage_fraction_bounds": [
+            0.9901720481524512,
+            0.9901720481524512
+          ],
+          "conservative_coverage_lower_bound": 0.9901720481524512,
+          "uncovered_worker_seconds_bounds": [
+            5.802695989608765,
+            5.802695989608765
+          ],
+          "outer_interval_sampling": {
+            "actor_reserved_gb_s": 226.0634789760004,
+            "covered_worker_seconds": 584.6251041889191,
+            "worker_integrals": {
+              "4955479a-1687-4f18-8c12-3cc15b0412d4": {
+                "actor_reserved_gb_s": 117.42917888000022,
+                "covered_seconds": 292.6379280090332,
+                "uncovered_seconds": 2.575972080230713
+              },
+              "af6396de-0b88-4ba2-9757-0a9903c87b5e": {
+                "actor_reserved_gb_s": 108.63430009600016,
+                "covered_seconds": 291.98717617988586,
+                "uncovered_seconds": 3.2267239093780518
+              }
+            },
+            "uncovered_interval_count": 48,
+            "largest_uncovered_intervals": [
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327706.6612659,
+                "end": 1794327707.392223,
+                "seconds": 0.73095703125
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794327706.654113,
+                "end": 1794327707.341357,
+                "seconds": 0.6872439384460449
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327910.1769679,
+                "end": 1794327910.442612,
+                "seconds": 0.2656440734863281
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327925.586999,
+                "end": 1794327925.8394,
+                "seconds": 0.25240111351013184
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327798.667049,
+                "end": 1794327798.906103,
+                "seconds": 0.23905396461486816
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794327925.579218,
+                "end": 1794327925.81729,
+                "seconds": 0.23807215690612793
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794327798.651442,
+                "end": 1794327798.878519,
+                "seconds": 0.22707700729370117
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327761.665503,
+                "end": 1794327761.855783,
+                "seconds": 0.19027996063232422
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794327761.6553729,
+                "end": 1794327761.835595,
+                "seconds": 0.1802220344543457
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327720.7918499,
+                "end": 1794327720.970179,
+                "seconds": 0.1783292293548584
+              }
+            ]
+          },
+          "endpoint_uncertainty_seconds": 0.0
+        },
+        "total_including_initialization": {
+          "start_epoch_bounds": [
+            1794327544.629047,
+            1794327545.162432
+          ],
+          "end_epoch_bounds": [
+            1794328001.4878438,
+            1794328001.4878438
+          ],
+          "duration_seconds_bounds": [
+            456.3254117965698,
+            456.8587968349457
+          ],
+          "actor_reserved_gb_s_bounds": [
+            370.756064832,
+            370.75623174399993
+          ],
+          "coverage_fraction_bounds": [
+            0.9895254722942882,
+            0.9913802979935658
+          ],
+          "conservative_coverage_lower_bound": 0.9895254722942882,
+          "uncovered_worker_seconds_bounds": [
+            7.866778135299683,
+            9.570760250091553
+          ],
+          "outer_interval_sampling": {
+            "actor_reserved_gb_s": 370.75623174399993,
+            "covered_worker_seconds": 904.78404545784,
+            "worker_integrals": {
+              "4955479a-1687-4f18-8c12-3cc15b0412d4": {
+                "actor_reserved_gb_s": 188.01672159999993,
+                "covered_seconds": 452.84424209594727,
+                "uncovered_seconds": 4.014554738998413
+              },
+              "af6396de-0b88-4ba2-9757-0a9903c87b5e": {
+                "actor_reserved_gb_s": 182.73951014400004,
+                "covered_seconds": 451.9398033618927,
+                "uncovered_seconds": 4.9189934730529785
+              }
+            },
+            "uncovered_interval_count": 83,
+            "largest_uncovered_intervals": [
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327706.6612659,
+                "end": 1794327707.392223,
+                "seconds": 0.73095703125
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794327706.654113,
+                "end": 1794327707.341357,
+                "seconds": 0.6872439384460449
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794327660.7968109,
+                "end": 1794327661.190259,
+                "seconds": 0.3934481143951416
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327910.1769679,
+                "end": 1794327910.442612,
+                "seconds": 0.2656440734863281
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327660.946339,
+                "end": 1794327661.206818,
+                "seconds": 0.260479211807251
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327925.586999,
+                "end": 1794327925.8394,
+                "seconds": 0.25240111351013184
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327798.667049,
+                "end": 1794327798.906103,
+                "seconds": 0.23905396461486816
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794327925.579218,
+                "end": 1794327925.81729,
+                "seconds": 0.23807215690612793
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794327798.651442,
+                "end": 1794327798.878519,
+                "seconds": 0.22707700729370117
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794327544.950149,
+                "end": 1794327545.170899,
+                "seconds": 0.2207498550415039
+              }
+            ]
+          },
+          "endpoint_uncertainty_seconds": 0.5333850383758545
+        }
+      },
+      "reported_metrics": {
+        "actor_total_reserved_gb_s": 370.7562317440008,
+        "actor_work_reserved_gb_s": 226.0634789759993,
+        "work_resource_coverage_fraction": 0.9901720481524512
+      },
+      "missing_samples_present": true,
+      "total_coverage_at_least_90_percent": true,
+      "sources": {
+        "docs/evidence/scale/scale-public-static-15-cd816877bc4c/result.json": "dc61c6696f6b35642140906898cd5caa20171f8b47a8776d1ac199b4344e350e",
+        "docs/evidence/scale/scale-public-static-15-cd816877bc4c/events.jsonl.gz": "0c94bfd5b7ef013b0cbbab0e26be6bdcb5f82680bd81f05c84b0987035472b4e",
+        "docs/evidence/scale/scale-public-static-15-cd816877bc4c/final-state.json.gz": "973e2d08d7bb60d3fae509cbf8dc0d368f1bbc345220e7f01cb920c163e2cbd3",
+        "docs/evidence/scale/scale-public-static-15-cd816877bc4c/arrival-trace.json.gz": "25b7a3f3f81dbb1e5ec7324277a1467045b80c9561628ed499fa7968db86b347"
+      }
+    },
+    {
+      "trial_id": "scale-public-agentcloud-v2-37e305ad97f1",
+      "policy": "agentcloud-v2",
+      "source_commit": "d7862cca525e94c6a3db07131a8511379ceae5fd",
+      "source_trial_status": "passed",
+      "trial_execution_status": "COMPLETED",
+      "planned_requests": 48,
+      "completed_requests": 48,
+      "status": "passed",
+      "checks": {
+        "work_integral_matches": true,
+        "total_integral_within_bounds": true,
+        "work_coverage_matches": true
+      },
+      "exact_initialization_start_recovered": false,
+      "exact_working_start_recovered": true,
+      "initialization_clock_bounds": {
+        "lower_event": {
+          "at": 1794328023.347678,
+          "workers": [
+            "4955479a-1687-4f18-8c12-3cc15b0412d4",
+            "af6396de-0b88-4ba2-9757-0a9903c87b5e"
+          ],
+          "line": 9
+        },
+        "upper_event": {
+          "at": 1794328023.531203,
+          "line": 13,
+          "kind": "owned_actor_assignment_observed"
+        },
+        "derivation": "worker_capacity_preflight is emitted before start() returns; the first owned assignment or start-ram receipt is observed after provisioning began",
+        "precision_padding_seconds": 1e-05
+      },
+      "workers": [
+        "4955479a-1687-4f18-8c12-3cc15b0412d4",
+        "af6396de-0b88-4ba2-9757-0a9903c87b5e"
+      ],
+      "sample_counts": {
+        "4955479a-1687-4f18-8c12-3cc15b0412d4": 4133,
+        "af6396de-0b88-4ba2-9757-0a9903c87b5e": 4133
+      },
+      "phases": {
+        "initialization": {
+          "start_epoch_bounds": [
+            1794328023.347668,
+            1794328023.531213
+          ],
+          "end_epoch_bounds": [
+            1794328180.9289427,
+            1794328180.9289427
+          ],
+          "duration_seconds_bounds": [
+            157.39772963523865,
+            157.5812747478485
+          ],
+          "actor_reserved_gb_s_bounds": [
+            140.078743424,
+            140.07898713600002
+          ],
+          "coverage_fraction_bounds": [
+            0.9884890071836383,
+            0.9908078299493339
+          ],
+          "conservative_coverage_lower_bound": 0.9884890071836383,
+          "uncovered_worker_seconds_bounds": [
+            2.893653392791748,
+            3.627833843231201
+          ],
+          "outer_interval_sampling": {
+            "actor_reserved_gb_s": 140.07898713600002,
+            "covered_worker_seconds": 311.90180587768555,
+            "worker_integrals": {
+              "4955479a-1687-4f18-8c12-3cc15b0412d4": {
+                "actor_reserved_gb_s": 70.58227110399989,
+                "covered_seconds": 156.4076211452484,
+                "uncovered_seconds": 1.1736536026000977
+              },
+              "af6396de-0b88-4ba2-9757-0a9903c87b5e": {
+                "actor_reserved_gb_s": 69.49671603200012,
+                "covered_seconds": 155.49418473243713,
+                "uncovered_seconds": 2.087090015411377
+              }
+            },
+            "uncovered_interval_count": 29,
+            "largest_uncovered_intervals": [
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328150.9859118,
+                "end": 1794328151.513442,
+                "seconds": 0.5275301933288574
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328151.220083,
+                "end": 1794328151.572693,
+                "seconds": 0.35261011123657227
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328023.981978,
+                "end": 1794328024.27448,
+                "seconds": 0.29250216484069824
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328110.905788,
+                "end": 1794328111.138916,
+                "seconds": 0.23312807083129883
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328097.184394,
+                "end": 1794328097.388333,
+                "seconds": 0.20393919944763184
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328091.3019419,
+                "end": 1794328091.488115,
+                "seconds": 0.1861732006072998
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328024.164255,
+                "end": 1794328024.330581,
+                "seconds": 0.16632604598999023
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328156.673339,
+                "end": 1794328156.83746,
+                "seconds": 0.16412115097045898
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328079.464347,
+                "end": 1794328079.614753,
+                "seconds": 0.1504061222076416
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328156.665721,
+                "end": 1794328156.791944,
+                "seconds": 0.12622308731079102
+              }
+            ]
+          },
+          "endpoint_uncertainty_seconds": 0.18354511260986328
+        },
+        "working": {
+          "start_epoch_bounds": [
+            1794328180.9289427,
+            1794328180.9289427
+          ],
+          "end_epoch_bounds": [
+            1794328454.5128255,
+            1794328454.5128255
+          ],
+          "duration_seconds_bounds": [
+            273.5838828086853,
+            273.5838828086853
+          ],
+          "actor_reserved_gb_s_bounds": [
+            213.94998803199994,
+            213.94998803199994
+          ],
+          "coverage_fraction_bounds": [
+            0.963639108835965,
+            0.963639108835965
+          ],
+          "conservative_coverage_lower_bound": 0.963639108835965,
+          "uncovered_worker_seconds_bounds": [
+            19.89550757408142,
+            19.89550757408142
+          ],
+          "outer_interval_sampling": {
+            "actor_reserved_gb_s": 213.94998803199994,
+            "covered_worker_seconds": 527.2722580432892,
+            "worker_integrals": {
+              "4955479a-1687-4f18-8c12-3cc15b0412d4": {
+                "actor_reserved_gb_s": 110.6598648319998,
+                "covered_seconds": 264.5420789718628,
+                "uncovered_seconds": 9.04180383682251
+              },
+              "af6396de-0b88-4ba2-9757-0a9903c87b5e": {
+                "actor_reserved_gb_s": 103.29012320000014,
+                "covered_seconds": 262.7301790714264,
+                "uncovered_seconds": 10.853703737258911
+              }
+            },
+            "uncovered_interval_count": 138,
+            "largest_uncovered_intervals": [
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328379.179722,
+                "end": 1794328379.738918,
+                "seconds": 0.5591959953308105
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328379.1736999,
+                "end": 1794328379.64634,
+                "seconds": 0.4726400375366211
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328275.418022,
+                "end": 1794328275.810108,
+                "seconds": 0.3920860290527344
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328321.073399,
+                "end": 1794328321.464074,
+                "seconds": 0.3906748294830322
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328390.282449,
+                "end": 1794328390.671894,
+                "seconds": 0.38944506645202637
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328390.295348,
+                "end": 1794328390.682098,
+                "seconds": 0.3867499828338623
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328321.091997,
+                "end": 1794328321.47487,
+                "seconds": 0.3828730583190918
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328275.4802148,
+                "end": 1794328275.859688,
+                "seconds": 0.3794732093811035
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328427.442138,
+                "end": 1794328427.820286,
+                "seconds": 0.37814807891845703
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328432.188107,
+                "end": 1794328432.536412,
+                "seconds": 0.34830498695373535
+              }
+            ]
+          },
+          "endpoint_uncertainty_seconds": 0.0
+        },
+        "total_including_initialization": {
+          "start_epoch_bounds": [
+            1794328023.347668,
+            1794328023.531213
+          ],
+          "end_epoch_bounds": [
+            1794328454.5128255,
+            1794328454.5128255
+          ],
+          "duration_seconds_bounds": [
+            430.98161244392395,
+            431.1651575565338
+          ],
+          "actor_reserved_gb_s_bounds": [
+            354.028731456,
+            354.028975168
+          ],
+          "coverage_fraction_bounds": [
+            0.972721193949643,
+            0.973561330334205
+          ],
+          "conservative_coverage_lower_bound": 0.972721193949643,
+          "uncovered_worker_seconds_bounds": [
+            22.78916096687317,
+            23.523341417312622
+          ],
+          "outer_interval_sampling": {
+            "actor_reserved_gb_s": 354.028975168,
+            "covered_worker_seconds": 839.1740639209747,
+            "worker_integrals": {
+              "4955479a-1687-4f18-8c12-3cc15b0412d4": {
+                "actor_reserved_gb_s": 181.24213593599978,
+                "covered_seconds": 420.9497001171112,
+                "uncovered_seconds": 10.215457439422607
+              },
+              "af6396de-0b88-4ba2-9757-0a9903c87b5e": {
+                "actor_reserved_gb_s": 172.7868392320002,
+                "covered_seconds": 418.2243638038635,
+                "uncovered_seconds": 12.940793752670288
+              }
+            },
+            "uncovered_interval_count": 167,
+            "largest_uncovered_intervals": [
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328379.179722,
+                "end": 1794328379.738918,
+                "seconds": 0.5591959953308105
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328150.9859118,
+                "end": 1794328151.513442,
+                "seconds": 0.5275301933288574
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328379.1736999,
+                "end": 1794328379.64634,
+                "seconds": 0.4726400375366211
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328275.418022,
+                "end": 1794328275.810108,
+                "seconds": 0.3920860290527344
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328321.073399,
+                "end": 1794328321.464074,
+                "seconds": 0.3906748294830322
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328390.282449,
+                "end": 1794328390.671894,
+                "seconds": 0.38944506645202637
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328390.295348,
+                "end": 1794328390.682098,
+                "seconds": 0.3867499828338623
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328321.091997,
+                "end": 1794328321.47487,
+                "seconds": 0.3828730583190918
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328275.4802148,
+                "end": 1794328275.859688,
+                "seconds": 0.3794732093811035
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328427.442138,
+                "end": 1794328427.820286,
+                "seconds": 0.37814807891845703
+              }
+            ]
+          },
+          "endpoint_uncertainty_seconds": 0.18354511260986328
+        }
+      },
+      "reported_metrics": {
+        "actor_total_reserved_gb_s": 354.0289751680021,
+        "actor_work_reserved_gb_s": 213.94998803199965,
+        "work_resource_coverage_fraction": 0.963639108835965
+      },
+      "missing_samples_present": true,
+      "total_coverage_at_least_90_percent": true,
+      "sources": {
+        "docs/evidence/scale/scale-public-agentcloud-v2-37e305ad97f1/result.json": "66a0259534977d4ce9092760310d904bdb2ff56511ba072b0223b590cb9e17d5",
+        "docs/evidence/scale/scale-public-agentcloud-v2-37e305ad97f1/events.jsonl.gz": "5bda4cd293acca17e21c183e34b8216c27dc86ae085182fbe9541c100d140c6d",
+        "docs/evidence/scale/scale-public-agentcloud-v2-37e305ad97f1/final-state.json.gz": "28d5366b4ad7cb89d75a3b556da571482904a3ac3d5ca3d26541a9fc2841f5d9",
+        "docs/evidence/scale/scale-public-agentcloud-v2-37e305ad97f1/arrival-trace.json.gz": "25b7a3f3f81dbb1e5ec7324277a1467045b80c9561628ed499fa7968db86b347"
+      }
+    },
+    {
+      "trial_id": "scale-public-static-2-5a955ddec669",
+      "policy": "static-2",
+      "source_commit": "d7862cca525e94c6a3db07131a8511379ceae5fd",
+      "source_trial_status": "failed",
+      "trial_execution_status": "FAILED",
+      "planned_requests": 48,
+      "completed_requests": 41,
+      "status": "passed",
+      "checks": {
+        "work_integral_matches": true,
+        "total_integral_within_bounds": true,
+        "work_coverage_matches": true
+      },
+      "exact_initialization_start_recovered": false,
+      "exact_working_start_recovered": true,
+      "initialization_clock_bounds": {
+        "lower_event": {
+          "at": 1794328476.94589,
+          "workers": [
+            "4955479a-1687-4f18-8c12-3cc15b0412d4",
+            "af6396de-0b88-4ba2-9757-0a9903c87b5e"
+          ],
+          "line": 9
+        },
+        "upper_event": {
+          "at": 1794328477.359682,
+          "line": 13,
+          "kind": "owned_actor_assignment_observed"
+        },
+        "derivation": "worker_capacity_preflight is emitted before start() returns; the first owned assignment or start-ram receipt is observed after provisioning began",
+        "precision_padding_seconds": 1e-05
+      },
+      "workers": [
+        "4955479a-1687-4f18-8c12-3cc15b0412d4",
+        "af6396de-0b88-4ba2-9757-0a9903c87b5e"
+      ],
+      "sample_counts": {
+        "4955479a-1687-4f18-8c12-3cc15b0412d4": 4177,
+        "af6396de-0b88-4ba2-9757-0a9903c87b5e": 4177
+      },
+      "phases": {
+        "initialization": {
+          "start_epoch_bounds": [
+            1794328476.94588,
+            1794328477.359692
+          ],
+          "end_epoch_bounds": [
+            1794328639.5752552,
+            1794328639.5752552
+          ],
+          "duration_seconds_bounds": [
+            162.21556305885315,
+            162.6293752193451
+          ],
+          "actor_reserved_gb_s_bounds": [
+            143.4252703359998,
+            143.42570143999978
+          ],
+          "coverage_fraction_bounds": [
+            0.9939341377455314,
+            0.9984304016489223
+          ],
+          "conservative_coverage_lower_bound": 0.9939341377455314,
+          "uncovered_worker_seconds_bounds": [
+            0.5092265605926514,
+            1.9729747772216797
+          ],
+          "outer_interval_sampling": {
+            "actor_reserved_gb_s": 143.42570143999978,
+            "covered_worker_seconds": 323.92189955711365,
+            "worker_integrals": {
+              "4955479a-1687-4f18-8c12-3cc15b0412d4": {
+                "actor_reserved_gb_s": 73.96921119999983,
+                "covered_seconds": 162.10041499137878,
+                "uncovered_seconds": 0.5289602279663086
+              },
+              "af6396de-0b88-4ba2-9757-0a9903c87b5e": {
+                "actor_reserved_gb_s": 69.45649023999997,
+                "covered_seconds": 161.82148456573486,
+                "uncovered_seconds": 0.8078906536102295
+              }
+            },
+            "uncovered_interval_count": 21,
+            "largest_uncovered_intervals": [
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328611.002476,
+                "end": 1794328611.286324,
+                "seconds": 0.2838480472564697
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328610.982321,
+                "end": 1794328611.214701,
+                "seconds": 0.23237991333007812
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328477.265364,
+                "end": 1794328477.366409,
+                "seconds": 0.10104513168334961
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328477.2617168,
+                "end": 1794328477.358889,
+                "seconds": 0.09717226028442383
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328573.8652449,
+                "end": 1794328573.956595,
+                "seconds": 0.09135007858276367
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328515.678731,
+                "end": 1794328515.768909,
+                "seconds": 0.09017801284790039
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328571.174519,
+                "end": 1794328571.250132,
+                "seconds": 0.07561302185058594
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328515.713381,
+                "end": 1794328515.772783,
+                "seconds": 0.0594019889831543
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328572.477212,
+                "end": 1794328572.532858,
+                "seconds": 0.05564594268798828
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328601.187444,
+                "end": 1794328601.240229,
+                "seconds": 0.05278491973876953
+              }
+            ]
+          },
+          "endpoint_uncertainty_seconds": 0.41381216049194336
+        },
+        "working": {
+          "start_epoch_bounds": [
+            1794328639.5752552,
+            1794328639.5752552
+          ],
+          "end_epoch_bounds": [
+            1794328902.7680163,
+            1794328902.7680163
+          ],
+          "duration_seconds_bounds": [
+            263.19276118278503,
+            263.19276118278503
+          ],
+          "actor_reserved_gb_s_bounds": [
+            179.68765631999997,
+            179.68765631999997
+          ],
+          "coverage_fraction_bounds": [
+            0.9840881912259385,
+            0.9840881912259385
+          ],
+          "conservative_coverage_lower_bound": 0.9840881912259385,
+          "uncovered_worker_seconds_bounds": [
+            8.37574577331543,
+            8.37574577331543
+          ],
+          "outer_interval_sampling": {
+            "actor_reserved_gb_s": 179.68765631999997,
+            "covered_worker_seconds": 518.0097765922546,
+            "worker_integrals": {
+              "4955479a-1687-4f18-8c12-3cc15b0412d4": {
+                "actor_reserved_gb_s": 91.88782950400007,
+                "covered_seconds": 259.8008484840393,
+                "uncovered_seconds": 3.3919126987457275
+              },
+              "af6396de-0b88-4ba2-9757-0a9903c87b5e": {
+                "actor_reserved_gb_s": 87.7998268159999,
+                "covered_seconds": 258.20892810821533,
+                "uncovered_seconds": 4.983833074569702
+              }
+            },
+            "uncovered_interval_count": 97,
+            "largest_uncovered_intervals": [
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328741.506419,
+                "end": 1794328742.003786,
+                "seconds": 0.49736714363098145
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328712.784064,
+                "end": 1794328713.157754,
+                "seconds": 0.3736898899078369
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328640.010414,
+                "end": 1794328640.279838,
+                "seconds": 0.2694242000579834
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328694.873374,
+                "end": 1794328695.129801,
+                "seconds": 0.2564270496368408
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328741.785719,
+                "end": 1794328742.041184,
+                "seconds": 0.255465030670166
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328639.997019,
+                "end": 1794328640.251155,
+                "seconds": 0.2541358470916748
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328761.6188219,
+                "end": 1794328761.867432,
+                "seconds": 0.248610258102417
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328673.960456,
+                "end": 1794328674.195172,
+                "seconds": 0.23471617698669434
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328692.112295,
+                "end": 1794328692.3099,
+                "seconds": 0.19760513305664062
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328835.065391,
+                "end": 1794328835.25515,
+                "seconds": 0.1897590160369873
+              }
+            ]
+          },
+          "endpoint_uncertainty_seconds": 0.0
+        },
+        "total_including_initialization": {
+          "start_epoch_bounds": [
+            1794328476.94588,
+            1794328477.359692
+          ],
+          "end_epoch_bounds": [
+            1794328902.7680163,
+            1794328902.7680163
+          ],
+          "duration_seconds_bounds": [
+            425.4083242416382,
+            425.8221364021301
+          ],
+          "actor_reserved_gb_s_bounds": [
+            323.1129266559998,
+            323.1133577599998
+          ],
+          "coverage_fraction_bounds": [
+            0.9878485408978783,
+            0.9895571244994477
+          ],
+          "conservative_coverage_lower_bound": 0.9878485408978783,
+          "uncovered_worker_seconds_bounds": [
+            8.884972333908081,
+            10.34872055053711
+          ],
+          "outer_interval_sampling": {
+            "actor_reserved_gb_s": 323.1133577599998,
+            "covered_worker_seconds": 841.9316761493683,
+            "worker_integrals": {
+              "4955479a-1687-4f18-8c12-3cc15b0412d4": {
+                "actor_reserved_gb_s": 165.85704070399984,
+                "covered_seconds": 421.9012634754181,
+                "uncovered_seconds": 3.920872926712036
+              },
+              "af6396de-0b88-4ba2-9757-0a9903c87b5e": {
+                "actor_reserved_gb_s": 157.25631705599997,
+                "covered_seconds": 420.0304126739502,
+                "uncovered_seconds": 5.791723728179932
+              }
+            },
+            "uncovered_interval_count": 118,
+            "largest_uncovered_intervals": [
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328741.506419,
+                "end": 1794328742.003786,
+                "seconds": 0.49736714363098145
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328712.784064,
+                "end": 1794328713.157754,
+                "seconds": 0.3736898899078369
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328611.002476,
+                "end": 1794328611.286324,
+                "seconds": 0.2838480472564697
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328640.010414,
+                "end": 1794328640.279838,
+                "seconds": 0.2694242000579834
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328694.873374,
+                "end": 1794328695.129801,
+                "seconds": 0.2564270496368408
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328741.785719,
+                "end": 1794328742.041184,
+                "seconds": 0.255465030670166
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328639.997019,
+                "end": 1794328640.251155,
+                "seconds": 0.2541358470916748
+              },
+              {
+                "worker": "af6396de-0b88-4ba2-9757-0a9903c87b5e",
+                "start": 1794328761.6188219,
+                "end": 1794328761.867432,
+                "seconds": 0.248610258102417
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328673.960456,
+                "end": 1794328674.195172,
+                "seconds": 0.23471617698669434
+              },
+              {
+                "worker": "4955479a-1687-4f18-8c12-3cc15b0412d4",
+                "start": 1794328610.982321,
+                "end": 1794328611.214701,
+                "seconds": 0.23237991333007812
+              }
+            ]
+          },
+          "endpoint_uncertainty_seconds": 0.41381216049194336
+        }
+      },
+      "reported_metrics": {
+        "actor_total_reserved_gb_s": 323.1133577600032,
+        "actor_work_reserved_gb_s": 179.6876563199994,
+        "work_resource_coverage_fraction": 0.9840881912259385
+      },
+      "missing_samples_present": true,
+      "total_coverage_at_least_90_percent": true,
+      "sources": {
+        "docs/evidence/scale/scale-public-static-2-5a955ddec669/result.json": "94b5e2e86d0b176ea756f6405c3cf14eef2c82b57381f0886d0d05a0b863a53d",
+        "docs/evidence/scale/scale-public-static-2-5a955ddec669/events.jsonl.gz": "9bb3390c154245a7253fb7c683ed4af7f7589d6050000e2613450c77159e835d",
+        "docs/evidence/scale/scale-public-static-2-5a955ddec669/final-state.json.gz": "6d00d3467aa8a9487fee971fb014dd3586f78bbfe65479bcd958c1427ea55d05",
+        "docs/evidence/scale/scale-public-static-2-5a955ddec669/arrival-trace.json.gz": "25b7a3f3f81dbb1e5ec7324277a1467045b80c9561628ed499fa7968db86b347"
+      }
+    }
+  ],
+  "sources": {
+    "docs/evidence/public-traces/runs/42849692185/live-replay.json": "eb36e3065cb4b012a5a5a267718a700bf6f3f861855ff599e59246932f05f461",
+    "scripts/public_replay_resource_audit.py": "b0408659f82a894dfb5e7cc8d1b065946e6b229c9c8339b9c224ef193bd88a94"
+  }
+}

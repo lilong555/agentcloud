@@ -1,6 +1,6 @@
 # 公开 Agent 轨迹导入与质量审核
 
-**TraceLab v0.0.2 的全部 33 个质量合格窗口已准入四策略探索性回放，`replay_ready=true`、`replay_executed=false`。** 固定源码 `f73344445265684b8e26908e5e4a46cbd255eaab` 的原始审核核验 8,058 会话、665,453 轮、743,819 工具与 52 贡献者，发布计数全部匹配。303 个完整源会话中，48 个时序合格、33 个完整窗口合格。合格窗口来自八个贡献者，包含七个多模型轮窗口，共 48 模型轮与 32 工具；七个合格 holdout 窗口来自两个贡献者。执行准入由来源、时序、依赖与安全质量决定，样本规模按独立贡献者层级描述推断范围。
+**TraceLab v0.0.2 的全部 33 个质量合格窗口已完成四策略真实集群配对回放：192/192 请求、132/132 窗口通过。** 固定源码 `f73344445265684b8e26908e5e4a46cbd255eaab` 的原始审核核验 8,058 会话、665,453 轮、743,819 工具与 52 贡献者，发布计数全部匹配。303 个完整源会话中，48 个时序合格、33 个完整窗口合格。合格窗口来自八个贡献者，包含七个多模型轮窗口，共 48 模型轮与 32 工具；七个合格 holdout 窗口来自两个贡献者。执行准入由来源、时序、依赖与安全质量决定，样本规模按独立贡献者层级描述推断范围。
 
 当前与历史产物及有效字段范围见[证据索引](evidence/public-traces/index.json)，五类来源的采用结论见[公开数据审查](PUBLIC_TRACE_REVIEW.md)。完整来源统计覆盖全部原始记录，深入时序与生命周期审核覆盖固定预算的完整会话。
 
@@ -26,7 +26,7 @@
 | eligible_sessions | 48／584／2,278 | 3,138,702／3,136,150 | 0／0 | 99.9187% |
 | eligible_windows | 33／48／195 | 925,341／923,049 | 0／0 | 99.7523% |
 
-覆盖率为 `(model_safe_ms + user_safe_ms) / (model_candidate_ms + user_candidate_ms)`，各行使用自己的分母。33 窗口来自完整依赖、明确同步工具和长度约束的强过滤集合，用户返回间隔计时为零；它们提供模型响应等待的质量样本，总体用户等待分布与调度收益保持待验。`manifest.physical_cost_profile=null`，当前产物计量来源与质量。
+覆盖率为 `(model_safe_ms + user_safe_ms) / (model_candidate_ms + user_candidate_ms)`，各行使用自己的分母。33 窗口来自完整依赖、明确同步工具和长度约束的强过滤集合，用户返回间隔计时为零；它们提供模型响应等待的质量样本，实机结果描述这组窗口的调度与恢复行为。来源 manifest 的 `physical_cost_profile=null`，实际 Actor 资源、快照与延迟由下方集群结果记录。
 
 ## 运行与交付
 
@@ -63,7 +63,7 @@ python3 -m bench.public_traces.tracelab \
 
 ## 时间与安全等待
 
-工具活动区间按 `emitted_at`／`result_at` 建立，重叠时间按区间并集合并。模型区间采用来源本地观察到的输入至输出 span；`MODEL_START`／`MODEL_END` 的推导端点保留为评测注释。后续真实执行器在实际派发和完成时产生自己的模型生命周期信号。
+工具活动区间按 `emitted_at`／`result_at` 建立，重叠时间按区间并集合并。模型区间采用来源本地观察到的输入至输出 span；`MODEL_START`／`MODEL_END` 的推导端点保留为评测注释。真实执行器在实际派发和完成时产生自己的模型生命周期信号。
 
 完整字段集确认工具 `emitted_at/result_at/tool_call_id/tool_name` 各出现 743,819 次，`command_status` 出现 327,552 次、`command_exit_code` 出现 247,509 次、`continuation_of_tool_call_id` 出现 75,488 次；2,688,829 个 timing event 均含 `event_type/timestamp/source`。这些数字表示字段出现次数。
 
@@ -101,7 +101,30 @@ python3 -m bench.public_traces.replay \
   --output artifacts/public-traces/tracelab-v0.0.2-admitted
 ```
 
+## 真实公开轨迹实机回放结果
+
+源码 `8a3e15f` 在同一 GitHub Runner 上按 Observed／TTL15／v2／TTL2 顺序串行执行，完成 **4/4 trial、192/192 模型请求、132/132 窗口**，**230/230 次 MEMORY 恢复**均通过 nonce／PID／heap／AST 连续性校验。每策略 33 次 FINAL、结束时原生绑定为零，四组清理及集群销毁全部通过。
+
+| 策略 | 总 Actor GB·s，含初始化 | 工作阶段 GB·s | 快照总数／运行阶段 | TTFT P50／P95／P99（s） | MEMORY 恢复 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Observed | 390.702 | 264.982 | 78／45 | 92.806／266.162／312.268 | 45/45 |
+| TTL15 | 336.470 | 211.835 | 80／47 | 74.507／205.995／268.035 | 47/47 |
+| TTL2 | 324.375 | 194.834 | 105／72 | 68.276／161.819／209.382 | 72/72 |
+| agentcloud-v2 | 328.848 | 197.658 | 99／66 | 68.005／204.529／264.213 | 66/66 |
+
+本次同 Runner 单次配对中，v2 相对 TTL2 的总 Actor 预留资源增加 1.4%，TTFT P95 增加 26.4%；快照创建次数为 99／105。结果描述这 33 个已审核窗口和本次运行配置，独立样本单位为贡献者 family。
+
+执行环境为 PostgreSQL、真实 Substrate／gVisor MEMORY 与原生 Dynamo CPU Mocker；四租户、两个 Worker、四槽位、16 MiB RAM 工作集。每策略包含 33 个初始化快照。模型时钟由公开源驱动，工具使用受控映射，Token 使用固定执行口径；初始化资源单列，TTFT 包含首次容量排队。
+
+总 Actor 积分包含初始化；按同 Runner UTC 时钟和 300 ms 采样间隔上限复算，Observed／TTL15／TTL2／v2 的总覆盖保守下界约为 **99.58%／99.64%／97.57%／97.70%**。初始化起点界限与采样缺口单独保留。[资源积分复核](evidence/public-traces/runs/42858419910/resource-coverage-reconciliation.json)
+
+[原始汇总 JSON](evidence/public-traces/live-replay.json) · [逐文件摘要与固定输入](evidence/public-traces/runs/42858419910/artifact.json) · [运行状态](evidence/public-trace-run-42858419910.json)
+
+输入 manifest 的 `replay_ready=true` 标识来源质量，`replay_executed=false` 保留输入生成时的状态；实机报告记录 `replay_executed=true`、`status=passed`。源总体为 52 个贡献者，本次 33 个窗口来自八个贡献者，其中七个多模型轮窗口、七个 holdout 窗口（两个贡献者）；样本分布与贡献者切分见上表。
+
 ## 真实集群配对协议与复现
+
+完整运行历史保存在[证据索引](evidence/public-traces/index.json)。首轮 [42844449916](evidence/public-traces/runs/42844449916/failure-diagnosis.json)记录 48/192 请求与 Program 终结失败；第二轮 [42849692185](evidence/public-traces/runs/42849692185/failure-diagnosis.json)记录 185/192 请求，工具依赖等待受 60 秒 Runner 期限截断。两次原始结果、未投递分母及清理记录独立保留；上表全部来自同一确认运行 `42858419910`。
 
 [Public Trace real Actor paired replay](../.github/workflows/public-trace-replay.yml)在同一 GitHub Runner 上按固定种子 9031 随机顺序串行运行 Observed、TTL15、TTL2、v2。每种策略使用全部 33 窗口、48 次模型请求、四租户、两个 Worker、四个并发槽位和 16 MiB RAM 工作集。PostgreSQL、Substrate／gVisor MEMORY 与原生 Dynamo CPU Mocker 共同执行；四策略统一使用 E 组与执行反馈，每个窗口的最后一次源模型请求携带 `terminal_turn=true`，由原生 FINAL 移除 Program，再通过 Workspace `/finalize` 回收绑定。48 次源请求中有 33 个终结请求，其余 15 个保持跨轮 Program。
 
@@ -113,5 +136,7 @@ python3 -m bench.public_traces.replay \
 gh workflow run public-trace-replay.yml --ref main \
   -f native_run_id=42769316617
 ```
+
+归档数据可直接离线复算：`python3 scripts/public_replay_resource_audit.py 42858419910` 核验资源积分及采样覆盖，`python3 scripts/public_replay_snapshot_audit.py 42858419910` 核验恢复点轮转账本。
 
 该入口复用已验证的锁定原生 wheel；Runner 完成集群准备、四策略串行执行、证据上传和清理。单策略预算 900 秒，清理预算 120 秒，整个 Job 上限 90 分钟。依赖工具的等待包含容量排队，按整体 trial 剩余预算分片检查；工具执行保留 60 秒期限，安全点排空保留 30 秒期限。

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "execution_kind": "validation-evidence-index",
-  "delivery_status": "finalization_in_progress",
+  "delivery_status": "sealed",
   "p0": {
     "source_commit": "20113d512f4363d4424822329007a3749d2dd268",
     "status": "passed",
@@ -187,10 +187,10 @@
   },
   "public_traces": {
     "evidence": "docs/evidence/public-traces/index.json",
-    "sha256": "af415ff4535fe31992622ba596f0ed872a9c7351eb0584b10103d972e6c68d34",
+    "sha256": "33174942074883e4c07745b695fc840dc947deeb8cce188c3841fd97782553ac",
     "source_commit": "f73344445265684b8e26908e5e4a46cbd255eaab",
     "replay_ready": true,
-    "deliverable": "quality-admitted all-split exploratory replay input",
+    "deliverable": "complete-source-audit-and-exploratory-real-cluster-paired-replay",
     "admission": {
       "evidence": "docs/evidence/public-traces/tracelab-v0.0.2-admitted/manifest.json",
       "sha256": "67b7efe95c099bd7a6ed2b1e3b0be22b53f2b5f72533a1686b3c583b41a1d69b"
@@ -198,13 +198,45 @@
     "description": {
       "evidence": "docs/evidence/public-traces/tracelab-v0.0.2-descriptive.json",
       "sha256": "01cfa7df9a6699bfe68b9418352877857d28f82c6b1a5ef282ef38ede5ea16e1"
+    },
+    "replay_executed": true,
+    "real_replay": {
+      "evidence": "docs/evidence/public-traces/runs/42858419910/live-replay.json",
+      "sha256": "a845660a21f84c389d8db7300856614b6a562fd0d1ae4443124fb1b97d15ce21",
+      "source_commit": "8a3e15ff1e25f4015af48e740582d98161bf0e45",
+      "github_run_id": 42858419910,
+      "status": "passed",
+      "planned_trials": 4,
+      "completed_trials": 4,
+      "planned_requests": 192,
+      "completed_requests": 192,
+      "planned_windows": 132,
+      "completed_windows": 132,
+      "resume_successes": 230,
+      "resume_attempts": 230,
+      "source_contributors": 52,
+      "replay_contributors": 8,
+      "cluster_cleanup": "passed",
+      "workflow": {
+        "evidence": "docs/evidence/public-trace-run-42858419910.json",
+        "sha256": "6c0c175adad6b6879e7450ca0067013222566ee9b0e2dbf27c620f3bc91072cb"
+      },
+      "artifact": {
+        "evidence": "docs/evidence/public-traces/runs/42858419910/artifact.json",
+        "sha256": "81e07d60a750f837daece083250883b01e90f3736c43de47577d5f2ffd6a0eab"
+      },
+      "resource_coverage": {
+        "evidence": "docs/evidence/public-traces/runs/42858419910/resource-coverage-reconciliation.json",
+        "sha256": "49c0006667a715b8b2aa424933b9709c146d42cbbcdcd1efad9c178445c32640"
+      },
+      "total_resource_coverage_lower_bound_min": 0.9757094200389028
     }
   },
   "ci": {
-    "evidence": "docs/evidence/ci-run-42849681472.json",
-    "source_commit": "d7862cca525e94c6a3db07131a8511379ceae5fd",
+    "evidence": "docs/evidence/ci-run-42858398008.json",
+    "source_commit": "8a3e15ff1e25f4015af48e740582d98161bf0e45",
     "status": "passed",
-    "sha256": "d4c86583c0cd94954d98529efaee5f82c59d7136acc3ca5570086778048e525b"
+    "sha256": "554c89cb076f587d56f87d817d9754d50ebca2a709f9d0cbafe559b8c1352075"
   },
   "documents": [
     "README.md",
@@ -224,26 +256,31 @@
     "p3": "boundary contracts, snapshot governance and final delivery"
   },
   "p3": {
-    "boundary_source_commit": "d7862cca525e94c6a3db07131a8511379ceae5fd",
+    "boundary_source_commit": "8a3e15ff1e25f4015af48e740582d98161bf0e45",
     "boundary_ci": {
-      "evidence": "docs/evidence/ci-run-42849681472.json",
-      "sha256": "d4c86583c0cd94954d98529efaee5f82c59d7136acc3ca5570086778048e525b"
+      "evidence": "docs/evidence/ci-run-42858398008.json",
+      "sha256": "554c89cb076f587d56f87d817d9754d50ebca2a709f9d0cbafe559b8c1352075"
     },
     "go_top_level_tests": 142,
     "source_delivery": {
       "evidence": "docs/evidence/source-reproduction.json",
-      "sha256": "175139e6abc0401b643a926b66e69118e6c9194e9c4a67174b1a9c27db67c3a7"
+      "sha256": "4c42715b8b877a357f28a926fbb75823b44856647edc8beada8b56be3f45f676"
     },
     "patch_delivery": {
       "evidence": "docs/evidence/upstream-patches-reproduction.json",
-      "sha256": "083e142f90ad3498b038bc1bb9500320bee6120df980f2c4dfd34064b51944a0"
+      "sha256": "1125e02b3a6305b0238abcfe7f83abea7153144d9b9503a729f22e32b6bd0c43"
     },
     "contract_source_sha256": "bd8023293c03932eddb277735dc4270c3abc4d548f792ace4e3fbb0da404d258",
     "deerflow_contracts": {
-      "evidence": "docs/evidence/deerflow-contracts/42849681472/result.json",
-      "sha256": "b5696a37bdfa2d1eb37c4d1b4255a947010ddb615f0f4f0aaaa9e169ebea3b7b",
+      "evidence": "docs/evidence/deerflow-contracts/42858398008/result.json",
+      "sha256": "fc263288a84f51f4679d596a93997b200b8f05cacb2a291e1b1301141647472a",
       "tests": 20,
       "skipped": 0
-    }
+    },
+    "snapshot_gc_live": {
+      "evidence": "docs/evidence/public-traces/runs/42858419910/snapshot-gc-reconciliation.json",
+      "sha256": "a5466c1cf7ae8214150e8caae7d541d68f3c59b45a57e9f12a9803f03a5ff90e"
+    },
+    "scheduler_core_unchanged_from": "a7e324a7165fa65b697023c9f7a768c9b27610fe"
   }
 }

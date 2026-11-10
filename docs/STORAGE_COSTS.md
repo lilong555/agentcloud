@@ -7,7 +7,7 @@ AgentCloud 同时报告总 Actor 预留 GB·s、交互 TTFT 分位数、恢复�
 | 字段 | 定义及来源 |
 | --- | --- |
 | `actor_reserved_gb_s` | Worker 实际 Actor reservation 按时间积分，十进制 GB·s |
-| `snapshot_tag_count` | COMMITTED manifest 中独立 retained Tag UID 的去重数，含初始化；另报 initial／post_initial |
+| `snapshot_tag_count` | lifecycle 中累计 COMMITTED Tag UID 的去重数，含已删除项与初始化；当前保留量由 `retained` 单列 |
 | `snapshot_write_bytes` | 完整 trial 中实际观测的物理快照写入量；缺测为 `null` |
 | `peak_storage_bytes` | 归属于该 trial 的快照物理存储峰值；缺测为 `null` |
 | `snapshot_logical_upload_bytes_observed` | 有界日志尾部实际观察到的压缩前逻辑上传字节，带采样覆盖；单独呈现 |
@@ -43,10 +43,25 @@ GC 在快照提交后唤醒，每 30 秒兜底执行，单批最多八个删除�
 
 [控制器与持久账本](../internal/control/snapshot_gc.go) · [Substrate 删除围栏](../internal/adapters/substrate/snapshot_gc.go) · [控制器边界测试](../internal/control/snapshot_gc_test.go) · [适配器契约测试](../internal/adapters/substrate/snapshot_gc_test.go)
 
+### 真实公开轨迹的 GC 账本
+
+源码 `8a3e15f` 的[四策略实机回放](PUBLIC_TRACE_IMPORT.md#真实公开轨迹实机回放结果)完成 192/192 请求与 230/230 次 MEMORY 恢复。[逐 Workspace 对账](evidence/public-traces/runs/42858419910/snapshot-gc-reconciliation.json)核验 lifecycle 中全部 COMMITTED Tag UID、保留账本、删除墓碑与当前恢复点保护，四策略的 33 个 Workspace 均保留最近两个已验证恢复点。
+
+| 策略 | 累计创建 Tag，含 33 个初始化 | 清理前保留 | 已删除墓碑 | 删除待办 |
+| --- | ---: | ---: | ---: | ---: |
+| Observed | 78 | 66 | 12 | 0 |
+| TTL15 | 80 | 66 | 14 | 0 |
+| TTL2 | 105 | 66 | 39 | 0 |
+| v2 | 99 | 66 | 33 | 0 |
+
+累计创建量等于保留量与已删除量之和；已发生的快照写入继续计入累计成本。以上账本采集于 trial 资源清理之前，随后四组所属资源与 Kind 集群均完成销毁。物理写入字节与峰值占用在本轮继续保留缺测标记，Tag 治理通过精确身份及状态对账验收。
+
 ## 离线复算
 
 ```bash
 python3 -m bench.analysis.storage
+python3 scripts/public_replay_snapshot_audit.py 42858419910
+python3 scripts/public_replay_resource_audit.py 42858419910
 ```
 
 分析器根据结果摘要与来源 SHA 合并存储 sidecar，保留原始 Actor/P95 配对与 bootstrap 定义。历史试验使用冻结源码的保留策略；当前 GC 的轮转契约和新回放的实际存储行为分别归档。

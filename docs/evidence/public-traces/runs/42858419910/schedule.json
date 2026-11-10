@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "paired_runner_id": "eb63e961-6b46-4f65-8aab-7e02e5c556ff",
+  "source_commit": "8a3e15ff1e25f4015af48e740582d98161bf0e45",
+  "github_run_id": "42858419910",
+  "github_run_attempt": "1",
+  "host": {
+    "cpu_count": 4,
+    "affinity": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "cgroup": {
+      "cpu.stat": "usage_usec 57571000\nuser_usec 33145000\nsystem_usec 24426000\nnice_usec 77000\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+      "cpuset.cpus.effective": "0-3"
+    }
+  },
+  "config": {
+    "schema_version": 1,
+    "execution_kind": "real-substrate-memory-native-dynamo-cpu-mocker",
+    "concurrency": [
+      33
+    ],
+    "paired_seeds": [
+      9031
+    ],
+    "randomized_order_seed": 9031,
+    "policies": [
+      "agentcloud",
+      "static-15",
+      "static-2",
+      "agentcloud-v2"
+    ],
+    "context_tokens": [
+      1024
+    ],
+    "output_tokens": 8,
+    "worker_slots": 4,
+    "actor_memory_bytes": 268435456,
+    "heap_mib": 16,
+    "actor_cpu_millicores": 200,
+    "num_gpu_blocks": 2048,
+    "max_model_len": 32768,
+    "mocker_speedup_ratio": 1,
+    "model_concurrency": 64,
+    "poll_seconds": 0.1,
+    "request_deadline_seconds": 300,
+    "interactive_slo_seconds": 30,
+    "think_seconds": {
+      "interactive": 0.15,
+      "coding": 1,
+      "research": 6,
+      "batch": 18
+    },
+    "bootstrap_samples": 2000,
+    "tenants": 4,
+    "workers": 2,
+    "comparison_protocol": "public-source-symmetric-terminal-v1",
+    "trial_deadline_seconds": 900,
+    "cleanup_deadline_seconds": 120,
+    "workload_scenario": "public-tracelab-33"
+  },
+  "config_path": "/home/runner/work/agentcloud/agentcloud/bench/configs/scale-live.json",
+  "input_path": "/home/runner/work/agentcloud/agentcloud/docs/evidence/public-traces/tracelab-v0.0.2-admitted",
+  "input_manifest_sha256": "67b7efe95c099bd7a6ed2b1e3b0be22b53f2b5f72533a1686b3c583b41a1d69b",
+  "planned_requests": 192,
+  "source_population": {
+    "contributor_families": 8,
+    "holdout_contributor_families": 2,
+    "holdout_windows": 7,
+    "model_requests": 48,
+    "model_rounds_per_window": {
+      "1": 26,
+      "2": 4,
+      "4": 1,
+      "5": 2
+    },
+    "multi_model_windows": 7,
+    "tool_intervals": 32,
+    "windows": 33,
+    "single_model_windows": 26,
+    "multiple_model_windows": 7
+  },
+  "comparison_protocol": "public-source-symmetric-terminal-v1",
+  "gpu_execution": false,
+  "execution_kind": "real-substrate-memory-native-dynamo-cpu-mocker",
+  "source_sha256": {
+    "bench/public_trace_live.py": "716c7e2973b80206bfad3892f7c2547a37ef030a9b4733c38a6b88f11f62c0d7",
+    "bench/scale.py": "924e89851da6af008c691f82d35f2cff4a1725528186edc8696b534fad1a6c7d",
+    "bench/workloads/actor_mix.py": "c1bce32e6c517215a24256baf38c2ac49039b9ccddd171d98ae15f37a7434276",
+    "bench/public_traces/replay.py": "e8000dd746da375c7cec416e001a6c5ab20c8fbdbae46e3a9b72d3ec17122560"
+  },
+  "order": [
+    {
+      "seed": 9031,
+      "concurrency": 33,
+      "policy": "agentcloud",
+      "order": 0,
+      "trial_id": "scale-public-agentcloud-3d49bcddccbe"
+    },
+    {
+      "seed": 9031,
+      "concurrency": 33,
+      "policy": "static-15",
+      "order": 1,
+      "trial_id": "scale-public-static-15-da7c846d222d"
+    },
+    {
+      "seed": 9031,
+      "concurrency": 33,
+      "policy": "agentcloud-v2",
+      "order": 2,
+      "trial_id": "scale-public-agentcloud-v2-7bdf5115bfa5"
+    },
+    {
+      "seed": 9031,
+      "concurrency": 33,
+      "policy": "static-2",
+      "order": 3,
+      "trial_id": "scale-public-static-2-18247cb2b62d"
+    }
+  ],
+  "driver_contract": {
+    "source_commands": "repository-owned controlled actor_mix only",
+    "source_clock": "window-relative clock begins after initial capacity queue; queue measured separately",
+    "model_timing": "driver-private proxy delays native-generated SSE; source model spans never enter scheduler observations",
+    "tokens": "source input totals clipped to 8192; native output fixed to 8; source and executed counts retained",
+    "initialization": "one common MEMORY bootstrap per window, reported separately",
+    "termination": "final original model request carries terminal_turn; subsequent RAM proof and explicit binding retirement",
+    "policy_input": "actual Coordinator tools, durable requests, native queue and current Worker observations"
+  }
+}

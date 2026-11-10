@@ -76,6 +76,25 @@ atelet 有界日志尾部记录的完整快照逻辑大小约 163～168 MiB，�
 
 [探索性描述统计](evidence/public-traces/tracelab-v0.0.2-descriptive.json)给出窗口时长中位数 6.756 s、P95 96.082 s，48 个模型 span 的中位数 5.550 s、P95 90.298 s。合格窗口的用户候选等待为零；全部被选会话和合格窗口的安全候选覆盖率分别为 1.2184% 和 99.7523%，使用各自分母。公开轨迹实机结果按实际执行记录报告。[完整质量与筛选](PUBLIC_TRACE_IMPORT.md) · [当前与历史原文](evidence/public-traces/index.json)
 
+### 真实公开轨迹实机回放结果
+
+源码 `8a3e15f` 在同一 GitHub Runner 上按 Observed／TTL15／v2／TTL2 顺序串行执行，完成 **4/4 trial、192/192 模型请求、132/132 窗口**，**230/230 次 MEMORY 恢复**均通过 nonce／PID／heap／AST 连续性校验。每策略 33 次 FINAL、结束时原生绑定为零，四组清理及集群销毁全部通过。
+
+| 策略 | 总 Actor GB·s，含初始化 | 工作阶段 GB·s | 快照总数／运行阶段 | TTFT P50／P95／P99（s） | MEMORY 恢复 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Observed | 390.702 | 264.982 | 78／45 | 92.806／266.162／312.268 | 45/45 |
+| TTL15 | 336.470 | 211.835 | 80／47 | 74.507／205.995／268.035 | 47/47 |
+| TTL2 | 324.375 | 194.834 | 105／72 | 68.276／161.819／209.382 | 72/72 |
+| agentcloud-v2 | 328.848 | 197.658 | 99／66 | 68.005／204.529／264.213 | 66/66 |
+
+本次同 Runner 单次配对中，v2 相对 TTL2 的总 Actor 预留资源增加 1.4%，TTFT P95 增加 26.4%；快照创建次数为 99／105。结果描述这 33 个已审核窗口和本次运行配置，独立样本单位为贡献者 family。
+
+执行环境为 PostgreSQL、真实 Substrate／gVisor MEMORY 与原生 Dynamo CPU Mocker；四租户、两个 Worker、四槽位、16 MiB RAM 工作集。每策略包含 33 个初始化快照。模型时钟由公开源驱动，工具使用受控映射，Token 使用固定执行口径；初始化资源单列，TTFT 包含首次容量排队。
+
+总 Actor 积分包含初始化；按同 Runner UTC 时钟和 300 ms 采样间隔上限复算，Observed／TTL15／TTL2／v2 的总覆盖保守下界约为 **99.58%／99.64%／97.57%／97.70%**。初始化起点界限与采样缺口单独保留。[资源积分复核](evidence/public-traces/runs/42858419910/resource-coverage-reconciliation.json)
+
+[原始汇总 JSON](evidence/public-traces/live-replay.json) · [逐文件摘要与固定输入](evidence/public-traces/runs/42858419910/artifact.json) · [运行状态](evidence/public-trace-run-42858419910.json)
+
 ## RTX 4070 真实 CUDA 与官方 KV 事件
 
 独立 OPT-125M CUDA 压力曲线完成 **30/30 组测量**：16/24/32/48/64 会话，KEEP 与释放各三次。64 会话总耗时下降 **22.5%**，16 会话增加 **44.5%**，实测反转范围为 **48～64 会话**。原生 vLLM 的独立单 Worker 验收接通官方 KVEvent、KVIndexer 与默认 Selector；26 个事件 batch 连续、Stored/Removed 到达且 relay 零丢失。三轮热缓存／驱逐后请求分别新增计算 16／256 token，六次前缀驻留预测全部与实际计算量一致。[GPU 完整环境、原文与复现](GPU_VALIDATION.md)

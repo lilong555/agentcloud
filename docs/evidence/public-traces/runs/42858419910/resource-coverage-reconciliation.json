@@ -1,0 +1,1510 @@
+{
+  "schema_version": 1,
+  "execution_kind": "archived-resource-coverage-bounds-audit",
+  "github_run_id": "42858419910",
+  "source_commit": "8a3e15ff1e25f4015af48e740582d98161bf0e45",
+  "source_run_status": "passed",
+  "status": "passed",
+  "planned_model_requests": 192,
+  "completed_model_requests": 192,
+  "clock_semantics": "Collector and Worker UTC on the same Runner; finite timestamp precision padding; no independently calibrated clock-skew bound",
+  "integration_semantics": "per Worker adjacent left samples, 300 ms bounded gaps; byte reservation uses decimal GB",
+  "bound_semantics": "inner interval coverage divided by longest possible Worker-duration is a conservative lower bound; outer interval provides resource upper bounds",
+  "exact_total_coverage_recovered": false,
+  "claim_scope": "resource-observation reconciliation only; source run completion retains its independent status and denominator",
+  "total_coverage_lower_bound_at_least_90_percent": true,
+  "trials": [
+    {
+      "trial_id": "scale-public-agentcloud-3d49bcddccbe",
+      "policy": "agentcloud",
+      "source_commit": "8a3e15ff1e25f4015af48e740582d98161bf0e45",
+      "source_trial_status": "passed",
+      "trial_execution_status": "COMPLETED",
+      "planned_requests": 48,
+      "completed_requests": 48,
+      "status": "passed",
+      "checks": {
+        "work_integral_matches": true,
+        "total_integral_within_bounds": true,
+        "work_coverage_matches": true
+      },
+      "exact_initialization_start_recovered": false,
+      "exact_working_start_recovered": true,
+      "initialization_clock_bounds": {
+        "lower_event": {
+          "at": 1794330089.091207,
+          "workers": [
+            "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+            "f85bfe1a-6451-43a6-8df2-d17b4f469ee3"
+          ],
+          "line": 9
+        },
+        "upper_event": {
+          "at": 1794330089.208845,
+          "line": 13,
+          "kind": "owned_actor_assignment_observed"
+        },
+        "derivation": "worker_capacity_preflight is emitted before start() returns; the first owned assignment or start-ram receipt is observed after provisioning began",
+        "precision_padding_seconds": 1e-05
+      },
+      "workers": [
+        "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+        "f85bfe1a-6451-43a6-8df2-d17b4f469ee3"
+      ],
+      "sample_counts": {
+        "232a288d-9d8a-4e2c-8c8b-41ab50405e21": 4895,
+        "f85bfe1a-6451-43a6-8df2-d17b4f469ee3": 4895
+      },
+      "phases": {
+        "initialization": {
+          "start_epoch_bounds": [
+            1794330089.091197,
+            1794330089.208855
+          ],
+          "end_epoch_bounds": [
+            1794330234.123397,
+            1794330234.123397
+          ],
+          "duration_seconds_bounds": [
+            144.91454219818115,
+            145.03220009803772
+          ],
+          "actor_reserved_gb_s_bounds": [
+            125.71976108800003,
+            125.71995488000002
+          ],
+          "coverage_fraction_bounds": [
+            0.9972723679473517,
+            0.9988939779575664
+          ],
+          "conservative_coverage_lower_bound": 0.9972723679473517,
+          "uncovered_worker_seconds_bounds": [
+            0.3205573558807373,
+            0.7911889553070068
+          ],
+          "outer_interval_sampling": {
+            "actor_reserved_gb_s": 125.71995488000002,
+            "covered_worker_seconds": 289.50852704048157,
+            "worker_integrals": {
+              "232a288d-9d8a-4e2c-8c8b-41ab50405e21": {
+                "actor_reserved_gb_s": 62.30574540800006,
+                "covered_seconds": 144.88994121551514,
+                "uncovered_seconds": 0.142258882522583
+              },
+              "f85bfe1a-6451-43a6-8df2-d17b4f469ee3": {
+                "actor_reserved_gb_s": 63.41420947199997,
+                "covered_seconds": 144.61858582496643,
+                "uncovered_seconds": 0.41361427307128906
+              }
+            },
+            "uncovered_interval_count": 7,
+            "largest_uncovered_intervals": [
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330091.029516,
+                "end": 1794330091.181241,
+                "seconds": 0.15172505378723145
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330120.947816,
+                "end": 1794330121.08566,
+                "seconds": 0.13784408569335938
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794330121.021281,
+                "end": 1794330121.12916,
+                "seconds": 0.1078789234161377
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330191.530227,
+                "end": 1794330191.604851,
+                "seconds": 0.07462406158447266
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794330191.524615,
+                "end": 1794330191.558995,
+                "seconds": 0.03437995910644531
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330207.350514,
+                "end": 1794330207.375345,
+                "seconds": 0.024831056594848633
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330185.216347,
+                "end": 1794330185.240937,
+                "seconds": 0.024590015411376953
+              }
+            ]
+          },
+          "endpoint_uncertainty_seconds": 0.11765789985656738
+        },
+        "working": {
+          "start_epoch_bounds": [
+            1794330234.123397,
+            1794330234.123397
+          ],
+          "end_epoch_bounds": [
+            1794330569.8396924,
+            1794330569.8396924
+          ],
+          "duration_seconds_bounds": [
+            335.71629524230957,
+            335.71629524230957
+          ],
+          "actor_reserved_gb_s_bounds": [
+            264.982393152,
+            264.982393152
+          ],
+          "coverage_fraction_bounds": [
+            0.9952003037860624,
+            0.9952003037860624
+          ],
+          "conservative_coverage_lower_bound": 0.9952003037860624,
+          "uncovered_worker_seconds_bounds": [
+            3.222672462463379,
+            3.222672462463379
+          ],
+          "outer_interval_sampling": {
+            "actor_reserved_gb_s": 264.982393152,
+            "covered_worker_seconds": 668.2099180221558,
+            "worker_integrals": {
+              "232a288d-9d8a-4e2c-8c8b-41ab50405e21": {
+                "actor_reserved_gb_s": 129.99145664000005,
+                "covered_seconds": 334.28508734703064,
+                "uncovered_seconds": 1.4312078952789307
+              },
+              "f85bfe1a-6451-43a6-8df2-d17b4f469ee3": {
+                "actor_reserved_gb_s": 134.99093651199996,
+                "covered_seconds": 333.9248306751251,
+                "uncovered_seconds": 1.7914645671844482
+              }
+            },
+            "uncovered_interval_count": 23,
+            "largest_uncovered_intervals": [
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330234.633199,
+                "end": 1794330235.330592,
+                "seconds": 0.6973929405212402
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794330234.618581,
+                "end": 1794330235.294167,
+                "seconds": 0.6755859851837158
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330424.849761,
+                "end": 1794330425.195567,
+                "seconds": 0.3458058834075928
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794330424.976482,
+                "end": 1794330425.254118,
+                "seconds": 0.2776360511779785
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794330445.161314,
+                "end": 1794330445.271555,
+                "seconds": 0.11024093627929688
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794330485.717711,
+                "end": 1794330485.824398,
+                "seconds": 0.10668706893920898
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330460.116145,
+                "end": 1794330460.218395,
+                "seconds": 0.1022500991821289
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330333.616895,
+                "end": 1794330333.713243,
+                "seconds": 0.09634804725646973
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330469.123939,
+                "end": 1794330469.216162,
+                "seconds": 0.09222292900085449
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330445.070701,
+                "end": 1794330445.155126,
+                "seconds": 0.08442521095275879
+              }
+            ]
+          },
+          "endpoint_uncertainty_seconds": 0.0
+        },
+        "total_including_initialization": {
+          "start_epoch_bounds": [
+            1794330089.091197,
+            1794330089.208855
+          ],
+          "end_epoch_bounds": [
+            1794330569.8396924,
+            1794330569.8396924
+          ],
+          "duration_seconds_bounds": [
+            480.6308374404907,
+            480.7484953403473
+          ],
+          "actor_reserved_gb_s_bounds": [
+            390.70215423999946,
+            390.70234803199946
+          ],
+          "coverage_fraction_bounds": [
+            0.9958254040764821,
+            0.9963139799381029
+          ],
+          "conservative_coverage_lower_bound": 0.9958254040764821,
+          "uncovered_worker_seconds_bounds": [
+            3.543229818344116,
+            4.013861417770386
+          ],
+          "outer_interval_sampling": {
+            "actor_reserved_gb_s": 390.70234803199946,
+            "covered_worker_seconds": 957.7184450626373,
+            "worker_integrals": {
+              "232a288d-9d8a-4e2c-8c8b-41ab50405e21": {
+                "actor_reserved_gb_s": 192.2972020479998,
+                "covered_seconds": 479.1750285625458,
+                "uncovered_seconds": 1.5734667778015137
+              },
+              "f85bfe1a-6451-43a6-8df2-d17b4f469ee3": {
+                "actor_reserved_gb_s": 198.40514598399966,
+                "covered_seconds": 478.54341650009155,
+                "uncovered_seconds": 2.2050788402557373
+              }
+            },
+            "uncovered_interval_count": 30,
+            "largest_uncovered_intervals": [
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330234.633199,
+                "end": 1794330235.330592,
+                "seconds": 0.6973929405212402
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794330234.618581,
+                "end": 1794330235.294167,
+                "seconds": 0.6755859851837158
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330424.849761,
+                "end": 1794330425.195567,
+                "seconds": 0.3458058834075928
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794330424.976482,
+                "end": 1794330425.254118,
+                "seconds": 0.2776360511779785
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330091.029516,
+                "end": 1794330091.181241,
+                "seconds": 0.15172505378723145
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330120.947816,
+                "end": 1794330121.08566,
+                "seconds": 0.13784408569335938
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794330445.161314,
+                "end": 1794330445.271555,
+                "seconds": 0.11024093627929688
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794330121.021281,
+                "end": 1794330121.12916,
+                "seconds": 0.1078789234161377
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794330485.717711,
+                "end": 1794330485.824398,
+                "seconds": 0.10668706893920898
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330460.116145,
+                "end": 1794330460.218395,
+                "seconds": 0.1022500991821289
+              }
+            ]
+          },
+          "endpoint_uncertainty_seconds": 0.11765789985656738
+        }
+      },
+      "reported_metrics": {
+        "actor_total_reserved_gb_s": 390.70234803200185,
+        "actor_work_reserved_gb_s": 264.9823931520006,
+        "work_resource_coverage_fraction": 0.9952003037860624
+      },
+      "missing_samples_present": true,
+      "total_coverage_at_least_90_percent": true,
+      "sources": {
+        "docs/evidence/scale/scale-public-agentcloud-3d49bcddccbe/result.json": "8e5dd8f5114e203875e8c5b4cb73693058e0998d95c228c88af3e67482663ee0",
+        "docs/evidence/scale/scale-public-agentcloud-3d49bcddccbe/events.jsonl.gz": "d1f97727a518947953292c42e41b348f39fb0c52765585837bbf95a6e9a9ad27",
+        "docs/evidence/scale/scale-public-agentcloud-3d49bcddccbe/final-state.json.gz": "b9af228f3b10ec563738f9a5070e3187465dcd3d5de2fc49b5bad6b2e34838ff",
+        "docs/evidence/scale/scale-public-agentcloud-3d49bcddccbe/arrival-trace.json.gz": "25b7a3f3f81dbb1e5ec7324277a1467045b80c9561628ed499fa7968db86b347"
+      }
+    },
+    {
+      "trial_id": "scale-public-static-15-da7c846d222d",
+      "policy": "static-15",
+      "source_commit": "8a3e15ff1e25f4015af48e740582d98161bf0e45",
+      "source_trial_status": "passed",
+      "trial_execution_status": "COMPLETED",
+      "planned_requests": 48,
+      "completed_requests": 48,
+      "status": "passed",
+      "checks": {
+        "work_integral_matches": true,
+        "total_integral_within_bounds": true,
+        "work_coverage_matches": true
+      },
+      "exact_initialization_start_recovered": false,
+      "exact_working_start_recovered": true,
+      "initialization_clock_bounds": {
+        "lower_event": {
+          "at": 1794330590.909455,
+          "workers": [
+            "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+            "f85bfe1a-6451-43a6-8df2-d17b4f469ee3"
+          ],
+          "line": 9
+        },
+        "upper_event": {
+          "at": 1794330591.050534,
+          "line": 13,
+          "kind": "owned_actor_assignment_observed"
+        },
+        "derivation": "worker_capacity_preflight is emitted before start() returns; the first owned assignment or start-ram receipt is observed after provisioning began",
+        "precision_padding_seconds": 1e-05
+      },
+      "workers": [
+        "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+        "f85bfe1a-6451-43a6-8df2-d17b4f469ee3"
+      ],
+      "sample_counts": {
+        "232a288d-9d8a-4e2c-8c8b-41ab50405e21": 4380,
+        "f85bfe1a-6451-43a6-8df2-d17b4f469ee3": 4380
+      },
+      "phases": {
+        "initialization": {
+          "start_epoch_bounds": [
+            1794330590.909445,
+            1794330591.050544
+          ],
+          "end_epoch_bounds": [
+            1794330735.8268468,
+            1794330735.8268468
+          ],
+          "duration_seconds_bounds": [
+            144.77630281448364,
+            144.9174017906189
+          ],
+          "actor_reserved_gb_s_bounds": [
+            124.63500127999997,
+            124.63511622399996
+          ],
+          "coverage_fraction_bounds": [
+            0.9979388523626167,
+            0.9998860434496168
+          ],
+          "conservative_coverage_lower_bound": 0.9979388523626167,
+          "uncovered_worker_seconds_bounds": [
+            0.032996416091918945,
+            0.5973923206329346
+          ],
+          "outer_interval_sampling": {
+            "actor_reserved_gb_s": 124.63511622399996,
+            "covered_worker_seconds": 289.51960921287537,
+            "worker_integrals": {
+              "232a288d-9d8a-4e2c-8c8b-41ab50405e21": {
+                "actor_reserved_gb_s": 60.12711820800001,
+                "covered_seconds": 144.79373860359192,
+                "uncovered_seconds": 0.12366318702697754
+              },
+              "f85bfe1a-6451-43a6-8df2-d17b4f469ee3": {
+                "actor_reserved_gb_s": 64.50799801599995,
+                "covered_seconds": 144.72587060928345,
+                "uncovered_seconds": 0.19153118133544922
+              }
+            },
+            "uncovered_interval_count": 9,
+            "largest_uncovered_intervals": [
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330708.124789,
+                "end": 1794330708.257107,
+                "seconds": 0.13231801986694336
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794330708.120689,
+                "end": 1794330708.231455,
+                "seconds": 0.11076617240905762
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330690.639669,
+                "end": 1794330690.660212,
+                "seconds": 0.02054309844970703
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330707.1363258,
+                "end": 1794330707.154367,
+                "seconds": 0.018041133880615234
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330689.324738,
+                "end": 1794330689.33738,
+                "seconds": 0.01264190673828125
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794330689.320786,
+                "end": 1794330689.330375,
+                "seconds": 0.009588956832885742
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330654.64361,
+                "end": 1794330654.648272,
+                "seconds": 0.004662036895751953
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330672.526176,
+                "end": 1794330672.529501,
+                "seconds": 0.0033249855041503906
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794330654.637902,
+                "end": 1794330654.64121,
+                "seconds": 0.0033080577850341797
+              }
+            ]
+          },
+          "endpoint_uncertainty_seconds": 0.1410989761352539
+        },
+        "working": {
+          "start_epoch_bounds": [
+            1794330735.8268468,
+            1794330735.8268468
+          ],
+          "end_epoch_bounds": [
+            1794331020.2703354,
+            1794331020.2703354
+          ],
+          "duration_seconds_bounds": [
+            284.4434885978699,
+            284.4434885978699
+          ],
+          "actor_reserved_gb_s_bounds": [
+            211.8349784960003,
+            211.8349784960003
+          ],
+          "coverage_fraction_bounds": [
+            0.9956579407984223,
+            0.9956579407984223
+          ],
+          "conservative_coverage_lower_bound": 0.9956579407984223,
+          "uncovered_worker_seconds_bounds": [
+            2.4701409339904785,
+            2.4701409339904785
+          ],
+          "outer_interval_sampling": {
+            "actor_reserved_gb_s": 211.8349784960003,
+            "covered_worker_seconds": 566.4168362617493,
+            "worker_integrals": {
+              "232a288d-9d8a-4e2c-8c8b-41ab50405e21": {
+                "actor_reserved_gb_s": 96.2092003200002,
+                "covered_seconds": 283.4828734397888,
+                "uncovered_seconds": 0.9606151580810547
+              },
+              "f85bfe1a-6451-43a6-8df2-d17b4f469ee3": {
+                "actor_reserved_gb_s": 115.62577817600011,
+                "covered_seconds": 282.93396282196045,
+                "uncovered_seconds": 1.5095257759094238
+              }
+            },
+            "uncovered_interval_count": 37,
+            "largest_uncovered_intervals": [
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794330736.248832,
+                "end": 1794330736.586555,
+                "seconds": 0.3377230167388916
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330736.268756,
+                "end": 1794330736.599541,
+                "seconds": 0.33078503608703613
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330814.650018,
+                "end": 1794330814.901425,
+                "seconds": 0.2514069080352783
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330861.0391269,
+                "end": 1794330861.20752,
+                "seconds": 0.16839313507080078
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330854.851765,
+                "end": 1794330854.962363,
+                "seconds": 0.11059808731079102
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794330798.9907498,
+                "end": 1794330799.101204,
+                "seconds": 0.11045408248901367
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794330854.8457088,
+                "end": 1794330854.956055,
+                "seconds": 0.11034607887268066
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330865.0444388,
+                "end": 1794330865.148399,
+                "seconds": 0.10396027565002441
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330898.1306999,
+                "end": 1794330898.223951,
+                "seconds": 0.09325122833251953
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794330861.030959,
+                "end": 1794330861.123271,
+                "seconds": 0.09231209754943848
+              }
+            ]
+          },
+          "endpoint_uncertainty_seconds": 0.0
+        },
+        "total_including_initialization": {
+          "start_epoch_bounds": [
+            1794330590.909445,
+            1794330591.050544
+          ],
+          "end_epoch_bounds": [
+            1794331020.2703354,
+            1794331020.2703354
+          ],
+          "duration_seconds_bounds": [
+            429.2197914123535,
+            429.36089038848877
+          ],
+          "actor_reserved_gb_s_bounds": [
+            336.4699797759995,
+            336.4700947199995
+          ],
+          "coverage_fraction_bounds": [
+            0.9964277914881257,
+            0.9970840844246187
+          ],
+          "conservative_coverage_lower_bound": 0.9964277914881257,
+          "uncovered_worker_seconds_bounds": [
+            2.5031373500823975,
+            3.067533254623413
+          ],
+          "outer_interval_sampling": {
+            "actor_reserved_gb_s": 336.4700947199995,
+            "covered_worker_seconds": 855.9364454746246,
+            "worker_integrals": {
+              "232a288d-9d8a-4e2c-8c8b-41ab50405e21": {
+                "actor_reserved_gb_s": 156.33631852800022,
+                "covered_seconds": 428.27661204338074,
+                "uncovered_seconds": 1.0842783451080322
+              },
+              "f85bfe1a-6451-43a6-8df2-d17b4f469ee3": {
+                "actor_reserved_gb_s": 180.1337761919993,
+                "covered_seconds": 427.6598334312439,
+                "uncovered_seconds": 1.701056957244873
+              }
+            },
+            "uncovered_interval_count": 46,
+            "largest_uncovered_intervals": [
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794330736.248832,
+                "end": 1794330736.586555,
+                "seconds": 0.3377230167388916
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330736.268756,
+                "end": 1794330736.599541,
+                "seconds": 0.33078503608703613
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330814.650018,
+                "end": 1794330814.901425,
+                "seconds": 0.2514069080352783
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330861.0391269,
+                "end": 1794330861.20752,
+                "seconds": 0.16839313507080078
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330708.124789,
+                "end": 1794330708.257107,
+                "seconds": 0.13231801986694336
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794330708.120689,
+                "end": 1794330708.231455,
+                "seconds": 0.11076617240905762
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330854.851765,
+                "end": 1794330854.962363,
+                "seconds": 0.11059808731079102
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794330798.9907498,
+                "end": 1794330799.101204,
+                "seconds": 0.11045408248901367
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794330854.8457088,
+                "end": 1794330854.956055,
+                "seconds": 0.11034607887268066
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794330865.0444388,
+                "end": 1794330865.148399,
+                "seconds": 0.10396027565002441
+              }
+            ]
+          },
+          "endpoint_uncertainty_seconds": 0.1410989761352539
+        }
+      },
+      "reported_metrics": {
+        "actor_total_reserved_gb_s": 336.47009472000315,
+        "actor_work_reserved_gb_s": 211.83497849600028,
+        "work_resource_coverage_fraction": 0.9956579407984223
+      },
+      "missing_samples_present": true,
+      "total_coverage_at_least_90_percent": true,
+      "sources": {
+        "docs/evidence/scale/scale-public-static-15-da7c846d222d/result.json": "d3fbdfd7340476bf9ecc806908c04d807aa2298f0b5e9e3860f8def0e809273c",
+        "docs/evidence/scale/scale-public-static-15-da7c846d222d/events.jsonl.gz": "f1cfbf407c04f50ad81021d62c65146609a38c1e320e72cce2c627e9d5232c85",
+        "docs/evidence/scale/scale-public-static-15-da7c846d222d/final-state.json.gz": "f79647ce63d4d15817772eda518fbe956fa644522bf516fd10963d1083984157",
+        "docs/evidence/scale/scale-public-static-15-da7c846d222d/arrival-trace.json.gz": "25b7a3f3f81dbb1e5ec7324277a1467045b80c9561628ed499fa7968db86b347"
+      }
+    },
+    {
+      "trial_id": "scale-public-agentcloud-v2-7bdf5115bfa5",
+      "policy": "agentcloud-v2",
+      "source_commit": "8a3e15ff1e25f4015af48e740582d98161bf0e45",
+      "source_trial_status": "passed",
+      "trial_execution_status": "COMPLETED",
+      "planned_requests": 48,
+      "completed_requests": 48,
+      "status": "passed",
+      "checks": {
+        "work_integral_matches": true,
+        "total_integral_within_bounds": true,
+        "work_coverage_matches": true
+      },
+      "exact_initialization_start_recovered": false,
+      "exact_working_start_recovered": true,
+      "initialization_clock_bounds": {
+        "lower_event": {
+          "at": 1794331040.887878,
+          "workers": [
+            "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+            "f85bfe1a-6451-43a6-8df2-d17b4f469ee3"
+          ],
+          "line": 9
+        },
+        "upper_event": {
+          "at": 1794331041.371902,
+          "line": 13,
+          "kind": "owned_actor_assignment_observed"
+        },
+        "derivation": "worker_capacity_preflight is emitted before start() returns; the first owned assignment or start-ram receipt is observed after provisioning began",
+        "precision_padding_seconds": 1e-05
+      },
+      "workers": [
+        "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+        "f85bfe1a-6451-43a6-8df2-d17b4f469ee3"
+      ],
+      "sample_counts": {
+        "232a288d-9d8a-4e2c-8c8b-41ab50405e21": 4271,
+        "f85bfe1a-6451-43a6-8df2-d17b4f469ee3": 4271
+      },
+      "phases": {
+        "initialization": {
+          "start_epoch_bounds": [
+            1794331040.887868,
+            1794331041.371912
+          ],
+          "end_epoch_bounds": [
+            1794331189.5627337,
+            1794331189.5627337
+          ],
+          "duration_seconds_bounds": [
+            148.19082164764404,
+            148.67486572265625
+          ],
+          "actor_reserved_gb_s_bounds": [
+            131.18909523200006,
+            131.18941254400005
+          ],
+          "coverage_fraction_bounds": [
+            0.9879787608150966,
+            0.9933835744033894
+          ],
+          "conservative_coverage_lower_bound": 0.9879787608150966,
+          "uncovered_worker_seconds_bounds": [
+            1.9609870910644531,
+            3.574512243270874
+          ],
+          "outer_interval_sampling": {
+            "actor_reserved_gb_s": 131.18941254400005,
+            "covered_worker_seconds": 294.42065620422363,
+            "worker_integrals": {
+              "232a288d-9d8a-4e2c-8c8b-41ab50405e21": {
+                "actor_reserved_gb_s": 64.29880908799993,
+                "covered_seconds": 147.4026665687561,
+                "uncovered_seconds": 1.2721991539001465
+              },
+              "f85bfe1a-6451-43a6-8df2-d17b4f469ee3": {
+                "actor_reserved_gb_s": 66.89060345600012,
+                "covered_seconds": 147.01798963546753,
+                "uncovered_seconds": 1.6568760871887207
+              }
+            },
+            "uncovered_interval_count": 23,
+            "largest_uncovered_intervals": [
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331084.6330159,
+                "end": 1794331085.022651,
+                "seconds": 0.3896350860595703
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331084.649386,
+                "end": 1794331085.030526,
+                "seconds": 0.38113999366760254
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331041.215267,
+                "end": 1794331041.559218,
+                "seconds": 0.3439509868621826
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331111.414651,
+                "end": 1794331111.65976,
+                "seconds": 0.24510908126831055
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331111.4263399,
+                "end": 1794331111.667321,
+                "seconds": 0.2409811019897461
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331124.64716,
+                "end": 1794331124.882843,
+                "seconds": 0.23568296432495117
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331041.2053149,
+                "end": 1794331041.371321,
+                "seconds": 0.16600608825683594
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331173.909975,
+                "end": 1794331174.072646,
+                "seconds": 0.16267085075378418
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331074.577074,
+                "end": 1794331074.733964,
+                "seconds": 0.1568899154663086
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331124.785511,
+                "end": 1794331124.917785,
+                "seconds": 0.13227391242980957
+              }
+            ]
+          },
+          "endpoint_uncertainty_seconds": 0.48404407501220703
+        },
+        "working": {
+          "start_epoch_bounds": [
+            1794331189.5627337,
+            1794331189.5627337
+          ],
+          "end_epoch_bounds": [
+            1794331475.0653377,
+            1794331475.0653377
+          ],
+          "duration_seconds_bounds": [
+            285.50260400772095,
+            285.50260400772095
+          ],
+          "actor_reserved_gb_s_bounds": [
+            197.6583550079996,
+            197.6583550079996
+          ],
+          "coverage_fraction_bounds": [
+            0.9712080253744266,
+            0.9712080253744266
+          ],
+          "conservative_coverage_lower_bound": 0.9712080253744266,
+          "uncovered_worker_seconds_bounds": [
+            16.440367460250854,
+            16.440367460250854
+          ],
+          "outer_interval_sampling": {
+            "actor_reserved_gb_s": 197.6583550079996,
+            "covered_worker_seconds": 554.564840555191,
+            "worker_integrals": {
+              "232a288d-9d8a-4e2c-8c8b-41ab50405e21": {
+                "actor_reserved_gb_s": 98.92247558399981,
+                "covered_seconds": 277.33743476867676,
+                "uncovered_seconds": 8.16516923904419
+              },
+              "f85bfe1a-6451-43a6-8df2-d17b4f469ee3": {
+                "actor_reserved_gb_s": 98.73587942399979,
+                "covered_seconds": 277.2274057865143,
+                "uncovered_seconds": 8.275198221206665
+              }
+            },
+            "uncovered_interval_count": 90,
+            "largest_uncovered_intervals": [
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331190.1230578,
+                "end": 1794331190.83546,
+                "seconds": 0.7124021053314209
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331190.131551,
+                "end": 1794331190.843298,
+                "seconds": 0.7117469310760498
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331422.806762,
+                "end": 1794331423.47657,
+                "seconds": 0.6698079109191895
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331422.802542,
+                "end": 1794331423.458456,
+                "seconds": 0.6559140682220459
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331258.9680479,
+                "end": 1794331259.537486,
+                "seconds": 0.5694382190704346
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331258.9604769,
+                "end": 1794331259.50497,
+                "seconds": 0.5444931983947754
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331323.6142209,
+                "end": 1794331324.092557,
+                "seconds": 0.4783360958099365
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331204.575613,
+                "end": 1794331205.015369,
+                "seconds": 0.439755916595459
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331382.044708,
+                "end": 1794331382.470279,
+                "seconds": 0.4255709648132324
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331204.602578,
+                "end": 1794331205.027294,
+                "seconds": 0.4247159957885742
+              }
+            ]
+          },
+          "endpoint_uncertainty_seconds": 0.0
+        },
+        "total_including_initialization": {
+          "start_epoch_bounds": [
+            1794331040.887868,
+            1794331041.371912
+          ],
+          "end_epoch_bounds": [
+            1794331475.0653377,
+            1794331475.0653377
+          ],
+          "duration_seconds_bounds": [
+            433.693425655365,
+            434.1774697303772
+          ],
+          "actor_reserved_gb_s_bounds": [
+            328.84745024000074,
+            328.84776755200073
+          ],
+          "coverage_fraction_bounds": [
+            0.9769508080233287,
+            0.9787852968678179
+          ],
+          "conservative_coverage_lower_bound": 0.9769508080233287,
+          "uncovered_worker_seconds_bounds": [
+            18.401354551315308,
+            20.01487970352173
+          ],
+          "outer_interval_sampling": {
+            "actor_reserved_gb_s": 328.84776755200073,
+            "covered_worker_seconds": 848.9854967594147,
+            "worker_integrals": {
+              "232a288d-9d8a-4e2c-8c8b-41ab50405e21": {
+                "actor_reserved_gb_s": 163.2212846720005,
+                "covered_seconds": 424.74010133743286,
+                "uncovered_seconds": 9.437368392944336
+              },
+              "f85bfe1a-6451-43a6-8df2-d17b4f469ee3": {
+                "actor_reserved_gb_s": 165.62648288000025,
+                "covered_seconds": 424.2453954219818,
+                "uncovered_seconds": 9.932074308395386
+              }
+            },
+            "uncovered_interval_count": 113,
+            "largest_uncovered_intervals": [
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331190.1230578,
+                "end": 1794331190.83546,
+                "seconds": 0.7124021053314209
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331190.131551,
+                "end": 1794331190.843298,
+                "seconds": 0.7117469310760498
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331422.806762,
+                "end": 1794331423.47657,
+                "seconds": 0.6698079109191895
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331422.802542,
+                "end": 1794331423.458456,
+                "seconds": 0.6559140682220459
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331258.9680479,
+                "end": 1794331259.537486,
+                "seconds": 0.5694382190704346
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331258.9604769,
+                "end": 1794331259.50497,
+                "seconds": 0.5444931983947754
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331323.6142209,
+                "end": 1794331324.092557,
+                "seconds": 0.4783360958099365
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331204.575613,
+                "end": 1794331205.015369,
+                "seconds": 0.439755916595459
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331382.044708,
+                "end": 1794331382.470279,
+                "seconds": 0.4255709648132324
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331204.602578,
+                "end": 1794331205.027294,
+                "seconds": 0.4247159957885742
+              }
+            ]
+          },
+          "endpoint_uncertainty_seconds": 0.48404407501220703
+        }
+      },
+      "reported_metrics": {
+        "actor_total_reserved_gb_s": 328.8477675520013,
+        "actor_work_reserved_gb_s": 197.6583550080005,
+        "work_resource_coverage_fraction": 0.9712080253744266
+      },
+      "missing_samples_present": true,
+      "total_coverage_at_least_90_percent": true,
+      "sources": {
+        "docs/evidence/scale/scale-public-agentcloud-v2-7bdf5115bfa5/result.json": "e6dc76d74c892e4471e04653e39b3087186115639c27dee9c2dd560692f9264b",
+        "docs/evidence/scale/scale-public-agentcloud-v2-7bdf5115bfa5/events.jsonl.gz": "a55b9268c48c663d0da1f7fcb2ae94bfe9252421db93d37841530c8564bcb4a4",
+        "docs/evidence/scale/scale-public-agentcloud-v2-7bdf5115bfa5/final-state.json.gz": "5cec5508b7d85791cbd9b608670ee6c38ce1589211eef740c556dd8db9707d59",
+        "docs/evidence/scale/scale-public-agentcloud-v2-7bdf5115bfa5/arrival-trace.json.gz": "25b7a3f3f81dbb1e5ec7324277a1467045b80c9561628ed499fa7968db86b347"
+      }
+    },
+    {
+      "trial_id": "scale-public-static-2-18247cb2b62d",
+      "policy": "static-2",
+      "source_commit": "8a3e15ff1e25f4015af48e740582d98161bf0e45",
+      "source_trial_status": "passed",
+      "trial_execution_status": "COMPLETED",
+      "planned_requests": 48,
+      "completed_requests": 48,
+      "status": "passed",
+      "checks": {
+        "work_integral_matches": true,
+        "total_integral_within_bounds": true,
+        "work_coverage_matches": true
+      },
+      "exact_initialization_start_recovered": false,
+      "exact_working_start_recovered": true,
+      "initialization_clock_bounds": {
+        "lower_event": {
+          "at": 1794331496.947564,
+          "workers": [
+            "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+            "f85bfe1a-6451-43a6-8df2-d17b4f469ee3"
+          ],
+          "line": 9
+        },
+        "upper_event": {
+          "at": 1794331497.373904,
+          "line": 13,
+          "kind": "owned_actor_assignment_observed"
+        },
+        "derivation": "worker_capacity_preflight is emitted before start() returns; the first owned assignment or start-ram receipt is observed after provisioning began",
+        "precision_padding_seconds": 1e-05
+      },
+      "workers": [
+        "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+        "f85bfe1a-6451-43a6-8df2-d17b4f469ee3"
+      ],
+      "sample_counts": {
+        "232a288d-9d8a-4e2c-8c8b-41ab50405e21": 4102,
+        "f85bfe1a-6451-43a6-8df2-d17b4f469ee3": 4102
+      },
+      "phases": {
+        "initialization": {
+          "start_epoch_bounds": [
+            1794331496.9475539,
+            1794331497.373914
+          ],
+          "end_epoch_bounds": [
+            1794331646.341532,
+            1794331646.341532
+          ],
+          "duration_seconds_bounds": [
+            148.96761798858643,
+            149.39397811889648
+          ],
+          "actor_reserved_gb_s_bounds": [
+            129.540567232,
+            129.54065472
+          ],
+          "coverage_fraction_bounds": [
+            0.9880571256067789,
+            0.9930170639691389
+          ],
+          "conservative_coverage_lower_bound": 0.9880571256067789,
+          "uncovered_worker_seconds_bounds": [
+            2.080462694168091,
+            3.568387031555176
+          ],
+          "outer_interval_sampling": {
+            "actor_reserved_gb_s": 129.54065472,
+            "covered_worker_seconds": 295.85477328300476,
+            "worker_integrals": {
+              "232a288d-9d8a-4e2c-8c8b-41ab50405e21": {
+                "actor_reserved_gb_s": 62.240780480000005,
+                "covered_seconds": 147.98036456108093,
+                "uncovered_seconds": 1.4136135578155518
+              },
+              "f85bfe1a-6451-43a6-8df2-d17b4f469ee3": {
+                "actor_reserved_gb_s": 67.29987424,
+                "covered_seconds": 147.87440872192383,
+                "uncovered_seconds": 1.5195693969726562
+              }
+            },
+            "uncovered_interval_count": 26,
+            "largest_uncovered_intervals": [
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331624.702607,
+                "end": 1794331625.091814,
+                "seconds": 0.389207124710083
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331564.56723,
+                "end": 1794331564.912445,
+                "seconds": 0.3452150821685791
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331564.563245,
+                "end": 1794331564.876975,
+                "seconds": 0.31373000144958496
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331534.070474,
+                "end": 1794331534.355356,
+                "seconds": 0.2848820686340332
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331534.0670938,
+                "end": 1794331534.261188,
+                "seconds": 0.19409418106079102
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331530.810623,
+                "end": 1794331530.97054,
+                "seconds": 0.15991711616516113
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331497.267364,
+                "end": 1794331497.407248,
+                "seconds": 0.13988399505615234
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331568.294518,
+                "end": 1794331568.433306,
+                "seconds": 0.13878798484802246
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331624.983873,
+                "end": 1794331625.114602,
+                "seconds": 0.13072919845581055
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331530.781203,
+                "end": 1794331530.905063,
+                "seconds": 0.12385988235473633
+              }
+            ]
+          },
+          "endpoint_uncertainty_seconds": 0.4263601303100586
+        },
+        "working": {
+          "start_epoch_bounds": [
+            1794331646.341532,
+            1794331646.341532
+          ],
+          "end_epoch_bounds": [
+            1794331919.1158233,
+            1794331919.1158233
+          ],
+          "duration_seconds_bounds": [
+            272.77429127693176,
+            272.77429127693176
+          ],
+          "actor_reserved_gb_s_bounds": [
+            194.83393395199994,
+            194.83393395199994
+          ],
+          "coverage_fraction_bounds": [
+            0.9689467854563312,
+            0.9689467854563312
+          ],
+          "conservative_coverage_lower_bound": 0.9689467854563312,
+          "uncovered_worker_seconds_bounds": [
+            16.94103717803955,
+            16.94103717803955
+          ],
+          "outer_interval_sampling": {
+            "actor_reserved_gb_s": 194.83393395199994,
+            "covered_worker_seconds": 528.607545375824,
+            "worker_integrals": {
+              "232a288d-9d8a-4e2c-8c8b-41ab50405e21": {
+                "actor_reserved_gb_s": 106.12071603199999,
+                "covered_seconds": 264.77258372306824,
+                "uncovered_seconds": 8.001707553863525
+              },
+              "f85bfe1a-6451-43a6-8df2-d17b4f469ee3": {
+                "actor_reserved_gb_s": 88.71321791999993,
+                "covered_seconds": 263.83496165275574,
+                "uncovered_seconds": 8.939329624176025
+              }
+            },
+            "uncovered_interval_count": 122,
+            "largest_uncovered_intervals": [
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331745.7159169,
+                "end": 1794331746.588812,
+                "seconds": 0.8728952407836914
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331745.702718,
+                "end": 1794331746.537943,
+                "seconds": 0.8352248668670654
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331714.83231,
+                "end": 1794331715.419161,
+                "seconds": 0.5868511199951172
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331646.834792,
+                "end": 1794331647.416546,
+                "seconds": 0.581754207611084
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331742.679303,
+                "end": 1794331743.226191,
+                "seconds": 0.5468881130218506
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331775.4994009,
+                "end": 1794331775.989914,
+                "seconds": 0.4905130863189697
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331715.024484,
+                "end": 1794331715.498196,
+                "seconds": 0.4737119674682617
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331696.981746,
+                "end": 1794331697.362411,
+                "seconds": 0.3806650638580322
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331781.207028,
+                "end": 1794331781.570325,
+                "seconds": 0.3632969856262207
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331775.478517,
+                "end": 1794331775.820717,
+                "seconds": 0.34220004081726074
+              }
+            ]
+          },
+          "endpoint_uncertainty_seconds": 0.0
+        },
+        "total_including_initialization": {
+          "start_epoch_bounds": [
+            1794331496.9475539,
+            1794331497.373914
+          ],
+          "end_epoch_bounds": [
+            1794331919.1158233,
+            1794331919.1158233
+          ],
+          "duration_seconds_bounds": [
+            421.7419092655182,
+            422.16826939582825
+          ],
+          "actor_reserved_gb_s_bounds": [
+            324.3745011839997,
+            324.37458867199973
+          ],
+          "coverage_fraction_bounds": [
+            0.9757094200389028,
+            0.9774488858537507
+          ],
+          "conservative_coverage_lower_bound": 0.9757094200389028,
+          "uncovered_worker_seconds_bounds": [
+            19.02149987220764,
+            20.509424209594727
+          ],
+          "outer_interval_sampling": {
+            "actor_reserved_gb_s": 324.37458867199973,
+            "covered_worker_seconds": 824.4623186588287,
+            "worker_integrals": {
+              "232a288d-9d8a-4e2c-8c8b-41ab50405e21": {
+                "actor_reserved_gb_s": 168.36149651199977,
+                "covered_seconds": 412.75294828414917,
+                "uncovered_seconds": 9.415321111679077
+              },
+              "f85bfe1a-6451-43a6-8df2-d17b4f469ee3": {
+                "actor_reserved_gb_s": 156.01309215999993,
+                "covered_seconds": 411.70937037467957,
+                "uncovered_seconds": 10.458899021148682
+              }
+            },
+            "uncovered_interval_count": 148,
+            "largest_uncovered_intervals": [
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331745.7159169,
+                "end": 1794331746.588812,
+                "seconds": 0.8728952407836914
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331745.702718,
+                "end": 1794331746.537943,
+                "seconds": 0.8352248668670654
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331714.83231,
+                "end": 1794331715.419161,
+                "seconds": 0.5868511199951172
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331646.834792,
+                "end": 1794331647.416546,
+                "seconds": 0.581754207611084
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331742.679303,
+                "end": 1794331743.226191,
+                "seconds": 0.5468881130218506
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331775.4994009,
+                "end": 1794331775.989914,
+                "seconds": 0.4905130863189697
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331715.024484,
+                "end": 1794331715.498196,
+                "seconds": 0.4737119674682617
+              },
+              {
+                "worker": "232a288d-9d8a-4e2c-8c8b-41ab50405e21",
+                "start": 1794331624.702607,
+                "end": 1794331625.091814,
+                "seconds": 0.389207124710083
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331696.981746,
+                "end": 1794331697.362411,
+                "seconds": 0.3806650638580322
+              },
+              {
+                "worker": "f85bfe1a-6451-43a6-8df2-d17b4f469ee3",
+                "start": 1794331781.207028,
+                "end": 1794331781.570325,
+                "seconds": 0.3632969856262207
+              }
+            ]
+          },
+          "endpoint_uncertainty_seconds": 0.4263601303100586
+        }
+      },
+      "reported_metrics": {
+        "actor_total_reserved_gb_s": 324.3745886720014,
+        "actor_work_reserved_gb_s": 194.8339339519996,
+        "work_resource_coverage_fraction": 0.9689467854563312
+      },
+      "missing_samples_present": true,
+      "total_coverage_at_least_90_percent": true,
+      "sources": {
+        "docs/evidence/scale/scale-public-static-2-18247cb2b62d/result.json": "330a64d4f0801644b939c46a86fee57f2b356e668256a81df288d86784958767",
+        "docs/evidence/scale/scale-public-static-2-18247cb2b62d/events.jsonl.gz": "5d0dd9f3a209ccb724e7d15595f3d1443aa3ad7a8a45ff64ceafc2f38945b550",
+        "docs/evidence/scale/scale-public-static-2-18247cb2b62d/final-state.json.gz": "c4c83c507376c34dfb83b7e8583265e05dda038f0524cd80b06415190e00cfb2",
+        "docs/evidence/scale/scale-public-static-2-18247cb2b62d/arrival-trace.json.gz": "25b7a3f3f81dbb1e5ec7324277a1467045b80c9561628ed499fa7968db86b347"
+      }
+    }
+  ],
+  "sources": {
+    "docs/evidence/public-traces/runs/42858419910/live-replay.json": "a845660a21f84c389d8db7300856614b6a562fd0d1ae4443124fb1b97d15ce21",
+    "scripts/public_replay_resource_audit.py": "b0408659f82a894dfb5e7cc8d1b065946e6b229c9c8339b9c224ef193bd88a94"
+  }
+}

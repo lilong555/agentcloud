@@ -9,6 +9,8 @@
 - 基于原始执行轨迹定位未知等待挂起滞后及实验反馈混杂，完成 v2 成本策略和同 Runner 配对评估；正式 50/50 trial、14,400/14,400 请求完成。N32 相对旧成本策略减少 29.171 GB·s、23.226 秒交互 P95；针对 TTL2 给出资源、尾延迟、快照频率及首次准入排队的适用边界。
 - 在 RTX 4070 完成 30 组真实 CUDA KV 驻留／释放／重建测量，定位 48～64 会话的收益反转区间，64 会话总耗时下降 22.5%；接通 vLLM 官方 KVEvent、KVIndexer 与默认 Selector，26 个连续事件批次零丢失，热请求命中率 93.75%，六请求 Prefill token 预测 MAE 从 120 降至 0。
 
+- 将 TraceLab 全来源 8,058 会话、52 个贡献者的审计结果接入真实集群回放，全部 33 个合格窗口在 Observed／TTL15／TTL2／v2 下完成 192/192 请求、230/230 次 MEMORY 恢复；交付初始化与运行资源、快照次数和延迟分位数，并标注八贡献者样本范围。
+
 数字核验入口：[P0 正确性](evidence/p0-20113d5.json)、[Gate 2 配对](evidence/gate2-a7e324a-summary.json)、[存储成本](evidence/snapshot-storage-a7e324a.json)、[GPU 与 Token](evidence/gpu/token-cost-summary.json)。源码与统计身份统一由[验收索引](evidence/validation-index.json)记录。
 
 ## 面试展开顺序

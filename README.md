@@ -66,7 +66,7 @@ Inference Lease、Model Attempt ID、Actor UID／epoch、工具安全点与 dura
 
 高工作集下，频繁挂起增加恢复点创建与存储保留压力。128 MiB 的三个 TTL2 trial 各留下 434／435／436 个 Tag，并触发 6 GiB 磁盘余量保护。存储汇总同时提供 `snapshot_write_bytes`、`peak_storage_bytes`；历史物理采样缺失项为 `null`，尾部逻辑上传字节单列。v2 的快照次数优势与首轮准入尾延迟共同构成适用边界。[完整成本与原始分母](docs/STORAGE_COSTS.md)
 
-生产生命周期默认每个 Workspace 保留最近 **K=2 个已验证 COMMITTED 恢复点**，保护当前 manifest 和未决操作；旧 Tag 与过期孤儿通过持久删除意图、身份围栏及有界退避回收。历史实验保持其原始保留策略，GC 的行为由独立契约验证。
+生产生命周期默认每个 Workspace 保留最近 **K=2 个已验证 COMMITTED 恢复点**，保护当前 manifest 和未决操作；旧 Tag 与过期孤儿通过持久删除意图、身份围栏及有界退避回收。公开轨迹回放中，四策略各 33 个 Workspace 最终均保留 66 个恢复点，累计回收 98 个旧 Tag，删除待办为零。[实机 GC 对账](docs/evidence/public-traces/runs/42858419910/snapshot-gc-reconciliation.json)记录累计创建量、保留量及删除墓碑；历史实验保持其原始保留策略。
 
 ## 真实 GPU：收益反转与官方 KV 事件
 
@@ -102,6 +102,25 @@ TraceLab v0.0.2 全来源包括 **8,058 会话、52 个贡献者**。预算内�
 模型跨度的中位数为 **5.550 s**，P95 为 **90.298 s**；这些窗口保留完整因果依赖，覆盖模型等待。回放使用公开相对时钟、受控工具和真实 MEMORY 生命周期，Observed／TTL15／TTL2／v2 共用相同输入、四槽容量与同一 Runner。来源时间和未来端点由 driver 持有，调度器读取实际已发生的请求、工具与资源观察。
 
 [实机回放与完整样本说明](docs/PUBLIC_TRACE_IMPORT.md) · [33 窗口准入清单](docs/evidence/public-traces/tracelab-v0.0.2-admitted/manifest.json) · [描述统计](docs/evidence/public-traces/tracelab-v0.0.2-descriptive.json) · [独立回放 Actions](.github/workflows/public-trace-replay.yml)
+
+### 真实公开轨迹实机回放结果
+
+源码 `8a3e15f` 在同一 GitHub Runner 上按 Observed／TTL15／v2／TTL2 顺序串行执行，完成 **4/4 trial、192/192 模型请求、132/132 窗口**，**230/230 次 MEMORY 恢复**均通过 nonce／PID／heap／AST 连续性校验。每策略 33 次 FINAL、结束时原生绑定为零，四组清理及集群销毁全部通过。
+
+| 策略 | 总 Actor GB·s，含初始化 | 工作阶段 GB·s | 快照总数／运行阶段 | TTFT P50／P95／P99（s） | MEMORY 恢复 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Observed | 390.702 | 264.982 | 78／45 | 92.806／266.162／312.268 | 45/45 |
+| TTL15 | 336.470 | 211.835 | 80／47 | 74.507／205.995／268.035 | 47/47 |
+| TTL2 | 324.375 | 194.834 | 105／72 | 68.276／161.819／209.382 | 72/72 |
+| agentcloud-v2 | 328.848 | 197.658 | 99／66 | 68.005／204.529／264.213 | 66/66 |
+
+本次同 Runner 单次配对中，v2 相对 TTL2 的总 Actor 预留资源增加 1.4%，TTFT P95 增加 26.4%；快照创建次数为 99／105。结果描述这 33 个已审核窗口和本次运行配置，独立样本单位为贡献者 family。
+
+执行环境为 PostgreSQL、真实 Substrate／gVisor MEMORY 与原生 Dynamo CPU Mocker；四租户、两个 Worker、四槽位、16 MiB RAM 工作集。每策略包含 33 个初始化快照。模型时钟由公开源驱动，工具使用受控映射，Token 使用固定执行口径；初始化资源单列，TTFT 包含首次容量排队。
+
+总 Actor 积分包含初始化；按同 Runner UTC 时钟和 300 ms 采样间隔上限复算，Observed／TTL15／TTL2／v2 的总覆盖保守下界约为 **99.58%／99.64%／97.57%／97.70%**。初始化起点界限与采样缺口单独保留。[资源积分复核](docs/evidence/public-traces/runs/42858419910/resource-coverage-reconciliation.json)
+
+[原始汇总 JSON](docs/evidence/public-traces/live-replay.json) · [运行与归档](docs/evidence/public-trace-run-42858419910.json)
 
 ## 一键运行与复核
 
