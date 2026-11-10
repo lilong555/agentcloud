@@ -1,6 +1,6 @@
 # 条件等待与成本期限调度
 
-服务端提供 `observed` 和 `cost-aware` 两种生命周期策略。默认值为 `observed`；`cost-aware` 将条件等待分布、实际切换成本和待恢复会话共同用于释放期限选择。
+服务端提供 `observed`、`cost-aware` 与 `agentcloud-v2` 生命周期策略，默认值为 `observed`。本页描述独立的 `cost-aware` 基线与历史实验；v2 的连续等待 episode、条件 KEEP、同机配对和联合验收见 [v2 机制与验收](V2_EVALUATION.md)，历史逐轨迹归因见[诊断报告](SCHEDULER_DIAGNOSIS.md)。
 
 ```text
 --enable-autonomous-scheduler

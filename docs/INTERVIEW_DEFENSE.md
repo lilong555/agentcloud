@@ -1,92 +1,79 @@
 # AgentCloud 技术答辩
 
-AgentCloud 的核心是执行层与推理准入层的协同：Agent 等待模型时，服务端根据真实队列、Worker 压力和快照恢复成本决定是否释放沙箱；Dynamo 同时根据执行状态修正 Acting 预算。恢复过程由持久请求、不可变快照身份、工具回执与 epoch 围栏共同约束。
+AgentCloud 研究的核心场景是 **64 个有状态 Agent 共享四个 gVisor 槽位，形成 16× 沙箱超卖**。推理等待给出了释放执行资源的机会，快照与恢复又带来确定性、时延和资源成本。项目用 Go 持久协调器、Substrate 生命周期扩展与 Dynamo 原生 Rust 反馈将这几条路径连成可对账的系统。
 
-## 可核验的项目经历
+## 三分钟项目陈述
 
-- 实现 Go／PostgreSQL 协调器与 Substrate、Dynamo 原生扩展，串联模型请求持久化、工具准入、MEMORY 快照恢复和执行状态反馈；完整文件与标准 format-patch 交付覆盖 47 个上游文件。
-- 接入 Azure CPA 的真实 `gpt-6-luna`，Coding Agent 经过 8 轮推理、11 次工具调用修复两个源码文件，原有 4 项测试通过，8 次 MEMORY 恢复保持 AST、上下文与内存身份连续；DeerFlow 验证两个并发子任务、上传、70 个 PostgreSQL 检查点和新进程恢复。
-- 在四租户、两 Worker、N=8/16/32/64 的真实 gVisor／Dynamo 环境执行 60 组、10,800 个计划请求，首轮完成 10,765 个；AgentCloud 12/12 组通过。N=32/64 相比 TTL15，闲置预留降低 53.5%/50.1%，Goodput 提高 24.8%/11.7%，交互 p95 同时改善，并保留 TTL2 的强基线结果。
-- 完成 15/15 类实机故障和 126/126 个等待／内存窗口，提供 p50/p95/p99、95% 配对区间、原始压缩证据与退出清理审计；N=64 协调器平均使用 0.173 CPU 核，RSS 峰值 71.71 MiB。
+第一条主线是**确定性容错闭环**。PostgreSQL 保存模型发送意图、工具回执和恢复 manifest；Inference Lease、Model Attempt ID、Actor UID/epoch 与工具安全点分别约束推理身份、物理请求、执行代次和副作用边界。Substrate 等待指定 MEMORY 快照 durable，恢复后核验实际 fidelity。已归档的 16 类实机故障覆盖恢复、幂等、拒收和未知结果隔离。
 
-证据：[真实模型](evidence/deep-agents-summary.json)、[上游交付](UPSTREAM_PRS.md)、[规模矩阵](evidence/scale-summary.json)、[故障审计](evidence/faults-summary.json)、[收益热力图](evidence/heatmap-summary.json)、[验收状态](STATUS.md)。每个数值均关联冻结源码、配对种子及独立 Actions 产物。
+第二条主线是**以强基线和轨迹解释调度**。N32 的旧 cost-aware 相对 TTL2 多出 295.058 GB·s 总预留，其中工具收据区间贡献 187.515 GB·s；research 未知预测的 48 次挂起中有 45 次晚于需求返回完成。归因同时发现 B/E 的反馈与 Program 寿命混杂。v2 使用连续等待 episode、两秒未知期限和实际恢复成本，在同 Runner、统一 E/FINAL 协议下与 TTL2 配对验收。
 
-## 自主调度如何形成闭环
+第三条主线是**真实 GPU 的收益反转与官方事件集成**。RTX 4070 上完成五个压力点、30 组测量：64 个闲置 KV 会话时，释放并计入全部重建成本后总耗时下降 22.5%；16 个会话时增加 44.5%，当前反转范围为 48～64 会话。官方 KV 事件实验复用 Dynamo KVIndexer 与默认 Selector，独立核验真实 Stored/Removed、缓存命中和 Prefill 重算观测。物理 GPU 与 CPU Mocker 的结果分别归档。
 
-[`serverEstimateLocked`](../internal/control/autonomous.go#L76)使用同租户、同画像最近 32 个模型完成耗时的 p75，并结合请求已等待时间、协调器排队位置、Dynamo admission 历史和实际队列长度预测剩余等待。快照、恢复和事务成本从已经完成的操作测得。闲置预测来自实际结束的工具／think 窗口；冷启动先验默认零。
+[诊断报告](SCHEDULER_DIAGNOSIS.md) · [v2 验收协议](V2_EVALUATION.md) · [GPU 数据](GPU_VALIDATION.md) · [最新验收索引](STATUS.md)
 
-[`autonomousStep`](../internal/control/autonomous.go#L252)读取 ACTIVE WorkerPool 的容量与预留，计算 KEEP／SUSPEND／RESUME，检查观测新鲜度、安全点、最小驻留和恢复冷却。候选挂起条件需要保持至少 500 毫秒，降低短暂排队导致的频繁快照。返回需求在挂起途中也可登记，待容量可用时恢复。
+## 容错：如何保护脑裂和工具副作用
 
-技术取舍在于预测误差与恢复成本。短等待更适合 KEEP；长等待且 Worker 紧张时，挂起收益更明显。实验同时报告资源、TTFT、恢复开销和 Goodput，用配对结果判断具体负载下的收益。
+工具请求在状态锁内核验逻辑 ID、payload 和 epoch，分配回执序号并持久化 RUNNING，然后在锁外执行。相同 ID/payload 返回原回执，不同 payload 拒收。安全点先关闭 gate，再等待已准入操作结束；未知工具结果保持闭闸。模型先落库物理发送意图，再调用远端，完成结果按原逻辑请求持久保存。
 
-## 为何模型请求需要 OUTCOME_UNKNOWN
+| 围栏 | 保护的身份与时刻 | 源码 |
+|---|---|---|
+| Tool Safepoint | 工具准入、无洞 receipt 水位、未知副作用 | [Tool](../internal/control/controller.go#L462) |
+| Model Attempt ID | 物理发送意图及结果落库之间的故障窗口 | [dispatchOne](../internal/control/inference.go#L165) |
+| Actor UID / epoch | 同名重建、旧执行代次与迟到生命周期操作 | [lifecycle](../internal/control/controller.go#L625) |
+| MEMORY manifest | 指定 snapshot UUID/generation、独立 Tag UID 与恢复 fidelity | [Checkpoint](../internal/control/substrate.go#L233)、[Resume](../internal/control/substrate.go#L279) |
+| Inference Lease / generation | Dynamo 会话终结、旧身份拒收与容量回收 | [Rust finalize](../integrations/dynamo/files/lib/router-plugins/builtin/src/thunderagent/execution_control.rs#L409) |
 
-[`dispatchOne`](../internal/control/inference.go#L153)先持久化物理发送意图，再发出一次请求。若进程在发送后、结果落库前崩溃，远端是否完成已成为未知事实。恢复保留原逻辑 ID、attempt ID 与已收到的首 token，等待对账。
+对外部服务已经执行、协调器尚未收到结果的窗口，系统保存 `OUTCOME_UNKNOWN` 并等待对账。具备可查询结果或幂等键的工具可据此确认最终状态；任意外部副作用的 Exactly-Once 需要目标服务参与。16 类故障通过对应各自的明确断言，包含成功恢复、拒收陈旧操作、重复回执和 UNKNOWN 保持。
 
-这套语义提供可审计的防重放：提交相同逻辑 ID 和 payload 返回原请求；不同 payload 被拒绝。已完成结果可在新的执行 epoch 认领。涉及外部副作用时，进一步对账依赖目标服务的查询或幂等机制。
+[16 类实机故障](evidence/faults-20113d5-summary.json)使用冻结源码 `20113d5`，四个分片的资源清理全部通过。故障中的容量恢复沿用同一 operation ID 跨协调器重启，PENDING 快照依赖 [WaitActorSnapshotDurable](../integrations/substrate/files/cmd/ateapi/internal/controlapi/snapshot_durability.go#L32) 核验同一快照身份。
 
-## 工具重复与挂起竞争如何处理
+## 跨栈：51 个上游文件带来的架构价值
 
-[`Tool`](../internal/control/controller.go#L451)在状态锁内核验工具 ID、payload 和 epoch，分配回执序号并持久化 RUNNING，随后在锁外执行。重复请求读原回执；安全点先闭闸，再等待已准入工具结束。未知工具结果维持闭闸，防止快照跨过未确定的副作用。
+交付包含 Substrate **38 个 Go/协议/部署文件、两组补丁**与 Dynamo **13 个 Rust/绑定/构建文件、三组补丁**。完整文件、基线 SHA、原生测试映射与 format-patch 通过 Git tree 等价还原。[源码还原](evidence/source-reproduction.json) · [补丁还原](evidence/upstream-patches-reproduction.json)
 
-[`lifecycle`](../internal/control/controller.go#L613)与模型边界共享操作预留。Substrate 的 UID/version 检查在同一 Actor lease 内完成，阻止迟到 Suspend 作用于已经恢复的 Actor。恢复 epoch 递增，旧 epoch 的新工具操作失效。
+Substrate 扩展将 UID/version 检查放入同一 Actor lease，提供指定快照 durable、Tag 来源核验和实际恢复回执。Dynamo 扩展将认证执行状态接入 ThunderAgent 的 Program 准入，并在终结时一起回收绑定、feedback 与 inference lease；有界 generation 墓碑保护旧身份。Go 协调器消费两侧回执，决定何时开放工具与交付模型结果。
 
-## MEMORY 恢复怎样得到验证
+[原生回收记录](evidence/native-run-42769316617.json)在 `max_sessions=2` 下完成 64 轮创建／终结、128 次模型请求；终态 active bindings 为零，墓碑保留两个，64 次旧 lease 返回 401、64 次旧 generation 返回 409。同一源码 `20113d5` 的 1,336 项原生测试和 16 项真实进程验收全部通过。
 
-[`SubstrateBackend.Checkpoint`](../internal/control/substrate.go#L207)等待指定 UUID/generation 的快照 durable，核验 fidelity 后创建独立保留 Tag。Manifest 记录 Actor UID、snapshot UUID/generation、Tag UID、工具水位和图 checkpoint。
+PostgreSQL 丢响应回归在服务端完成 SELECT／UPDATE 后关闭连接并返回 EOF。只读查询识别 `pgconn.ErrConnClosed`，通过新 backend PID 重读；写入保持单次发送，再用独立上下文确认版本仅增加一次。两个注入用例分别重复三次通过。[故障注入与独立核验](../integrations/substrate/files/cmd/ateapi/internal/store/atepg/actor_read_retry_test.go#L100)
 
-[`SubstrateBackend.Resume`](../internal/control/substrate.go#L258)再次核验 Tag 来源与 UID，并检查运行时返回的实际 snapshot 身份、fidelity 和冷启动标记。可信 Actor UID 投影保护 attach。Coding 任务同时校验进程内 nonce、AST 指纹、对象 ID 与上下文哈希，形成协议回执和应用状态两层证据。
+PostgreSQL [entityChanges](../internal/control/persistence.go#L65)只序列化脏实体；[SaveEntities](../internal/journal/entities.go#L31)在单事务内执行 revision CAS 与实体写入。[persistContext](../internal/control/controller.go#L231)在数据库 I/O 期间释放状态锁，提交 gate 保护读写可见性。每个数据库维持单写者顺序，扩容可按 Workspace 所有权划分日志。
 
-真实模型证据中，8 次挂起恢复保留相同内存身份，模型实际改动 `shop/pricing.py` 与 `shop/cart.py`，原有测试保持原样。
+## 调度：TTL2、未知预测和恢复成本
 
-## PENDING 快照如何保护恢复状态
+冻结 `32e3d6e` 的 N32 cost-aware 235 张 SUSPEND 收据中，96 张预测未知，139 张已知；已知剩余等待 MAE 为 44.697 ms。全部收据平均盈亏平衡时间为 3.903 s，未知分支随后平均还需 2.744 s 完成生命周期。6 s research 等待因此频繁遇到需求已返回、durable 尚未完成的窗口。
 
-[`WaitActorSnapshotDurable`](../integrations/substrate/files/cmd/ateapi/internal/controlapi/snapshot_durability.go#L32)按 Actor UID 和指定 snapshot UUID/generation 观察上传。原生 Tag 创建会先提升本地快照，随后预留名字并复制；对象存储失联时，提升操作可持续等待直到期限结束。
+晚完成区间的已覆盖 Worker reservation 为零：此时 Worker 已释放，恢复仍在等待持久化。资源浪费主要发生在挂起前的驻留及工具阶段。N32 工具区间占总预留增量 63.6%，旧 TTL2 使用 B、动态策略使用 E；统一 feedback 和 Program 寿命后，才能测量策略本身的增量价值。
 
-[实机故障](evidence/faults-summary.json)关闭 RustFS 后发起真实协调器检查点，核验 PENDING MEMORY 快照身份和 Tag 缺席。短期限 Tag 请求结束后，独立上下文再次读取确认。检查点 HTTP 超时使生命周期进入 OUTCOME_UNKNOWN，gate 保持 CLOSED，原 Manifest 保持原值。该案例与其余 14 类故障在同一源码矩阵中全部通过。
+18 个 trial 的 2,725 张恢复收据全部为 COMPLETED、attempt_count=1。容量排队主要体现在 benchmark 的 FairSlots FIFO：N32 全轮次 P95 分别为 TTL2 71.213 s、Observed 109.453 s、cost-aware 141.135 s。durability 在保留且可配对的 checkpoint 样本中占 cost-aware 总时长的 57.59%。[逐 trial 数据、口径及源码哈希](evidence/scheduler-diagnosis-32e3d6e.json)
 
-## Dynamo 回收怎样同时保护额度和身份
+[v2](../internal/control/scheduler_v2.go#L117)将模型等待和后续 idle 合并为一个持久 episode。未知期限从真实事件起点固定为两秒，避免模型结束时重新启动时钟；有充分条件分布时同时比较早释放与持续 KEEP。高恢复成本、短间隔交互的保护来自 KEEP 成本比较。动作仍经过安全点、稳定时间和模型边界二次核验。[episode 时钟](../internal/control/scheduler_v2.go#L78) · [二次核验](../internal/control/scheduling.go#L119)
 
-[`finalize`](../integrations/dynamo/files/lib/router-plugins/builtin/src/thunderagent/execution_control.rs#L409)要求原生 program 已结束、活动请求为零，再撤销绑定、feedback 和 inference lease。新的注册获得随机 generation、opaque routing session 和 lease。
+Gate 1 固定 N32/N64、7101～7103、四策略共 24 trial；各 `(N, Seed)` 在同 Runner 随机串行。TTL2-Shadow 计算 oldCost、执行 TTL2，用于分离观察和动作开销。主验收为总 Actor GB·s 与交互 P95 的配对区间同时不劣、至少一项改善，并要求全部计划请求正确完成。恢复次数／时长、Stranded、Goodput 和 CPU/RSS 独立报告。v2 的效果以实际 Gate 结果为依据。[协议与停止条件](V2_EVALUATION.md)
 
-最近墓碑数量受 `max_sessions` 限制；带旧 generation 的状态、查询和注册在墓碑淘汰后仍失效。授权调用者省略 generation 的显式新注册创建新身份。FrontEnd 重启后，新的持久模型尝试可以重新登记，原请求结果由协调器持久回执保护。
+## GPU：为什么收益会反转
 
-原生回收验收用 `max_sessions=2` 连续完成 64 轮创建／终结、128 个模型请求；结束时 active bindings 为零，墓碑保留两个。64 次旧 lease 均返回 HTTP 401，旧 generation 均返回 409。入口为 [`upstream_binding_churn.py`](../scripts/upstream_binding_churn.py)，[Actions 原始结果](evidence/native-run-42698285379.json)记录 wheel 来源、退出码和完整状态。
+[RTX 4070 五点曲线](evidence/gpu/cuda-kv-pressure-curve.json)固定 OPT-125M、1,024 token 前缀、3 GiB allocator 预算及 32 个竞争请求，每请求生成 32 token；KEEP 与释放各执行三次并交替顺序。30 组原文分别保留源码、模型及配置 SHA-256。
 
-## PostgreSQL 的吞吐与一致性取舍
+| 闲置会话 | 物理 KV | KEEP／释放的竞争 batch | KEEP／释放并重建总耗时 | 时间变化 |
+|---|---:|---|---|---:|
+| 16 | 576 MiB | 16 / 16 | 0.904 / 1.306 s | +44.5% |
+| 24 | 864 MiB | 16 / 16 | 0.937 / 1.482 s | +58.1% |
+| 32 | 1,152 MiB | 16 / 16 | 0.923 / 1.576 s | +70.6% |
+| 48 | 1,728 MiB | 8 / 16 | 1.431 / 1.810 s | +26.5% |
+| 64 | 2,304 MiB | 4 / 16 | 2.434 / 1.887 s | −22.5% |
 
-[`entityChanges`](../internal/control/persistence.go#L65)只序列化脏实体，将会话元数据与工具、生命周期、调度回执分离；[`SaveEntities`](../internal/journal/entities.go#L31)在单个事务中执行 revision CAS 与实体更新。
+低压力时 batch 已达到负载上限，重建 KV 增加成本；高压力时驻留 KV 压缩 batch，释放资源提高并发吞吐，抵消全部重建成本。48 会话的 8→16 提升仍不足以覆盖 0.606 秒重建，64 会话的 4→16 提升覆盖了 0.746 秒重建。当前测点将反转范围定位为 48～64 会话；工作集、返回频率与显存预算决定它的具体位置。
 
-[`persistContext`](../internal/control/controller.go#L220)在数据库 I/O 期间释放状态互斥锁，提交闸门控制新操作的可见性。revision 冲突或提交失败会使写者进入待重启对账状态。每个数据库采用 advisory lock 保证单写者，当前一致性模型建立在单写者提交顺序上。
+Dynamo 已有 Worker KV 事件、KVIndexer 和前缀评分。ThunderAgent 提供 Program 准入、Pause/Resume 与执行反馈；真实 GPU 实验复用官方默认 Selector 与 KVIndexer，完成 **26 个连续事件 batch、Stored/Removed、relay 零丢失和三轮 Prefill 对账**。相同 256-token 请求的新增计算量在热缓存时为 16、驱逐后为 256；完整上下文预算的 MAE 为 120 token，结合实际前缀驻留后为 0。
 
-在 N=64、四个可运行 Actor 槽位的实测中，协调器平均 CPU 为 0.173 核，采样 RSS 峰值为 71.71 MiB；PostgreSQL 提交 p95 为 19.037 ms、p99 为 97.197 ms。N=8 的提交 p95/p99 为 4.374/6.337 ms，显示密度增长带来的尾部开销。[阶段测量](evidence/control-plane-summary.json)记录样本数和有界历史范围。更高规模与高可用容量可按租户或 Workspace 将所有权划分到独立日志分片。
+vLLM 需要保留计算 logits 的末尾 token，命中按完整 16-token block 计算，因此索引的 256-token 前缀对应 240-token 实际命中。Prefill 中位数为 8.992／9.213 ms，当前增量成果定位为准确的物理缓存观测；Actor 生命周期采用已有队列和恢复成本路径。该实验使用单 Worker，原始数据与前述独立 CUDA 压力曲线分别归档。[GPU 验收、源码与独立入口](GPU_VALIDATION.md)
 
-## DeerFlow 怎样协调外部图与沙箱快照
+## 真实 Agent 与复现证据
 
-[`ResearchBoundary`](../adapters/deerflow/substrate_smoke.py#L39)在并发资料任务与上传完成后进入图 interrupt。工具尝试有独立 attempt ID，成功、失败和取消均关闭活跃记录。全局安全点要求全部工具与子任务结束。
+源码 `20113d5` 的[真实 Coding](evidence/real-model/realmodel-5b80fdc027c8/acceptance.json)由 Azure CPA `gpt-6-luna` 完成 8 轮模型调用、10 次工具调用，修改 `shop/cart.py` 与 `shop/pricing.py`，完成 8 次 MEMORY 恢复。模型输出驱动代码修改与测试，终态包含任务结果、持久回执和资源清理。
 
-PostgreSQL 保存不可变图 checkpoint，沙箱保存独立 Tag；两阶段 manifest 绑定 graph checkpoint、工具水位和快照身份。新进程先验证对应关系，再恢复图与 Actor。实际模型任务保存了 70 个图检查点，研究资料使用受控 HTTP 来源，模型决策与工具调用实际执行。
+[DeerFlow 研究任务](evidence/real-model/realmodel-74bd7470d2c7/deerflow.json)验证两个并发资料子任务、文件上传、70 个 PostgreSQL 图检查点和新进程恢复。受控 HTTP 资料为可重复任务输入，模型及工具执行使用真实框架链路。
 
-## 指标怎样避免重复计算
-
-[`DiagnosticTrace`](../internal/control/diagnostics.go#L170)关联状态事件、epoch、manifest 和分阶段测量。端到端 TTFT 从实际任务到达计算，包含 Worker 排队、恢复、工具和模型首 token；各阶段分位数独立统计，端到端分位数直接来自逐请求样本。
-
-[`updateStrandingLocked`](../internal/control/stranding.go#L20)使用 assignment 内存与闲置窗口积分，模型等待和 think 窗口取并集，再扣除工具运行区间。独立探针按 Worker 采样，对缺失区间设置上限并报告覆盖率。Actor 配置内存、含运行时开销的 Worker 预留、进程 RSS 分别记录。
-
-## 实验怎样支持性能结论
-
-规模矩阵固定 N=8/16/32/64、四租户、两 Worker、六轮 1K～16K 上下文和三组配对种子，对比 TTL=0/2/5/15s。最早尝试决定主样本；58/60 组通过，10,765/10,800 请求完成。两组基础设施失败分别归档，定向重跑完成 432/432 请求，首轮记录继续进入主分母。AgentCloud 12/12 组、2,160/2,160 请求完成。
-
-N=32/64 时，相比 TTL15，AgentCloud 的 Stranded 减少 53.52%/50.08%，Goodput 提高 24.81%/11.68%，合并请求的交互 p95 降低 7.54%/15.13%。按种子计算的差异同时满足预声明的资源下降、Goodput 保持或提高、交互 p95 保持或降低的 95% 区间判据。TTL2 在当前负载下仍有较低资源占用与较高 Goodput，这个取舍保留在[完整对照表](EXPERIMENTS.md)。
-
-[126 个实测窗口](evidence/heatmap-summary.json)给出挂起的收益边界：触达 128 MiB RAM、Actor 上限 512 MiB、等待 1 秒时，净预留收益为 -0.734 GB·s，增加返回延迟 3.804 秒；等待 10 秒时，节省 4.355 GB·s，增加返回延迟 0.897 秒。系统需要同时使用真实等待、恢复成本和延迟预算决定释放时机。
-
-统计采用 2,000 次 seed trial／完整 Workspace 轨迹分层 bootstrap，配对差异按三个独立种子计算。主表的 p95 使用合并请求，配对表先计算每个 trial 的 p95。N=64 的四槽位饱和配置交互 p95 为 237.983 秒，面向业务 SLO 的容量配置需要更充足的 Worker 槽位或更低并发。
-
-CPU Mocker 提供原生 Router、缓存块和推理竞争的受控实验。物理 GPU KV 占用、显存回收与吞吐结论使用独立 CUDA 硬件测量；真实模型 Agent 功能证据来自 Azure CPA。
-
-## 复现与生产验收
-
-`make check`、`make verify-delivery` 与 `make evidence-audit` 验证契约、竞态、原始日志和源码还原。独立重型工作流运行真实 Kind/gVisor、PostgreSQL 与原生 Dynamo；15/15 类故障通过，覆盖并发返回、旧 epoch、PENDING、ROOTFS 降级、未知模型结果、Frontend 重启、重复提交、租户隔离及事务失败，四个分片均完成资源清理。
-
-部署与容量结论应关联实际运行 SHA、样本规模、故障通过项、清理记录和后端类型。[交付状态](STATUS.md)与[实验报告](EXPERIMENTS.md)是这些事实的统一入口。
+普通 CI 负责契约、竞态、构建和源码还原；独立 Actions 负责原生 Rust/Go、真实 Kind/gVisor、故障和配对规模。每个结果保留源码 SHA、种子、配置、失败分母与清理报告。源码和日志校验入口为 `make check`、`make verify-delivery`、`make evidence-audit`；重型入口见 [实验报告](EXPERIMENTS.md)。

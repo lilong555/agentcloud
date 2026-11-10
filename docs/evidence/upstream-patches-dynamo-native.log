@@ -1,65 +1,40 @@
-   Compiling time v0.3.47
-   Compiling regex-syntax v0.8.10
-   Compiling ordered-float v2.10.1
-   Compiling k8s-openapi v0.26.1
-   Compiling serde-value v0.7.0
-   Compiling ahash v0.8.12
    Compiling dynamo-tokens v1.7.0 (/home/runner/work/agentcloud/agentcloud/upstream/dynamo/lib/tokens)
-   Compiling regex-automata v0.4.14
-   Compiling tracing-subscriber v0.3.23
-   Compiling yasna v0.5.2
-   Compiling velo-ext v0.5.6
-   Compiling regex v1.12.3
    Compiling dynamo-truthy v1.7.0 (/home/runner/work/agentcloud/agentcloud/upstream/dynamo/lib/truthy)
-   Compiling tracing-appender v0.2.5
-   Compiling prost-build v0.14.3
-   Compiling async-nats v0.49.1
-   Compiling velo v0.21.0
-   Compiling tonic-prost-build v0.14.6
-   Compiling etcd-client v0.17.0
-   Compiling opentelemetry-appender-tracing v0.31.1
-   Compiling tracing-opentelemetry v0.32.1
-   Compiling rcgen v0.13.2
-   Compiling kube-core v2.0.1
-   Compiling dynamo-kv-hashing v1.7.0 (/home/runner/work/agentcloud/agentcloud/upstream/dynamo/lib/kv-hashing)
-   Compiling kube-client v2.0.1
-   Compiling criterion v0.5.1
-   Compiling dynamo-kv-router v1.7.0 (/home/runner/work/agentcloud/agentcloud/upstream/dynamo/lib/kv-router)
-   Compiling kube-runtime v2.0.1
-   Compiling kube v2.0.1
    Compiling dynamo-runtime v1.7.0 (/home/runner/work/agentcloud/agentcloud/upstream/dynamo/lib/runtime)
+   Compiling dynamo-kv-hashing v1.7.0 (/home/runner/work/agentcloud/agentcloud/upstream/dynamo/lib/kv-hashing)
+   Compiling dynamo-kv-router v1.7.0 (/home/runner/work/agentcloud/agentcloud/upstream/dynamo/lib/kv-router)
    Compiling dynamo-router-policies v1.7.0 (/home/runner/work/agentcloud/agentcloud/upstream/dynamo/lib/router-plugins/builtin)
-    Finished `test` profile [unoptimized] target(s) in 1m 17s
+    Finished `test` profile [unoptimized] target(s) in 44.90s
      Running unittests src/lib.rs (target/debug/deps/dynamo_router_policies-f15920688f6c13d6)
 
 running 67 tests
 test thunderagent::config::tests::validates_control_values ... ok
 test thunderagent::execution_control::tests::body_size_and_per_credential_rate_are_bounded ... ok
-test thunderagent::execution_control::tests::concurrent_final_register_and_state_keep_one_generation_and_tenant_scope ... ok
 test thunderagent::execution_control::tests::authenticated_bindings_isolate_same_session_across_workspaces_and_rotate_epoch_lease ... ok
+test thunderagent::execution_control::tests::concurrent_final_register_and_state_keep_one_generation_and_tenant_scope ... ok
 test thunderagent::request_classifier::capacity::tests::distinguishes_missing_capacity_from_worker_removal ... ok
-test thunderagent::request_classifier::execution_feedback::tests::defaults_debounce_recovery_hold_and_ttl_preserve_replay_watermark ... ok
 test thunderagent::request_classifier::execution_feedback::tests::future_observation_within_skew_keeps_observed_at_plus_ttl_deadline ... ok
+test thunderagent::request_classifier::execution_feedback::tests::defaults_debounce_recovery_hold_and_ttl_preserve_replay_watermark ... ok
 test thunderagent::request_classifier::execution_feedback::tests::rejects_replay_identity_expiry_and_invalid_values ... ok
 test thunderagent::request_classifier::execution_feedback::tests::wire_contract_uses_versioned_flat_identity_and_rfc3339_time ... ok
-test thunderagent::request_classifier::scheduler::tests::assigned_continuation_releases_before_periodic_pressure ... ok
 test thunderagent::request_classifier::scheduler::tests::benchmark_pause_by_rank ... ignored, manual CPU benchmark
-test thunderagent::request_classifier::scheduler::tests::equal_size_pause_candidates_keep_their_existing_order ... ok
+test thunderagent::request_classifier::scheduler::tests::assigned_continuation_releases_before_periodic_pressure ... ok
 test thunderagent::request_classifier::scheduler::tests::cancelling_a_pinned_worker_change_restores_the_prior_charge ... ok
-test thunderagent::request_classifier::scheduler::tests::execution_feedback_preserves_reasoning_padding_ttl_and_resuming_budget ... ok
+test thunderagent::request_classifier::scheduler::tests::equal_size_pause_candidates_keep_their_existing_order ... ok
+test thunderagent::execution_control::tests::native_control_rejects_replay_expired_scope_and_unknown_fields ... ok
 test thunderagent::request_classifier::scheduler::tests::execution_binding_fences_epoch_and_cancellation_keeps_new_feedback ... ok
+test thunderagent::request_classifier::scheduler::tests::execution_feedback_preserves_reasoning_padding_ttl_and_resuming_budget ... ok
 test thunderagent::request_classifier::scheduler::tests::greedy_resume_selects_scalar_set_then_packs_largest_first ... ok
 test thunderagent::request_classifier::scheduler::tests::execution_ttl_and_debounce_recompute_real_usage_before_queue_admission ... ok
 test thunderagent::request_classifier::scheduler::tests::hard_pin_without_a_capacity_card_keeps_its_exact_target ... ok
 test thunderagent::request_classifier::scheduler::tests::hard_pin_waits_when_only_another_worker_has_capacity ... ok
+test thunderagent::request_classifier::scheduler::tests::hard_pins_are_charged_before_sent_and_block_an_interleaved_arrival ... ok
 test thunderagent::request_classifier::scheduler::tests::pause_isolates_worker_ranks_and_stops_acting_at_target ... ok
 test thunderagent::request_classifier::scheduler::tests::pause_sees_a_request_force_resumed_in_the_same_reconcile ... ok
-test thunderagent::request_classifier::scheduler::tests::hard_pins_are_charged_before_sent_and_block_an_interleaved_arrival ... ok
 test thunderagent::request_classifier::scheduler::tests::pinned_continuation_waits_when_changing_to_a_full_worker ... ok
+test thunderagent::request_classifier::scheduler::tests::streamed_progress_updates_capacity_pressure_without_a_state_event ... ok
 test thunderagent::request_classifier::scheduler::tests::pinned_continuation_waits_when_its_current_worker_cannot_fit_growth ... ok
 test thunderagent::request_classifier::scheduler::tests::timed_out_hard_pin_waits_when_discovery_has_no_live_workers ... ok
-test thunderagent::request_classifier::scheduler::tests::streamed_progress_updates_capacity_pressure_without_a_state_event ... ok
-test thunderagent::execution_control::tests::native_control_rejects_replay_expired_scope_and_unknown_fields ... ok
 test thunderagent::request_classifier::scheduler::tests::waiting_hard_pin_resumes_only_on_its_worker_after_capacity_change ... ok
 test thunderagent::request_classifier::tests::aborted_request_rolls_back_new_program ... ok
 test thunderagent::request_classifier::tests::a_reused_request_id_does_not_revive_a_canceled_queue_entry ... ok
@@ -81,11 +56,11 @@ test thunderagent::request_classifier::tests::implements_request_classifier ... 
 test thunderagent::request_classifier::tests::lease_rejections_preserve_authentication_semantics_across_rotation_and_retirement ... ok
 test thunderagent::request_classifier::tests::live_worker_without_a_model_card_keeps_its_session_assignment ... ok
 test thunderagent::request_classifier::tests::marked_count_stays_current_after_completion_and_rollback ... ok
-test thunderagent::request_classifier::tests::dropping_pending_classification_rolls_back_its_program ... ok
 test thunderagent::request_classifier::tests::arrival_tombstones_are_compacted_amortized ... ok
-test thunderagent::request_classifier::tests::missing_capacity_respects_pause_until_timeout ... ok
-test thunderagent::request_classifier::tests::retained_programs_are_bounded_by_the_tracking_limit ... ok
+test thunderagent::request_classifier::tests::dropping_pending_classification_rolls_back_its_program ... ok
 test thunderagent::execution_control::tests::finalization_reclaims_binding_capacity_and_rejects_retired_generation_after_churn ... ok
+test thunderagent::request_classifier::tests::retained_programs_are_bounded_by_the_tracking_limit ... ok
+test thunderagent::request_classifier::tests::missing_capacity_respects_pause_until_timeout ... ok
 test thunderagent::request_classifier::tests::retirement_rejects_active_inference_and_reclaims_finalized_bindings_and_leases ... ok
 test thunderagent::request_classifier::tests::selects_a_worker_then_reconciles_the_sent_event ... ok
 test thunderagent::request_classifier::tests::sent_event_reconciles_the_actual_worker ... ok
@@ -101,5 +76,5 @@ test thunderagent::request_classifier::tests::timeout_forces_release_on_the_leas
 test thunderagent::request_classifier::tests::pressure_pauses_an_acting_program_and_capacity_resumes_it ... ok
 test thunderagent::request_classifier::tests::releases_a_large_backlog_without_per_release_linear_removal ... ok
 
-test result: ok. 65 passed; 0 failed; 2 ignored; 0 measured; 23 filtered out; finished in 0.48s
+test result: ok. 65 passed; 0 failed; 2 ignored; 0 measured; 23 filtered out; finished in 0.32s
 

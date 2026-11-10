@@ -9,7 +9,7 @@
 | Coding | 8 轮推理、10 次工具调用，模型修改 `shop/pricing.py` 与 `shop/cart.py` | 原有 4 项测试保持原样并通过，8 次自主 MEMORY 恢复，AST／上下文对象与 nonce 连续，观察器 Actor GET 为零 |
 | DeerFlow | 两个并发子任务、文件上传、70 个 PostgreSQL 图检查点 | 两阶段 manifest、独立 Tag 核验、新进程恢复与实际 MEMORY 恢复 |
 
-[真实模型汇总](evidence/deep-agents-summary.json)链接两项完整结果和八次已归档尝试，包含三个通过与五个失败的完整运行。Coding 使用源码 `32e3d6e` 的[独立 Actions 验收](https://github.com/lilong555/agentcloud/actions/runs/42755477699)，模型、工具、终态发布与资源清理均通过；历史组合验收保留各子项及整体状态。DeerFlow 的成功来自单独完成的验收。研究资料为受控 HTTP 来源，模型通过真实 CPA 推理选择和执行工具。
+[真实模型汇总](evidence/deep-agents-summary.json)链接两项完整结果和 11 次已归档尝试，包含六个通过与五个失败的完整运行。Coding 使用源码 `20113d5` 的[独立 Actions 验收](https://github.com/lilong555/agentcloud/actions/runs/42769409786)，模型、工具、终态发布与资源清理均通过；历史组合验收保留各子项及整体状态。DeerFlow 的成功来自单独完成的验收。研究资料为受控 HTTP 来源，模型通过真实 CPA 推理选择和执行工具。
 
 ## 多租户规模与静态 TTL 对照
 
@@ -114,38 +114,38 @@ CPU 来自 Linux `/proc`，包括协调器内的调度、持久化、HTTP 与状
 
 ## 实机故障与复现
 
-故障汇总保存全部 16 项计划分母，覆盖容量饱和与持久等待、返回／挂起竞争、旧 epoch、指定快照身份、PENDING 持久化、ROOTFS 降级、未知模型结果、Frontend 重启、lease 回收、重复提交、租户隔离和数据库故障。每项选择指定源码下最早安排的运行；准备失败、未执行项、资源清理失败和重跑均进入审计。[实机验收](https://github.com/lilong555/agentcloud/actions/runs/42755459432)基于源码 `32e3d6e22ffe8f4a8c07b7a71e7a6c9badc83e15`，16/16 项全部通过，四个分片均完成清理。
+故障汇总保存全部 16 项计划分母，覆盖容量饱和与持久等待、返回／挂起竞争、旧 epoch、指定快照身份、PENDING 持久化、ROOTFS 降级、未知模型结果、Frontend 重启、lease 回收、重复提交、租户隔离和数据库故障。每项选择指定源码下最早安排的运行；准备失败、未执行项、资源清理失败和重跑均进入审计。[实机验收](https://github.com/lilong555/agentcloud/actions/runs/42769440336)基于源码 `20113d512f4363d4424822329007a3749d2dd268`，16/16 项全部通过，四个分片均完成清理。
 
 | 故障窗口 | 结果 | 注入与验证耗时秒 |
 | --- | --- | ---: |
-| 挂起途中返回需求与 MEMORY 恢复 | 通过 | 13.89 |
-| 旧执行 epoch 工具拒收 | 通过 | 17.34 |
-| Substrate UID/version 拦截迟到挂起 | 通过 | 15.02 |
-| PENDING 快照与 Tag/Manifest 安全性 | 通过 | 47.76 |
-| MEMORY 降级 ROOTFS 拦截 | 通过 | 15.97 |
-| 发送后崩溃与 OUTCOME_UNKNOWN 防重放 | 通过 | 11.12 |
-| Frontend 重启与持久模型回执 | 通过 | 11.71 |
-| 回收后的 lease/generation 拒收 | 通过 | 13.37 |
-| 并发重复模型请求共享物理尝试 | 通过 | 10.96 |
-| 模型请求 ID 的 payload 冲突 | 通过 | 10.42 |
-| 并发重复工具保持单次副作用 | 通过 | 11.09 |
-| 工具 ID 的 payload 冲突 | 通过 | 14.55 |
-| 跨租户会话、请求与追踪隔离 | 通过 | 11.06 |
-| 保留 Tag 替换后的恢复拦截 | 通过 | 13.38 |
-| 数据库提交失败与副作用隔离 | 通过 | 10.81 |
-| 容量拒绝、持久等待、重启与同操作 MEMORY 恢复 | 通过 | 42.55 |
+| 挂起途中返回需求与 MEMORY 恢复 | 通过 | 14.51 |
+| 旧执行 epoch 工具拒收 | 通过 | 17.28 |
+| Substrate UID/version 拦截迟到挂起 | 通过 | 15.05 |
+| PENDING 快照与 Tag/Manifest 安全性 | 通过 | 44.74 |
+| MEMORY 降级 ROOTFS 拦截 | 通过 | 17.27 |
+| 发送后崩溃与 OUTCOME_UNKNOWN 防重放 | 通过 | 13.64 |
+| Frontend 重启与持久模型回执 | 通过 | 13.64 |
+| 回收后的 lease/generation 拒收 | 通过 | 10.03 |
+| 并发重复模型请求共享物理尝试 | 通过 | 10.69 |
+| 模型请求 ID 的 payload 冲突 | 通过 | 13.30 |
+| 并发重复工具保持单次副作用 | 通过 | 12.71 |
+| 工具 ID 的 payload 冲突 | 通过 | 10.66 |
+| 跨租户会话、请求与追踪隔离 | 通过 | 10.69 |
+| 保留 Tag 替换后的恢复拦截 | 通过 | 15.72 |
+| 数据库提交失败与副作用隔离 | 通过 | 12.91 |
+| 容量拒绝、持久等待、重启与同操作 MEMORY 恢复 | 通过 | 29.93 |
 
 PENDING 案例在关闭对象存储后发起真实协调器检查点：原生快照保持相同 UUID/generation 和 MEMORY fidelity，Tag 在短期限提升请求前后均不存在。检查点 HTTP 期限到达后，原 Manifest 保持原值，gate 保持 CLOSED，生命周期回执转为 OUTCOME_UNKNOWN。测试使用独立读取上下文核验这些状态，再恢复对象存储。
 
-[故障 JSON](evidence/faults-32e3d6e-summary.json) · [CSV](evidence/faults-32e3d6e-summary.csv) · [15 项历史验收](evidence/faults-summary.json) · [全部历史故障运行](evidence/faults-regression-history.json)。历史源码中的 PENDING 断言及运行时准备失败继续保留在原始产物中。
+[故障 JSON](evidence/faults-20113d5-summary.json) · [CSV](evidence/faults-20113d5-summary.csv) · [32e3d6e 历史验收](evidence/faults-32e3d6e-summary.json) · [15 项历史验收](evidence/faults-summary.json) · [全部历史故障运行](evidence/faults-regression-history.json)。历史源码中的 PENDING 断言及运行时准备失败继续保留在原始产物中。
 
 ```bash
-gh workflow run live-scale.yml -f scope=matrix -f native_run_id=42698285379
-gh workflow run live-acceptance.yml -f suite=all -f native_run_id=42698285379
+gh workflow run live-scale.yml -f scope=matrix -f native_run_id=42769316617
+gh workflow run live-acceptance.yml -f suite=all -f native_run_id=42769316617
 python3 -m bench.analysis.scale --source-commit dc9081f42359b53bd50d2ca7c90fc09723980024
 python3 -m bench.analysis.control_plane --source-commit dc9081f42359b53bd50d2ca7c90fc09723980024
 python3 -m bench.analysis.heatmap --source-commit dc9081f42359b53bd50d2ca7c90fc09723980024
-python3 -m bench.analysis.faults --source-commit 32e3d6e22ffe8f4a8c07b7a71e7a6c9badc83e15 --output docs/evidence/faults-32e3d6e-summary.json
+python3 -m bench.analysis.faults --source-commit 20113d512f4363d4424822329007a3749d2dd268 --output docs/evidence/faults-20113d5-summary.json
 ```
 
 每台 hosted runner 独立运行 Kind/gVisor、PostgreSQL 和 Dynamo，使用源码摘要一致的已验证原生 wheel。产物仅打包当前 run/attempt，主报告保持原文，日志和轨迹使用确定性 gzip；归档索引保留 ZIP 摘要及压缩前后的 SHA256。`make evidence-audit` 校验这些内容与清理结果。正式矩阵、烟雾测试和重跑分别保存身份与来源。

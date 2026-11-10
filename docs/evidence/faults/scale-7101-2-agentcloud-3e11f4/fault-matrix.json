@@ -1,0 +1,190 @@
+{
+  "schema_version": 1,
+  "execution_kind": "real-substrate-memory-postgresql-native-dynamo-faults",
+  "generated_at": "2026-11-10T07:01:08.194739+00:00",
+  "source_commit": "20113d512f4363d4424822329007a3749d2dd268",
+  "github_run_id": "42769440336",
+  "github_run_attempt": "1",
+  "gpu_execution": false,
+  "planned": [
+    "pending_snapshot_tag",
+    "retired_lease_generation",
+    "tool_payload_conflict",
+    "resume_capacity_wait"
+  ],
+  "checks": [
+    {
+      "case": "pending_snapshot_tag",
+      "status": "passed",
+      "started_at": 1794294069.434577,
+      "evidence": {
+        "action": "pending-tag",
+        "actor": {
+          "name": "ac-scale-7101-2-agentcloud-3e11f4-w0",
+          "uid": "ff98d93d-177b-4d8c-9fe2-ea5113103c2a",
+          "version": 10,
+          "state": "SUSPENDED",
+          "snapshot_uuid": "e8715eb2-c341-4ab6-a19d-d070f61ba5a5",
+          "snapshot_generation": 2,
+          "snapshot_fidelity": "MEMORY",
+          "durable": false,
+          "resumed": false,
+          "cold_started": false,
+          "actual_fidelity": "MEMORY",
+          "restored_snapshot_uuid": "91fde980-28ac-47ce-b686-ee593fcdc544",
+          "restored_snapshot_generation": 1
+        },
+        "independent_read_checks": 2,
+        "pending_actor": {
+          "name": "ac-scale-7101-2-agentcloud-3e11f4-w0",
+          "uid": "ff98d93d-177b-4d8c-9fe2-ea5113103c2a",
+          "version": 10,
+          "state": "SUSPENDED",
+          "snapshot_uuid": "e8715eb2-c341-4ab6-a19d-d070f61ba5a5",
+          "snapshot_generation": 2,
+          "snapshot_fidelity": "MEMORY",
+          "durable": false,
+          "resumed": false,
+          "cold_started": false,
+          "actual_fidelity": "MEMORY",
+          "restored_snapshot_uuid": "91fde980-28ac-47ce-b686-ee593fcdc544",
+          "restored_snapshot_generation": 1
+        },
+        "promotion_grpc_code": "DeadlineExceeded",
+        "retained_tag_absent": true,
+        "snapshot_storage_state": "PENDING",
+        "checkpoint_error": {
+          "code": "client_deadline"
+        },
+        "manifest_during_upload": {
+          "state": "QUIESCING",
+          "gate": "CLOSED",
+          "epoch": 2,
+          "receipt_status": "RUNNING",
+          "committed_manifest_unchanged": true,
+          "pending_manifest_absent": true
+        },
+        "manifest_after_deadline": {
+          "state": "RECOVERY_REQUIRED",
+          "gate": "CLOSED",
+          "epoch": 2,
+          "receipt_status": "OUTCOME_UNKNOWN",
+          "committed_manifest_unchanged": true,
+          "pending_manifest_absent": true
+        }
+      },
+      "seconds": 44.74049758911133
+    },
+    {
+      "case": "retired_lease_generation",
+      "status": "passed",
+      "started_at": 1794294114.4492111,
+      "evidence": {
+        "old_lease_rejection": 401,
+        "old_generation_rejection": 409,
+        "finalized": {
+          "protocol_version": 1,
+          "accepted": true,
+          "finalized": true,
+          "binding_generation": "1ddd0c97e5364936a05a8203186926d5",
+          "snapshot": {
+            "program_present": false,
+            "admission_history": [
+              {
+                "request_id": "9e0d2aaa-241b-4705-8ebd-841795102a4b",
+                "client_request_id": null,
+                "queued_at": "2026-11-10T07:02:04.432670068Z",
+                "admitted_at": "2026-11-10T07:02:04.432815053Z",
+                "wait_ms": 0.144985
+              }
+            ],
+            "last_admission_wait_ms": 0.144985,
+            "released_acting_tokens": 0,
+            "phase": null,
+            "lifecycle": null,
+            "baseline_tokens": null,
+            "logical_budget_tokens": null,
+            "execution_multiplier": 1.0,
+            "state": null,
+            "sequence": 0,
+            "fresh": false,
+            "session_waiting_requests": 0,
+            "session_active_requests": 0,
+            "waiting_requests": 0,
+            "paused_programs": 0,
+            "completed_events": 1,
+            "aborted_events": 0,
+            "pause_events": 0,
+            "final_events": 1
+          }
+        },
+        "stale": {
+          "protocol_version": 1,
+          "accepted": false,
+          "applied": false,
+          "error": "stale_generation"
+        }
+      },
+      "seconds": 10.027304410934448
+    },
+    {
+      "case": "tool_payload_conflict",
+      "status": "passed",
+      "started_at": 1794294124.7497542,
+      "evidence": {
+        "status": 409,
+        "code": "payload_conflict"
+      },
+      "seconds": 10.661093950271606
+    },
+    {
+      "case": "resume_capacity_wait",
+      "status": "passed",
+      "started_at": 1794294135.683617,
+      "evidence": {
+        "rejection": {
+          "status": 409,
+          "code": "resume_capacity_wait"
+        },
+        "capacity_holders": 4,
+        "durable_wait": {
+          "operation_id": "capacity-return",
+          "action": "resume",
+          "epoch": 2,
+          "payload_hash": "21bccf7d24ff78e1ed6963bebedca31dfa24c5140a2da03103116cfc3d84dd87",
+          "status": "WAITING_CAPACITY",
+          "attempt_count": 1,
+          "last_attempt_at": "2026-11-10T07:02:41.855651376Z",
+          "retry_after": "2026-11-10T07:02:42.876455318Z",
+          "capacity_wait": {
+            "actor_uid": "e1afe1e4-740c-45e5-bcb7-7609b41019cc",
+            "actor_version": 11,
+            "snapshot_uuid": "bef568e1-d061-4c80-b70c-851f5d9380b4",
+            "snapshot_generation": 2,
+            "observed_at": "2026-11-10T07:02:41.87638225Z"
+          },
+          "error": "rpc error: code = ResourceExhausted desc = no worker has room for the actor"
+        },
+        "coordinator_restart_preserved_wait": true,
+        "restored_epoch": 3,
+        "actual_fidelity": "MEMORY",
+        "ram_continuity": true,
+        "completed_receipt": {
+          "operation_id": "capacity-return",
+          "action": "resume",
+          "epoch": 2,
+          "payload_hash": "21bccf7d24ff78e1ed6963bebedca31dfa24c5140a2da03103116cfc3d84dd87",
+          "status": "COMPLETED",
+          "attempt_count": 2,
+          "last_attempt_at": "2026-11-10T07:02:43.606925214Z",
+          "retry_after": "0001-01-01T00:00:00Z"
+        }
+      },
+      "seconds": 29.92699694633484
+    }
+  ],
+  "passed": 4,
+  "attempted": 4,
+  "planned_count": 4,
+  "status": "passed"
+}

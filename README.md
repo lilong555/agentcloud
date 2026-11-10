@@ -1,12 +1,33 @@
 # AgentCloud
 
-AgentCloud 将 Agent 执行生命周期与 LLM 准入调度连接起来。Go 协调器根据真实排队、Worker 容量与恢复成本自动选择驻留、挂起和恢复；PostgreSQL 增量实体事务保存请求、工具回执与恢复 manifest。Dynamo 原生 Rust 扩展向 ThunderAgent 提供执行反馈和有界会话回收，Substrate 扩展提供 Actor 身份 fencing、快照持久化与实际恢复回执。
+**64 个有状态 Agent，4 个 gVisor Warm 槽位，16× 沙箱超卖。** AgentCloud 在有限执行与推理资源之间协调 KEEP／SUSPEND／RESUME：既要回收等待中的沙箱，又要保护工具副作用、内存状态和交互尾延迟。
 
-Azure CPA 的真实 `gpt-6-luna` 已完成多文件 Coding 修复与 DeerFlow 研究任务。[自主 Coding](docs/evidence/real-model/realmodel-f1c226e84ad1/acceptance.json)经过 8 轮推理和 10 次工具调用修改两个源码文件，原有 4 项测试通过，8 次 gVisor MEMORY 恢复保持内存状态连续，外部观察器的 Actor GET 为零。DeerFlow 完成两个并发子任务、文件上传、70 个 PostgreSQL 图检查点与新进程恢复。[真实模型验收索引](docs/evidence/deep-agents-summary.json)保留任务轨迹和清理结果。
+Go 协调器以 PostgreSQL 实体事务保存请求与恢复状态；Substrate 提供带身份围栏的 MEMORY 快照；Dynamo 原生 Rust 扩展提供 Program 准入、执行反馈和会话回收。每条性能结论都关联源码 SHA、原始轨迹、失败分母与资源清理记录。
 
-基础规模验收完成 60 组首轮运行、10,765/10,800 请求；两个失败配置经定向重跑完成 432/432 请求；AgentCloud 的 12/12 组全部通过，16/16 类实机故障和等待／内存热力图 126/126 窗口均通过。N=32/64 时，相比 TTL=15 秒，闲置预留分别减少 53.5%/50.1%，Goodput 提高 24.8%/11.7%，交互 p95 同时改善。TTL=2 秒在该负载下具有较低资源占用和较高 Goodput。[完整对照与置信区间](docs/EXPERIMENTS.md)保留全部策略、首轮失败和重跑。
+```mermaid
+flowchart LR
+    A[64 Stateful Agents] --> G[Go Coordinator]
+    G --> P[(PostgreSQL<br/>Request · Receipt · Manifest)]
+    G <-->|UID · Epoch · Safepoint| S[Substrate<br/>4 gVisor Warm Slots]
+    G <-->|Lease · Program · Feedback| D[Dynamo Native Rust]
+    D --> I[Inference Worker]
+    S -->|Checkpoint / Resume cost| G
+    D -->|Queue / Admission| G
+```
 
-可选 `cost-aware` 策略的 [36 组对照](docs/COST_SCHEDULING.md)完成 9,865/10,368 个请求；其六组均完成，长尾和分布变化样本呈现资源与延迟取舍。默认策略为 `observed`。[本地 CUDA 测量](docs/GPU_VALIDATION.md)使用 RTX 4070 与真实 OPT-125M KV：高显存压力下，释放闲置 KV 并计入全部重建成本，总耗时下降约 22.5%；低压力下保留 KV 更快。
+## 三条核心技术主线
+
+**确定性容错闭环。** Inference Lease、Model Attempt ID、Actor UID/epoch、工具安全点与 durable manifest 共同保护执行、挂起、崩溃和恢复。源码 `20113d5` 的 **16/16 类实机故障**覆盖恢复、幂等、陈旧身份拒收与 UNKNOWN 隔离；外部副作用通过目标服务的幂等／查询能力完成对账。Azure CPA `gpt-6-luna` 的 Coding 验收完成 **8 轮模型、10 次工具调用、两个文件修复、8 次 MEMORY 恢复**。上游交付为 **38 个 Substrate 文件＋13 个 Dynamo 文件，2＋3 组补丁，1,336 项原生测试通过**。[容错证据](docs/evidence/p0-20113d5.json) · [真实 Coding](docs/evidence/real-model/realmodel-5b80fdc027c8/acceptance.json) · [上游源码](integrations/)
+
+**轨迹归因驱动的成本调度。** 对 N32 的逐条收据和 Worker 采样复算，定位出未知等待回退导致的 **45/48 次 research 挂起晚完成**，以及工具阶段占资源增量 **63.6%** 的配置混杂。`agentcloud-v2` 使用持久等待 episode、固定两秒未知期限与条件 KEEP 成本比较；TTL2、旧 cost-aware 和 Shadow 在同 Runner、相同 E/FINAL 协议下配对。主验收使用 **总 Actor GB·s＋交互 P95**，恢复成本独立列出。[完整归因与复算](docs/SCHEDULER_DIAGNOSIS.md) · [v2 机制、Gate 与停止条件](docs/V2_EVALUATION.md)
+
+**真实 GPU 的收益反转与官方事件集成。** RTX 4070、OPT-125M、3 GiB allocator 预算下，**30/30 组真实 CUDA 测量**覆盖 16/24/32/48/64 个闲置会话。64 会话释放 KV 并计入全部重建成本，总耗时下降 **22.5%**；16 会话时增加 **44.5%**，当前反转范围为 **48～64 会话**。独立 vLLM 验收进一步接通官方 **KVEvent → KVIndexer → 默认 Selector**：六次请求的新增 Prefill token 与缓存观测逐次一致，Stored/Removed 序号连续、relay 零丢失。[GPU 原始测量、压力曲线与官方 KV 事件验收](docs/GPU_VALIDATION.md)
+
+## 可复核的实验基础
+
+四租户、两 Worker、四 Actor 槽位，真实 gVisor MEMORY、PostgreSQL 和 Dynamo CPU Mocker。基础矩阵覆盖 60 组首轮；条件成本与泛化矩阵分别覆盖 36 和 54 组。各版本及失败记录独立归档。最新冻结 `32e3d6e` 的固定矩阵完成 **35/36 trial、10,367/10,368 请求**；调度诊断使用其中 TTL2、Observed、cost-aware 的 18 个 trial。GPU 实验使用独立的真实 CUDA 后端。
+
+[验收状态与源码身份](docs/STATUS.md) · [实验数据](docs/EXPERIMENTS.md) · [三分钟答辩](docs/INTERVIEW_DEFENSE.md)
 
 ## 快速运行
 

@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "recorded_at": "2026-11-09T21:22:29.386708+00:00",
+  "recorded_at": "2026-11-10T06:51:20.438580+00:00",
   "execution_kind": "native-go-rust-upstream-regression-map",
   "status": "passed",
-  "files_mapped": 47,
-  "native_tests_observed": 1319,
+  "files_mapped": 51,
+  "native_tests_observed": 1336,
   "missing": [],
   "files": [
     {
@@ -505,6 +505,101 @@
         {
           "package": "cmd/ateapi/internal/controlapi",
           "test": "TestTagActorSnapshot_Preconditions",
+          "language": "go"
+        }
+      ],
+      "status": "passed"
+    },
+    {
+      "repository": "substrate",
+      "path": "cmd/ateapi/internal/store/atepg/actor.go",
+      "kind": "source",
+      "sha256": "73e0cb1478d64b60e029496ec76d203ac365c6e340805d2c2f5bf3570032dac7",
+      "symbols": [
+        "GetActor"
+      ],
+      "tests": [
+        {
+          "package": "cmd/ateapi/internal/store/atepg",
+          "test": "TestGetActorRecoversReadTransport",
+          "language": "go"
+        },
+        {
+          "package": "cmd/ateapi/internal/store/atepg",
+          "test": "TestActorWriteTransportRemainsSingleAttempt",
+          "language": "go"
+        },
+        {
+          "package": "cmd/ateapi/internal/store/atepg",
+          "test": "TestUpdateActor_ConcurrentWriteReturnsConflict",
+          "language": "go"
+        }
+      ],
+      "status": "passed"
+    },
+    {
+      "repository": "substrate",
+      "path": "cmd/ateapi/internal/store/atepg/actor_read_retry_test.go",
+      "kind": "test",
+      "sha256": "565952fac7bf2348c47e38db61cb4aee676bef78bb47f8ec89ebd0034edffd6c",
+      "symbols": [],
+      "tests": [
+        {
+          "package": "cmd/ateapi/internal/store/atepg",
+          "test": "TestGetActorRecoversReadTransport",
+          "language": "go"
+        },
+        {
+          "package": "cmd/ateapi/internal/store/atepg",
+          "test": "TestActorWriteTransportRemainsSingleAttempt",
+          "language": "go"
+        }
+      ],
+      "status": "passed"
+    },
+    {
+      "repository": "substrate",
+      "path": "cmd/ateapi/internal/store/atepg/read_retry.go",
+      "kind": "source",
+      "sha256": "63e346b378200012ea52f76cc874c934e4f19566681fa27074ef774a929311e5",
+      "symbols": [
+        "retryRead",
+        "readTransportError"
+      ],
+      "tests": [
+        {
+          "package": "cmd/ateapi/internal/store/atepg",
+          "test": "TestReadRetryTransportClassification",
+          "language": "go"
+        },
+        {
+          "package": "cmd/ateapi/internal/store/atepg",
+          "test": "TestReadRetryBoundAndContext",
+          "language": "go"
+        },
+        {
+          "package": "cmd/ateapi/internal/store/atepg",
+          "test": "TestGetActorRecoversReadTransport",
+          "language": "go"
+        }
+      ],
+      "status": "passed"
+    },
+    {
+      "repository": "substrate",
+      "path": "cmd/ateapi/internal/store/atepg/read_retry_test.go",
+      "kind": "test",
+      "sha256": "22ac02014e0c74cb180ad478b3dc8ac5f916a4e9237965c7aa5d7df37f6b7381",
+      "symbols": [],
+      "tests": [
+        {
+          "package": "cmd/ateapi/internal/store/atepg",
+          "test": "TestReadRetryTransportClassification",
+          "language": "go"
+        },
+        {
+          "package": "cmd/ateapi/internal/store/atepg",
+          "test": "TestReadRetryBoundAndContext",
           "language": "go"
         }
       ],
@@ -1116,10 +1211,10 @@
   "logs": [
     {
       "log": "docs/evidence/upstream-patches-substrate-native.jsonl",
-      "passed_events": 441,
+      "passed_events": 492,
       "failed": [],
       "skipped": [],
-      "sha256": "5d340324cb0aa02c9957ee8588b0421a4fabf9295bc87d780680040f5fd475e4"
+      "sha256": "1cb65b68d7b2de6983d1679bbaa19c4c58a24e54eae2318ada81fb095735a240"
     },
     {
       "log": "docs/evidence/upstream-patches-dynamo-llm-native.log",
@@ -1133,7 +1228,7 @@
       ],
       "failed": [],
       "reconstructed_passed": [],
-      "sha256": "07db60517f12f1a0fea9b427989f6a37a4e1afd5dc8379636b5625956216104f"
+      "sha256": "cd4f2a66011ed5195df5af33f7835e8243d4094841a9c72bf2bd2b89106f70af"
     },
     {
       "log": "docs/evidence/upstream-patches-dynamo-native.log",
@@ -1147,7 +1242,7 @@
       ],
       "failed": [],
       "reconstructed_passed": [],
-      "sha256": "13e133213b8e8f7bd475a480c7ef7aed46ec895f59bfe0961b9eb710f5cc0e63"
+      "sha256": "ce62001d3dfb1949472b6ea2b45ccb6d4f100af1d68d573c028221dee8a23408"
     },
     {
       "log": "docs/evidence/upstream-patches-dynamo-runtime-native.log",
@@ -1161,7 +1256,7 @@
       ],
       "failed": [],
       "reconstructed_passed": [],
-      "sha256": "4f1fefaa8972a31dee097a2504e739fb2e84772987c7e32ec237937510dc9c7a"
+      "sha256": "2681841083f8c3dc4934d37207c5977771f888dd604aebb3a592d3a106d3913a"
     }
   ]
 }
