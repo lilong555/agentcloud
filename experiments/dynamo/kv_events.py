@@ -390,12 +390,6 @@ class Stack:
                    TOKENIZERS_PARALLELISM="false", PYTHONUNBUFFERED="1")
         common = ["--discovery-backend", "file", "--request-plane", "tcp", "--event-plane", "zmq"]
         self.watch.start()
-        self.launch("indexer", [sys.executable, "-m", "dynamo.indexer", "--port", str(self.indexer_port),
-                               "--block-size", "16", "--threads", "1"], env)
-        self.launch("frontend", [sys.executable, "-m", "dynamo.frontend", "--http-host", "127.0.0.1",
-                                "--http-port", str(self.front_port), "--router-mode", "kv",
-                                "--router-policy-config", str(POLICY), "--kv-cache-block-size", "16", *common],
-                    {**env, "DYN_SYSTEM_PORT": str(self.front_system)})
         event_config = {"publisher": "zmq", "topic": "kv-events", "enable_kv_cache_events": True,
                         "endpoint": f"tcp://*:{self.event_port}",
                         "replay_endpoint": f"tcp://*:{self.replay_port}", "buffer_steps": 1024}
@@ -406,6 +400,16 @@ class Stack:
                             "--gpu-memory-utilization", "0.01", "--block-size", "16",
                             "--enable-prefix-caching", "--kv-events-config", json.dumps(event_config), *common],
                     {**env, "DYN_SYSTEM_PORT": str(self.worker_port)})
+        # The producer installs engine metrics after model initialization. Keep
+        # other services out of the CUDA loader's transient host-memory peak.
+        self.wait(lambda: self.http(f"http://127.0.0.1:{self.worker_port}", "/metrics"),
+                  lambda text: "vllm:kv_cache_usage_perc" in text, 240)
+        self.launch("indexer", [sys.executable, "-m", "dynamo.indexer", "--port", str(self.indexer_port),
+                               "--block-size", "16", "--threads", "1"], env)
+        self.launch("frontend", [sys.executable, "-m", "dynamo.frontend", "--http-host", "127.0.0.1",
+                                "--http-port", str(self.front_port), "--router-mode", "kv",
+                                "--router-policy-config", str(POLICY), "--kv-cache-block-size", "16", *common],
+                    {**env, "DYN_SYSTEM_PORT": str(self.front_system)})
 
     def http(self, base, path, data=None):
         self.check()
