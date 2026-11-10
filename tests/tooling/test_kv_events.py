@@ -11,6 +11,14 @@ from experiments.dynamo import kv_events_build as build
 
 
 class KVEventContractTests(unittest.TestCase):
+    def test_system_ports_fit_native_signed_i16_and_remain_distinct(self):
+        ports = experiment.ports(6)
+        self.assertEqual(len(set(ports)), 6)
+        self.assertTrue(all(16000 <= port <= 32767 for port in ports))
+        for port in ports:
+            with experiment.socket.socket() as sock:
+                sock.bind(("127.0.0.1", port))
+
     def test_metrics_preserve_missing_and_separate_event_stages(self):
         data = '''# TYPE vllm:prefix_cache_hits counter
 vllm:prefix_cache_hits_total{model_name="opt"} 240

@@ -9,6 +9,7 @@ import importlib.metadata as metadata
 import json
 import os
 from pathlib import Path
+import random
 import re
 import shutil
 import signal
@@ -268,10 +269,19 @@ def preflight(args):
 def ports(count):
     held = []
     try:
-        for _ in range(count):
+        # Dynamo's DYN_SYSTEM_PORT is signed i16; Linux ephemeral ports can exceed it.
+        for candidate in random.SystemRandom().sample(range(16000, 32768), 512):
             sock = socket.socket()
-            sock.bind(("127.0.0.1", 0))
+            try:
+                sock.bind(("127.0.0.1", candidate))
+            except OSError:
+                sock.close()
+                continue
             held.append(sock)
+            if len(held) == count:
+                break
+        if len(held) != count:
+            raise RuntimeError("insufficient free ports in the Dynamo system-port range")
         return [sock.getsockname()[1] for sock in held]
     finally:
         for sock in held:
@@ -450,6 +460,7 @@ class Stack:
 def run(args, ready):
     args.output_dir.mkdir(parents=True, exist_ok=False)
     report = {"schema_version": 1, "status": "failed", "started_at": utc(), "preflight": ready,
+              "source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
               "execution_kind": "real-vllm-official-kv-events-single-worker", "checks": [],
               "router_indexer": "official embedded KVIndexer through Dynamo event relay",
               "audit_indexer": "official standalone KVIndexer through engine ZMQ",
