@@ -1,0 +1,361 @@
+{
+  "schema_version": 1,
+  "execution_kind": "local-cuda-kv-pressure-curve",
+  "status": "passed",
+  "gpu_execution": true,
+  "sources": [
+    {
+      "path": "docs/evidence/gpu/cuda-kv-d3b0566/result.json",
+      "sha256": "cacfaa911402943636a44d3af439751a1ccaefaa70532f317523bb37ef5acbe6",
+      "source_commit": "d3b0566721456d223a002f2a63ed7db31b5b4240",
+      "source_sha256": {
+        "bench/cuda_kv.py": "301ec51068fa0df35a993b60d1075066a8014ad5417d975d3add2f51bfcbd483"
+      },
+      "planned_trials": 12,
+      "completed_trials": 12
+    },
+    {
+      "path": "docs/evidence/gpu/cuda-kv-middle-b91c716/result.json",
+      "sha256": "69e725d28d6b6d4bc99561317e5051953fae832b9abfb2da3813e437e3bd8c1c",
+      "source_commit": "b91c716bad1e83de78ff158d0a312a67620e9271",
+      "source_sha256": {
+        "bench/cuda_kv.py": "d2c449f977015f2e50ba3a3329748d96045502d59f90a3f6876996dbb05ac5db"
+      },
+      "planned_trials": 18,
+      "completed_trials": 18
+    }
+  ],
+  "protocol": {
+    "config": {
+      "gpu_allocator_budget_mib": 3072,
+      "context_tokens": 1024,
+      "new_tokens": 32,
+      "requests": 32,
+      "max_batch": 16,
+      "repeats": 3,
+      "admission": "largest successful power-of-two batch under fixed allocator budget",
+      "scheduler_integration": "standalone CUDA backend measurement",
+      "memory_metrics": [
+        "KV tensor storage",
+        "PyTorch allocated",
+        "PyTorch reserved",
+        "CUDA device free"
+      ]
+    },
+    "model": {
+      "name": "facebook/opt-125m",
+      "revision": "27dcfa74d334bc871f3234de431e71c6eeba5dd6",
+      "weights_sha256": "2d74da6615135c58cf3cf9ad4cb11e7c613ff9e55fe658a47ab83b6c8d1174a9",
+      "config_sha256": "54162c9cd0377110df1859dfabebb106fc0988c8aadb88207ce1ee0d34985df6",
+      "dtype": "float16"
+    },
+    "environment": {
+      "torch": "2.9.1+cu128",
+      "transformers": "4.47.1",
+      "cuda": "12.8",
+      "device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+      "total_device_bytes": 8585216000,
+      "nvidia_fields": [
+        "name",
+        "driver_version",
+        "memory_used_mib",
+        "temperature_c",
+        "sm_clock_mhz",
+        "utilization_percent"
+      ]
+    }
+  },
+  "points": [
+    {
+      "idle_sessions": 16,
+      "paired_repeats": 3,
+      "source": "docs/evidence/gpu/cuda-kv-d3b0566/result.json",
+      "keep_seconds": 0.9038516739965416,
+      "release_seconds": 1.3064779540000018,
+      "total_time_change_percent": 44.54561424035164,
+      "kv_mib": 576.0,
+      "keep_batch": 16,
+      "release_batch": 16,
+      "keep_tokens_per_second": 1132.9292509601726,
+      "release_tokens_per_second": 1114.047919606457,
+      "recompute_seconds": 0.17941568899550475,
+      "release_overhead_seconds": 0.21294080799998483,
+      "pairs": [
+        {
+          "repeat": 0,
+          "keep_seconds": 0.905233910001698,
+          "release_seconds": 1.293696752996766,
+          "total_time_change_percent": 42.91297958494942,
+          "kv_mib": 576.0,
+          "keep_batch": 16,
+          "release_batch": 16,
+          "keep_tokens_per_second": 1131.1993382992903,
+          "release_tokens_per_second": 1135.9438544836132,
+          "recompute_seconds": 0.17930294099642197,
+          "release_overhead_seconds": 0.21294080799998483
+        },
+        {
+          "repeat": 1,
+          "keep_seconds": 0.9038516739965416,
+          "release_seconds": 1.3152094379984192,
+          "total_time_change_percent": 45.511644867900245,
+          "kv_mib": 576.0,
+          "keep_batch": 16,
+          "release_batch": 16,
+          "keep_tokens_per_second": 1132.9292509601726,
+          "release_tokens_per_second": 1114.047919606457,
+          "recompute_seconds": 0.17941568899550475,
+          "release_overhead_seconds": 0.21662323400232708
+        },
+        {
+          "repeat": 2,
+          "keep_seconds": 0.9018829790002201,
+          "release_seconds": 1.3064779540000018,
+          "total_time_change_percent": 44.86113879744069,
+          "kv_mib": 576.0,
+          "keep_batch": 16,
+          "release_batch": 16,
+          "keep_tokens_per_second": 1135.402290367152,
+          "release_tokens_per_second": 1111.7762491108479,
+          "recompute_seconds": 0.18007832200237317,
+          "release_overhead_seconds": 0.20535099400149193
+        }
+      ]
+    },
+    {
+      "idle_sessions": 24,
+      "paired_repeats": 3,
+      "source": "docs/evidence/gpu/cuda-kv-middle-b91c716/result.json",
+      "keep_seconds": 0.9374280050001289,
+      "release_seconds": 1.4824103359992478,
+      "total_time_change_percent": 58.13591316797111,
+      "kv_mib": 864.0,
+      "keep_batch": 16,
+      "release_batch": 16,
+      "keep_tokens_per_second": 1092.350553363145,
+      "release_tokens_per_second": 1104.4663367507392,
+      "recompute_seconds": 0.2907744949998232,
+      "release_overhead_seconds": 0.24451765899993916,
+      "pairs": [
+        {
+          "repeat": 0,
+          "keep_seconds": 0.9374280050001289,
+          "release_seconds": 1.4824103359992478,
+          "total_time_change_percent": 58.13591316797111,
+          "kv_mib": 864.0,
+          "keep_batch": 16,
+          "release_batch": 16,
+          "keep_tokens_per_second": 1092.350553363145,
+          "release_tokens_per_second": 1104.4663367507392,
+          "recompute_seconds": 0.2907744949998232,
+          "release_overhead_seconds": 0.2644912409996323
+        },
+        {
+          "repeat": 1,
+          "keep_seconds": 0.9235007020001831,
+          "release_seconds": 1.4510200449999502,
+          "total_time_change_percent": 57.121704602630885,
+          "kv_mib": 864.0,
+          "keep_batch": 16,
+          "release_batch": 16,
+          "keep_tokens_per_second": 1108.8242789443998,
+          "release_tokens_per_second": 1117.4128954766707,
+          "recompute_seconds": 0.29009985999982746,
+          "release_overhead_seconds": 0.24451765899993916
+        },
+        {
+          "repeat": 2,
+          "keep_seconds": 0.9876667519997682,
+          "release_seconds": 1.622955001000264,
+          "total_time_change_percent": 64.3221256273133,
+          "kv_mib": 864.0,
+          "keep_batch": 16,
+          "release_batch": 16,
+          "keep_tokens_per_second": 1036.7869505849685,
+          "release_tokens_per_second": 1039.6324890215333,
+          "recompute_seconds": 0.399879976000193,
+          "release_overhead_seconds": 0.23811157799991634
+        }
+      ]
+    },
+    {
+      "idle_sessions": 32,
+      "paired_repeats": 3,
+      "source": "docs/evidence/gpu/cuda-kv-middle-b91c716/result.json",
+      "keep_seconds": 0.9234794220001277,
+      "release_seconds": 1.5755029410001953,
+      "total_time_change_percent": 70.60509454426993,
+      "kv_mib": 1152.0,
+      "keep_batch": 16,
+      "release_batch": 16,
+      "keep_tokens_per_second": 1108.849829898926,
+      "release_tokens_per_second": 1097.9779167969864,
+      "recompute_seconds": 0.38929729500023313,
+      "release_overhead_seconds": 0.26223246900008235,
+      "pairs": [
+        {
+          "repeat": 0,
+          "keep_seconds": 0.9234794220001277,
+          "release_seconds": 1.5755029410001953,
+          "total_time_change_percent": 70.60509454426993,
+          "kv_mib": 1152.0,
+          "keep_batch": 16,
+          "release_batch": 16,
+          "keep_tokens_per_second": 1108.849829898926,
+          "release_tokens_per_second": 1097.9779167969864,
+          "recompute_seconds": 0.38064697900017563,
+          "release_overhead_seconds": 0.26223246900008235
+        },
+        {
+          "repeat": 1,
+          "keep_seconds": 0.9175262919998204,
+          "release_seconds": 1.558647703000588,
+          "total_time_change_percent": 69.8749906777487,
+          "kv_mib": 1152.0,
+          "keep_batch": 16,
+          "release_batch": 16,
+          "keep_tokens_per_second": 1116.0443127663534,
+          "release_tokens_per_second": 1107.5341723122235,
+          "recompute_seconds": 0.38929729500023313,
+          "release_overhead_seconds": 0.2447739700000966
+        },
+        {
+          "repeat": 2,
+          "keep_seconds": 1.0361459079999804,
+          "release_seconds": 1.6981451189994914,
+          "total_time_change_percent": 63.890539535820224,
+          "kv_mib": 1152.0,
+          "keep_batch": 16,
+          "release_batch": 16,
+          "keep_tokens_per_second": 988.2778015082596,
+          "release_tokens_per_second": 1030.1595827152114,
+          "recompute_seconds": 0.4271883749997869,
+          "release_overhead_seconds": 0.27693599499980337
+        }
+      ]
+    },
+    {
+      "idle_sessions": 48,
+      "paired_repeats": 3,
+      "source": "docs/evidence/gpu/cuda-kv-middle-b91c716/result.json",
+      "keep_seconds": 1.4308775829999831,
+      "release_seconds": 1.8099110889993426,
+      "total_time_change_percent": 26.48958307143763,
+      "kv_mib": 1728.0,
+      "keep_batch": 8,
+      "release_batch": 16,
+      "keep_tokens_per_second": 715.6447289173948,
+      "release_tokens_per_second": 1105.621945286352,
+      "recompute_seconds": 0.6061316699997406,
+      "release_overhead_seconds": 0.260217499999726,
+      "pairs": [
+        {
+          "repeat": 0,
+          "keep_seconds": 1.4308775829999831,
+          "release_seconds": 1.8099110889993426,
+          "total_time_change_percent": 26.48958307143763,
+          "kv_mib": 1728.0,
+          "keep_batch": 8,
+          "release_batch": 16,
+          "keep_tokens_per_second": 715.6447289173948,
+          "release_tokens_per_second": 1105.621945286352,
+          "recompute_seconds": 0.6235180509997917,
+          "release_overhead_seconds": 0.260217499999726
+        },
+        {
+          "repeat": 1,
+          "keep_seconds": 1.4002155110001695,
+          "release_seconds": 1.7715128630002255,
+          "total_time_change_percent": 26.517157472055096,
+          "kv_mib": 1728.0,
+          "keep_batch": 8,
+          "release_batch": 16,
+          "keep_tokens_per_second": 731.315995256016,
+          "release_tokens_per_second": 1115.4932505759098,
+          "recompute_seconds": 0.6005656070001351,
+          "release_overhead_seconds": 0.2529676990002372
+        },
+        {
+          "repeat": 2,
+          "keep_seconds": 1.5038484430001517,
+          "release_seconds": 1.9255438129994218,
+          "total_time_change_percent": 28.041081663654555,
+          "kv_mib": 1728.0,
+          "keep_batch": 8,
+          "release_batch": 16,
+          "keep_tokens_per_second": 680.9196796168752,
+          "release_tokens_per_second": 986.4775468981765,
+          "recompute_seconds": 0.6061316699997406,
+          "release_overhead_seconds": 0.28137533899962364
+        }
+      ]
+    },
+    {
+      "idle_sessions": 64,
+      "paired_repeats": 3,
+      "source": "docs/evidence/gpu/cuda-kv-d3b0566/result.json",
+      "keep_seconds": 2.433961280999938,
+      "release_seconds": 1.8871452270032023,
+      "total_time_change_percent": -22.46609501413632,
+      "kv_mib": 2304.0,
+      "keep_batch": 4,
+      "release_batch": 16,
+      "keep_tokens_per_second": 420.71334823342494,
+      "release_tokens_per_second": 1133.1534427954439,
+      "recompute_seconds": 0.7458882440041634,
+      "release_overhead_seconds": 0.23364061000029324,
+      "pairs": [
+        {
+          "repeat": 0,
+          "keep_seconds": 2.4172833470001933,
+          "release_seconds": 1.8871452270032023,
+          "total_time_change_percent": -21.931153443591267,
+          "kv_mib": 2304.0,
+          "keep_batch": 4,
+          "release_batch": 16,
+          "keep_tokens_per_second": 423.6160404078265,
+          "release_tokens_per_second": 1136.5202143715496,
+          "recompute_seconds": 0.7508965209999587,
+          "release_overhead_seconds": 0.23525285300274845
+        },
+        {
+          "repeat": 1,
+          "keep_seconds": 2.4489165020058863,
+          "release_seconds": 1.8779674149991479,
+          "total_time_change_percent": -23.314355003083154,
+          "kv_mib": 2304.0,
+          "keep_batch": 4,
+          "release_batch": 16,
+          "keep_tokens_per_second": 418.14410542836004,
+          "release_tokens_per_second": 1133.1534427954439,
+          "recompute_seconds": 0.7458882440041634,
+          "release_overhead_seconds": 0.2284063219995005
+        },
+        {
+          "repeat": 2,
+          "keep_seconds": 2.433961280999938,
+          "release_seconds": 1.8874343729985412,
+          "total_time_change_percent": -22.454215367668816,
+          "kv_mib": 2304.0,
+          "keep_batch": 4,
+          "release_batch": 16,
+          "keep_tokens_per_second": 420.71334823342494,
+          "release_tokens_per_second": 1117.0524203393827,
+          "recompute_seconds": 0.737095511998632,
+          "release_overhead_seconds": 0.23364061000029324
+        }
+      ]
+    }
+  ],
+  "planned_trials": 30,
+  "completed_trials": 30,
+  "measured_crossover_brackets_sessions": [
+    [
+      48,
+      64
+    ]
+  ],
+  "time_definition": "active inference + release overhead + all released session prefills",
+  "summary_statistic": "median per policy; percentage is ratio of medians",
+  "interpolation": "none; batch admission changes in discrete powers of two"
+}

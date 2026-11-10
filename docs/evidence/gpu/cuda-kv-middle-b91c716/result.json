@@ -1,0 +1,1792 @@
+{
+  "schema_version": 1,
+  "execution_kind": "local-cuda-pretrained-kv-contention",
+  "status": "passed",
+  "generated_at": "2026-11-10T07:21:47.581583+00:00",
+  "source_commit": "b91c716bad1e83de78ff158d0a312a67620e9271",
+  "source_sha256": {
+    "bench/cuda_kv.py": "d2c449f977015f2e50ba3a3329748d96045502d59f90a3f6876996dbb05ac5db"
+  },
+  "model": {
+    "name": "facebook/opt-125m",
+    "revision": "27dcfa74d334bc871f3234de431e71c6eeba5dd6",
+    "weights_sha256": "2d74da6615135c58cf3cf9ad4cb11e7c613ff9e55fe658a47ab83b6c8d1174a9",
+    "config_sha256": "54162c9cd0377110df1859dfabebb106fc0988c8aadb88207ce1ee0d34985df6",
+    "dtype": "float16"
+  },
+  "environment": {
+    "torch": "2.9.1+cu128",
+    "transformers": "4.47.1",
+    "cuda": "12.8",
+    "device": "NVIDIA GeForce RTX 4070 Laptop GPU",
+    "total_device_bytes": 8585216000,
+    "nvidia_fields": [
+      "name",
+      "driver_version",
+      "memory_used_mib",
+      "temperature_c",
+      "sm_clock_mhz",
+      "utilization_percent"
+    ]
+  },
+  "config": {
+    "gpu_allocator_budget_mib": 3072,
+    "idle_counts": [
+      24,
+      32,
+      48
+    ],
+    "context_tokens": 1024,
+    "new_tokens": 32,
+    "requests": 32,
+    "max_batch": 16,
+    "repeats": 3,
+    "admission": "largest successful power-of-two batch under fixed allocator budget",
+    "scheduler_integration": "standalone CUDA backend measurement",
+    "memory_metrics": [
+      "KV tensor storage",
+      "PyTorch allocated",
+      "PyTorch reserved",
+      "CUDA device free"
+    ]
+  },
+  "trials": [
+    {
+      "idle_sessions": 24,
+      "repeat": 0,
+      "policy": "keep",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 370328576
+      },
+      "idle_prefill_seconds": 0.31269684799963215,
+      "idle_kv_storage_bytes": 905969664,
+      "occupied": {
+        "allocated_bytes": 1219474432,
+        "reserved_bytes": 1247805440,
+        "device_free_bytes": 6088032256,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 1297740800
+      },
+      "nvidia_before": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "3039",
+        "58",
+        "2505",
+        "11"
+      ],
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "fits",
+          "peak_allocated_bytes": 2465682432
+        }
+      ],
+      "active": {
+        "batch": 16,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 0.9374280050001289,
+        "tokens_per_second": 1092.350553363145,
+        "completion_p95_seconds": 0.9374260610002239,
+        "prefill_seconds": 0.25697595400015416,
+        "decode_seconds": 0.6790142380000361,
+        "decode_tokens_per_second": 1460.9413830876802,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 1219474432,
+          "reserved_bytes": 2963275776,
+          "device_free_bytes": 4372561920,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 2465682432
+        }
+      },
+      "return_recompute_seconds": 0.0,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2465682432
+      },
+      "nvidia_after": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "2179",
+        "64",
+        "2505",
+        "54"
+      ]
+    },
+    {
+      "idle_sessions": 24,
+      "repeat": 0,
+      "policy": "release",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2465682432
+      },
+      "idle_prefill_seconds": 0.32041646800007584,
+      "idle_kv_storage_bytes": 905969664,
+      "occupied": {
+        "allocated_bytes": 1219474432,
+        "reserved_bytes": 1247805440,
+        "device_free_bytes": 6088032256,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2465682432
+      },
+      "nvidia_before": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "3057",
+        "57",
+        "2505",
+        "11"
+      ],
+      "after_tensor_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 1247805440,
+        "device_free_bytes": 6088032256,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2465682432
+      },
+      "after_allocator_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2465682432
+      },
+      "release_seconds": 0.2644912409996323,
+      "kv_freed_allocated_bytes": 927465472,
+      "allocator_returned_bytes": 901775360,
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "fits",
+          "peak_allocated_bytes": 1537728512
+        }
+      ],
+      "active": {
+        "batch": 16,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 0.9271445999997923,
+        "tokens_per_second": 1104.4663367507392,
+        "completion_p95_seconds": 0.9271420459999717,
+        "prefill_seconds": 0.25124990599942976,
+        "decode_seconds": 0.6745454739998422,
+        "decode_tokens_per_second": 1470.6199036778833,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 292008960,
+          "reserved_bytes": 2009071616,
+          "device_free_bytes": 5326766080,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 1537728512
+        }
+      },
+      "return_recompute_seconds": 0.2907744949998232,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 1537728512
+      },
+      "nvidia_after": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "2197",
+        "59",
+        "2505",
+        "18"
+      ]
+    },
+    {
+      "idle_sessions": 32,
+      "repeat": 0,
+      "policy": "keep",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 1537728512
+      },
+      "idle_prefill_seconds": 0.39925192200007587,
+      "idle_kv_storage_bytes": 1207959552,
+      "occupied": {
+        "allocated_bytes": 1529328640,
+        "reserved_bytes": 1541406720,
+        "device_free_bytes": 5794430976,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 1607563776
+      },
+      "nvidia_before": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "3340",
+        "63",
+        "2505",
+        "10"
+      ],
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "fits",
+          "peak_allocated_bytes": 2775536640
+        }
+      ],
+      "active": {
+        "batch": 16,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 0.9234794220001277,
+        "tokens_per_second": 1108.849829898926,
+        "completion_p95_seconds": 0.9234766270001273,
+        "prefill_seconds": 0.2530482909996863,
+        "decode_seconds": 0.6690791510000054,
+        "decode_tokens_per_second": 1482.634750339115,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 1529328640,
+          "reserved_bytes": 3030384640,
+          "device_free_bytes": 4305453056,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 2775536640
+        }
+      },
+      "return_recompute_seconds": 0.0,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2775536640
+      },
+      "nvidia_after": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "2200",
+        "66",
+        "2505",
+        "55"
+      ]
+    },
+    {
+      "idle_sessions": 32,
+      "repeat": 0,
+      "policy": "release",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2775536640
+      },
+      "idle_prefill_seconds": 0.40794466800025475,
+      "idle_kv_storage_bytes": 1207959552,
+      "occupied": {
+        "allocated_bytes": 1529328640,
+        "reserved_bytes": 1541406720,
+        "device_free_bytes": 5794430976,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2775536640
+      },
+      "nvidia_before": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "3340",
+        "60",
+        "2505",
+        "10"
+      ],
+      "after_tensor_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 1541406720,
+        "device_free_bytes": 5794430976,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2775536640
+      },
+      "after_allocator_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2775536640
+      },
+      "release_seconds": 0.26223246900008235,
+      "kv_freed_allocated_bytes": 1237319680,
+      "allocator_returned_bytes": 1195376640,
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "fits",
+          "peak_allocated_bytes": 1537728512
+        }
+      ],
+      "active": {
+        "batch": 16,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 0.9326234929999373,
+        "tokens_per_second": 1097.9779167969864,
+        "completion_p95_seconds": 0.9326211679999687,
+        "prefill_seconds": 0.25884364500006996,
+        "decode_seconds": 0.6723835349998808,
+        "decode_tokens_per_second": 1475.3484408272666,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 292008960,
+          "reserved_bytes": 2009071616,
+          "device_free_bytes": 5326766080,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 1537728512
+        }
+      },
+      "return_recompute_seconds": 0.38064697900017563,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 1607563776
+      },
+      "nvidia_after": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "2202",
+        "66",
+        "2505",
+        "17"
+      ]
+    },
+    {
+      "idle_sessions": 48,
+      "repeat": 0,
+      "policy": "keep",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 1607563776
+      },
+      "idle_prefill_seconds": 0.5800367370002277,
+      "idle_kv_storage_bytes": 1811939328,
+      "occupied": {
+        "allocated_bytes": 2148512768,
+        "reserved_bytes": 2170552320,
+        "device_free_bytes": 5165285376,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2226773504
+      },
+      "nvidia_before": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "3942",
+        "65",
+        "2505",
+        "11"
+      ],
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "allocator_budget_rejected",
+          "peak_allocated_bytes": 3105782272
+        },
+        {
+          "batch": 8,
+          "status": "fits",
+          "peak_allocated_bytes": 2771380736
+        }
+      ],
+      "active": {
+        "batch": 8,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 1.4308775829999831,
+        "tokens_per_second": 715.6447289173948,
+        "completion_p95_seconds": 1.4308749179999722,
+        "prefill_seconds": 0.2289766349999809,
+        "decode_seconds": 1.199265581000418,
+        "decode_tokens_per_second": 827.1729095839482,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 2148512768,
+          "reserved_bytes": 3055550464,
+          "device_free_bytes": 4280287232,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 2771380736
+        }
+      },
+      "return_recompute_seconds": 0.0,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2771380736
+      },
+      "nvidia_after": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "2202",
+        "64",
+        "2505",
+        "34"
+      ]
+    },
+    {
+      "idle_sessions": 48,
+      "repeat": 0,
+      "policy": "release",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2771380736
+      },
+      "idle_prefill_seconds": 0.6236951840000984,
+      "idle_kv_storage_bytes": 1811939328,
+      "occupied": {
+        "allocated_bytes": 2148512768,
+        "reserved_bytes": 2170552320,
+        "device_free_bytes": 5165285376,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2771380736
+      },
+      "nvidia_before": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "3940",
+        "60",
+        "2505",
+        "12"
+      ],
+      "after_tensor_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 2170552320,
+        "device_free_bytes": 5165285376,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2771380736
+      },
+      "after_allocator_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2771380736
+      },
+      "release_seconds": 0.260217499999726,
+      "kv_freed_allocated_bytes": 1856503808,
+      "allocator_returned_bytes": 1824522240,
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "fits",
+          "peak_allocated_bytes": 1537728512
+        }
+      ],
+      "active": {
+        "batch": 16,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 0.9261755379998249,
+        "tokens_per_second": 1105.621945286352,
+        "completion_p95_seconds": 0.9261729729996659,
+        "prefill_seconds": 0.2524949819999165,
+        "decode_seconds": 0.6722841060000064,
+        "decode_tokens_per_second": 1475.5666408689283,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 292008960,
+          "reserved_bytes": 2009071616,
+          "device_free_bytes": 5326766080,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 1537728512
+        }
+      },
+      "return_recompute_seconds": 0.6235180509997917,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2226773504
+      },
+      "nvidia_after": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "2200",
+        "66",
+        "2505",
+        "9"
+      ]
+    },
+    {
+      "idle_sessions": 24,
+      "repeat": 1,
+      "policy": "release",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2226773504
+      },
+      "idle_prefill_seconds": 0.31666793299973506,
+      "idle_kv_storage_bytes": 905969664,
+      "occupied": {
+        "allocated_bytes": 1219474432,
+        "reserved_bytes": 1247805440,
+        "device_free_bytes": 6088032256,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2226773504
+      },
+      "nvidia_before": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "3060",
+        "61",
+        "2505",
+        "12"
+      ],
+      "after_tensor_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 1247805440,
+        "device_free_bytes": 6088032256,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2226773504
+      },
+      "after_allocator_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2226773504
+      },
+      "release_seconds": 0.24451765899993916,
+      "kv_freed_allocated_bytes": 927465472,
+      "allocator_returned_bytes": 901775360,
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "fits",
+          "peak_allocated_bytes": 1537728512
+        }
+      ],
+      "active": {
+        "batch": 16,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 0.9164025260001836,
+        "tokens_per_second": 1117.4128954766707,
+        "completion_p95_seconds": 0.9164003120004054,
+        "prefill_seconds": 0.25071445100002165,
+        "decode_seconds": 0.6643433190001815,
+        "decode_tokens_per_second": 1493.2038475120557,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 292008960,
+          "reserved_bytes": 2009071616,
+          "device_free_bytes": 5326766080,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 1537728512
+        }
+      },
+      "return_recompute_seconds": 0.29009985999982746,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 1537728512
+      },
+      "nvidia_after": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "2200",
+        "62",
+        "2505",
+        "26"
+      ]
+    },
+    {
+      "idle_sessions": 24,
+      "repeat": 1,
+      "policy": "keep",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 1537728512
+      },
+      "idle_prefill_seconds": 0.2923874850002903,
+      "idle_kv_storage_bytes": 905969664,
+      "occupied": {
+        "allocated_bytes": 1219474432,
+        "reserved_bytes": 1247805440,
+        "device_free_bytes": 6088032256,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 1537728512
+      },
+      "nvidia_before": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "3060",
+        "66",
+        "2505",
+        "11"
+      ],
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "fits",
+          "peak_allocated_bytes": 2465682432
+        }
+      ],
+      "active": {
+        "batch": 16,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 0.9235007020001831,
+        "tokens_per_second": 1108.8242789443998,
+        "completion_p95_seconds": 0.9234988490002252,
+        "prefill_seconds": 0.2542681410000114,
+        "decode_seconds": 0.6678143660001297,
+        "decode_tokens_per_second": 1485.4427375403413,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 1219474432,
+          "reserved_bytes": 2963275776,
+          "device_free_bytes": 4372561920,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 2465682432
+        }
+      },
+      "return_recompute_seconds": 0.0,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2465682432
+      },
+      "nvidia_after": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "2200",
+        "68",
+        "2505",
+        "38"
+      ]
+    },
+    {
+      "idle_sessions": 32,
+      "repeat": 1,
+      "policy": "release",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2465682432
+      },
+      "idle_prefill_seconds": 0.4028298230000473,
+      "idle_kv_storage_bytes": 1207959552,
+      "occupied": {
+        "allocated_bytes": 1529328640,
+        "reserved_bytes": 1541406720,
+        "device_free_bytes": 5794430976,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2465682432
+      },
+      "nvidia_before": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "3340",
+        "61",
+        "2505",
+        "16"
+      ],
+      "after_tensor_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 1541406720,
+        "device_free_bytes": 5794430976,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2465682432
+      },
+      "after_allocator_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2465682432
+      },
+      "release_seconds": 0.2447739700000966,
+      "kv_freed_allocated_bytes": 1237319680,
+      "allocator_returned_bytes": 1195376640,
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "fits",
+          "peak_allocated_bytes": 1537728512
+        }
+      ],
+      "active": {
+        "batch": 16,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 0.9245764380002583,
+        "tokens_per_second": 1107.5341723122235,
+        "completion_p95_seconds": 0.9245747050003956,
+        "prefill_seconds": 0.2529494059995159,
+        "decode_seconds": 0.6702736359998198,
+        "decode_tokens_per_second": 1479.9925682893288,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 292008960,
+          "reserved_bytes": 2009071616,
+          "device_free_bytes": 5326766080,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 1537728512
+        }
+      },
+      "return_recompute_seconds": 0.38929729500023313,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 1607563776
+      },
+      "nvidia_after": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "2200",
+        "64",
+        "2505",
+        "32"
+      ]
+    },
+    {
+      "idle_sessions": 32,
+      "repeat": 1,
+      "policy": "keep",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 1607563776
+      },
+      "idle_prefill_seconds": 0.38275395300024684,
+      "idle_kv_storage_bytes": 1207959552,
+      "occupied": {
+        "allocated_bytes": 1529328640,
+        "reserved_bytes": 1541406720,
+        "device_free_bytes": 5794430976,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 1607563776
+      },
+      "nvidia_before": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "3340",
+        "67",
+        "2505",
+        "11"
+      ],
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "fits",
+          "peak_allocated_bytes": 2775536640
+        }
+      ],
+      "active": {
+        "batch": 16,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 0.9175262919998204,
+        "tokens_per_second": 1116.0443127663534,
+        "completion_p95_seconds": 0.9175239370001691,
+        "prefill_seconds": 0.2504118969995943,
+        "decode_seconds": 0.6656550560001051,
+        "decode_tokens_per_second": 1490.2613464109907,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 1529328640,
+          "reserved_bytes": 3030384640,
+          "device_free_bytes": 4305453056,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 2775536640
+        }
+      },
+      "return_recompute_seconds": 0.0,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2775536640
+      },
+      "nvidia_after": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "2200",
+        "69",
+        "2505",
+        "41"
+      ]
+    },
+    {
+      "idle_sessions": 48,
+      "repeat": 1,
+      "policy": "release",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2775536640
+      },
+      "idle_prefill_seconds": 0.5860108570000193,
+      "idle_kv_storage_bytes": 1811939328,
+      "occupied": {
+        "allocated_bytes": 2148512768,
+        "reserved_bytes": 2170552320,
+        "device_free_bytes": 5165285376,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2775536640
+      },
+      "nvidia_before": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "3940",
+        "65",
+        "2505",
+        "15"
+      ],
+      "after_tensor_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 2170552320,
+        "device_free_bytes": 5165285376,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2775536640
+      },
+      "after_allocator_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2775536640
+      },
+      "release_seconds": 0.2529676990002372,
+      "kv_freed_allocated_bytes": 1856503808,
+      "allocator_returned_bytes": 1824522240,
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "fits",
+          "peak_allocated_bytes": 1537728512
+        }
+      ],
+      "active": {
+        "batch": 16,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 0.9179795569998532,
+        "tokens_per_second": 1115.4932505759098,
+        "completion_p95_seconds": 0.9179766819997894,
+        "prefill_seconds": 0.25066866199995275,
+        "decode_seconds": 0.6658628480004154,
+        "decode_tokens_per_second": 1489.7962890991346,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 292008960,
+          "reserved_bytes": 2009071616,
+          "device_free_bytes": 5326766080,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 1537728512
+        }
+      },
+      "return_recompute_seconds": 0.6005656070001351,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2226773504
+      },
+      "nvidia_after": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "2200",
+        "68",
+        "2505",
+        "37"
+      ]
+    },
+    {
+      "idle_sessions": 48,
+      "repeat": 1,
+      "policy": "keep",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2226773504
+      },
+      "idle_prefill_seconds": 0.616254508000111,
+      "idle_kv_storage_bytes": 1811939328,
+      "occupied": {
+        "allocated_bytes": 2148512768,
+        "reserved_bytes": 2170552320,
+        "device_free_bytes": 5165285376,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2226773504
+      },
+      "nvidia_before": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "3940",
+        "63",
+        "2505",
+        "9"
+      ],
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "allocator_budget_rejected",
+          "peak_allocated_bytes": 3105782272
+        },
+        {
+          "batch": 8,
+          "status": "fits",
+          "peak_allocated_bytes": 2771380736
+        }
+      ],
+      "active": {
+        "batch": 8,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 1.4002155110001695,
+        "tokens_per_second": 731.315995256016,
+        "completion_p95_seconds": 1.4002130059998308,
+        "prefill_seconds": 0.23076904900017325,
+        "decode_seconds": 1.167066342000453,
+        "decode_tokens_per_second": 849.9945241327291,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 2148512768,
+          "reserved_bytes": 3055550464,
+          "device_free_bytes": 4280287232,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 2771380736
+        }
+      },
+      "return_recompute_seconds": 0.0,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2771380736
+      },
+      "nvidia_after": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "2200",
+        "63",
+        "2505",
+        "13"
+      ]
+    },
+    {
+      "idle_sessions": 24,
+      "repeat": 2,
+      "policy": "keep",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2771380736
+      },
+      "idle_prefill_seconds": 0.2904102569996212,
+      "idle_kv_storage_bytes": 905969664,
+      "occupied": {
+        "allocated_bytes": 1219474432,
+        "reserved_bytes": 1247805440,
+        "device_free_bytes": 6088032256,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2771380736
+      },
+      "nvidia_before": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "3060",
+        "68",
+        "2505",
+        "12"
+      ],
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "fits",
+          "peak_allocated_bytes": 2465682432
+        }
+      ],
+      "active": {
+        "batch": 16,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 0.9876667519997682,
+        "tokens_per_second": 1036.7869505849685,
+        "completion_p95_seconds": 0.9876641880000534,
+        "prefill_seconds": 0.25153764400010914,
+        "decode_seconds": 0.7346874740001113,
+        "decode_tokens_per_second": 1350.2339907864684,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 1219474432,
+          "reserved_bytes": 2963275776,
+          "device_free_bytes": 4372561920,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 2465682432
+        }
+      },
+      "return_recompute_seconds": 0.0,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2465682432
+      },
+      "nvidia_after": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "2183",
+        "69",
+        "2505",
+        "40"
+      ]
+    },
+    {
+      "idle_sessions": 24,
+      "repeat": 2,
+      "policy": "release",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2465682432
+      },
+      "idle_prefill_seconds": 0.3033531659998516,
+      "idle_kv_storage_bytes": 905969664,
+      "occupied": {
+        "allocated_bytes": 1219474432,
+        "reserved_bytes": 1247805440,
+        "device_free_bytes": 6088032256,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2465682432
+      },
+      "nvidia_before": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "3047",
+        "67",
+        "2505",
+        "10"
+      ],
+      "after_tensor_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 1247805440,
+        "device_free_bytes": 6088032256,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2465682432
+      },
+      "after_allocator_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2465682432
+      },
+      "release_seconds": 0.23811157799991634,
+      "kv_freed_allocated_bytes": 927465472,
+      "allocator_returned_bytes": 901775360,
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "fits",
+          "peak_allocated_bytes": 1537728512
+        }
+      ],
+      "active": {
+        "batch": 16,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 0.9849634470001547,
+        "tokens_per_second": 1039.6324890215333,
+        "completion_p95_seconds": 0.9849607119999746,
+        "prefill_seconds": 0.2735623209996447,
+        "decode_seconds": 0.7096668929998486,
+        "decode_tokens_per_second": 1397.8389153912688,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 292008960,
+          "reserved_bytes": 2009071616,
+          "device_free_bytes": 5326766080,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 1537728512
+        }
+      },
+      "return_recompute_seconds": 0.399879976000193,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 1537728512
+      },
+      "nvidia_after": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "2214",
+        "65",
+        "2505",
+        "35"
+      ]
+    },
+    {
+      "idle_sessions": 32,
+      "repeat": 2,
+      "policy": "keep",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 1537728512
+      },
+      "idle_prefill_seconds": 0.41822280199994566,
+      "idle_kv_storage_bytes": 1207959552,
+      "occupied": {
+        "allocated_bytes": 1529328640,
+        "reserved_bytes": 1541406720,
+        "device_free_bytes": 5794430976,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 1607563776
+      },
+      "nvidia_before": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "3354",
+        "63",
+        "2505",
+        "11"
+      ],
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "fits",
+          "peak_allocated_bytes": 2775536640
+        }
+      ],
+      "active": {
+        "batch": 16,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 1.0361459079999804,
+        "tokens_per_second": 988.2778015082596,
+        "completion_p95_seconds": 1.0361406779998106,
+        "prefill_seconds": 0.27834240199990745,
+        "decode_seconds": 0.7561259909998626,
+        "decode_tokens_per_second": 1311.9506693431206,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 1529328640,
+          "reserved_bytes": 3030384640,
+          "device_free_bytes": 4305453056,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 2775536640
+        }
+      },
+      "return_recompute_seconds": 0.0,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2775536640
+      },
+      "nvidia_after": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "2210",
+        "64",
+        "2505",
+        "14"
+      ]
+    },
+    {
+      "idle_sessions": 32,
+      "repeat": 2,
+      "policy": "release",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2775536640
+      },
+      "idle_prefill_seconds": 0.44802330300035464,
+      "idle_kv_storage_bytes": 1207959552,
+      "occupied": {
+        "allocated_bytes": 1529328640,
+        "reserved_bytes": 1541406720,
+        "device_free_bytes": 5794430976,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2775536640
+      },
+      "nvidia_before": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "3352",
+        "63",
+        "2505",
+        "9"
+      ],
+      "after_tensor_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 1541406720,
+        "device_free_bytes": 5794430976,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2775536640
+      },
+      "after_allocator_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2775536640
+      },
+      "release_seconds": 0.27693599499980337,
+      "kv_freed_allocated_bytes": 1237319680,
+      "allocator_returned_bytes": 1195376640,
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "fits",
+          "peak_allocated_bytes": 1537728512
+        }
+      ],
+      "active": {
+        "batch": 16,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 0.9940207489999011,
+        "tokens_per_second": 1030.1595827152114,
+        "completion_p95_seconds": 0.9940185949999432,
+        "prefill_seconds": 0.26752525299980334,
+        "decode_seconds": 0.7247383489998356,
+        "decode_tokens_per_second": 1368.769848275581,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 292008960,
+          "reserved_bytes": 2009071616,
+          "device_free_bytes": 5326766080,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 1537728512
+        }
+      },
+      "return_recompute_seconds": 0.4271883749997869,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 1607563776
+      },
+      "nvidia_after": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "2205",
+        "69",
+        "2505",
+        "45"
+      ]
+    },
+    {
+      "idle_sessions": 48,
+      "repeat": 2,
+      "policy": "keep",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 1607563776
+      },
+      "idle_prefill_seconds": 0.6240659860000051,
+      "idle_kv_storage_bytes": 1811939328,
+      "occupied": {
+        "allocated_bytes": 2148512768,
+        "reserved_bytes": 2170552320,
+        "device_free_bytes": 5165285376,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2226773504
+      },
+      "nvidia_before": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "3946",
+        "70",
+        "2505",
+        "11"
+      ],
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "allocator_budget_rejected",
+          "peak_allocated_bytes": 3105782272
+        },
+        {
+          "batch": 8,
+          "status": "fits",
+          "peak_allocated_bytes": 2771380736
+        }
+      ],
+      "active": {
+        "batch": 8,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 1.5038484430001517,
+        "tokens_per_second": 680.9196796168752,
+        "completion_p95_seconds": 1.503845898000236,
+        "prefill_seconds": 0.24059368600046582,
+        "decode_seconds": 1.260221304999959,
+        "decode_tokens_per_second": 787.1633308088155,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 2148512768,
+          "reserved_bytes": 3055550464,
+          "device_free_bytes": 4280287232,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 2771380736
+        }
+      },
+      "return_recompute_seconds": 0.0,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2771380736
+      },
+      "nvidia_after": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "2202",
+        "68",
+        "2490",
+        "5"
+      ]
+    },
+    {
+      "idle_sessions": 48,
+      "repeat": 2,
+      "policy": "release",
+      "baseline": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2771380736
+      },
+      "idle_prefill_seconds": 0.678950691999944,
+      "idle_kv_storage_bytes": 1811939328,
+      "occupied": {
+        "allocated_bytes": 2148512768,
+        "reserved_bytes": 2170552320,
+        "device_free_bytes": 5165285376,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2771380736
+      },
+      "nvidia_before": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "3944",
+        "69",
+        "2490",
+        "19"
+      ],
+      "after_tensor_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 2170552320,
+        "device_free_bytes": 5165285376,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2771380736
+      },
+      "after_allocator_release": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2771380736
+      },
+      "release_seconds": 0.28137533899962364,
+      "kv_freed_allocated_bytes": 1856503808,
+      "allocator_returned_bytes": 1824522240,
+      "input_sha256": "3b5bed077d54cfe397a63a2b3919c79dc79e2f44e9686eddd0a836abe8e1d623",
+      "admission_probes": [
+        {
+          "batch": 16,
+          "status": "fits",
+          "peak_allocated_bytes": 1537728512
+        }
+      ],
+      "active": {
+        "batch": 16,
+        "requests": 32,
+        "generated_tokens": 1024,
+        "elapsed_seconds": 1.0380368040000576,
+        "tokens_per_second": 986.4775468981765,
+        "completion_p95_seconds": 1.03803275700011,
+        "prefill_seconds": 0.2734737609998774,
+        "decode_seconds": 0.762899218000257,
+        "decode_tokens_per_second": 1300.3028140470133,
+        "output_sha256": "8694b9d43172d306df33a1afb5cd60be1e0c20c40951440834033d093100e58b",
+        "memory": {
+          "allocated_bytes": 292008960,
+          "reserved_bytes": 2009071616,
+          "device_free_bytes": 5326766080,
+          "device_total_bytes": 8585216000,
+          "peak_allocated_bytes": 1537728512
+        }
+      },
+      "return_recompute_seconds": 0.6061316699997406,
+      "return_continuation_matches": true,
+      "idle_continuation_token_ids": [
+        13,
+        10,
+        3944,
+        898,
+        4,
+        20,
+        5015,
+        7005
+      ],
+      "after_trial_cleanup": {
+        "allocated_bytes": 292008960,
+        "reserved_bytes": 346030080,
+        "device_free_bytes": 6989807616,
+        "device_total_bytes": 8585216000,
+        "peak_allocated_bytes": 2226773504
+      },
+      "nvidia_after": [
+        "NVIDIA GeForce RTX 4070 Laptop GPU",
+        "591.74",
+        "2189",
+        "70",
+        "2505",
+        "44"
+      ]
+    }
+  ],
+  "summary": [
+    {
+      "idle_sessions": 24,
+      "paired_repeats": 3,
+      "keep_batch_sizes": [
+        16,
+        16,
+        16
+      ],
+      "release_batch_sizes": [
+        16,
+        16,
+        16
+      ],
+      "keep_tokens_per_second_median": 1092.350553363145,
+      "release_tokens_per_second_median": 1104.4663367507392,
+      "freed_kv_bytes_median": 927465472,
+      "allocator_returned_bytes_median": 901775360,
+      "device_free_increase_bytes_median": 901775360,
+      "return_recompute_seconds_median": 0.2907744949998232,
+      "keep_active_seconds_median": 0.9374280050001289,
+      "release_active_plus_return_seconds_median": 1.4824103359992478
+    },
+    {
+      "idle_sessions": 32,
+      "paired_repeats": 3,
+      "keep_batch_sizes": [
+        16,
+        16,
+        16
+      ],
+      "release_batch_sizes": [
+        16,
+        16,
+        16
+      ],
+      "keep_tokens_per_second_median": 1108.849829898926,
+      "release_tokens_per_second_median": 1097.9779167969864,
+      "freed_kv_bytes_median": 1237319680,
+      "allocator_returned_bytes_median": 1195376640,
+      "device_free_increase_bytes_median": 1195376640,
+      "return_recompute_seconds_median": 0.38929729500023313,
+      "keep_active_seconds_median": 0.9234794220001277,
+      "release_active_plus_return_seconds_median": 1.5755029410001953
+    },
+    {
+      "idle_sessions": 48,
+      "paired_repeats": 3,
+      "keep_batch_sizes": [
+        8,
+        8,
+        8
+      ],
+      "release_batch_sizes": [
+        16,
+        16,
+        16
+      ],
+      "keep_tokens_per_second_median": 715.6447289173948,
+      "release_tokens_per_second_median": 1105.621945286352,
+      "freed_kv_bytes_median": 1856503808,
+      "allocator_returned_bytes_median": 1824522240,
+      "device_free_increase_bytes_median": 1824522240,
+      "return_recompute_seconds_median": 0.6061316699997406,
+      "keep_active_seconds_median": 1.4308775829999831,
+      "release_active_plus_return_seconds_median": 1.8099110889993426
+    }
+  ],
+  "cleanup": {
+    "allocated_bytes": 34603008,
+    "reserved_bytes": 79691776,
+    "device_free_bytes": 7256145920,
+    "services_started": 0
+  },
+  "finished_at": "2026-11-10T07:22:50.617607+00:00"
+}
