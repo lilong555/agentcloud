@@ -25,7 +25,8 @@ func serve(args []string, stdout, stderr io.Writer) error {
 	flags := flag.NewFlagSet("serve", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	autonomous := flags.Bool("enable-autonomous-scheduler", false, "启用服务端基于实际队列、Worker容量与历史延迟的自主休眠恢复")
-	schedulerPolicy := flags.String("scheduler-policy", "observed", "生命周期策略：observed 或 cost-aware")
+	schedulerPolicy := flags.String("scheduler-policy", "observed", "生命周期策略：observed、cost-aware 或 agentcloud-v2")
+	schedulerShadow := flags.Bool("scheduler-shadow", false, "仅执行 cost-aware 观测与计算；需要启用实验控制和自主调度")
 	schedulerInterval := flags.Duration("scheduler-interval", 250*time.Millisecond, "自主调度观察间隔")
 	schedulerIdlePrior := flags.Duration("scheduler-idle-prior", 0, "冷启动idle预计时长先验；实际idle观测后由p75历史替代")
 	schedulerStable := flags.Duration("scheduler-stable-for", 500*time.Millisecond, "休眠前稳定等待确认时长")
@@ -63,6 +64,9 @@ func serve(args []string, stdout, stderr io.Writer) error {
 	}
 	if flags.NArg() != 0 {
 		return errors.New("serve accepts no positional arguments")
+	}
+	if *schedulerShadow && (!*experimentControls || !*autonomous) {
+		return errors.New("scheduler shadow requires --enable-experiment-controls and --enable-autonomous-scheduler")
 	}
 	bindings := map[string]string{}
 	for _, entry := range strings.Split(*tokens, ",") {
@@ -166,7 +170,7 @@ func serve(args []string, stdout, stderr io.Writer) error {
 		}
 		sink = bridge
 	}
-	c, err := control.New(ctx, control.Config{EnableAutonomousScheduler: *autonomous, SchedulerInterval: *schedulerInterval, SchedulerStableFor: *schedulerStable, SchedulerIdlePrior: *schedulerIdlePrior, SchedulerPolicy: *schedulerPolicy, Observability: telemetry, Signals: sink, DataDir: *data, DatabaseURL: *database, Backend: execution, ModelURL: *modelURL, ModelAPIKey: os.Getenv("AGENTCLOUD_MODEL_API_KEY"), ModelConcurrency: *modelConcurrency, ModelTimeout: *modelTimeout, Tokens: bindings, EnableExperimentControls: *experimentControls})
+	c, err := control.New(ctx, control.Config{EnableAutonomousScheduler: *autonomous, SchedulerInterval: *schedulerInterval, SchedulerStableFor: *schedulerStable, SchedulerIdlePrior: *schedulerIdlePrior, SchedulerPolicy: *schedulerPolicy, SchedulerShadow: *schedulerShadow, Observability: telemetry, Signals: sink, DataDir: *data, DatabaseURL: *database, Backend: execution, ModelURL: *modelURL, ModelAPIKey: os.Getenv("AGENTCLOUD_MODEL_API_KEY"), ModelConcurrency: *modelConcurrency, ModelTimeout: *modelTimeout, Tokens: bindings, EnableExperimentControls: *experimentControls})
 	if err != nil {
 		return err
 	}

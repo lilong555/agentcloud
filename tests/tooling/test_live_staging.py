@@ -40,6 +40,18 @@ class LiveStagingTests(unittest.TestCase):
             self.assertEqual(report['trial_ids'], [])
             self.assertEqual(len(report['missing_diagnostics']), 2)
 
+    def test_paired_schedule_and_unexecuted_denominators_are_uploaded(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(staging, 'ROOT', Path(directory)):
+            root=Path(directory)
+            for policy,status in [('static-2','FAILED'),('agentcloud-v2','BLOCKED_CLEANUP')]:
+                folder=root/'docs/evidence/scale'/policy;folder.mkdir(parents=True)
+                (folder/'result.json').write_text(json.dumps(dict(github_run_id='20',github_run_attempt='2',
+                    policy=policy,paired_runner_id='same-runner',trial_execution_status=status,metrics=dict(offered=192,completed=0))))
+                (folder/'schedule.json').write_text(json.dumps(dict(paired_runner_id='same-runner',planned_requests=384)))
+            result=staging.stage('scale',20,2)
+            self.assertEqual(set(result['trial_ids']),{'static-2','agentcloud-v2'})
+            self.assertEqual(set(result['files']),{f'scale/{p}/{name}.json' for p in ('static-2','agentcloud-v2') for name in ('result','schedule')})
+
 
 if __name__ == '__main__':
     unittest.main()

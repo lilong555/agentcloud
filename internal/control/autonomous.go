@@ -21,6 +21,10 @@ func (b *SubstrateBackend) SchedulingCapacity(ctx context.Context, s *Session) (
 }
 
 type ServerEstimateEvidence struct {
+	Episode              *WaitEpisode               `json:"episode,omitempty"`
+	Shadow               bool                       `json:"shadow,omitempty"`
+	ComputedAction       string                     `json:"computed_action,omitempty"`
+	ComputedReason       string                     `json:"computed_reason,omitempty"`
 	WaitPhase            string                     `json:"wait_phase,omitempty"`
 	WaitStartedAt        time.Time                  `json:"wait_started_at,omitempty"`
 	WaitAgeMS            int64                      `json:"wait_age_ms,omitempty"`
@@ -36,6 +40,9 @@ type ServerEstimateEvidence struct {
 	WorkerCapacity       *CapacityObservation `json:"worker_capacity,omitempty"`
 }
 type AutonomousState struct {
+	Episode           *WaitEpisode            `json:"episode,omitempty"`
+	WaitResetAt       time.Time               `json:"wait_reset_at,omitempty"`
+	Diagnostics       []SchedulerDiagnostic   `json:"diagnostics,omitempty"`
 	ReleasePlan       *ReleasePlan            `json:"release_plan,omitempty"`
 	Epoch             uint64                  `json:"epoch"`
 	LastEvaluatedAt   time.Time               `json:"last_evaluated_at"`
@@ -174,7 +181,7 @@ func (c *Controller) serverEstimateLocked(s *Session, input ModelBoundaryRequest
 	input.SnapshotCostMS = &snapshot
 	input.ResumeCostMS = &resume
 	input.JournalCostMS = &journal
-	if c.cfg.SchedulerPolicy == "cost-aware" {
+	if c.conditionalScheduler() {
 		input = c.conditionalEstimateLocked(s, input, evidence, now)
 	}
 	return input, evidence
@@ -261,6 +268,7 @@ func (c *Controller) autonomousLoop() {
 	}
 }
 func (c *Controller) autonomousStep(snapshot *Session) {
+	observationStarted := time.Now()
 	ctx, cancel := context.WithTimeout(c.ctx, c.cfg.ModelTimeout)
 	defer cancel()
 	observer := c.cfg.QueueObserver
@@ -294,6 +302,7 @@ func (c *Controller) autonomousStep(snapshot *Session) {
 		}
 	}
 	p, _ := policy.NewLifecycle(c.cfg.Scheduling)
+	observationMS := float64(time.Since(observationStarted)) / float64(time.Millisecond)
 	c.lock()
 	s, err := c.find(snapshot.TenantID, snapshot.SessionID)
 	if err != nil || c.ready() != nil || s.Epoch != snapshot.Epoch {
@@ -310,7 +319,9 @@ func (c *Controller) autonomousStep(snapshot *Session) {
 		a.Epoch = s.Epoch
 		a.CandidateSince = time.Time{}
 		a.ReleasePlan = nil
+		a.Episode = nil
 	}
+	decisionStarted := time.Now()
 	request, evidence := c.serverEstimateLocked(s, ModelBoundaryRequest{ExpectedEpoch: s.Epoch}, queue, capacity, p.Config(), now)
 	a.Evidence = evidence
 	previousAction, previousReason := a.LastAction, a.Reason
@@ -337,9 +348,9 @@ func (c *Controller) autonomousStep(snapshot *Session) {
 		}
 	} else {
 		decision, e := p.Decide(boundaryInput(s, request, p.Config(), now))
-		if c.cfg.SchedulerPolicy == "cost-aware" {
-			decision, e = c.costDecisionLocked(s, request, evidence, p.Config(), now)
-			costWaiting = e == nil && decision.Estimates.SafePoint && !a.ReturnDemand && !evidence.WaitStartedAt.IsZero() && a.ReleasePlan != nil
+		if c.conditionalScheduler() {
+			decision, e = c.schedulerDecisionLocked(s, request, evidence, p.Config(), now)
+			costWaiting = e == nil && decision.Estimates.SafePoint && !a.ReturnDemand && !evidence.WaitStartedAt.IsZero() && (a.ReleasePlan != nil || a.Episode != nil)
 			if costWaiting && a.CandidateSince.IsZero() {
 				a.CandidateSince = now
 			}
@@ -351,6 +362,7 @@ func (c *Controller) autonomousStep(snapshot *Session) {
 			action, reason = "KEEP", "return_demand"
 		}
 	}
+	computedAction, computedReason := action, reason
 	if action == "SUSPEND" {
 		if a.CandidateSince.IsZero() {
 			a.CandidateSince = now
@@ -371,12 +383,20 @@ func (c *Controller) autonomousStep(snapshot *Session) {
 			}
 		}
 	}
+	if c.cfg.SchedulerShadow && action != "KEEP" {
+		action, reason = "KEEP", "shadow_action_suppressed"
+	}
+	if c.cfg.SchedulerShadow {
+		evidence.Shadow, evidence.ComputedAction, evidence.ComputedReason = true, computedAction, computedReason
+	}
+	c.recordSchedulerDiagnosticLocked(s, evidence, computedAction, computedReason, action, reason,
+		observationMS, float64(time.Since(decisionStarted))/float64(time.Millisecond), now)
 	a.LastAction, a.Reason = action, reason
 	if action == "KEEP" {
 		if action != previousAction || reason != previousReason {
 			c.event(s, "autonomous.keep", reason)
 			_ = c.persistContext(c.operationContext(ctx, snapshot.TenantID, snapshot.SessionID, "autonomous"))
-		} else if c.cfg.SchedulerPolicy == "cost-aware" && c.dirty["sessions"][key(s.TenantID, s.SessionID)] {
+		} else if c.conditionalScheduler() && c.dirty["sessions"][key(s.TenantID, s.SessionID)] {
 			_ = c.persistContext(c.operationContext(ctx, snapshot.TenantID, snapshot.SessionID, "autonomous"))
 		}
 		c.mu.Unlock()
@@ -393,13 +413,22 @@ func (c *Controller) autonomousStep(snapshot *Session) {
 	_ = c.persistContext(c.operationContext(ctx, snapshot.TenantID, snapshot.SessionID, "autonomous"))
 	tenant, id, epoch := s.TenantID, s.SessionID, s.Epoch
 	c.mu.Unlock()
+	var boundary *BoundaryDecision
 	if action == "RESUME" {
 		_, _, err = c.Lifecycle(ctx, tenant, id, "resume", LifecycleRequest{OperationID: operation, ExpectedEpoch: epoch})
 	} else {
-		_, err = c.ModelBoundary(ctx, tenant, id, request)
+		boundary, err = c.ModelBoundary(ctx, tenant, id, request)
 	}
 	c.lock()
 	if current := c.state.Sessions[key(tenant, id)]; current != nil && current.Autonomous != nil {
+		if c.schedulerPolicy() == "agentcloud-v2" && boundary != nil {
+			a := current.Autonomous
+			a.LastAction, a.Reason, a.Evidence = boundary.Decision.Action, boundary.Decision.Reason, boundary.ServerEvidence
+			if len(a.Diagnostics) > 0 {
+				last := &a.Diagnostics[len(a.Diagnostics)-1]
+				last.Action, last.Reason = boundary.Decision.Action, boundary.Decision.Reason
+			}
+		}
 		if err == nil && action == "RESUME" {
 			current.Autonomous.ReturnDemand = false
 			for _, demand := range current.ReturnDemands {

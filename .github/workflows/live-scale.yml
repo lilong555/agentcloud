@@ -5,7 +5,7 @@ on:
       scope:
         description: 'Paired scheduling experiments; workload scopes include long tails, changing waits and open-loop arrivals'
         type: choice
-        options: [smoke, matrix, cost-smoke, cost-matrix, workload-smoke, workload-matrix]
+        options: [smoke, matrix, cost-smoke, cost-matrix, workload-smoke, workload-matrix, gate1, gate2, boundary-screen, boundary-confirm]
         default: smoke
       max_parallel:
         description: 'Independent GitHub hosted runners'
@@ -16,7 +16,7 @@ on:
         type: string
         default: ''
       trial_filter:
-        description: 'Optional JSON array of existing n/policy/seed/scenario coordinates for a targeted rerun'
+        description: 'JSON coordinates: paired scopes use complete n/seed/scenario groups; legacy scopes also require policy'
         type: string
         default: ''
 permissions:
@@ -52,7 +52,7 @@ jobs:
       max-parallel: ${{ fromJSON(format('{0}', inputs.max_parallel || 8)) }}
       matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
     runs-on: ubuntu-latest
-    timeout-minutes: 120
+    timeout-minutes: ${{ matrix.timeout_minutes || 120 }}
     services:
       postgres:
         image: postgres:18-alpine
@@ -75,6 +75,20 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Record paired schedule and every planned trial
+        env:
+          SCALE_CONFIG: ${{ matrix.config }}
+          SCALE_N: ${{ matrix.n }}
+          SCALE_POLICIES: ${{ matrix.policies || matrix.policy }}
+          SCALE_SEED: ${{ matrix.seed }}
+          SCALE_SCENARIO: ${{ matrix.scenario }}
+          SCALE_HEAP: ${{ matrix.heap_mib }}
+          SCALE_WAIT: ${{ matrix.wait_seconds }}
+        run: |
+          args=(--config "$SCALE_CONFIG" --concurrency "$SCALE_N" --policies "$SCALE_POLICIES" --seeds "$SCALE_SEED" --scenario "$SCALE_SCENARIO")
+          if [ -n "$SCALE_HEAP" ]; then args+=(--heap-mib "$SCALE_HEAP"); fi
+          if [ -n "$SCALE_WAIT" ]; then args+=(--wait-seconds "$SCALE_WAIT"); fi
+          python3 -m bench.scale "${args[@]}" --schedule artifacts/scale-schedule.json --plan-only
       - uses: astral-sh/setup-uv@v7
       - name: Prepare locked source
         run: python3 scripts/upstream.py --fetch substrate dynamo
@@ -105,12 +119,15 @@ jobs:
           .venv-dynamo/bin/python scripts/verify_cpu_environment.py
       - name: Prepare Kind, gVisor MEMORY, durable storage and two Workers
         run: bash scripts/ci_live_prepare.sh
-      - name: Run six-round growing-context trial
-        run: python3 -m bench.scale --config '${{ matrix.config }}' --concurrency '${{ matrix.n }}' --policies '${{ matrix.policy }}' --seeds '${{ matrix.seed }}'
+      - name: Run paired policies serially on this Runner
+        run: python3 -m bench.scale --schedule artifacts/scale-schedule.json
       - name: Collect runtime and resource evidence
         if: always()
         run: python3 scripts/ci_live_collect.py
       - name: Release owned background processes and cluster
+        if: always()
+        run: python3 -m bench.scale --schedule artifacts/scale-schedule.json --cleanup-schedule
+      - name: Release port forwards and Kind cluster
         if: always()
         run: python3 scripts/ci_live_cleanup.py
       - name: Stage current attempt evidence
@@ -119,7 +136,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: real-scale-${{ matrix.scenario }}-n${{ matrix.n }}-${{ matrix.policy }}-s${{ matrix.seed }}
+          name: real-scale-${{ matrix.scenario }}-n${{ matrix.n }}-${{ matrix.policy || 'paired' }}-s${{ matrix.seed }}
           path: artifacts/ci-live-evidence/
           if-no-files-found: error
           retention-days: 30

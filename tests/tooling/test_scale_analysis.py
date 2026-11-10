@@ -1,6 +1,6 @@
 import unittest
 
-from bench.analysis.scale import summarize, matrix_coverage
+from bench.analysis.scale import summarize, matrix_coverage, trial_metric
 
 
 def trial(identity, at, status='passed', policy='agentcloud', seed=7101):
@@ -13,6 +13,66 @@ def trial(identity, at, status='passed', policy='agentcloud', seed=7101):
 
 
 class ScaleAnalysisTests(unittest.TestCase):
+    def paired_v2(self, resource=2, latency_scale=1):
+        rows=[]
+        for seed in (7101,7102,7103):
+            for policy in ('agentcloud-v2','static-2'):
+                row=trial(f'{policy}-{seed}',seed,policy=policy,seed=seed)
+                row.update(paired_runner_id=f'runner-{seed}',comparison_protocol='symmetric-program-v1')
+                if policy=='agentcloud-v2':
+                    row['metrics']['actor_reserved_gb_s']=resource
+                    row['metrics']['stranded_worker_gb_s']=.1
+                    for request in row['requests']:
+                        request['ttft_seconds']*=latency_scale
+                rows.append(row)
+        return rows
+
+    def test_joint_acceptance_uses_total_reservation_and_interactive_tail(self):
+        for resource,latency,verdict in (
+            (2,1,'supported_joint_improvement'),
+            (3,.8,'supported_joint_improvement'),
+            (3,1,'tradeoff_or_uncertain'),
+            (4,.8,'tradeoff_or_uncertain'),
+            (2,1.1,'tradeoff_or_uncertain'),
+        ):
+            with self.subTest(resource=resource,latency=latency):
+                report=summarize(self.paired_v2(resource,latency),samples=30,candidate='agentcloud-v2')
+                self.assertEqual(report['paired_comparisons'][0]['verdict'],verdict)
+                self.assertEqual(report['acceptance']['primary_metrics'],['actor_reserved_gb_s','interactive_p95'])
+
+    def test_v2_requires_same_runner_and_symmetric_protocol(self):
+        for field,value in (('paired_runner_id','different'),('paired_runner_id',None),
+                            ('comparison_protocol','legacy'),('comparison_protocol',None)):
+            with self.subTest(field=field,value=value):
+                rows=self.paired_v2()
+                rows[0][field]=value
+                comparison=summarize(rows,samples=20,candidate='agentcloud-v2')['paired_comparisons'][0]
+                self.assertEqual(comparison['verdict'],'incomparable_protocol_or_runner')
+                self.assertFalse(comparison['same_runner_symmetric_protocol'])
+
+    def test_passed_status_with_missing_requests_fails_joint_acceptance(self):
+        rows=self.paired_v2()
+        rows[0]['requests'].pop()
+        report=summarize(rows,samples=20,candidate='agentcloud-v2')
+        self.assertEqual(report['paired_comparisons'][0]['verdict'],'insufficient_complete_pairs')
+        self.assertEqual(report['all_attempts']['completed_requests'],11)
+
+    def test_unmatched_failed_seed_stays_in_joint_acceptance(self):
+        rows=self.paired_v2()
+        rows.append(trial('unmatched',7104,policy='static-2',seed=7104,status='failed'))
+        report=summarize(rows,samples=20,candidate='agentcloud-v2')
+        self.assertEqual(report['paired_comparisons'][0]['verdict'],'insufficient_complete_pairs')
+
+    def test_resume_overhead_counts_all_recorded_resumes(self):
+        row=trial('one',1)
+        row['resumes'][1]['seconds']=1.25
+        self.assertEqual(trial_metric(row,'resume_count'),2)
+        self.assertEqual(trial_metric(row,'resume_total_seconds'),1.75)
+        group=summarize([row],samples=10)['groups'][0]
+        self.assertEqual(group['resume_count'],2)
+        self.assertEqual(group['resume_total_seconds'],1.75)
+        self.assertEqual(group['ci95']['resume_total_seconds'],[1.75,1.75])
+
     def test_unstarted_trials_remain_in_the_frozen_matrix_denominator(self):
         config=dict(concurrency=[2,4],policies=['agentcloud','static-2'],paired_seeds=[7101],context_tokens=[1024])
         report=matrix_coverage([trial('one',1)],config)

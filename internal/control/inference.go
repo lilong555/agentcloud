@@ -106,6 +106,14 @@ func (c *Controller) submitWithContext(ctx context.Context, tenant, id, logicalI
 	s.DynamoFinalized = false
 	s.DynamoFinalizedSnapshot = nil
 	c.state.Requests[key(tenant, logicalID)] = r
+	if c.schedulerPolicy() == "agentcloud-v2" && boundarySafe(s) {
+		if s.Autonomous != nil && s.Autonomous.Episode != nil && !strings.HasPrefix(s.Autonomous.Episode.Origin, "model") {
+			resetReleasePlan(s)
+			s.Autonomous.WaitResetAt = now
+		}
+		episode := c.beginWaitEpisodeLocked(s, "model:"+logicalID, now, now)
+		episode.ValidUntil = time.Time{}
+	}
 	c.event(s, "model.registered", logicalID)
 	if err = c.persistContext(ctx); err != nil {
 		return nil, err
@@ -211,6 +219,9 @@ func (c *Controller) dispatchOne() {
 		if c.cfg.EnableAutonomousScheduler && s.Mode == "in-actor" {
 			if s.Autonomous == nil {
 				s.Autonomous = &AutonomousState{Epoch: s.Epoch}
+			}
+			if c.schedulerPolicy() == "agentcloud-v2" {
+				resetReleasePlan(s)
 			}
 			s.Autonomous.ReturnDemand = true
 			s.Autonomous.ReturnRequestedAt = r.UpdatedAt

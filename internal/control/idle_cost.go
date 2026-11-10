@@ -31,6 +31,10 @@ type ReleasePlan struct {
 func resetReleasePlan(s *Session) {
 	if s.Autonomous != nil {
 		s.Autonomous.ReleasePlan = nil
+		if s.Autonomous.Episode != nil {
+			s.Autonomous.WaitResetAt = time.Now().UTC()
+		}
+		s.Autonomous.Episode = nil
 		s.Autonomous.CandidateSince = time.Time{}
 	}
 }

@@ -26,6 +26,7 @@ type Config struct {
 	SchedulerStableFor        time.Duration
 	SchedulerIdlePrior        time.Duration
 	SchedulerPolicy           string
+	SchedulerShadow           bool
 	SchedulerConcurrency      int
 	CapacityObserver          CapacityObserver
 	Observability             *observability.Runtime
@@ -104,8 +105,11 @@ func New(ctx context.Context, cfg Config) (*Controller, error) {
 	if cfg.SchedulerPolicy == "" {
 		cfg.SchedulerPolicy = "observed"
 	}
-	if cfg.SchedulerPolicy != "observed" && cfg.SchedulerPolicy != "cost-aware" {
-		return nil, errors.New("scheduler policy must be observed or cost-aware")
+	if cfg.SchedulerPolicy != "observed" && cfg.SchedulerPolicy != "cost-aware" && cfg.SchedulerPolicy != "agentcloud-v2" {
+		return nil, errors.New("scheduler policy must be observed, cost-aware or agentcloud-v2")
+	}
+	if cfg.SchedulerShadow && (!cfg.EnableExperimentControls || !cfg.EnableAutonomousScheduler) {
+		return nil, errors.New("scheduler shadow requires experiment controls and autonomous scheduler")
 	}
 	if cfg.ModelConcurrency < 1 || cfg.ModelConcurrency > 64 {
 		return nil, errors.New("model concurrency must be 1..64")
@@ -824,6 +828,9 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 	s.ActualFidelity = actor.ActualFidelity
 	if action == "resume" {
 		s.Epoch++
+		if c.schedulerPolicy() == "agentcloud-v2" {
+			resetReleasePlan(s)
+		}
 		s.RunningSince = time.Now().UTC()
 		s.LastResumedAt = s.RunningSince
 		s.IdleSince = time.Time{}

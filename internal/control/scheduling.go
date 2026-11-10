@@ -204,13 +204,17 @@ func (c *Controller) ModelBoundary(ctx context.Context, tenant, id string, input
 	if serverEvidence != nil {
 		estimateSource = "server_observed"
 	}
-	if input.ExpectedWaitMS == 0 || c.cfg.SchedulerPolicy == "cost-aware" && input.ServerEvidence != nil {
-		input, serverEvidence = c.serverEstimateLocked(s, input, observation, nil, p.Config(), now)
+	var capacity *CapacityObservation
+	if c.schedulerPolicy() == "agentcloud-v2" && serverEvidence != nil {
+		capacity = serverEvidence.WorkerCapacity
+	}
+	if input.ExpectedWaitMS == 0 || c.conditionalScheduler() && input.ServerEvidence != nil || c.schedulerPolicy() == "agentcloud-v2" || c.cfg.SchedulerShadow {
+		input, serverEvidence = c.serverEstimateLocked(s, input, observation, capacity, p.Config(), now)
 		estimateSource = "server_observed"
 	}
 	d, err := p.Decide(boundaryInput(s, input, p.Config(), now))
-	if c.cfg.SchedulerPolicy == "cost-aware" && estimateSource == "server_observed" {
-		d, err = c.costDecisionLocked(s, input, serverEvidence, p.Config(), now)
+	if c.conditionalScheduler() && estimateSource == "server_observed" {
+		d, err = c.schedulerDecisionLocked(s, input, serverEvidence, p.Config(), now)
 	}
 	if err != nil {
 		c.mu.Unlock()
@@ -227,9 +231,17 @@ func (c *Controller) ModelBoundary(ctx context.Context, tenant, id string, input
 		switch {
 		case observation.Source == "" || observation.Scope == "" || observation.ObservedAt.IsZero() || observation.ObservedAt.After(now.Add(time.Second)) || now.Sub(observation.ObservedAt) > 5*time.Second:
 			receipt.Decision.Action, receipt.Decision.Reason = "KEEP", "queue_observation_stale"
-		case observation.WaitingRequests == 0 && input.WorkerPressure == 0 && !(c.cfg.SchedulerPolicy == "cost-aware" && estimateSource == "server_observed"):
+		case observation.WaitingRequests == 0 && input.WorkerPressure == 0 && !(c.conditionalScheduler() && estimateSource == "server_observed"):
 			receipt.Decision.Action, receipt.Decision.Reason = "KEEP", "observed_queue_empty"
 		}
+	}
+	if capacity != nil && (capacity.ObservedAt.IsZero() || capacity.ObservedAt.After(now.Add(time.Second)) || now.Sub(capacity.ObservedAt) > 5*time.Second) {
+		receipt.Decision.Action, receipt.Decision.Reason = "KEEP", "worker_capacity_stale"
+	}
+	if c.cfg.SchedulerShadow {
+		serverEvidence.Shadow = true
+		serverEvidence.ComputedAction, serverEvidence.ComputedReason = receipt.Decision.Action, receipt.Decision.Reason
+		receipt.Decision.Action, receipt.Decision.Reason = "KEEP", "shadow_action_suppressed"
 	}
 	if s.Scheduling == nil {
 		s.Scheduling = map[string]*BoundaryDecision{}

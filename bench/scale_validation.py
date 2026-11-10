@@ -25,3 +25,13 @@ def record_failure(report, error):
     report['status'] = 'failed'
     report.setdefault('error', error)
     report.setdefault('validation_errors', []).append(error)
+
+
+def validate_program_protocol(states, expected_sessions):
+    """Validate one terminal FINAL per E-feedback workspace, using global counters."""
+    snapshots = [s.get('dynamo_finalized_snapshot') or {} for s in states]
+    final_events = max((s.get('final_events', 0) for s in snapshots), default=0)
+    return dict(expected_final_events=expected_sessions, final_events=final_events,
+                symmetric_program_complete=len(states) == expected_sessions and
+                all(s.get('ablation_group') == 'E' and s.get('dynamo_finalized') for s in states) and
+                final_events == expected_sessions)

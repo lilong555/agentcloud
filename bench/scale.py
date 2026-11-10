@@ -10,13 +10,14 @@ from pathlib import Path
 import random
 import signal
 import subprocess
+import sys
 import threading
 import time
 from types import SimpleNamespace
 import uuid
 
 from bench.analysis.resources import integrate
-from bench.scale_validation import autonomous_evidence, record_failure
+from bench.scale_validation import autonomous_evidence, record_failure, validate_program_protocol
 from bench.postgres import connection, execute
 from bench.substrate_live import Evidence, clean, quantile, timestamp, write_json
 from bench.worker_readiness import current_workers, placement_capacity
@@ -26,7 +27,116 @@ from runtime.client import Client, CloudError
 from scripts.disk_guard import inspect
 
 ROOT=Path(__file__).resolve().parents[1]
-AUTONOMOUS_POLICIES=('agentcloud','cost-aware')
+AUTONOMOUS_POLICIES=('agentcloud','cost-aware','agentcloud-v2')
+SCHEDULER_POLICIES=AUTONOMOUS_POLICIES+('static-2-shadow',)
+POLICIES=SCHEDULER_POLICIES+('eager-0','static-2','static-5','static-15')
+SYMMETRIC_PROTOCOL='symmetric-program-v1'
+PROCESS_OWNER_ENV='AGENTCLOUD_SCALE_TRIAL_ID'
+
+
+def atomic_json(path,value):
+    temporary=path.with_suffix(path.suffix+'.tmp')
+    temporary.write_text(json.dumps(value,indent=2)+'\n');temporary.replace(path)
+
+
+def scheduler_options(policy):
+    flags=[]
+    effective='cost-aware' if policy=='static-2-shadow' else policy if policy in ('cost-aware','agentcloud-v2') else 'observed'
+    if policy in SCHEDULER_POLICIES: flags+=['--enable-autonomous-scheduler']
+    if effective!='observed': flags+=['--scheduler-policy',effective]
+    if policy=='static-2-shadow': flags+=['--scheduler-shadow']
+    return flags,effective
+
+
+def host_metadata():
+    result=dict(cpu_count=os.cpu_count(),affinity=sorted(os.sched_getaffinity(0)))
+    try:
+        result['cpu_model']=next(line.split(':',1)[1].strip() for line in Path('/proc/cpuinfo').read_text().splitlines() if line.startswith('model name'))
+    except (OSError,StopIteration): pass
+    result['cgroup']={}
+    for name in ('cpu.max','cpu.stat','cpuset.cpus.effective','memory.max'):
+        try: result['cgroup'][name]=(Path('/sys/fs/cgroup')/name).read_text().strip()
+        except OSError: pass
+    return result
+
+
+def owned_trial_processes(trial_ids,proc_root=Path('/proc')):
+    """Select same-user descendants by an exact inherited trial marker."""
+    markers={f'{PROCESS_OWNER_ENV}={trial_id}'.encode():trial_id for trial_id in trial_ids}
+    selected={}
+    for path in proc_root.iterdir():
+        if not path.name.isdigit() or int(path.name) in (1,os.getpid()): continue
+        try:
+            if path.stat().st_uid!=os.getuid(): continue
+            fields=(path/'stat').read_text().rsplit(')',1)[1].split()
+            if fields[0]=='Z': continue
+            # Environment contents stay private; only the ownership key is retained.
+            matched=next((markers[value] for value in (path/'environ').read_bytes().split(b'\0') if value in markers),None)
+            if matched: selected[int(path.name)]=dict(trial_id=matched,start_ticks=int(fields[19]))
+        except (FileNotFoundError,ProcessLookupError,PermissionError): continue
+    return selected
+
+
+def signal_owned_process(pid,identity,signum):
+    """Pin the kernel process identity before rechecking ownership and signalling."""
+    descriptor=os.pidfd_open(pid)
+    try:
+        if owned_trial_processes([identity['trial_id']]).get(pid)==identity:
+            signal.pidfd_send_signal(descriptor,signum)
+    finally: os.close(descriptor)
+
+
+def cleanup_trial_processes(trial_ids):
+    initial=owned_trial_processes(trial_ids);errors=[]
+    for signum,seconds in ((signal.SIGTERM,2),(signal.SIGKILL,2)):
+        current=owned_trial_processes(trial_ids)
+        if not current: break
+        for pid,identity in current.items():
+            try: signal_owned_process(pid,identity,signum)
+            except ProcessLookupError: pass
+            except OSError as exc: errors.append(str(exc))
+        deadline=time.monotonic()+seconds
+        while time.monotonic()<deadline and owned_trial_processes(trial_ids): time.sleep(.05)
+    remaining=owned_trial_processes(trial_ids)
+    return dict(observed_pids=sorted(initial),remaining_pids=sorted(remaining),errors=errors,
+                cleanup_success=not remaining and not errors)
+
+
+def cleanup_schedule(schedule,args):
+    failed=False
+    for item in schedule['order']:
+        folder=args.output_dir/item['trial_id'];report=json.loads((folder/'result.json').read_text())
+        cleanup=cleanup_trial_processes([item['trial_id']])
+        if report.get('trial_execution_status') not in ('NOT_STARTED','BLOCKED_CLEANUP') and not report.get('ephemeral_postgres_database_released'):
+            try:
+                database=item['trial_id'].replace('-','_')
+                if not database.replace('_','').isalnum() or not database.startswith('scale_'): raise ValueError('invalid trial database name')
+                execute(os.getenv('AGENTCLOUD_TEST_PG_ADMIN','postgresql:///postgres?host=/var/run/postgresql'),
+                        'DROP DATABASE IF EXISTS '+database+' WITH (FORCE)')
+                cleanup['ephemeral_postgres_database_released']=True
+            except Exception as exc:
+                cleanup['cleanup_success']=False;cleanup['errors'].append(str(exc))
+        atomic_json(folder/'final-process-cleanup.json',cleanup)
+        failed=failed or not cleanup['cleanup_success']
+    return int(failed)
+
+
+def request_rows(config,trial_id,n):
+    return [dict(session_id=f'{trial_id}-w{index}',tenant=f'tenant-{chr(97+(index//len(KINDS)+index)%config["tenants"])}',
+        workspace_index=index,workload=KINDS[index%len(KINDS)],round=turn,status='NOT_OFFERED',
+        context_tokens=tokens,logical_request_id=f'{trial_id}-w{index}-r{turn}')
+        for index in range(n) for turn,tokens in enumerate(config['context_tokens'])]
+
+
+class BudgetClient(Client):
+    """Every HTTP operation observes the trial or cleanup budget independently."""
+    def __init__(self,*args,budget,**kwargs):
+        self.budget=budget
+        super().__init__(*args,**kwargs)
+    @property
+    def timeout(self): return self.budget(self._timeout)
+    @timeout.setter
+    def timeout(self,value): self._timeout=value
 
 
 class FairSlots:
@@ -52,23 +162,21 @@ class FairSlots:
 
 
 class Trial:
-    def __init__(self,config,args,seed,concurrency,policy,order):
+    def __init__(self,config,args,seed,concurrency,policy,order,trial_id=None):
         self.config,self.args=config,args
         self.seed,self.n,self.policy,self.order=seed,concurrency,policy,order
         self.arrivals=ArrivalTrace(config,seed,concurrency)
-        self.id=f'scale-{seed}-{concurrency}-{policy}-{uuid.uuid4().hex[:6]}'
+        self.id=trial_id or f'scale-{seed}-{concurrency}-{policy}-{uuid.uuid4().hex[:6]}'
+        self.deadline=time.monotonic()+config.get('trial_deadline_seconds',1500);self.cleanup_deadline=None
         self.private=ROOT/'artifacts/scale'/self.id;self.private.mkdir(parents=True)
-        self.output=args.output_dir/self.id;self.output.mkdir(parents=True)
+        self.output=args.output_dir/self.id;self.output.mkdir(parents=True,exist_ok=True)
         write_json(self.output/'arrival-trace.json',self.arrivals.document)
         self.ev=Evidence(self.output/'events.jsonl');self.stopped=threading.Event();self.slots=FairSlots(config['worker_slots'],self.stopped)
         self.lock=threading.Lock();self.samples=[];self.resumes=[];self.idle=[];self.tools=[];self.sessions=[];self.service_samples=[]
-        self.rows=[dict(session_id=f'{self.id}-w{index}',tenant=f'tenant-{chr(97+(index//len(KINDS)+index)%config["tenants"])}',
-            workspace_index=index,workload=KINDS[index%len(KINDS)],round=turn,status='NOT_OFFERED',
-            context_tokens=tokens,logical_request_id=f'{self.id}-w{index}-r{turn}')
-            for index in range(concurrency) for turn,tokens in enumerate(config['context_tokens'])]
+        self.rows=request_rows(config,self.id,concurrency)
         base=(args.client_dir/'coordinator-token').read_text().strip()
         self.tokens={f'tenant-{chr(97+i)}':base if i==0 else hashlib.sha256((base+f':tenant-{i}').encode()).hexdigest() for i in range(config['tenants'])}
-        self.clients={tenant:Client(f'http://127.0.0.1:{args.coordinator_port}',token,timeout=180) for tenant,token in self.tokens.items()}
+        self.clients={tenant:BudgetClient(f'http://127.0.0.1:{args.coordinator_port}',token,timeout=180,budget=self.remaining) for tenant,token in self.tokens.items()}
         self.native=None;self.coordinator=None;self.probe=None;self.handles=[];self.probe_thread=None
         self.created_db=False;self.db=self.id.replace('-','_');self.started=None;self.finished=None
         self.admin=os.getenv('AGENTCLOUD_TEST_PG_ADMIN','postgresql:///postgres?host=/var/run/postgresql')
@@ -76,14 +184,23 @@ class Trial:
         self.native_snapshots=[]
     def event(self,kind,**values): return self.ev.event(kind,trial_id=self.id,**values)
     def client(self,entry): return self.clients[entry['tenant']]
+    def remaining(self,limit):
+        deadline=getattr(self,'cleanup_deadline',None) or getattr(self,'deadline',None)
+        if deadline is None: return limit
+        remaining=deadline-time.monotonic()
+        if remaining<=0: raise TimeoutError('cleanup deadline exceeded' if self.cleanup_deadline else 'trial deadline exceeded')
+        return min(limit,remaining)
+    def phase_deadline(self,limit):
+        return min(time.monotonic()+limit,getattr(self,'deadline',float('inf')))
     def guard(self,force=False):
+        self.remaining(1)
+        if self.stopped.is_set(): raise RuntimeError('trial interrupted')
         with self.lock:
             if not force and time.monotonic()-self.last_guard<5: return
             self.last_guard=time.monotonic()
         usage=inspect('/',6)
         if force: self.event('disk_guard',**usage)
         if not usage['ready']: self.stopped.set();raise RuntimeError('disk headroom below 6 GiB')
-        if self.stopped.is_set(): raise RuntimeError('trial interrupted')
         if self.coordinator and self.coordinator.poll() is not None: raise RuntimeError('coordinator exited')
     def log(self,name):
         handle=(self.private/name).open('w');self.handles.append(handle);return handle
@@ -105,8 +222,7 @@ class Trial:
             '--substrate-client-cert',str(self.args.client_dir/'router-cert.pem'),'--substrate-client-key',str(self.args.client_dir/'router-key.pem'),
             '--model-url',self.native.front,'--dynamo-control-url',self.native.control,
             '--dynamo-tenant-tokens-file',str(self.native.runtime_dir/'tenant-tokens.json'),'--enable-experiment-controls']
-        if self.policy in AUTONOMOUS_POLICIES: command+=['--enable-autonomous-scheduler']
-        if self.policy=='cost-aware': command+=['--scheduler-policy','cost-aware']
+        flags,expected_policy=scheduler_options(self.policy);command+=flags
         self.coordinator_command=command;self.coordinator_env=env
         self.coordinator=subprocess.Popen(command,cwd=ROOT,env=env,stdout=self.log('coordinator.log'),stderr=subprocess.STDOUT,start_new_session=True)
         for _ in range(200):
@@ -114,9 +230,11 @@ class Trial:
             try:
                 caps=self.clients['tenant-a'].call('GET','/v1/capabilities')
                 if caps['execution_backend']!='substrate' or caps['journal_backend']!='postgresql': raise RuntimeError('real backend preflight failed')
-                if caps.get('autonomous_scheduler_enabled')!=(self.policy in AUTONOMOUS_POLICIES): raise RuntimeError('autonomous scheduler preflight failed')
-                expected_policy='cost-aware' if self.policy=='cost-aware' else 'observed'
+                if caps.get('autonomous_scheduler_enabled')!=(self.policy in SCHEDULER_POLICIES): raise RuntimeError('autonomous scheduler preflight failed')
                 if caps.get('scheduler_policy')!=expected_policy: raise RuntimeError('server scheduler policy differs from frozen trial')
+                if self.config.get('comparison_protocol')==SYMMETRIC_PROTOCOL:
+                    if caps.get('scheduler_shadow')!=(self.policy=='static-2-shadow'): raise RuntimeError('scheduler shadow preflight failed')
+                    if caps.get('scheduler_effective_policy')!=expected_policy: raise RuntimeError('effective scheduler policy preflight failed')
                 self.event('preflight',capabilities=caps,native=self.native.control_call('capabilities')[1],config=self.config,
                     policy=self.policy,concurrent_workspaces=self.n,tenants=list(self.tokens),coordinator_command=command)
                 break
@@ -142,7 +260,7 @@ class Trial:
                             self.service_samples.append(row);self.event('service_process_observation',sample=row)
                         except (OSError,ValueError,IndexError): pass
         self.probe_thread=threading.Thread(target=consume,daemon=True);self.probe_thread.start()
-        deadline=time.monotonic()+180
+        deadline=self.phase_deadline(180)
         latest={}
         while time.monotonic()<deadline:
             self.guard()
@@ -179,14 +297,14 @@ class Trial:
             self.event('native_snapshot_unavailable',session_id=entry['id'],label=label,error=str(exc));return {}
     def tool(self,entry,operation,command):
         before=time.time();state=entry['state']
-        receipt=self.client(entry).tool(entry['id'],state['epoch'],operation,'shell',command=command,timeout_ms=60000)
+        receipt=self.client(entry).tool(entry['id'],state['epoch'],operation,'shell',command=command,timeout_ms=max(1,int(self.remaining(60)*1000)))
         self.tools.append(dict(uid=state['actor']['uid'],start=before,end=time.time()))
         self.event('tool_receipt',session_id=entry['id'],tenant=entry['tenant'],receipt=receipt)
         if receipt['status']!='COMPLETED' or receipt.get('result',{}).get('exit_code')!=0: raise RuntimeError('Actor tool failed: '+operation)
         return json.loads(receipt['result']['stdout'])
     def suspend(self,entry,operation):
         state=self.refresh(entry)
-        deadline=time.monotonic()+180
+        deadline=self.phase_deadline(180)
         while state['state'] in ('QUIESCING','SUSPENDING','RESUMING'):
             if time.monotonic()>deadline: raise TimeoutError('in-flight lifecycle deadline')
             time.sleep(.1);state=self.refresh(entry)
@@ -201,20 +319,20 @@ class Trial:
         state=self.refresh(entry);queue=0.
         if state['state']=='RUNNING' and state['gate']=='OPEN': return queue
         if not entry['resident']:
-            queue=self.slots.acquire(entry['id'],self.config['request_deadline_seconds']);entry['resident']=True
+            queue=self.slots.acquire(entry['id'],self.remaining(self.config['request_deadline_seconds']));entry['resident']=True
         begin=time.time();entry['return_pending']=True
         try:
             if self.policy in AUTONOMOUS_POLICIES:
                 body=dict(operation_id=operation,expected_epoch=state['epoch'])
                 demand=self.client(entry).call('POST',self.client(entry).path(entry['id'])+'/return-demand',body)
-                deadline=time.monotonic()+self.config['request_deadline_seconds']
+                deadline=self.phase_deadline(self.config['request_deadline_seconds'])
                 while demand['status']!='COMPLETED':
                     if time.monotonic()>deadline: raise TimeoutError('managed return demand deadline')
                     time.sleep(self.config['poll_seconds']);state=self.refresh(entry)
                     demand=state.get('return_demands',{}).get(operation,demand)
                 state=self.client(entry).session(entry['id'])
             else:
-                deadline=time.monotonic()+self.config['request_deadline_seconds']
+                deadline=self.phase_deadline(self.config['request_deadline_seconds'])
                 while True:
                     try:
                         state=self.client(entry).lifecycle(entry['id'],'resume',state['epoch'],operation)
@@ -246,9 +364,9 @@ class Trial:
         self.guard()
         name=f'{self.id}-w{index}';tenant=f'tenant-{chr(97+(index//len(KINDS)+index)%self.config["tenants"])}'
         entry=dict(id=name,tenant=tenant,index=index,kind=KINDS[index%len(KINDS)],resident=False,state=None)
-        self.sessions.append(entry);self.slots.acquire(name,self.config['request_deadline_seconds']);entry['resident']=True
+        self.sessions.append(entry);self.slots.acquire(name,self.remaining(self.config['request_deadline_seconds']));entry['resident']=True
         entry['state']=self.client(entry).call('POST','/v1/sessions',dict(session_id=name,workspace_id=name,actor_name='ac-'+name,
-            mode='external',profile=entry['kind'],ablation_group='E' if self.policy in AUTONOMOUS_POLICIES else 'B'))
+            mode='external',profile=entry['kind'],ablation_group='E' if self.config.get('comparison_protocol')==SYMMETRIC_PROTOCOL or self.policy in AUTONOMOUS_POLICIES else 'B'))
         installed=self.client(entry).tool(name,1,'install-workload','file_write',path='actor_mix.py',content=(ROOT/'bench/workloads/actor_mix.py').read_text())
         if installed['status']!='COMPLETED': raise RuntimeError('workload installation failed')
         entry['proof']=self.tool(entry,'start-ram',f'python3 actor_mix.py start --memory-mib {self.config["heap_mib"]}')
@@ -280,7 +398,7 @@ class Trial:
                 self.event('model_submit',**row)
                 self.client(entry).call('POST',self.client(entry).path(entry['id'])+'/requests',dict(logical_request_id=row['logical_request_id'],payload=payload,terminal_turn=turn==len(rows)-1))
                 idle=dict(uid=entry['state']['actor']['uid'],start=row['submitted_at'],end=None);self.idle.append(idle)
-                deadline=time.monotonic()+self.config['request_deadline_seconds'];result=None;window=None;ttl_applied=False
+                deadline=self.phase_deadline(self.config['request_deadline_seconds']);result=None;window=None;ttl_applied=False
                 while True:
                     state=self.refresh(entry)
                     if result is None:
@@ -300,7 +418,7 @@ class Trial:
                             if entry['next_arrival']>time.time():
                                 window=self.client(entry).call('POST',self.client(entry).path(entry['id'])+'/idle-window',dict(operation_id=f'think-{turn}',expected_epoch=state['epoch'],phase='START',ttl_ms=600000))
                     if result is not None and time.time()>=entry['next_arrival']: break
-                    if self.policy not in AUTONOMOUS_POLICIES and not ttl_applied and time.time()>=row['submitted_at']+float(self.policy.split('-')[-1]):
+                    if self.policy not in AUTONOMOUS_POLICIES and not ttl_applied and time.time()>=row['submitted_at']+(2 if self.policy=='static-2-shadow' else float(self.policy.split('-')[-1])):
                         self.suspend(entry,f'idle-{turn}');ttl_applied=True
                     if time.monotonic()>deadline: raise TimeoutError('model/idle deadline')
                     time.sleep(self.config['poll_seconds'])
@@ -342,9 +460,10 @@ class Trial:
                     sampling_interval_seconds=1,source='Linux /proc/<pid>/stat process CPU and resident pages')
         return result
     def cleanup(self):
-        objects={};states=[];diagnostics={};journal={}
+        objects={};states=[];diagnostics={};journal={};self.cleanup_errors=[]
         for entry in self.sessions:
             try:
+                self.remaining(1)
                 # A task can fail before issuing its terminal inference turn.
                 # The control plane retires only bindings with resolved model
                 # outcomes; UNKNOWN remains available for reconciliation.
@@ -352,6 +471,7 @@ class Trial:
                     try:
                         self.client(entry).call('POST',self.client(entry).path(entry['id'])+'/finalize',{})
                     except Exception as exc:
+                        self.cleanup_errors.append(str(exc))
                         self.event('native_cleanup_finalize_error',session_id=entry['id'],error=str(exc))
                 state=self.client(entry).session(entry['id']);states.append(clean(state));entry['state']=state
                 actor=state['actor']
@@ -360,14 +480,16 @@ class Trial:
                     manifest=receipt.get('manifest') or {}
                     if manifest.get('retained_tag_uid'): objects[manifest['retained_tag_uid']]=dict(kind='tag',name=manifest['retained_tag'],uid=manifest['retained_tag_uid'])
                 diagnostics[entry['id']]=self.client(entry).call('GET','/v1/workspaces/'+entry['id']+'/trace')
-            except Exception as exc: self.event('cleanup_inspection_error',session_id=entry['id'],error=str(exc))
+            except Exception as exc:
+                self.cleanup_errors.append(str(exc));self.event('cleanup_inspection_error',session_id=entry['id'],error=str(exc))
         for tenant,client in self.clients.items():
             try: journal[tenant]=client.call('GET','/v1/events?after_seq=0')
-            except Exception as exc: self.event('journal_export_error',tenant=tenant,error=str(exc))
+            except Exception as exc:
+                self.cleanup_errors.append(str(exc));self.event('journal_export_error',tenant=tenant,error=str(exc))
         write_json(self.output/'final-state.json',states);write_json(self.output/'traces.json',diagnostics);write_json(self.output/'coordinator-events.json',journal)
         write_json(self.private/'cleanup.json',list(objects.values()))
         if objects:
-            result=subprocess.run([str(ROOT/'artifacts/substrate/bench-cleanup'),'--client-dir',str(self.args.client_dir),'--objects',str(self.private/'cleanup.json')],capture_output=True,text=True,timeout=600)
+            result=subprocess.run([str(ROOT/'artifacts/substrate/bench-cleanup'),'--client-dir',str(self.args.client_dir),'--objects',str(self.private/'cleanup.json')],capture_output=True,text=True,timeout=self.remaining(300))
             self.event('resource_cleanup',returncode=result.returncode,output=result.stdout,error=result.stderr)
             if result.returncode: raise RuntimeError('experiment resource cleanup failed')
         return states,diagnostics
@@ -377,16 +499,10 @@ class Trial:
             raise KeyboardInterrupt(f'signal {signum}')
         prior_handlers={sig:signal.signal(sig,interrupted) for sig in (signal.SIGINT,signal.SIGTERM)}
         attempted_at=time.time()
-        source={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [ROOT/'bench/scale.py',ROOT/'bench/configs/scale-live.json',ROOT/'bench/workloads/actor_mix.py',ROOT/'bench/workloads/arrivals.py',ROOT/'bench/worker_readiness.py',ROOT/'bench/worker_probe/main.go',ROOT/'bench/analysis/resources.py',ROOT/'experiments/dynamo/native_mocker.py',ROOT/'integrations/dynamo/manifest.json',ROOT/'integrations/substrate/manifest.json']}
-        source['selected_config']=hashlib.sha256(self.args.config.read_bytes()).hexdigest()
-        report=dict(schema_version=1,trial_id=self.id,seed=self.seed,concurrency=self.n,policy=self.policy,order=self.order,status='failed',config=self.config,
-            gpu_execution=False,execution_kind='real-substrate-memory-native-dynamo-cpu-mocker',source_sha256=source,
-            source_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
-            attempted_at=attempted_at,runner=dict(os=os.getenv('RUNNER_OS'),arch=os.getenv('RUNNER_ARCH'),name=os.getenv('RUNNER_NAME')),
-            github_run_id=os.getenv('GITHUB_RUN_ID'),github_run_attempt=os.getenv('GITHUB_RUN_ATTEMPT'),
-            arrival_pattern=self.arrivals.mode,arrival_trace_sha256=self.arrivals.sha256,
-            workload_scenario=self.config.get('workload_scenario','fixed'),
-            scheduler_inputs='server_observed' if self.policy in AUTONOMOUS_POLICIES else 'static_ttl')
+        report=json.loads((self.output/'result.json').read_text())
+        report.update(status='failed',trial_execution_status='RUNNING',attempted_at=attempted_at,
+            arrival_pattern=self.arrivals.mode,arrival_trace_sha256=self.arrivals.sha256)
+        atomic_json(self.output/'result.json',report)
         try:
             self.start()
             with futures.ThreadPoolExecutor(max_workers=self.config['worker_slots']) as pool: entries=list(pool.map(self.provision,range(self.n)))
@@ -404,45 +520,188 @@ class Trial:
             self.stopped.set();report['error']=str(exc)
         finally:
             for sig in prior_handlers: signal.signal(sig,signal.SIG_IGN)
-            if 'metrics' not in report:
-                if self.started is not None:
-                    self.finished=time.time();report['metrics']=self.metrics()
-                else:
-                    report['metrics']=dict(offered=len(self.rows),completed=0,interactive_slo_successes=0,
-                        interactive_offered=sum(r['workload']=='interactive' for r in self.rows),
-                        duration_seconds=time.time()-attempted_at,goodput_per_second=0,
-                        actor_reserved_gb_s=None,stranded_worker_gb_s=None,resource_coverage_fraction=0,cached_tokens=0)
-            report.update(requests=self.rows,resumes=self.resumes,sessions=[dict(id=e['id'],tenant=e['tenant'],status=e.get('status'),error=e.get('error')) for e in self.sessions])
             try:
-                states,traces=self.cleanup()
-                report['autonomous_decisions']=autonomous_evidence(states)
-                if self.policy in AUTONOMOUS_POLICIES and not report['autonomous_decisions']['server_observation_complete']:
-                    record_failure(report,'autonomous decisions lack server observation evidence')
-                if self.native:
-                    report['final_native_capabilities']=self.native.control_call('capabilities')[1]
-                    if report['final_native_capabilities'].get('active_bindings')!=0:
-                        record_failure(report,'native binding capacity remains allocated after terminal turns')
-            except Exception as exc: report['cleanup_error']=str(exc);report['status']='failed'
-            for process in (self.probe,self.coordinator):
-                if process and process.poll() is None:
-                    try: os.killpg(process.pid,signal.SIGTERM)
-                    except ProcessLookupError: pass
-                    try: process.wait(timeout=20)
-                    except subprocess.TimeoutExpired: os.killpg(process.pid,signal.SIGKILL);process.wait()
-            if self.probe_thread: self.probe_thread.join(timeout=5)
-            if self.native:
-                self.native.close()
-                for path in (self.private/'native-logs').glob('*.log'):
-                    # Only native process logs are public; client configuration and model secrets stay private.
-                    (self.output/path.name).write_bytes(path.read_bytes()[-8*2**20:])
-            for handle in self.handles: handle.close()
-            if self.created_db:
-                try: execute(self.admin,'DROP DATABASE '+self.db+' WITH (FORCE)');report['ephemeral_postgres_database_released']=True
-                except Exception as exc: report['database_cleanup_error']=str(exc);report['status']='failed'
-            report['disk_after']=inspect('/',6)
-            write_json(self.output/'result.json',report);self.ev.close()
-            for sig,handler in prior_handlers.items(): signal.signal(sig,handler)
+                if self.started is not None:
+                    self.finished=self.finished or time.time();report['metrics']=self.metrics()
+            except Exception as exc: record_failure(report,'metrics: '+str(exc))
+            report.update(requests=self.rows,resumes=self.resumes,sessions=[dict(id=e['id'],tenant=e['tenant'],status=e.get('status'),error=e.get('error')) for e in self.sessions])
+            report['cleanup_success']=False;report['trial_execution_status']='CLEANING'
+            atomic_json(self.output/'result.json',report)
+            self.cleanup_deadline=time.monotonic()+self.config.get('cleanup_deadline_seconds',300)
+            def expired(_signum,_frame): raise TimeoutError('cleanup deadline exceeded')
+            previous_alarm=signal.signal(signal.SIGALRM,expired)
+            signal.setitimer(signal.ITIMER_REAL,self.remaining(300))
+            try:
+                self.finish(report)
+            except Exception as exc:
+                report['cleanup_error']=str(exc);record_failure(report,'cleanup: '+str(exc))
+            finally:
+                signal.setitimer(signal.ITIMER_REAL,0);signal.signal(signal.SIGALRM,previous_alarm)
+                report['trial_execution_status']='COMPLETED' if report['status']=='passed' else 'FAILED'
+                atomic_json(self.output/'result.json',report);self.ev.close()
+                for sig,handler in prior_handlers.items(): signal.signal(sig,handler)
         return report
+
+    def finish(self,report):
+        errors=[]
+        def attempt(label,action):
+            try:
+                self.remaining(1);return action()
+            except Exception as exc:
+                errors.append(label+': '+str(exc));record_failure(report,errors[-1])
+        result=attempt('resource cleanup',self.cleanup)
+        errors.extend(getattr(self,'cleanup_errors',[]))
+        if result:
+            states,_=result
+            report['autonomous_decisions']=autonomous_evidence(states)
+            if self.policy in SCHEDULER_POLICIES and not report['autonomous_decisions']['server_observation_complete']:
+                record_failure(report,'autonomous decisions lack server observation evidence')
+            report['program_protocol']=validate_program_protocol(states,self.n)
+            if self.config.get('comparison_protocol')==SYMMETRIC_PROTOCOL and not report['program_protocol']['symmetric_program_complete']:
+                record_failure(report,'symmetric Program E feedback or terminal FINAL count differs from frozen protocol')
+        if self.native:
+            capabilities=attempt('native capacity',lambda:self.native.control_call('capabilities')[1])
+            report['final_native_capabilities']=capabilities
+            if not capabilities or capabilities.get('active_bindings')!=0:
+                errors.append('native binding capacity remains allocated after terminal turns')
+        def stop(process):
+            if process and process.poll() is None:
+                try: os.killpg(process.pid,signal.SIGTERM)
+                except ProcessLookupError: pass
+                try: process.wait(timeout=self.remaining(20))
+                except subprocess.TimeoutExpired:
+                    os.killpg(process.pid,signal.SIGKILL);process.wait(timeout=self.remaining(5))
+        for name,process in [('probe',self.probe),('coordinator',self.coordinator)]:
+            attempt(name+' shutdown',lambda p=process:stop(p))
+        if self.probe_thread: attempt('probe join',lambda:self.probe_thread.join(timeout=self.remaining(5)))
+        if self.native:
+            attempt('native shutdown',self.native.close)
+            for path in (self.private/'native-logs').glob('*.log'):
+                # Bounded public logs; runtime credentials remain in the private tree.
+                def export(path=path):
+                    with path.open('rb') as handle:
+                        handle.seek(max(0,path.stat().st_size-8*2**20))
+                        (self.output/path.name).write_bytes(handle.read())
+                attempt('native log export',export)
+        for handle in self.handles: attempt('log close',handle.close)
+        if self.created_db:
+            def drop():
+                execute(self.admin,'DROP DATABASE '+self.db+' WITH (FORCE)');report['ephemeral_postgres_database_released']=True
+            attempt('database cleanup',drop)
+        report['disk_after']=attempt('disk observation',lambda:inspect('/',6))
+        for error in errors: record_failure(report,error)
+        report['cleanup_errors']=errors;report['cleanup_success']=not errors
+
+
+def prepare_schedule(config,args):
+    runner_id=str(uuid.uuid4());host=host_metadata()
+    source={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [ROOT/'bench/scale.py',ROOT/'bench/workloads/actor_mix.py',ROOT/'bench/workloads/arrivals.py',ROOT/'bench/worker_readiness.py',ROOT/'bench/worker_probe/main.go',ROOT/'bench/analysis/resources.py',ROOT/'experiments/dynamo/native_mocker.py',ROOT/'integrations/dynamo/manifest.json',ROOT/'integrations/substrate/manifest.json']}
+    source['selected_config']=hashlib.sha256(args.config.read_bytes()).hexdigest()
+    metadata=dict(schema_version=1,comparison_protocol=config.get('comparison_protocol','legacy-ablation-v1'),paired_runner_id=runner_id,
+        host=host,runner=dict(os=os.getenv('RUNNER_OS'),arch=os.getenv('RUNNER_ARCH'),name=os.getenv('RUNNER_NAME')),
+        github_run_id=os.getenv('GITHUB_RUN_ID'),github_run_attempt=os.getenv('GITHUB_RUN_ATTEMPT'),source_sha256=source,
+        source_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
+        gpu_execution=False,execution_kind='real-substrate-memory-native-dynamo-cpu-mocker',
+        workload_scenario=config.get('workload_scenario','fixed'))
+    plan=[]
+    for seed in config['paired_seeds']:
+        for n in config['concurrency']:
+            policies=list(config['policies'])
+            entropy=f'{config["randomized_order_seed"]}:{seed}:{n}:{metadata["workload_scenario"]}'
+            random.Random(entropy).shuffle(policies)
+            for group_order,policy in enumerate(policies):
+                plan.append(dict(seed=seed,concurrency=n,policy=policy,order=len(plan),paired_order=group_order,
+                    paired_policy_order=policies,trial_id=f'scale-{seed}-{n}-{policy}-{uuid.uuid4().hex[:12]}'))
+    schedule=dict(**metadata,config=config,config_path=str(args.config.resolve()),order=plan,
+        planned_requests=sum(item['concurrency']*len(config['context_tokens']) for item in plan))
+    for item in plan:
+        output=args.output_dir/item['trial_id'];output.mkdir(parents=True)
+        rows=request_rows(config,item['trial_id'],item['concurrency'])
+        trace=ArrivalTrace(config,item['seed'],item['concurrency'])
+        report=dict(**metadata,**item,config=config,status='failed',trial_execution_status='NOT_STARTED',cleanup_success=False,
+            arrival_pattern=trace.mode,arrival_trace_sha256=trace.sha256,requests=rows,resumes=[],sessions=[],
+            scheduler_inputs='server_observed' if item['policy'] in SCHEDULER_POLICIES else 'static_ttl',
+            metrics=dict(offered=len(rows),completed=0,interactive_slo_successes=0,
+                interactive_offered=sum(r['workload']=='interactive' for r in rows),duration_seconds=0,goodput_per_second=0,
+                actor_reserved_gb_s=None,stranded_worker_gb_s=None,resource_coverage_fraction=0,cached_tokens=0))
+        atomic_json(output/'arrival-trace.json',trace.document)
+        atomic_json(output/'schedule.json',schedule);atomic_json(output/'result.json',report)
+    return schedule
+
+
+def run_schedule(schedule,args,executor=None):
+    reports=[];blocked=False
+    for item in schedule['order']:
+        path=args.output_dir/item['trial_id']/'result.json'
+        report=json.loads(path.read_text())
+        if report['trial_execution_status']!='NOT_STARTED': raise ValueError('schedule already executed; prepare a new paired run')
+        if blocked:
+            report.update(trial_execution_status='BLOCKED_CLEANUP',error='earlier trial cleanup failed; planned denominator retained')
+        else:
+            print(json.dumps(dict(status='running',**item)),flush=True)
+            try:
+                if executor:
+                    report=executor(item)
+                else:
+                    command=[sys.executable,'-m','bench.scale','--schedule',str(args.schedule),
+                        '--output-dir',str(args.output_dir),'--client-dir',str(args.client_dir),'--actor-template',args.actor_template,
+                        '--coordinator-port',str(args.coordinator_port),'--dynamo-port',str(args.dynamo_port),
+                        '--control-port',str(args.control_port),'--execute-trial',item['trial_id']]
+                    process=subprocess.Popen(command,cwd=ROOT,start_new_session=True,
+                        env=dict(os.environ,**{PROCESS_OWNER_ENV:item['trial_id']}))
+                    try:
+                        process.wait(timeout=schedule['config'].get('trial_deadline_seconds',1500))
+                    except subprocess.TimeoutExpired:
+                        process.send_signal(signal.SIGTERM)
+                        try: process.wait(timeout=schedule['config'].get('cleanup_deadline_seconds',300))
+                        except subprocess.TimeoutExpired:
+                            os.killpg(process.pid,signal.SIGKILL);process.wait(timeout=5)
+                    report=json.loads(path.read_text())
+                    remaining=cleanup_trial_processes([item['trial_id']])
+                    report['supervisor_process_cleanup']=remaining
+                    if remaining['observed_pids'] or not remaining['cleanup_success']:
+                        report.update(cleanup_success=False)
+                        record_failure(report,'trial left owned processes for supervisor cleanup')
+                    if process.returncode and report.get('status')=='passed':
+                        report.update(status='failed',cleanup_success=False,error='trial process failed after reporting success')
+                    if report['trial_execution_status'] in ('RUNNING','CLEANING','NOT_STARTED'):
+                        report.update(status='failed',cleanup_success=False,trial_execution_status='FAILED',error='trial process ended before final report')
+            except Exception as exc:
+                report.update(status='failed',cleanup_success=False,trial_execution_status='FAILED',error=str(exc))
+            blocked=not report.get('cleanup_success',False)
+        atomic_json(path,report);reports.append(report)
+        atomic_json(args.output_dir/'index.json',dict(paired_runner_id=schedule['paired_runner_id'],
+            status='passed' if len(reports)==len(schedule['order']) and all(r['status']=='passed' for r in reports) else 'incomplete',
+            trials=[{k:v for k,v in r.items() if k not in ('requests','resumes','sessions')} for r in reports]))
+        print(json.dumps(dict(status=report['status'],trial_id=report['trial_id'],error=report.get('error'))),flush=True)
+    return 0 if all(r['status']=='passed' for r in reports) else 1
+
+
+def selected_config(args):
+    config=json.loads(args.config.read_text());frozen=json.loads(args.config.read_text())
+    for field,override,cast in [('concurrency',args.concurrency,int),('paired_seeds',args.seeds,int),('policies',args.policies,str)]:
+        if override: config[field]=[cast(item) for item in override.split(',')]
+    if config.get('paired_execution'):
+        if config.get('comparison_protocol')!=SYMMETRIC_PROTOCOL: raise ValueError('paired execution requires symmetric Program protocol')
+        if config['policies']!=frozen['policies']: raise ValueError('paired execution requires the complete frozen policy group')
+        for field in ('concurrency','paired_seeds'):
+            if not config[field] or len(config[field])!=len(set(config[field])) or not set(config[field])<=set(frozen[field]):
+                raise ValueError('unfrozen paired '+field)
+        coordinates=config.get('boundary_coordinates')
+        if coordinates is not None:
+            if not coordinates or (config.get('experiment_stage')=='boundary-confirm' and len(coordinates)>3):
+                raise ValueError('freeze one to three boundary confirmation coordinates before dispatch')
+            coordinate=dict(heap_mib=args.heap_mib,wait_seconds=args.wait_seconds)
+            if coordinate not in coordinates: raise ValueError('select a frozen boundary heap/wait coordinate')
+            scenario=f'boundary-h{args.heap_mib}-w{args.wait_seconds}'
+            if args.scenario and args.scenario!=scenario: raise ValueError('boundary scenario differs from selected coordinate')
+            config.update(heap_mib=args.heap_mib,wait_seconds=args.wait_seconds,workload_scenario=scenario,
+                think_seconds={kind:args.wait_seconds for kind in KINDS})
+        elif (args.heap_mib is not None and args.heap_mib!=config['heap_mib']) or args.wait_seconds is not None or (args.scenario and args.scenario!=config.get('workload_scenario','fixed')):
+            raise ValueError('gate workload differs from frozen configuration')
+    if not config['concurrency'] or not config['paired_seeds'] or not config['policies'] or any(n<1 or n>64 for n in config['concurrency']) or any(p not in POLICIES for p in config['policies']):
+        raise ValueError('invalid frozen matrix selection')
+    return config
 
 
 def main():
@@ -452,24 +711,33 @@ def main():
     parser.add_argument('--client-dir',type=Path,default=ROOT/'artifacts/substrate/client')
     parser.add_argument('--actor-template',default='agentcloud-matrix')
     parser.add_argument('--coordinator-port',type=int,default=8093);parser.add_argument('--dynamo-port',type=int,default=19080);parser.add_argument('--control-port',type=int,default=19081)
-    parser.add_argument('--concurrency');parser.add_argument('--seeds');parser.add_argument('--policies');args=parser.parse_args()
-    config=json.loads(args.config.read_text())
-    for field,override,cast in [('concurrency',args.concurrency,int),('paired_seeds',args.seeds,int),('policies',args.policies,str)]:
-        if override: config[field]=[cast(item) for item in override.split(',')]
-    if os.getenv('GITHUB_ACTIONS')!='true' and max(config['concurrency'])>2: parser.error('N > 2 real Actor trials run on GitHub Actions; local memory is reserved for light validation')
-    if any(n<1 or n>64 for n in config['concurrency']) or any(p not in ('agentcloud','cost-aware','eager-0','static-2','static-5','static-15') for p in config['policies']): parser.error('invalid frozen matrix selection')
+    parser.add_argument('--concurrency');parser.add_argument('--seeds');parser.add_argument('--policies')
+    parser.add_argument('--heap-mib',type=int);parser.add_argument('--wait-seconds',type=int);parser.add_argument('--scenario')
+    parser.add_argument('--schedule',type=Path);parser.add_argument('--plan-only',action='store_true')
+    parser.add_argument('--cleanup-schedule',action='store_true')
+    parser.add_argument('--execute-trial',help=argparse.SUPPRESS);args=parser.parse_args()
     args.output_dir.mkdir(parents=True,exist_ok=True)
-    plan=[(seed,n,policy) for seed in config['paired_seeds'] for n in config['concurrency'] for policy in config['policies']];random.Random(config['randomized_order_seed']).shuffle(plan)
-    write_json(args.output_dir/'schedule.json',dict(config=config,order=plan,planned_requests=sum(n*len(config['context_tokens']) for _,n,_ in plan)))
-    reports=[]
-    for order,(seed,n,policy) in enumerate(plan):
-        print(json.dumps(dict(status='running',seed=seed,concurrency=n,policy=policy,order=order)),flush=True)
-        report=Trial(config,args,seed,n,policy,order).run()
-        reports.append({k:v for k,v in report.items() if k not in ('requests','resumes','sessions')})
-        write_json(args.output_dir/'index.json',dict(status='passed' if len(reports)==len(plan) and all(r['status']=='passed' for r in reports) else 'incomplete',trials=reports))
-        print(json.dumps(dict(status=report['status'],trial_id=report['trial_id'],metrics=report.get('metrics'),error=report.get('error'))),flush=True)
-        if report['status']!='passed': return 1
-    return 0
+    if args.cleanup_schedule and (not args.schedule or not args.schedule.exists()): return 0
+    if args.schedule and args.schedule.exists():
+        if args.plan_only: parser.error('schedule exists; use a new path for an independent paired run')
+        schedule=json.loads(args.schedule.read_text());config=schedule['config'];args.config=Path(schedule['config_path'])
+        for field,environment in [('github_run_id','GITHUB_RUN_ID'),('github_run_attempt','GITHUB_RUN_ATTEMPT')]:
+            if schedule.get(field)!=os.getenv(environment): parser.error('schedule belongs to a different run or attempt')
+    else:
+        if args.execute_trial: parser.error('trial execution requires an existing schedule')
+        try: config=selected_config(args)
+        except ValueError as exc: parser.error(str(exc))
+        schedule=prepare_schedule(config,args)
+        args.schedule=args.schedule or args.output_dir/f'schedule-{schedule["paired_runner_id"]}.json'
+        args.schedule.parent.mkdir(parents=True,exist_ok=True);atomic_json(args.schedule,schedule)
+    if args.plan_only: return 0
+    if args.cleanup_schedule: return cleanup_schedule(schedule,args)
+    if os.getenv('GITHUB_ACTIONS')!='true' and max(config['concurrency'])>2: parser.error('N > 2 real Actor trials run on GitHub Actions; local memory is reserved for light validation')
+    if args.execute_trial:
+        item=next(row for row in schedule['order'] if row['trial_id']==args.execute_trial)
+        report=Trial(config,args,item['seed'],item['concurrency'],item['policy'],item['order'],trial_id=item['trial_id']).run()
+        return 0 if report['status']=='passed' else 1
+    return run_schedule(schedule,args)
 
 
 if __name__=='__main__': raise SystemExit(main())

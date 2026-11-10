@@ -10,7 +10,8 @@ from bench.substrate_live import quantile, write_json
 from bench.analysis.hosted import with_cleanup
 
 PERCENTILES = (50, 95, 99)
-SCALARS = ('goodput_per_second', 'stranded_worker_gb_s', 'actor_reserved_gb_s')
+SCALARS = ('goodput_per_second', 'stranded_worker_gb_s', 'actor_reserved_gb_s',
+           'resume_count', 'resume_total_seconds')
 
 
 def interval(values):
@@ -30,6 +31,10 @@ def planned(trial):
 
 
 def trial_metric(trial, key):
+    if key == 'resume_count':
+        return len(trial.get('resumes', []))
+    if key == 'resume_total_seconds':
+        return sum(row['seconds'] for row in trial.get('resumes', []))
     if key.startswith('ttft_p'):
         return quantile([r['ttft_seconds'] for r in completed(trial)], int(key[6:]) / 100)
     if key == 'interactive_p95':
@@ -155,15 +160,36 @@ def summarize(trials, samples=2000, seed=9031, candidate="agentcloud"):
                 differences = [a-b for a, b in pairs if a is not None and b is not None]
                 ci = interval([statistics.mean(rng.choices(differences, k=len(differences))) for _ in range(samples)]) if differences else [None, None]
                 changes[key] = dict(pairs_observed=len(differences), mean_difference=mean_complete(differences), paired_seed_bootstrap_ci95=ci)
-            fully_observed = len(seeds) >= 3 and all(autonomous[s]['status'] == baseline[s]['status'] == 'passed' for s in seeds)
-            joint = fully_observed and all(changes[k]['pairs_observed'] == len(seeds) for k in ('stranded_worker_gb_s', 'goodput_per_second', 'interactive_p95'))
+            fully_observed = len(seeds) >= 3 and autonomous.keys() == baseline.keys() and all(
+                autonomous[s]['status'] == baseline[s]['status'] == 'passed'
+                and len(completed(autonomous[s])) == planned(autonomous[s])
+                and len(completed(baseline[s])) == planned(baseline[s])
+                for s in seeds)
+            paired_runners = all(
+                autonomous[s].get('paired_runner_id')
+                and autonomous[s].get('paired_runner_id') == baseline[s].get('paired_runner_id')
+                and autonomous[s].get('comparison_protocol') == baseline[s].get('comparison_protocol') == 'symmetric-program-v1'
+                for s in seeds)
+            protocol_required = candidate == 'agentcloud-v2' or any(
+                autonomous[s].get('comparison_protocol') == 'symmetric-program-v1'
+                or baseline[s].get('comparison_protocol') == 'symmetric-program-v1' for s in seeds)
+            comparable = fully_observed and (paired_runners or not protocol_required)
+            joint = comparable and all(changes[k]['pairs_observed'] == len(seeds)
+                                       for k in ('actor_reserved_gb_s', 'interactive_p95'))
             if joint:
-                joint = (changes['stranded_worker_gb_s']['paired_seed_bootstrap_ci95'][1] < 0
-                          and changes['goodput_per_second']['paired_seed_bootstrap_ci95'][0] >= 0
-                          and changes['interactive_p95']['paired_seed_bootstrap_ci95'][1] <= 0)
+                resource_upper = changes['actor_reserved_gb_s']['paired_seed_bootstrap_ci95'][1]
+                latency_upper = changes['interactive_p95']['paired_seed_bootstrap_ci95'][1]
+                joint = resource_upper <= 0 and latency_upper <= 0 and (resource_upper < 0 or latency_upper < 0)
             comparisons.append(dict(concurrency=concurrency, candidate=candidate, baseline=policy, paired_seeds=seeds, differences=changes,
-                verdict='supported_joint_improvement' if joint else ('tradeoff_or_uncertain' if fully_observed else 'insufficient_complete_pairs')))
+                same_runner_symmetric_protocol=bool(paired_runners),
+                verdict='supported_joint_improvement' if joint else (
+                    'insufficient_complete_pairs' if not fully_observed else (
+                        'incomparable_protocol_or_runner' if not comparable else 'tradeoff_or_uncertain'))))
     return dict(candidate_policy=candidate, groups=groups, paired_comparisons=comparisons, attempt_audit=audit,
+        acceptance=dict(primary_metrics=['actor_reserved_gb_s', 'interactive_p95'],
+                        noninferiority_margin=0, confidence=.95, minimum_complete_seed_pairs=3,
+                        rule='both paired difference upper bounds <= 0; at least one < 0; all planned requests complete',
+                        v2_protocol='same Runner within each seed and symmetric-program-v1'),
         all_attempts=dict(trials=len(trials), failed_trials=sum(t['status'] != 'passed' for t in trials),
             planned_requests=sum(planned(t) for t in trials), completed_requests=sum(len(completed(t)) for t in trials)),
         primary_selection='earliest attempt per concurrency, policy and seed; independent of outcome',
@@ -179,15 +205,20 @@ def figures(report, output):
     import matplotlib.pyplot as plt
     plt.rcParams.update({'font.family':'DejaVu Sans', 'font.size':9, 'axes.spines.top':False,
                          'axes.spines.right':False, 'svg.fonttype':'none'})
-    fig, axes = plt.subplots(3, 3, figsize=(13, 10), constrained_layout=True)
+    fig, axes = plt.subplots(4, 3, figsize=(13, 13), constrained_layout=True)
     metrics = [(f'ttft_p{p}', f'TTFT p{p} (s)') for p in PERCENTILES]
     metrics += [(f'resume_p{p}', f'Resume p{p} (s)') for p in PERCENTILES]
     metrics += [('completion_fraction','Request completion fraction'), ('goodput_per_second','Interactive goodput (req/s)'), ('stranded_worker_gb_s','Stranded reservation (GB s)')]
-    colors = dict(zip(['eager-0','static-2','static-5','static-15','agentcloud','cost-aware'], ['#6c757d','#e69f00','#56b4e9','#cc79a7','#0072b2','#009e73']))
+    metrics += [('actor_reserved_gb_s', 'Total Actor reservation (GB s)'),
+                ('interactive_p95', 'Interactive TTFT p95 (s)'), ('resume_count', 'Resume operations per trial')]
+    colors = dict(zip(['eager-0','static-2','static-5','static-15','agentcloud','cost-aware','agentcloud-v2','static-2-shadow'],
+                      ['#6c757d','#e69f00','#56b4e9','#cc79a7','#0072b2','#009e73','#d55e00','#7b61a8']))
     for ax, (metric, title) in zip(axes.flat, metrics):
         for policy, color in colors.items():
             def value(row):
-                if metric.startswith(('ttft_', 'resume_')):
+                if metric == 'interactive_p95':
+                    return row['interactive_p95_seconds']
+                if metric.startswith(('ttft_p', 'resume_p')):
                     kind, p = metric.split('_')
                     return row[kind+'_seconds'][p]
                 return row[metric]
@@ -206,6 +237,22 @@ def figures(report, output):
     for suffix in ('svg','png','pdf'):
         fig.savefig(output.with_suffix('.'+suffix), dpi=180)
     plt.close(fig)
+    fig, ax = plt.subplots(figsize=(8, 6), constrained_layout=True)
+    for row in report['groups']:
+        x, y = row['actor_reserved_gb_s'], row['interactive_p95_seconds']
+        if x is None or y is None:
+            continue
+        ax.scatter(x, y, color=colors.get(row['policy'], '#666666'),
+                   marker='o' if row['status'] == 'passed' else 'x')
+        ax.annotate(f"{row['policy']} / N={row['concurrency']}", (x, y),
+                    xytext=(4, 4), textcoords='offset points', fontsize=8)
+    ax.set(xlabel='Mean total Actor reservation per trial (GB s)',
+           ylabel='Pooled interactive TTFT p95 (s)',
+           title='Resource and tail latency; paired acceptance reported separately')
+    ax.grid(alpha=.2)
+    for suffix in ('svg', 'png', 'pdf'):
+        fig.savefig(output.with_name(output.name+'-pareto').with_suffix('.'+suffix), dpi=180)
+    plt.close(fig)
 
 
 def main():
@@ -214,7 +261,7 @@ def main():
     p.add_argument('--output', type=Path, default=Path('docs/evidence/scale-summary.json'))
     p.add_argument('--source-commit')
     p.add_argument('--scenario', help='Select one frozen workload scenario, including its failed attempts')
-    p.add_argument('--candidate', default='agentcloud', choices=['agentcloud','cost-aware'])
+    p.add_argument('--candidate', default='agentcloud', choices=['agentcloud','cost-aware','agentcloud-v2','static-2-shadow'])
     p.add_argument('--matrix-config', type=Path, default=Path('bench/configs/scale-live.json'))
     p.add_argument('--bootstrap-samples', type=int, default=2000)
     p.add_argument('--skip-figures', action='store_true')

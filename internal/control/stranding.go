@@ -171,6 +171,10 @@ func (c *Controller) ObserveIdle(ctx context.Context, tenant, id string, input I
 		if s.State == "RUNNING" && s.Gate == "OPEN" && s.Autonomous != nil {
 			s.Autonomous.ReturnDemand = false
 		}
+		if c.schedulerPolicy() == "agentcloud-v2" && boundarySafe(s) {
+			episode := c.beginWaitEpisodeLocked(s, "explicit_idle:"+input.OperationID, now, now)
+			episode.ValidUntil = window.ExpiresAt
+		}
 	} else {
 		if window == nil {
 			return nil, problem(404, "idle_window_not_found", "idle window not found")
