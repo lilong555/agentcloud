@@ -254,7 +254,9 @@ def preflight(args):
         check("native_wheel_provenance", False, str(exc))
     available = memory()["MemAvailable"] / 2**20
     free_disk = shutil.disk_usage(ROOT).free / 2**30
-    required_headroom = args.min_available_mib + args.max_pss_mib
+    # PSS includes reclaimable file mappings. Startup and live MemAvailable
+    # checks protect actual host headroom independently of the process ceiling.
+    required_headroom = max(args.min_available_mib, 5120)
     check("host_headroom", available >= required_headroom,
           {"available_mib": available, "required_start_mib": required_headroom})
     check("disk_headroom", free_disk >= 12, free_disk)
@@ -367,6 +369,11 @@ class Stack:
             except Exception as exc:
                 self.failure = str(exc)
                 for proc in list(self.processes):
+                    if self.failure.endswith("_limit"):
+                        try:
+                            os.killpg(proc.pid, signal.SIGKILL)
+                        except ProcessLookupError:
+                            pass
                     stop(proc)
                 return
 
@@ -594,14 +601,14 @@ def arguments(argv=None):
     parser.add_argument("--model-dir", type=Path, default=MODEL)
     parser.add_argument("--output-dir", type=Path, default=ROOT / "artifacts/kv-events-single-worker")
     parser.add_argument("--wheel-provenance", type=Path, default=ROOT / "artifacts/kv-event-wheel/provenance.json")
-    parser.add_argument("--max-rss-mib", type=int, default=4096)
-    parser.add_argument("--max-pss-mib", type=int, default=2560)
+    parser.add_argument("--max-rss-mib", type=int, default=5120)
+    parser.add_argument("--max-pss-mib", type=int, default=3584)
     parser.add_argument("--min-available-mib", type=int, default=1536)
     parser.add_argument("--gpu-budget-mib", type=int, default=3072)
     parser.add_argument("--pressure-requests", type=int, default=12)
     parser.add_argument("--freshness-seconds", type=float, default=5)
     args = parser.parse_args(argv)
-    if not (512 <= args.max_rss_mib <= 4608 and 512 <= args.max_pss_mib <= 3072 and
+    if not (512 <= args.max_rss_mib <= 5120 and 512 <= args.max_pss_mib <= 3584 and
             1536 <= args.min_available_mib and
             512 <= args.gpu_budget_mib <= 3072 and 4 <= args.pressure_requests <= 32 and
             0 < args.freshness_seconds <= 30):
