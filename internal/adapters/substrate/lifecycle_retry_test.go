@@ -148,3 +148,79 @@ func TestActorLeaseRetryHasAttemptAndContextBounds(t *testing.T) {
 		t.Fatalf("canceled operation reached Substrate: calls=%d error=%v", calls, err)
 	}
 }
+
+type contendedSnapshotControl struct {
+	testControl
+	mu       sync.Mutex
+	requests []proto.Message
+	busy     string
+	changed  bool
+}
+
+func (s *contendedSnapshotControl) check(request proto.Message) error {
+	s.requests = append(s.requests, proto.Clone(request))
+	if len(s.requests) == 1 {
+		return status.Error(codes.Aborted, s.busy)
+	}
+	if s.changed {
+		return status.Error(codes.FailedPrecondition, "Actor source snapshot UUID changed")
+	}
+	return nil
+}
+
+func (s *contendedSnapshotControl) WaitActorSnapshotDurable(ctx context.Context, request *ateapi.WaitActorSnapshotDurableRequest) (*ateapi.WaitActorSnapshotDurableResponse, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := s.check(request); err != nil {
+		return nil, err
+	}
+	return s.testControl.WaitActorSnapshotDurable(ctx, request)
+}
+
+func (s *contendedSnapshotControl) CreateTag(ctx context.Context, request *ateapi.CreateTagRequest) (*ateapi.Tag, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := s.check(request); err != nil {
+		return nil, err
+	}
+	return s.testControl.CreateTag(ctx, request)
+}
+
+func TestSnapshotLeaseContentionRetainsImmutableSourceAndTag(t *testing.T) {
+	for _, action := range []string{"wait", "retain-actor", "retain-tag"} {
+		for _, changed := range []bool{false, true} {
+			t.Run(action+map[bool]string{false: "/released", true: "/source-changed"}[changed], func(t *testing.T) {
+				server := &contendedSnapshotControl{changed: changed, busy: "another operation is in progress for this actor"}
+				if action == "retain-tag" {
+					server.busy = "another operation is in progress for this Tag"
+				}
+				server.actor = &ateapi.Actor{Metadata: &ateapi.ResourceMetadata{Atespace: "team-a", Name: "actor", Uid: testActorUID, Version: 10},
+					Status: &ateapi.ActorStatus{Snapshots: []*ateapi.Snapshot{{Uuid: testSnapshotUID, Generation: 3, Fidelity: ateapi.SnapshotFidelity_SNAPSHOT_FIDELITY_MEMORY,
+						DurableSnapshot: &ateapi.SnapshotStorage{State: ateapi.SnapshotStorageState_SNAPSHOT_STORAGE_STATE_COMPLETED}}}}}
+				client := testClient(t, server)
+				var err error
+				if action == "wait" {
+					var result Summary
+					result, err = client.AwaitDurable(context.Background(), "actor", testActorUID, testSnapshotUID, 3)
+					if !changed && (result.UID != testActorUID || result.SnapshotUUID != testSnapshotUID || result.SnapshotGeneration != 3 || !result.Durable) {
+						t.Fatalf("durability receipt lost its identity: %+v", result)
+					}
+				} else {
+					var result RetainedSummary
+					result, err = client.RetainSnapshot(context.Background(), "actor", testActorUID, testSnapshotUID, 3, "checkpoint")
+					if !changed && (result.TagName != "checkpoint" || result.SourceActorUID != testActorUID || result.SourceSnapshotUUID != testSnapshotUID || result.SourceSnapshotGeneration != 3 || !result.Durable) {
+						t.Fatalf("retained snapshot lost its identity: %+v", result)
+					}
+				}
+				server.mu.Lock()
+				defer server.mu.Unlock()
+				if len(server.requests) != 2 || !proto.Equal(server.requests[0], server.requests[1]) {
+					t.Fatalf("retry changed the immutable source: %v", server.requests)
+				}
+				if changed && status.Code(err) != codes.FailedPrecondition || !changed && err != nil {
+					t.Fatalf("source fencing failed: changed=%v error=%v", changed, err)
+				}
+			})
+		}
+	}
+}

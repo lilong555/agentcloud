@@ -42,7 +42,7 @@
 
 Checkpoint 先关闭准入，等待已准入工具完成，再生成快照和 COMMITTED manifest。会话进入 `CHECKPOINTED` 并保持 CLOSED。Suspend 可复用此安全点；Resume 在 manifest、Actor UID、快照身份和水位核验通过后增加 epoch，并打开 gate。Substrate manifest 还绑定独立保留 Tag 的 UID。外置 Harness 的 `checkpoint_id` 对应其持久图检查点。
 
-Substrate 在获取 Actor 租约时返回明确的 `Aborted: another operation is in progress for this actor` 时，已携带 UID 和版本的 Suspend/Resume 最多额外尝试五次，累计退避上限 2.5 秒，并遵守原操作期限。全部尝试使用原请求；期间发生的 Actor 替换或版本变化继续由原前置条件拒绝。工作流中途错误、未知传输结果和其他 Aborted 保留原错误语义。重试计入 `substrate_actor_lease_retry` 观测。
+Substrate 在获取租约时返回明确的 `Aborted: another operation is in progress` 拒绝时，具备前置条件的调用最多额外尝试五次，累计退避上限 2.5 秒，并遵守原操作期限。Suspend/Resume 保留 UID 和版本；durable 等待保留 Actor UID、snapshot UUID/generation；Tag 保留还固定原名称，并处理执行前的 Actor/Tag 租约竞争。全部尝试使用原请求，期间发生的身份或快照变化继续由原前置条件拒绝。工作流中途错误、未知传输结果和其他 Aborted 保留原错误语义。重试计入 `substrate_actor_lease_retry` 观测。
 
 Worker 容量拒绝后，协调器重新读取 Substrate Actor。权威读取确认 Actor 仍处于原 SUSPENDED 状态，UID、版本、快照与分配信息均保持一致时，Resume 回执进入 `WAITING_CAPACITY`，会话保留原状态、epoch、barrier 与 manifest。响应为 `409 resume_capacity_wait`，携带 `Retry-After: 1`；回执保存 `capacity_wait` 身份证明、`attempt_count` 与 `retry_after`。客户端在重试时间到达后使用原操作 ID 和原输入继续，自主调度器自动复用同一回执和待处理返回需求。容量拒绝耗时独立于成功恢复成本样本。读取失败、身份或版本变化，以及有界恢复后仍然超时或缺失的回执保持 `OUTCOME_UNKNOWN`，进入对账流程。
 

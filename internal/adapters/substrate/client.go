@@ -127,7 +127,10 @@ func (c *Client) Resume(ctx context.Context, name, uid string, version int64) (S
 	return summary, err
 }
 func (c *Client) AwaitDurable(ctx context.Context, name, uid, snapshotUUID string, generation int32) (Summary, error) {
-	resp, err := c.control.WaitActorSnapshotDurable(ctx, &ateapi.WaitActorSnapshotDurableRequest{Actor: c.ref(name), ExpectedUid: uid, SnapshotUuid: snapshotUUID, SnapshotGeneration: generation})
+	request := &ateapi.WaitActorSnapshotDurableRequest{Actor: c.ref(name), ExpectedUid: uid, SnapshotUuid: snapshotUUID, SnapshotGeneration: generation}
+	resp, err := leaseAdmissionCall(ctx, uid != "" && snapshotUUID != "" && generation > 0, false, func() (*ateapi.WaitActorSnapshotDurableResponse, error) {
+		return c.control.WaitActorSnapshotDurable(ctx, request)
+	})
 	summary := summarize(resp.GetActor())
 	applySnapshot(&summary, resp.GetSnapshot())
 	return summary, err

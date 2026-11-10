@@ -32,7 +32,10 @@ func (c *Client) RetainSnapshot(ctx context.Context, actorName, actorUID, snapsh
 	req := &ateapi.GetTagRequest{Tag: c.ref(tagName)}
 	tag, err := c.control.GetTag(ctx, req)
 	if status.Code(err) == codes.NotFound {
-		tag, err = c.control.CreateTag(ctx, &ateapi.CreateTagRequest{Tag: &ateapi.Tag{Metadata: &ateapi.ResourceMetadata{Atespace: c.atespace, Name: tagName}, Scope: ateapi.TagScope_TAG_SCOPE_ATESPACE, SourceActor: c.ref(actorName)}, ExpectedUid: actorUID, ExpectedSnapshotUuid: snapshotUUID, ExpectedSnapshotGeneration: generation})
+		create := &ateapi.CreateTagRequest{Tag: &ateapi.Tag{Metadata: &ateapi.ResourceMetadata{Atespace: c.atespace, Name: tagName}, Scope: ateapi.TagScope_TAG_SCOPE_ATESPACE, SourceActor: c.ref(actorName)}, ExpectedUid: actorUID, ExpectedSnapshotUuid: snapshotUUID, ExpectedSnapshotGeneration: generation}
+		tag, err = leaseAdmissionCall(ctx, true, true, func() (*ateapi.Tag, error) {
+			return c.control.CreateTag(ctx, create)
+		})
 		if err != nil && ctx.Err() == nil {
 			observed, observeErr := c.control.GetTag(ctx, req)
 			if observeErr == nil {

@@ -9,19 +9,27 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// The pinned Substrate acquireLease implementation emits this rejection before
-// it enters the Actor workflow. Every retry retains the original UID/version;
-// a competing lifecycle operation can therefore invalidate, but never refresh,
-// the caller's authority. Other Aborted errors may follow partial execution.
 func actorLeaseCall[T any](ctx context.Context, uid string, version int64, invoke func() (T, error)) (T, error) {
+	return leaseAdmissionCall(ctx, uid != "" && version > 0, false, invoke)
+}
+
+// The pinned Substrate workflow acquires its leases before doing work. Callers
+// retain the original UID/version or immutable snapshot identity. CreateTag may
+// also contend on its Tag lease, before reserving a name or copying a snapshot.
+// Other Aborted errors may follow partial execution and remain unreplayed.
+func leaseAdmissionCall[T any](ctx context.Context, guarded, tagLease bool, invoke func() (T, error)) (T, error) {
 	for retries := 0; ; retries++ {
 		if err := ctx.Err(); err != nil {
 			var zero T
 			return zero, err
 		}
 		value, err := invoke()
-		if err == nil || uid == "" || version <= 0 || retries == 5 || status.Code(err) != codes.Aborted ||
-			status.Convert(err).Message() != "another operation is in progress for this actor" {
+		if err == nil || !guarded || retries == 5 || status.Code(err) != codes.Aborted {
+			return value, err
+		}
+		message := status.Convert(err).Message()
+		if message != "another operation is in progress for this actor" &&
+			(!tagLease || message != "another operation is in progress for this Tag") {
 			return value, err
 		}
 		observability.Observe(ctx, "substrate_actor_lease_retry", 1, "fenced_actor_lease_contention")
