@@ -1,4 +1,5 @@
 import json
+from concurrent.futures import Future, TimeoutError as FutureTimeoutError
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 import tempfile
@@ -10,7 +11,7 @@ from unittest.mock import Mock, patch
 import urllib.request
 
 from bench.public_trace_live import (POLICIES, PublicTraceTrial, TimedNativeProxy,
-    main, payload_for, prepare, request_rows, span_timing, summarize)
+    DependencyDeadlineExceeded, main, payload_for, prepare, request_rows, span_timing, summarize)
 from runtime.client import CloudError
 
 
@@ -26,6 +27,54 @@ def windows():
 
 
 class PublicTraceLiveTests(unittest.TestCase):
+    def pending_dependency(self, ready_at, deadline):
+        clock=[0.]; waits=[]
+        trial=object.__new__(PublicTraceTrial); trial.tool=Mock()
+        def guard():
+            if clock[0]>=deadline: raise TimeoutError('trial deadline exceeded')
+        trial.guard=Mock(side_effect=guard)
+        trial.remaining=lambda limit:min(limit,deadline-clock[0])
+        class Pending:
+            def done(self): return clock[0]>=ready_at
+            def result(self,timeout=None):
+                if self.done(): return 'completed-original-tool'
+                waits.append(timeout); clock[0]+=timeout
+                if not self.done(): raise FutureTimeoutError()
+                return 'completed-original-tool'
+        return trial,Pending(),clock,waits
+
+    def test_dependency_capacity_wait_over_60_seconds_keeps_original_task(self):
+        trial,future,clock,waits=self.pending_dependency(102,300)
+        self.assertEqual(trial.wait_dependency(future,'workspace','source-tool-0'),'completed-original-tool')
+        self.assertGreaterEqual(clock[0],102)
+        self.assertTrue(all(0<timeout<=.1 for timeout in waits))
+        self.assertEqual(trial.guard.call_count,len(waits))
+        trial.tool.assert_not_called()
+
+    def test_completed_dependency_actual_timeout_propagates_immediately(self):
+        trial=object.__new__(PublicTraceTrial); trial.guard=Mock(); trial.tool=Mock()
+        original=TimeoutError(); future=Future(); future.set_exception(original)
+        with self.assertRaises(TimeoutError) as raised:
+            trial.wait_dependency(future,'workspace','source-tool-0')
+        self.assertIs(raised.exception,original)
+        trial.guard.assert_not_called(); trial.tool.assert_not_called()
+        trial.event=Mock(); entry={'id':'workspace'}
+        trial.record_session_error(entry,raised.exception)
+        self.assertEqual(entry['error'],'TimeoutError')
+        self.assertEqual(entry['error_details']['type'],'TimeoutError')
+        self.assertEqual(entry['error_details']['tool_op_id'],'source-tool-0')
+
+    def test_dependency_wait_exhausts_total_trial_budget(self):
+        trial,future,clock,waits=self.pending_dependency(102,60)
+        with self.assertRaises(DependencyDeadlineExceeded) as raised:
+            trial.wait_dependency(future,'workspace','source-tool-0')
+        self.assertEqual(raised.exception.code,'DEPENDENCY_WAIT_DEADLINE')
+        self.assertEqual(raised.exception.tool_op_id,'source-tool-0')
+        self.assertIn('trial deadline',str(raised.exception))
+        self.assertFalse(future.done()); self.assertGreaterEqual(clock[0],60)
+        self.assertTrue(all(0<timeout<=.1 for timeout in waits))
+        trial.tool.assert_not_called()
+
     def test_plan_only_records_four_full_denominators_without_credentials(self):
         with tempfile.TemporaryDirectory() as directory:
             root=Path(directory); source=root/'input'; source.mkdir(); (source/'manifest.json').write_text('{}')

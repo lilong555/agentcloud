@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "execution_kind": "public-trace-replay-failure-diagnosis",
+  "github_run_id": 42849692185,
+  "source_commit": "d7862cca525e94c6a3db07131a8511379ceae5fd",
+  "status": "incomplete",
+  "planned_trials": 4,
+  "passed_trials": 3,
+  "planned_requests": 192,
+  "completed_requests": 185,
+  "failed_or_unoffered_requests": 7,
+  "root_cause": {
+    "code": "source_tool_future_capacity_wait_budget",
+    "condition": "Future.result(60s) includes capacity admission queue; two queues exceeded 60s while their admitted tools subsequently completed. ThreadPool exit waited for tools and preserved an empty TimeoutError string.",
+    "affected_windows": [
+      {
+        "window_index": 1,
+        "resume_capacity_queue_seconds": 101.53151037999987,
+        "tool_status": "COMPLETED",
+        "tool_start": "2026-11-10T16:39:17.446034026Z",
+        "tool_finish": "2026-11-10T16:39:21.23991896Z",
+        "session_failed_at": "2026-11-10T16:39:21.249052+00:00",
+        "reported_error": ""
+      },
+      {
+        "window_index": 26,
+        "resume_capacity_queue_seconds": 72.08017243699987,
+        "tool_status": "COMPLETED",
+        "tool_start": "2026-11-10T16:40:16.440752739Z",
+        "tool_finish": "2026-11-10T16:40:19.912733611Z",
+        "session_failed_at": "2026-11-10T16:40:19.933736+00:00",
+        "reported_error": ""
+      }
+    ],
+    "actual_tool_execution_timeout_changed": false,
+    "scheduler_policy_changed": false
+  },
+  "cluster_cleanup": {
+    "status": "passed",
+    "remaining_containers": [],
+    "evidence": "docs/evidence/live-runs/42849692185/13784085464/ci-live-cleanup.json"
+  },
+  "trials": [
+    {
+      "policy": "agentcloud",
+      "status": "passed",
+      "evidence": "docs/evidence/scale/scale-public-agentcloud-51af4e45a3ac/result.json",
+      "sha256": "21a978dd713d91455ea48fddcbdff14ea1580305b062c4803e99c4a2cf316890",
+      "completed_requests": 48,
+      "resume_attempts": 45,
+      "resume_successes": 45,
+      "final_events": 33,
+      "active_bindings": 0,
+      "cleanup_success": true
+    },
+    {
+      "policy": "static-15",
+      "status": "passed",
+      "evidence": "docs/evidence/scale/scale-public-static-15-cd816877bc4c/result.json",
+      "sha256": "dc61c6696f6b35642140906898cd5caa20171f8b47a8776d1ac199b4344e350e",
+      "completed_requests": 48,
+      "resume_attempts": 48,
+      "resume_successes": 48,
+      "final_events": 33,
+      "active_bindings": 0,
+      "cleanup_success": true
+    },
+    {
+      "policy": "agentcloud-v2",
+      "status": "passed",
+      "evidence": "docs/evidence/scale/scale-public-agentcloud-v2-37e305ad97f1/result.json",
+      "sha256": "66a0259534977d4ce9092760310d904bdb2ff56511ba072b0223b590cb9e17d5",
+      "completed_requests": 48,
+      "resume_attempts": 65,
+      "resume_successes": 65,
+      "final_events": 33,
+      "active_bindings": 0,
+      "cleanup_success": true
+    },
+    {
+      "policy": "static-2",
+      "status": "failed",
+      "evidence": "docs/evidence/scale/scale-public-static-2-5a955ddec669/result.json",
+      "sha256": "94b5e2e86d0b176ea756f6405c3cf14eef2c82b57381f0886d0d05a0b863a53d",
+      "completed_requests": 41,
+      "resume_attempts": 69,
+      "resume_successes": 69,
+      "final_events": 31,
+      "active_bindings": 2,
+      "cleanup_success": false
+    }
+  ],
+  "performance_claim_scope": "three passing policy trials; TTL2 incomplete denominator excluded from completed paired policy comparisons"
+}

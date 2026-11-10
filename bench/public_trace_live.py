@@ -1,7 +1,7 @@
 """Run all admitted TraceLab windows on real MEMORY Actors and native CPU Mocker."""
 from __future__ import annotations
 import argparse
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
@@ -29,6 +29,13 @@ LABELS = dict(zip(POLICIES, ('Observed', 'TTL15', 'TTL2', 'agentcloud-v2')))
 PUBLIC_PROTOCOL = 'public-source-symmetric-terminal-v1'
 DEFAULT_INPUT = ROOT/'docs/evidence/public-traces/tracelab-v0.0.2-admitted'
 DEFAULT_SUMMARY = ROOT/'docs/evidence/public-traces/live-replay.json'
+
+
+class DependencyDeadlineExceeded(TimeoutError):
+    code = 'DEPENDENCY_WAIT_DEADLINE'
+    def __init__(self, session_id, operation):
+        super().__init__('trial deadline exhausted while waiting for dependency '+operation)
+        self.session_id, self.tool_op_id = session_id, operation
 
 
 def request_rows(windows, trial_id, tenants=4):
@@ -206,6 +213,29 @@ class PublicTraceTrial(Trial):
                     state=self.refresh(entry)
                     self.resume(entry,operation+'-model-admission-return-'+str(state['epoch']))
                 time.sleep(self.config['poll_seconds'])
+    def wait_dependency(self, future, session_id, operation):
+        def completed_result():
+            try: return future.result()
+            except Exception as exc:
+                exc.tool_op_id = operation
+                raise
+        while True:
+            if future.done(): return completed_result()
+            try:
+                self.guard()
+                timeout = self.remaining(.1)
+            except TimeoutError as exc:
+                raise DependencyDeadlineExceeded(session_id,operation) from exc
+            try:
+                return future.result(timeout=timeout)
+            except FutureTimeoutError:
+                if future.done(): return completed_result()
+    def record_session_error(self, entry, exc):
+        details=dict(type=type(exc).__name__,message=str(exc) or type(exc).__name__,
+                     code=getattr(exc,'code',None),tool_op_id=getattr(exc,'tool_op_id',None))
+        entry['status']='failed'
+        entry.setdefault('error',details['message']); entry.setdefault('error_details',details)
+        self.event('session_failed',session_id=entry['id'],error=details['message'],error_details=details)
     def session_run(self, entry):
         window = self.windows[entry['index']]
         rows = [r for r in self.rows if r['workspace_index']==entry['index']]
@@ -282,8 +312,8 @@ class PublicTraceTrial(Trial):
                     # Resolved source dependencies hold later model starts; original overlaps remain live.
                     if kind=='model':
                         while pending: poll(); self.guard(); time.sleep(self.config['poll_seconds'])
-                    for end,future in tool_futures:
-                        if end<=offset: future.result(timeout=self.remaining(60))
+                    for index,(end,future) in enumerate(tool_futures):
+                        if end<=offset: self.wait_dependency(future,entry['id'],'source-tool-'+str(index))
                     close_idle(); last_activity[0]=time.time()
                     if kind=='tool':
                         with lifecycle_lock: source_inflight[0]+=1
@@ -306,7 +336,8 @@ class PublicTraceTrial(Trial):
                     self.idle.append(idle_range[0])
                 wait_until(origin+window['source_span_ms']/1000)
                 while pending: poll(); self.guard(); time.sleep(self.config['poll_seconds'])
-                for _,future in tool_futures: future.result(timeout=self.remaining(60))
+                for index,(_,future) in enumerate(tool_futures):
+                    self.wait_dependency(future,entry['id'],'source-tool-'+str(index))
             running('trace-final-proof-return')
             final_proof=self.admit_tool(entry,'trace-final-proof','python3 actor_mix.py proof',lifecycle_lock)
             self.verify_ram(entry,final_proof)
@@ -317,10 +348,10 @@ class PublicTraceTrial(Trial):
             close_idle(); self.client(entry).call('POST',self.client(entry).path(entry['id'])+'/finalize',{})
             entry['status']='passed'
         except Exception as exc:
-            entry.update(status='failed',error=str(exc)); self.event('session_failed',session_id=entry['id'],error=str(exc))
+            self.record_session_error(entry,exc)
         finally:
             try: self.suspend(entry,'final-release')
-            except Exception as exc: entry.update(status='failed',error=str(exc))
+            except Exception as exc: self.record_session_error(entry,exc)
     def metrics(self):
         result=super().metrics()
         complete=[r for r in self.rows if r['status']=='COMPLETED']
@@ -356,6 +387,8 @@ class PublicTraceTrial(Trial):
             if self.proxy:
                 self.proxy.close(); report['native_source_timing']=self.proxy.records
             report['resume_attempt_records']=self.resume_attempts
+            report['session_errors']=[dict(session_id=e['id'],**e['error_details'])
+                for e in self.sessions if e.get('error_details')]
             protocol=report.get('program_protocol') or {}
             protocol.update(protocol=PUBLIC_PROTOCOL,expected_model_requests=len(self.rows),
                 completed_model_requests=sum(r['status']=='COMPLETED' and r.get('ram_continuity') for r in self.rows),
