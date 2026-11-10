@@ -394,6 +394,8 @@ class Stack:
                    DYN_COMPUTE_THREADS="1", DYN_SYSTEM_THREADS="1", DYN_LOG="info",
                    HF_HUB_OFFLINE="1", TRANSFORMERS_OFFLINE="1", CUDA_VISIBLE_DEVICES="0",
                    OMP_NUM_THREADS="1", MKL_NUM_THREADS="1", OPENBLAS_NUM_THREADS="1",
+                   TORCHINDUCTOR_COMPILE_THREADS="1", MAX_JOBS="1",
+                   VLLM_USE_FLASHINFER_SAMPLER="0",
                    TOKENIZERS_PARALLELISM="false", PYTHONUNBUFFERED="1")
         common = ["--discovery-backend", "file", "--request-plane", "tcp", "--event-plane", "zmq"]
         self.watch.start()
@@ -402,6 +404,7 @@ class Stack:
                         "replay_endpoint": f"tcp://*:{self.replay_port}", "buffer_steps": 1024}
         self.launch("vllm", [sys.executable, "-m", "dynamo.vllm", "--model", str(self.args.model_dir),
                             "--served-model-name", "facebook/opt-125m", "--dtype", "float16",
+                            "--skip-tokenizer-init",
                             "--enforce-eager", "--max-model-len", "512", "--max-num-seqs", "1",
                             "--max-num-batched-tokens", "512", "--kv-cache-memory-bytes", "33554432",
                             "--gpu-memory-utilization", "0.01", "--block-size", "16",
