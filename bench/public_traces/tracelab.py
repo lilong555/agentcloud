@@ -27,7 +27,13 @@ EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
 MODEL_OUTPUTS = frozenset(('reasoning', 'text', 'tool_call'))
 MODEL_INPUTS = frozenset(('user_message', 'tool_result'))
 PROCESS_TOOLS = frozenset(('exec_command', 'write_stdin', 'bash', 'shell_command', 'shell'))
-TERMINAL = frozenset(('finished', 'exited', 'failed', 'aborted'))
+# Only operations with a synchronous local-work contract can close at a function
+# result. Unknown tools and explicit process metadata require lifecycle evidence.
+SYNCHRONOUS_TOOLS = frozenset(('read', 'read_file', 'write', 'write_file', 'edit',
+    'multiedit', 'multi_edit', 'apply_patch', 'glob', 'grep', 'ls', 'list_dir',
+    'view_image', 'update_plan', 'todowrite'))
+PROCESS_FIELDS = ('command_status', 'command_exit_code', 'process_state',
+                  'process_exit_code', 'process_session_id')
 TOKEN_FIELDS = ('input_tokens_total', 'prefix_tokens', 'newly_append_tokens', 'output_tokens')
 TOOL_FIELDS = ('tool_name', 'tool_call_id', 'emitted_at', 'result_at', 'tool_wall_latency_ms',
                'tool_internal_latency_ms', 'continuation_of_tool_call_id', 'command_status',
@@ -172,8 +178,8 @@ def assign_splits(sessions, config):
         bucket = int(opaque(config, 'split', config['selection_seed'], family)[:16], 16) % 10000
         session['split'] = 'calibration' if bucket < 6000 else 'development' if bucket < 8000 else 'holdout'
         fraction = rank[family] / max(1, len(families))
-        session['time_sensitivity_split'] = ('calibration' if fraction < .6 else
-                                              'development' if fraction < .8 else 'holdout')
+        session['last_seen_contributor_split'] = ('calibration' if fraction < .6 else
+                                                 'development' if fraction < .8 else 'holdout')
     return families
 
 
@@ -227,9 +233,10 @@ def normalize_session(source_rows, metadata, config):
     sid = metadata['source_session_id_hash']
     origin = metadata['first_ms'] or 0
     tail = (metadata['last_ms'] or origin) - origin
-    events, tools, observations = [], {}, defaultdict(list)
+    events, tools, observations, calls = [], {}, defaultdict(list), defaultdict(list)
     quality, reasons, spans = Counter(), set(), []
     user_seen, result_seen = set(), set()
+    user_arrivals = 0
 
     def emit(kind, timestamp, ordinal, index, operation=None, parent=None,
              online=None, evaluator=None, inferred=False, flags=()):
@@ -254,7 +261,10 @@ def normalize_session(source_rows, metadata, config):
         if len(times) != len(parsed):
             quality['invalid_event_timestamps'] += len(parsed) - len(times)
             reasons.add('missing_event_timestamp')
-        quality['source_timestamp_reversals'] += sum(a > b for a, b in zip(times, times[1:]))
+        reversals = sum(a > b for a, b in zip(times, times[1:]))
+        quality['source_timestamp_reversals'] += reversals
+        if reversals:
+            reasons.add('source_timestamp_reversal')
         outputs = [t for _, e, t in parsed if t is not None and e.get('event_type') in MODEL_OUTPUTS]
         model_op = op(['model-source-row', ordinal])
         if outputs:
@@ -279,18 +289,28 @@ def normalize_session(source_rows, metadata, config):
                 continue
             kind, call = event.get('event_type'), event.get('tool_call_id')
             if kind == 'user_message':
-                # Identical copied input observations occur in multiple rows.
-                key = (timestamp, event.get('source'))
+                # This release has no stable message identity. Equal clocks can
+                # be copied input from different sources or distinct messages.
+                key = timestamp
                 if key in user_seen:
-                    quality['duplicate_user_observations'] += 1
-                    continue
+                    quality['same_clock_user_observations'] += 1
+                    reasons.add('ambiguous_user_arrival_identity')
                 user_seen.add(key)
+                user_arrivals += 1
                 emit('USER_ARRIVAL', timestamp, ordinal, index)
             elif kind in MODEL_OUTPUTS:
+                if kind == 'tool_call':
+                    if call:
+                        calls[call].append(timestamp)
+                    else:
+                        reasons.add('missing_tool_call_identity')
                 emit('MODEL_OUTPUT', timestamp, ordinal, index, model_op,
                      online=dict(output_kind=kind, timing_semantics='local_response_span'))
-            elif kind == 'tool_result' and call:
-                observations[call].append((timestamp, str(event.get('source') or '')))
+            elif kind == 'tool_result':
+                if not call:
+                    reasons.add('missing_tool_result_identity')
+                    continue
+                observations[call].append(timestamp)
                 key = (call, timestamp)
                 quality['duplicate_tool_result_observations'] += key in result_seen
                 result_seen.add(key)
@@ -309,6 +329,8 @@ def normalize_session(source_rows, metadata, config):
     intervals, process_intervals, children, process_roots = [], [], defaultdict(list), {}
     for call, (_, _, tool) in tools.items():
         chain, parent = {call}, parent_call(tool)
+        if parent:
+            children[parent].append(call)
         while parent in tools:
             if parent in chain:
                 reasons.add('cyclic_process_continuation')
@@ -317,8 +339,6 @@ def normalize_session(source_rows, metadata, config):
             parent = parent_call(tools[parent][2])
     for call, (ordinal, index, tool) in tools.items():
         parent = parent_call(tool)
-        if parent:
-            children[parent].append(call)
         name = tool_kind(tool.get('tool_name'))
         start, end = timestamp_ms(tool.get('emitted_at')), timestamp_ms(tool.get('result_at'))
         if start is None:
@@ -339,11 +359,30 @@ def normalize_session(source_rows, metadata, config):
             emit('TOOL_RESULT', end, ordinal, index + 2000000, operation, parent_operation,
                  online=dict(status='result_received'))
         intervals.append((start - origin, (end - origin) if end is not None else tail))
-        if parent and parent not in tools:
+        if not calls[call]:
+            reasons.add('missing_tool_call_observation')
+        elif any(abs(t - start) > 1 for t in calls[call]):
+            reasons.add('tool_call_time_conflict')
+            quality['tool_call_time_conflicts'] += 1
+        if end is not None and not observations[call]:
+            reasons.add('missing_tool_result_observation')
+        if any(end is None or t < end or t < start for t in observations[call]):
+            reasons.add('tool_result_time_conflict')
+            quality['tool_result_time_conflicts'] += 1
+        if (parent and parent not in tools) or (name == 'write_stdin' and not parent):
             reasons.add('missing_process_root')
-        elif parent and timestamp_ms(tools[parent][2].get('emitted_at')) is not None and start < timestamp_ms(tools[parent][2].get('emitted_at')):
-            reasons.add('process_dependency_time_conflict')
-        if name in PROCESS_TOOLS and not parent:
+        elif parent:
+            available = timestamp_ms(tools[parent][2].get('result_at'))
+            if available is not None and observations[parent]:
+                available = max(available, min(observations[parent]))
+            if available is None or start < available:
+                reasons.add('process_dependency_time_conflict')
+        process_metadata = any(tool.get(field) is not None for field in PROCESS_FIELDS)
+        unknown_semantics = name not in SYNCHRONOUS_TOOLS and name not in PROCESS_TOOLS
+        if unknown_semantics:
+            reasons.add('unverified_tool_lifecycle')
+            quality['unverified_tool_lifecycles'] += 1
+        if (name not in SYNCHRONOUS_TOOLS or process_metadata or call in children) and not parent:
             process_roots[call] = (start, ordinal, index)
         wall = tool.get('tool_wall_latency_ms')
         if end is not None and isinstance(wall, (int, float)) and abs(end - start - wall) > 1:
@@ -363,37 +402,21 @@ def normalize_session(source_rows, metadata, config):
             pending.extend(children[child])
         quality['process_roots'] += 1
         quality['process_continuation_calls'] += len(descendants)
-        terminal_observations = []
-        # A continued root's status can describe its later outcome. Only its
-        # terminal continuation supplies a usable observed completion time.
-        candidates = descendants if descendants else [call]
-        for candidate in candidates:
-            tool = tools[candidate][2]
-            end = timestamp_ms(tool.get('result_at'))
-            observed = [t for t, source in observations[candidate] if 'function_call_output' in source]
-            if command_status(tool) in TERMINAL and end is not None and observed:
-                terminal_observations.append(max(end, max(observed)))
-        terminal = max(terminal_observations) if terminal_observations else None
-        if terminal is not None:
-            later = [timestamp_ms(tools[c][2].get('emitted_at')) for c in descendants]
-            if any(t is not None and t > terminal for t in later) or terminal < start:
-                reasons.add('process_dependency_time_conflict')
-                terminal = None
-        if terminal is None:
-            quality['unresolved_processes'] += 1
-            reasons.add('unresolved_process_terminal')
-            process_intervals.append((start - origin, tail))
-        else:
-            quality['observed_process_terminals'] += 1
-            quality['delayed_root_terminal_publication'] += bool(descendants)
-            process_intervals.append((start - origin, terminal - origin))
-            emit('PROCESS_END', terminal, ordinal, index + 3000000, op(call),
-                 online=dict(status='terminal_observed'), flags=('terminal_observation_verified',))
+        # v0.0.2 stores aggregate process states and first function-result clocks.
+        # Neither a root nor a continuation carries a timestamped terminal-state
+        # observation. Keep them evaluator-private, independent of future calls.
+        quality['unresolved_processes'] += 1
+        reasons.add('unresolved_process_terminal')
+        process_intervals.append((start - origin, tail))
 
     for call in observations:
         if call not in tools:
             quality['unmatched_tool_results'] += 1
             reasons.add('unmatched_tool_result')
+    for call in calls:
+        if call not in tools:
+            quality['unmatched_tool_calls'] += 1
+            reasons.add('unmatched_tool_call')
     if not events:
         reasons.add('no_timed_events')
     ordered = sorted(events, key=lambda e: (e['t_rel_ms'], e['source_order'], e['event_id']))
@@ -412,9 +435,21 @@ def normalize_session(source_rows, metadata, config):
     policy_events(events, tail)  # Validate the public observation interface.
     report = dict(quality=dict(quality), coverage=coverage, exclusion_reasons=sorted(reasons),
         eligible=not reasons, censoring=dict(left=left_censored, right=True),
-        normalized_events=len(events), user_arrivals=len(user_seen), model_spans=len(spans),
+        normalized_events=len(events), user_arrivals=user_arrivals, model_spans=len(spans),
         source_span_ms=tail)
     return events, report
+
+
+def coverage_summary(records):
+    coverage = Counter()
+    for record in records:
+        coverage.update(record['coverage'])
+    candidate = coverage['model_candidate_ms'] + coverage['user_candidate_ms']
+    safe = coverage['model_safe_ms'] + coverage['user_safe_ms']
+    return dict(sessions=len(records),
+        source_rows=sum(r['source_rows'] for r in records),
+        source_events=sum(r['source_events'] for r in records), coverage=dict(coverage),
+        safe_wait_coverage=safe / candidate if candidate else None)
 
 
 def download(path, config):
@@ -463,7 +498,7 @@ def run(source, output, config, sample=False):
                     database.execute('INSERT INTO selected VALUES (?,?,?)', (sid, ordinal, json.dumps(retain(row))))
             database.commit()
             database.execute('CREATE INDEX session_rows ON selected(sid,ordinal)')
-            audit_quality, coverage, audited, windows = Counter(), Counter(), [], []
+            audit_quality, audited, windows = Counter(), [], []
             with (staging / 'events.jsonl').open('w') as event_output:
                 for sid in sorted(selected):
                     source_rows = [(ordinal, json.loads(row)) for ordinal, row in
@@ -471,7 +506,6 @@ def run(source, output, config, sample=False):
                     events, result = normalize_session(source_rows, sessions[sid], config)
                     sessions[sid].update(result)
                     audit_quality.update(result['quality'])
-                    coverage.update(result['coverage'])
                     audited.append(sessions[sid])
                     for event in events:
                         event_output.write(json.dumps(event, separators=(',', ':')) + '\n')
@@ -516,23 +550,25 @@ def run(source, output, config, sample=False):
         family_members = defaultdict(set)
         for session in sessions.values():
             family_members[session['family_id_hash']].add(session['split'])
-        candidate_ms = coverage['model_candidate_ms'] + coverage['user_candidate_ms']
-        safe_ms = coverage['model_safe_ms'] + coverage['user_safe_ms']
-        audit = dict(schema_version=1, execution_kind='offline-public-trace-quality-audit',
+        eligible_window_ids = {w['source_session_id_hash'] for w in windows if w['eligible']}
+        audit = dict(schema_version=2, execution_kind='offline-public-trace-quality-audit',
             status='failed' if mismatches else 'passed', source_complete=not sample,
             source_counts=counts, publisher_count_mismatches=mismatches,
             full_source_row_quality=source_quality, source_schema_presence=source_schema,
             bounded_temporal_audit=dict(sessions=len(selected),
                 source_rows=sum(sessions[s]['source_rows'] for s in selected),
                 source_events=sum(sessions[s]['source_events'] for s in selected),
-                quality=dict(audit_quality), coverage=dict(coverage),
-                safe_wait_coverage=safe_ms / candidate_ms if candidate_ms else None,
+                quality=dict(audit_quality),
+                coverage_by_population=dict(all_selected=coverage_summary(audited),
+                    eligible_sessions=coverage_summary([s for s in audited if s['eligible']]),
+                    eligible_windows=coverage_summary([s for s in audited if s['source_session_id_hash'] in eligible_window_ids])),
                 eligible_sessions=sum(s['eligible'] for s in audited), **reason_counts(audited)),
             selection=dict(sessions=len(sessions), selected=len(selected),
                 reasons=dict(Counter(r for s in sessions.values() for r in s['selection_exclusion_reasons']))),
             splits=dict(sessions=dict(splits), contributor_families=family_splits,
                 family_leakage=sum(len(folds) > 1 for folds in family_members.values()), unit='whole_contributor_conservative_family',
-                time_sensitivity_sessions=dict(Counter(s['time_sensitivity_split'] for s in sessions.values()))),
+                last_seen_contributor_sensitivity_sessions=dict(Counter(s['last_seen_contributor_split'] for s in sessions.values())),
+                sensitivity_rule='contributor groups ranked by last observation; whole contributor histories'),
             windows=dict(candidates=len(windows), eligible=sum(w['eligible'] for w in windows),
                 holdout_eligible=len(valid_windows), holdout_families=len(holdout_families),
                 **reason_counts(windows), records=windows),
@@ -552,6 +588,7 @@ def run(source, output, config, sample=False):
             selection_rule='stable session hash order; whole source sessions; session and source-event budgets',
             source_event_definition='one timing_event object or one tool object, including copied observations',
             split_rule='whole contributor family; stable hash 60/20/20; missing contributor grouped together',
+            sensitivity_split_rule='whole contributor groups ranked by last observation; histories may overlap in time',
             family_provenance='whole source contributor grouping; session parent graph is not reconstructed; source_schema_presence retains observed field coverage',
             window_rule='whole audited session; bounded duration, user turns and model spans; all dependencies closed',
             online_contract='policy_events publishes observed fields only; inferred model endpoints, source end, tokens and future durations remain evaluator-private',

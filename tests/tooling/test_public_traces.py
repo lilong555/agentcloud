@@ -66,7 +66,7 @@ class PublicTraceTests(unittest.TestCase):
         later_events, _ = self.normalize(extended)
         self.assertEqual(early, policy_events(later_events, 1500))
 
-    def test_background_root_backfill_waits_for_observed_terminal_continuation(self):
+    def test_aggregate_terminal_states_stay_private_including_continuations(self):
         rows = [row(0, [event('user_message', 0), event('tool_call', 2, 'root')],
                     [tool('root', 'exec_command', 2, 3, command_status='finished')]),
                 row(1, [event('tool_result', 3, 'root', 'response_item.function_call_output'),
@@ -74,12 +74,100 @@ class PublicTraceTests(unittest.TestCase):
                     [tool('poll', 'write_stdin', 10, 12, continuation_of_tool_call_id='root', command_status='finished')]),
                 row(2, [event('tool_result', 12, 'poll', 'response_item.function_call_output'), event('text', 13)])]
         events, audit = self.normalize(rows)
-        self.assertEqual(audit['quality']['observed_process_terminals'], 1)
-        self.assertEqual(audit['coverage']['process_union_ms'], 10000)
-        self.assertNotIn('PROCESS_END', [e['event_type'] for e in policy_events(events, 11000)])
-        ends = [e for e in policy_events(events, 12000) if e['event_type'] == 'PROCESS_END']
-        self.assertEqual(len(ends), 1)
-        self.assertEqual(ends[0]['observed_at_ms'], 12000)
+        self.assertEqual(audit['quality']['unresolved_processes'], 1)
+        self.assertEqual(audit['coverage']['process_union_ms'], 11000)
+        self.assertIn('unresolved_process_terminal', audit['exclusion_reasons'])
+        self.assertFalse(any(e['event_type'] == 'PROCESS_END' for e in policy_events(events, 13000)))
+
+    def test_future_continuation_cannot_retract_an_earlier_observation(self):
+        rows = [row(0, [event('user_message', 0), event('tool_call', 2, 'root')],
+                    [tool('root', 'exec_command', 2, 3, command_status='finished')]),
+                row(1, [event('tool_result', 3, 'root', 'response_item.function_call_output'), event('text', 4)])]
+        early, _ = self.normalize(rows)
+        rows.extend([row(2, [event('user_message', 9), event('tool_call', 10, 'poll')],
+                         [tool('poll', 'write_stdin', 10, 12, continuation_of_tool_call_id='root', command_status='finished')]),
+                     row(3, [event('tool_result', 12, 'poll', 'response_item.function_call_output'), event('text', 13)])])
+        extended, _ = self.normalize(rows)
+        self.assertEqual(policy_events(early, 4000), policy_events(extended, 4000))
+        self.assertFalse(any(e['event_type'] == 'PROCESS_END' for e in early + extended))
+
+    def test_unknown_and_explicit_background_tools_stay_busy_to_censoring(self):
+        for name, extra in (('spawn_agent', dict(process_state='running', process_session_id='child')),
+                            ('Task', {}), ('custom_tool_1', {}),
+                            ('Read', dict(process_state='running'))):
+            rows = [row(0, [event('user_message', 0), event('tool_call', 1, 'root')],
+                        [tool('root', name, 1, 2, **extra)]),
+                    row(1, [event('tool_result', 2, 'root'), event('text', 5)])]
+            with self.subTest(tool=name, metadata=extra):
+                events, audit = self.normalize(rows)
+                self.assertFalse(audit['eligible'])
+                self.assertIn('unresolved_process_terminal', audit['exclusion_reasons'])
+                self.assertEqual(audit['coverage']['process_union_ms'], 4000)
+                self.assertEqual(audit['coverage']['model_safe_ms'], 1000)
+                self.assertFalse(any(e['event_type'] == 'PROCESS_END' for e in events))
+
+    def test_tool_observation_endpoints_and_model_trigger_must_agree(self):
+        rows = completed_rows()
+        rows[0]['tools'][0] = tool('read', 'Read', 2, 5)
+        rows[1]['timing_events'][0] = event('tool_result', 1, 'read')
+        _, audit = self.normalize(rows)
+        self.assertIn('tool_result_time_conflict', audit['exclusion_reasons'])
+        self.assertFalse(audit['eligible'])
+        rows = completed_rows()
+        rows[0]['tools'][0] = tool('read', 'Read', 2.5, 3)
+        _, audit = self.normalize(rows)
+        self.assertIn('tool_call_time_conflict', audit['exclusion_reasons'])
+
+    def test_delayed_result_observation_can_trigger_a_later_model_round(self):
+        rows = completed_rows()
+        rows[1]['timing_events'][0] = event('tool_result', 3.5, 'read')
+        _, audit = self.normalize(rows)
+        self.assertTrue(audit['eligible'])
+
+    def test_equal_clock_user_inputs_keep_their_denominator_and_are_ambiguous(self):
+        rows = [row(0, [event('user_message', 0), event('user_message', 0), event('text', 1)])]
+        events, audit = self.normalize(rows)
+        self.assertEqual(audit['user_arrivals'], 2)
+        self.assertEqual(len([e for e in events if e['event_type'] == 'USER_ARRIVAL']), 2)
+        self.assertIn('ambiguous_user_arrival_identity', audit['exclusion_reasons'])
+        self.assertFalse(audit['eligible'])
+        rows[0]['timing_events'][0]['source'] = 'event_msg.user_message'
+        rows[0]['timing_events'][1]['source'] = 'event_msg.item_completed'
+        events, audit = self.normalize(rows)
+        self.assertEqual(audit['user_arrivals'], 2)
+        self.assertEqual(audit['quality']['same_clock_user_observations'], 1)
+        self.assertIn('ambiguous_user_arrival_identity', audit['exclusion_reasons'])
+        self.assertFalse(audit['eligible'])
+
+    def test_unexplained_source_order_reversals_are_excluded(self):
+        rows = [row(0, [event('user_message', 0), event('text', 3), event('text', 2)])]
+        _, audit = self.normalize(rows)
+        self.assertEqual(audit['quality']['source_timestamp_reversals'], 1)
+        self.assertIn('source_timestamp_reversal', audit['exclusion_reasons'])
+        self.assertFalse(audit['eligible'])
+
+    def test_continuation_requires_a_previously_returned_parent_handle(self):
+        rows = [row(0, [event('user_message', 0), event('tool_call', 1, 'root'), event('tool_call', 2, 'poll')],
+                    [tool('root', 'exec_command', 1, 3),
+                     tool('poll', 'write_stdin', 2, 4, continuation_of_tool_call_id='root')]),
+                row(1, [event('tool_result', 3, 'root'), event('tool_result', 4, 'poll'), event('text', 5)])]
+        _, audit = self.normalize(rows)
+        self.assertIn('process_dependency_time_conflict', audit['exclusion_reasons'])
+        rows[0]['tools'][1] = tool('poll', 'write_stdin', 3.5, 4, continuation_of_tool_call_id='root')
+        rows[0]['timing_events'][2] = event('tool_call', 3.5, 'poll')
+        rows[1]['timing_events'][0] = event('tool_result', 3.75, 'root')
+        _, audit = self.normalize(rows)
+        self.assertIn('process_dependency_time_conflict', audit['exclusion_reasons'])
+
+    def test_missing_tool_observations_are_excluded(self):
+        for kind, reason in (('tool_call', 'missing_tool_call_observation'),
+                             ('tool_result', 'missing_tool_result_observation')):
+            rows = completed_rows()
+            for item in rows:
+                item['timing_events'] = [e for e in item['timing_events'] if e['event_type'] != kind]
+            with self.subTest(kind=kind):
+                _, audit = self.normalize(rows)
+                self.assertIn(reason, audit['exclusion_reasons'])
 
     def test_function_result_and_session_error_do_not_prove_process_termination(self):
         for status in (None, 'running', 'session_error', 'finished'):
@@ -133,7 +221,7 @@ class PublicTraceTests(unittest.TestCase):
         assign_splits(sessions, self.config)
         for i in range(0, 20, 2):
             a, b = (sessions[identity(rows[j], self.config)] for j in (i, i + 1))
-            for key in ('family_id_hash', 'split', 'time_sensitivity_split'):
+            for key in ('family_id_hash', 'split', 'last_seen_contributor_split'):
                 self.assertEqual(a[key], b[key])
 
     def test_budgets_select_whole_sessions_and_report_each_exclusion(self):
@@ -159,6 +247,18 @@ class PublicTraceTests(unittest.TestCase):
             self.assertNotIn('PRIVATE', file.read_text())
             self.assertNotIn('contributor-a', file.read_text())
         self.assertEqual({p.name for p in output.iterdir()}, {'manifest.json', 'audit.json', 'sessions.jsonl', 'events.jsonl'})
+
+    def test_safe_wait_coverage_uses_explicit_eligible_denominators(self):
+        rows = completed_rows()
+        rows.append(row(0, [event('user_message', 0), event('text', 3), event('text', 2)], session='excluded'))
+        report = run(self.source(rows), self.root / 'coverage', self.config, sample=True)
+        populations = report['bounded_temporal_audit']['coverage_by_population']
+        self.assertEqual(populations['all_selected']['sessions'], 2)
+        self.assertEqual(populations['eligible_sessions']['sessions'], 1)
+        self.assertEqual(populations['eligible_windows']['sessions'], 1)
+        self.assertEqual(populations['all_selected']['coverage']['model_safe_ms'], 6000)
+        self.assertEqual(populations['eligible_windows']['coverage']['model_safe_ms'], 3000)
+        self.assertNotIn('safe_wait_coverage', report['bounded_temporal_audit'])
 
     def test_pinned_checksum_mismatch_fails_before_output(self):
         output = self.root / 'rejected'

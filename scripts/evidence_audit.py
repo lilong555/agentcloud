@@ -35,7 +35,7 @@ def main() -> int:
             continue
         report = json.loads(path.read_text())
         inspect_links(report, errors, name)
-        if isinstance(report, dict) and (report.get('execution_kind') in {'github-actions-evidence-archive', 'local-cuda-evidence-archive'} or
+        if isinstance(report, dict) and (report.get('execution_kind') in {'github-actions-evidence-archive', 'local-cuda-evidence-archive', 'public-trace-quality-evidence-archive'} or
                 report.get('execution_kind') == 'github-actions-workflow-launch' and 'files' in report):
             try:
                 verify_archive(report)
