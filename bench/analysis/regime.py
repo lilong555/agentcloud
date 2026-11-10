@@ -120,19 +120,21 @@ def figures(report, stem):
         complete_pair = all(g['status'] == 'passed' and g['resource_observation_complete'] for g in group['groups'])
         for index, (policy, label, color) in enumerate((
                 ('static-2', 'TTL 2s', '#c75427'), ('agentcloud-v2', 'AgentCloud v2', '#2451a4'))):
+            row = next(r for r in group['groups'] if r['policy'] == policy)
             profile = group['round_profiles'][policy]
             points = [r for r in profile if r['ttft_p95_seconds'] is not None]
             if points:
+                legend = label if complete_pair else f"{label} ({row['completed']}/{row['offered']} requests)"
                 left.plot([r['round'] + 1 for r in points], [r['ttft_p95_seconds'] for r in points],
-                          'o-', color=color, label=label)
-            row = next(r for r in group['groups'] if r['policy'] == policy)
+                          'o-' if complete_pair else 'o--', color=color, label=legend)
             if complete_pair:
                 right.bar(index, row['actor_reserved_gb_s'], color=color, width=.58)
                 right.annotate(f"{row['actor_reserved_gb_s']:.1f}\n{row['resume_count']:.1f} resumes",
                                (index, row['actor_reserved_gb_s']), xytext=(0, 5), textcoords='offset points', ha='center')
         if not complete_pair:
-            right.text(.5, .5, 'Complete trials and resource observations required',
-                       transform=right.transAxes, ha='center', wrap=True)
+            right.text(.5, .5, 'Partial execution: descriptive latency only\n'
+                       'Resource comparison requires complete paired trials',
+                       transform=right.transAxes, ha='center', va='center', fontsize=9)
         left.set(xlabel='Request round (initial admission included)', ylabel='Completed-workload TTFT p95 (s)',
                  title=f"{group['heap_mib']} MiB / {group['wait_seconds']}s · {group['matrix']['completed_requests']}/{group['matrix']['planned_requests']} requests",
                  xticks=range(1, len(next(iter(group['round_profiles'].values()))) + 1), ylim=(0, None))
@@ -140,7 +142,10 @@ def figures(report, stem):
             left.legend(frameon=False)
         right.set(xticks=[0, 1], xticklabels=['TTL 2s', 'AgentCloud v2'],
                   ylabel='Mean total Actor reservation (GB·s)', title='Reservation and mean resume count', ylim=(0, None))
-        right.margins(y=.25)
+        if complete_pair:
+            right.set_ylim(0, max(row['actor_reserved_gb_s'] for row in group['groups']) * 1.25)
+        else:
+            right.set_axis_off()
         for ax in (left, right):
             ax.spines[['top', 'right']].set_visible(False)
             ax.grid(axis='y', alpha=.15)

@@ -1,0 +1,735 @@
+{
+  "schema_version": 1,
+  "execution_kind": "boundary-storage-guard-failure-audit",
+  "source_commit": "a7e324a7165fa65b697023c9f7a768c9b27610fe",
+  "github_run_id": 42815326346,
+  "gpu_execution": false,
+  "coordinate": {
+    "concurrency": 64,
+    "heap_mib": 128,
+    "wait_seconds": 3
+  },
+  "confirmed_trigger": "disk headroom below 6 GiB",
+  "disk_guard_bytes": 6442450944,
+  "failure_chain": [
+    "disk guard raises in session",
+    "shared stop flag interrupts other sessions",
+    "active native Programs reject binding retirement",
+    "failed protocol cleanup blocks any remaining paired policy",
+    "owned Actor, Tag, process, database and cluster resources are released"
+  ],
+  "interpretation": "Evidence of storage-envelope exhaustion; blocked policies preserve planned denominators and have no executed performance sample.",
+  "storage_hypothesis": "Accumulated retained snapshots contribute to storage pressure.",
+  "observability": {
+    "threshold_time_free_bytes": null,
+    "continuous_disk_free_samples": false,
+    "compressed_object_physical_bytes": null,
+    "upload_log_scope": "last 150 log lines per container",
+    "upload_logical_bytes_are_physical_occupancy": false
+  },
+  "trials": [
+    {
+      "seed": 7402,
+      "trial_id": "scale-7402-64-static-2-6db1fa1dcd04",
+      "policy": "static-2",
+      "first_failure": {
+        "sequence": 56431,
+        "kind": "session_failed",
+        "at": "2026-11-10T13:01:24.454115+00:00",
+        "monotonic_ns": 2287619037402,
+        "trial_id": "scale-7402-64-static-2-6db1fa1dcd04",
+        "session_id": "scale-7402-64-static-2-6db1fa1dcd04-w51",
+        "error": "disk headroom below 6 GiB",
+        "uncompressed_line": 56431
+      },
+      "session_failures": 13,
+      "failure_cause_counts": {
+        "disk headroom below 6 GiB": 1,
+        "trial interrupted": 1,
+        "Actor capacity queue deadline: scale-7402-64-static-2-6db1fa1dcd04-w52": 1,
+        "Actor capacity queue deadline: scale-7402-64-static-2-6db1fa1dcd04-w62": 1,
+        "Actor capacity queue deadline: scale-7402-64-static-2-6db1fa1dcd04-w53": 1,
+        "Actor capacity queue deadline: scale-7402-64-static-2-6db1fa1dcd04-w55": 1,
+        "Actor capacity queue deadline: scale-7402-64-static-2-6db1fa1dcd04-w63": 1,
+        "Actor capacity queue deadline: scale-7402-64-static-2-6db1fa1dcd04-w61": 1,
+        "Actor capacity queue deadline: scale-7402-64-static-2-6db1fa1dcd04-w60": 1,
+        "Actor capacity queue deadline: scale-7402-64-static-2-6db1fa1dcd04-w57": 1,
+        "Actor capacity queue deadline: scale-7402-64-static-2-6db1fa1dcd04-w59": 1,
+        "Actor capacity queue deadline: scale-7402-64-static-2-6db1fa1dcd04-w56": 1,
+        "Actor capacity queue deadline: scale-7402-64-static-2-6db1fa1dcd04-w58": 1
+      },
+      "offered": 384,
+      "completed": 371,
+      "failed_or_unoffered_requests": 13,
+      "finalize_error_count": 11,
+      "finalize_errors": [
+        {
+          "sequence": 56632,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:01:29.670405+00:00",
+          "monotonic_ns": 2292835305701,
+          "trial_id": "scale-7402-64-static-2-6db1fa1dcd04",
+          "session_id": "scale-7402-64-static-2-6db1fa1dcd04-w52",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 56632
+        },
+        {
+          "sequence": 56633,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:01:29.677482+00:00",
+          "monotonic_ns": 2292842380533,
+          "trial_id": "scale-7402-64-static-2-6db1fa1dcd04",
+          "session_id": "scale-7402-64-static-2-6db1fa1dcd04-w53",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 56633
+        },
+        {
+          "sequence": 56634,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:01:29.697277+00:00",
+          "monotonic_ns": 2292862176466,
+          "trial_id": "scale-7402-64-static-2-6db1fa1dcd04",
+          "session_id": "scale-7402-64-static-2-6db1fa1dcd04-w55",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 56634
+        },
+        {
+          "sequence": 56635,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:01:29.701539+00:00",
+          "monotonic_ns": 2292866433899,
+          "trial_id": "scale-7402-64-static-2-6db1fa1dcd04",
+          "session_id": "scale-7402-64-static-2-6db1fa1dcd04-w56",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 56635
+        },
+        {
+          "sequence": 56636,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:01:29.706717+00:00",
+          "monotonic_ns": 2292871611366,
+          "trial_id": "scale-7402-64-static-2-6db1fa1dcd04",
+          "session_id": "scale-7402-64-static-2-6db1fa1dcd04-w57",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 56636
+        },
+        {
+          "sequence": 56637,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:01:29.710450+00:00",
+          "monotonic_ns": 2292875340478,
+          "trial_id": "scale-7402-64-static-2-6db1fa1dcd04",
+          "session_id": "scale-7402-64-static-2-6db1fa1dcd04-w58",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 56637
+        },
+        {
+          "sequence": 56638,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:01:29.713762+00:00",
+          "monotonic_ns": 2292878651827,
+          "trial_id": "scale-7402-64-static-2-6db1fa1dcd04",
+          "session_id": "scale-7402-64-static-2-6db1fa1dcd04-w59",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 56638
+        },
+        {
+          "sequence": 56639,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:01:29.717017+00:00",
+          "monotonic_ns": 2292881906940,
+          "trial_id": "scale-7402-64-static-2-6db1fa1dcd04",
+          "session_id": "scale-7402-64-static-2-6db1fa1dcd04-w60",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 56639
+        },
+        {
+          "sequence": 56640,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:01:29.720158+00:00",
+          "monotonic_ns": 2292885048141,
+          "trial_id": "scale-7402-64-static-2-6db1fa1dcd04",
+          "session_id": "scale-7402-64-static-2-6db1fa1dcd04-w61",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 56640
+        },
+        {
+          "sequence": 56641,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:01:29.724088+00:00",
+          "monotonic_ns": 2292888980311,
+          "trial_id": "scale-7402-64-static-2-6db1fa1dcd04",
+          "session_id": "scale-7402-64-static-2-6db1fa1dcd04-w62",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 56641
+        },
+        {
+          "sequence": 56642,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:01:29.728999+00:00",
+          "monotonic_ns": 2292893895510,
+          "trial_id": "scale-7402-64-static-2-6db1fa1dcd04",
+          "session_id": "scale-7402-64-static-2-6db1fa1dcd04-w63",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 56642
+        }
+      ],
+      "final_native_active_bindings": 11,
+      "final_program_protocol": {
+        "expected_final_events": 64,
+        "final_events": 53,
+        "symmetric_program_complete": false
+      },
+      "cleanup_success": false,
+      "physical_resource_cleanup": [
+        {
+          "at": "2026-11-10T13:02:27.596353+00:00",
+          "uncompressed_line": 58548,
+          "returncode": 0,
+          "objects_by_kind": {
+            "actor": 64,
+            "tag": 435
+          },
+          "all_deleted_or_absent": true
+        }
+      ],
+      "disk_after_cleanup": {
+        "free_bytes": 97844965376,
+        "total_bytes": 154993672192,
+        "required_bytes": 6442450944,
+        "ready": true
+      },
+      "process_cleanup": {
+        "observed_pids": [],
+        "remaining_pids": [],
+        "errors": [],
+        "cleanup_success": true
+      },
+      "cluster_cleanup": {
+        "recorded_at": "2026-11-10T13:02:32.350414+00:00",
+        "status": "passed",
+        "github_run_id": "42815326346",
+        "github_run_attempt": "1",
+        "port_forwards": [
+          "ci-api.pid",
+          "ci-router.pid"
+        ],
+        "cluster_release_exit_code": 0,
+        "remaining_containers": [],
+        "errors": []
+      },
+      "postgres_released": true,
+      "snapshot_uuid_count": 435,
+      "retained_tag_count": 435,
+      "upload_tail": {
+        "records": 150,
+        "snapshot_ids": 14,
+        "logical_bytes_total": 2255912521,
+        "complete_11_component_snapshots": 13,
+        "complete_snapshot_logical_bytes_range": [
+          170922749,
+          175819665
+        ],
+        "sources": [
+          {
+            "path": "docs/evidence/live-runs/42815326346/13767331152/logs/ate-system-atelet-d5v8j.log.gz",
+            "sha256": "187cad7bb410f7de398c828d22dc9faa59a7369b651ec5d0c677183d8696c406"
+          }
+        ]
+      },
+      "paired_policies": [
+        {
+          "trial_id": "scale-7402-64-agentcloud-v2-43c46661ba20",
+          "policy": "agentcloud-v2",
+          "paired_order": 1,
+          "trial_execution_status": "BLOCKED_CLEANUP",
+          "offered": 384,
+          "completed": 0,
+          "request_status_counts": {
+            "NOT_OFFERED": 384
+          },
+          "source": {
+            "path": "docs/evidence/scale/scale-7402-64-agentcloud-v2-43c46661ba20/result.json",
+            "sha256": "c3876bad9ca46fc3fad47875788aecdee7c0c8efbe812834ed8d77b11c9c7bb1"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "path": "docs/evidence/scale/scale-7402-64-static-2-6db1fa1dcd04/result.json",
+          "sha256": "c6c216f4e7ab4425b87757df42bdb85485fb59b34ce1b33654c66865ce781704"
+        },
+        {
+          "path": "docs/evidence/scale/scale-7402-64-static-2-6db1fa1dcd04/events.jsonl.gz",
+          "sha256": "5e6b634b7c38ca8f4b14c3a61c259cd468b94b953436969a4bdfd11b37cca47a"
+        },
+        {
+          "path": "docs/evidence/live-runs/42815326346/13767331152/ci-live-cleanup.json",
+          "sha256": "92e989852765cd3de6e1b9a3f8b00ba4a650f8a1f17613cfc64f16b7d8c1e77e"
+        },
+        {
+          "path": "docs/evidence/scale/scale-7402-64-static-2-6db1fa1dcd04/final-process-cleanup.json.gz",
+          "sha256": "b322d866993841a373a776e8042a14f59c122d79d27705b60165d10b99cb076b"
+        },
+        {
+          "path": "docs/evidence/live-runs/42815326346/13767331152/artifact.json",
+          "sha256": "73f9006fb59d467fc85900f412f1d23731517db33e74ff899facf6664578180e"
+        }
+      ]
+    },
+    {
+      "seed": 7403,
+      "trial_id": "scale-7403-64-static-2-0f50b45d916a",
+      "policy": "static-2",
+      "first_failure": {
+        "sequence": 63842,
+        "kind": "session_failed",
+        "at": "2026-11-10T13:07:07.867003+00:00",
+        "monotonic_ns": 2630994235039,
+        "trial_id": "scale-7403-64-static-2-0f50b45d916a",
+        "session_id": "scale-7403-64-static-2-0f50b45d916a-w57",
+        "error": "disk headroom below 6 GiB",
+        "uncompressed_line": 63842
+      },
+      "session_failures": 12,
+      "failure_cause_counts": {
+        "disk headroom below 6 GiB": 1,
+        "Actor capacity queue deadline: scale-7403-64-static-2-0f50b45d916a-w60": 1,
+        "Actor capacity queue deadline: scale-7403-64-static-2-0f50b45d916a-w53": 1,
+        "Actor capacity queue deadline: scale-7403-64-static-2-0f50b45d916a-w52": 1,
+        "Actor capacity queue deadline: scale-7403-64-static-2-0f50b45d916a-w48": 1,
+        "Actor capacity queue deadline: scale-7403-64-static-2-0f50b45d916a-w51": 1,
+        "Actor capacity queue deadline: scale-7403-64-static-2-0f50b45d916a-w50": 1,
+        "Actor capacity queue deadline: scale-7403-64-static-2-0f50b45d916a-w49": 1,
+        "Actor capacity queue deadline: scale-7403-64-static-2-0f50b45d916a-w55": 1,
+        "trial interrupted": 3
+      },
+      "offered": 384,
+      "completed": 372,
+      "failed_or_unoffered_requests": 12,
+      "finalize_error_count": 8,
+      "finalize_errors": [
+        {
+          "sequence": 64133,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:07:15.772268+00:00",
+          "monotonic_ns": 2638899495657,
+          "trial_id": "scale-7403-64-static-2-0f50b45d916a",
+          "session_id": "scale-7403-64-static-2-0f50b45d916a-w48",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 64133
+        },
+        {
+          "sequence": 64134,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:07:15.787542+00:00",
+          "monotonic_ns": 2638914765536,
+          "trial_id": "scale-7403-64-static-2-0f50b45d916a",
+          "session_id": "scale-7403-64-static-2-0f50b45d916a-w49",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 64134
+        },
+        {
+          "sequence": 64136,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:07:15.799948+00:00",
+          "monotonic_ns": 2638927168547,
+          "trial_id": "scale-7403-64-static-2-0f50b45d916a",
+          "session_id": "scale-7403-64-static-2-0f50b45d916a-w50",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 64136
+        },
+        {
+          "sequence": 64137,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:07:15.809739+00:00",
+          "monotonic_ns": 2638936965054,
+          "trial_id": "scale-7403-64-static-2-0f50b45d916a",
+          "session_id": "scale-7403-64-static-2-0f50b45d916a-w51",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 64137
+        },
+        {
+          "sequence": 64138,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:07:15.817232+00:00",
+          "monotonic_ns": 2638944454249,
+          "trial_id": "scale-7403-64-static-2-0f50b45d916a",
+          "session_id": "scale-7403-64-static-2-0f50b45d916a-w52",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 64138
+        },
+        {
+          "sequence": 64141,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:07:15.825115+00:00",
+          "monotonic_ns": 2638952332397,
+          "trial_id": "scale-7403-64-static-2-0f50b45d916a",
+          "session_id": "scale-7403-64-static-2-0f50b45d916a-w53",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 64141
+        },
+        {
+          "sequence": 64142,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:07:15.867277+00:00",
+          "monotonic_ns": 2638994503222,
+          "trial_id": "scale-7403-64-static-2-0f50b45d916a",
+          "session_id": "scale-7403-64-static-2-0f50b45d916a-w55",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 64142
+        },
+        {
+          "sequence": 64146,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:07:15.928091+00:00",
+          "monotonic_ns": 2639055314222,
+          "trial_id": "scale-7403-64-static-2-0f50b45d916a",
+          "session_id": "scale-7403-64-static-2-0f50b45d916a-w60",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 64146
+        }
+      ],
+      "final_native_active_bindings": 8,
+      "final_program_protocol": {
+        "expected_final_events": 64,
+        "final_events": 56,
+        "symmetric_program_complete": false
+      },
+      "cleanup_success": false,
+      "physical_resource_cleanup": [
+        {
+          "at": "2026-11-10T13:08:41.553139+00:00",
+          "uncompressed_line": 66961,
+          "returncode": 0,
+          "objects_by_kind": {
+            "actor": 64,
+            "tag": 436
+          },
+          "all_deleted_or_absent": true
+        }
+      ],
+      "disk_after_cleanup": {
+        "free_bytes": 97824772096,
+        "total_bytes": 154993672192,
+        "required_bytes": 6442450944,
+        "ready": true
+      },
+      "process_cleanup": {
+        "observed_pids": [],
+        "remaining_pids": [],
+        "errors": [],
+        "cleanup_success": true
+      },
+      "cluster_cleanup": {
+        "recorded_at": "2026-11-10T13:08:46.876932+00:00",
+        "status": "passed",
+        "github_run_id": "42815326346",
+        "github_run_attempt": "1",
+        "port_forwards": [
+          "ci-api.pid",
+          "ci-router.pid"
+        ],
+        "cluster_release_exit_code": 0,
+        "remaining_containers": [],
+        "errors": []
+      },
+      "postgres_released": true,
+      "snapshot_uuid_count": 436,
+      "retained_tag_count": 436,
+      "upload_tail": {
+        "records": 150,
+        "snapshot_ids": 14,
+        "logical_bytes_total": 2421372039,
+        "complete_11_component_snapshots": 13,
+        "complete_snapshot_logical_bytes_range": [
+          170988106,
+          175991406
+        ],
+        "sources": [
+          {
+            "path": "docs/evidence/live-runs/42815326346/13767921337/logs/ate-system-atelet-mz2sr.log.gz",
+            "sha256": "45866377a0713f70a0240763b25de14e33acfef5acd0bf5a764f1d1bfd719865"
+          }
+        ]
+      },
+      "paired_policies": [
+        {
+          "trial_id": "scale-7403-64-agentcloud-v2-fc086f2727e2",
+          "policy": "agentcloud-v2",
+          "paired_order": 1,
+          "trial_execution_status": "BLOCKED_CLEANUP",
+          "offered": 384,
+          "completed": 0,
+          "request_status_counts": {
+            "NOT_OFFERED": 384
+          },
+          "source": {
+            "path": "docs/evidence/scale/scale-7403-64-agentcloud-v2-fc086f2727e2/result.json",
+            "sha256": "3074af6c9a34e0e4d7185c970b5c21162eb3ff2bab1c57a3c384d24d00aba188"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "path": "docs/evidence/scale/scale-7403-64-static-2-0f50b45d916a/result.json",
+          "sha256": "8ecf549ac3584dab8bda4fe5238bcd6034c7db652cb3ea89cb90263c88ae1c5f"
+        },
+        {
+          "path": "docs/evidence/scale/scale-7403-64-static-2-0f50b45d916a/events.jsonl.gz",
+          "sha256": "e7e98ca76d22afbf471ba8cef04d15f7b24b1e6928df2b6d9dbcc90e8ec4bccb"
+        },
+        {
+          "path": "docs/evidence/live-runs/42815326346/13767921337/ci-live-cleanup.json",
+          "sha256": "0fea78fb70d919fb2f83f84c6f1be73d3b73c3a4fc14e1b3deb85e97c8dde346"
+        },
+        {
+          "path": "docs/evidence/scale/scale-7403-64-static-2-0f50b45d916a/final-process-cleanup.json.gz",
+          "sha256": "b322d866993841a373a776e8042a14f59c122d79d27705b60165d10b99cb076b"
+        },
+        {
+          "path": "docs/evidence/live-runs/42815326346/13767921337/artifact.json",
+          "sha256": "802ae737ed3e588fc3df7ff4df791b84e40258cc4c110f1d05ae123de7b85020"
+        }
+      ]
+    },
+    {
+      "seed": 7401,
+      "trial_id": "scale-7401-64-static-2-dc757a47b829",
+      "policy": "static-2",
+      "first_failure": {
+        "sequence": 55401,
+        "kind": "session_failed",
+        "at": "2026-11-10T13:27:21.098401+00:00",
+        "monotonic_ns": 3840642898118,
+        "trial_id": "scale-7401-64-static-2-dc757a47b829",
+        "session_id": "scale-7401-64-static-2-dc757a47b829-w52",
+        "error": "disk headroom below 6 GiB",
+        "uncompressed_line": 55401
+      },
+      "session_failures": 14,
+      "failure_cause_counts": {
+        "disk headroom below 6 GiB": 1,
+        "trial interrupted": 3,
+        "Actor capacity queue deadline: scale-7401-64-static-2-dc757a47b829-w60": 1,
+        "Actor capacity queue deadline: scale-7401-64-static-2-dc757a47b829-w61": 1,
+        "Actor capacity queue deadline: scale-7401-64-static-2-dc757a47b829-w62": 1,
+        "Actor capacity queue deadline: scale-7401-64-static-2-dc757a47b829-w53": 1,
+        "Actor capacity queue deadline: scale-7401-64-static-2-dc757a47b829-w63": 1,
+        "Actor capacity queue deadline: scale-7401-64-static-2-dc757a47b829-w58": 1,
+        "Actor capacity queue deadline: scale-7401-64-static-2-dc757a47b829-w56": 1,
+        "Actor capacity queue deadline: scale-7401-64-static-2-dc757a47b829-w59": 1,
+        "Actor capacity queue deadline: scale-7401-64-static-2-dc757a47b829-w57": 1,
+        "Actor capacity queue deadline: scale-7401-64-static-2-dc757a47b829-w50": 1
+      },
+      "offered": 384,
+      "completed": 370,
+      "failed_or_unoffered_requests": 14,
+      "finalize_error_count": 10,
+      "finalize_errors": [
+        {
+          "sequence": 55923,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:27:35.810375+00:00",
+          "monotonic_ns": 3855354875619,
+          "trial_id": "scale-7401-64-static-2-dc757a47b829",
+          "session_id": "scale-7401-64-static-2-dc757a47b829-w50",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 55923
+        },
+        {
+          "sequence": 55924,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:27:35.837145+00:00",
+          "monotonic_ns": 3855381648337,
+          "trial_id": "scale-7401-64-static-2-dc757a47b829",
+          "session_id": "scale-7401-64-static-2-dc757a47b829-w53",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 55924
+        },
+        {
+          "sequence": 55928,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:27:35.868734+00:00",
+          "monotonic_ns": 3855413229754,
+          "trial_id": "scale-7401-64-static-2-dc757a47b829",
+          "session_id": "scale-7401-64-static-2-dc757a47b829-w56",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 55928
+        },
+        {
+          "sequence": 55929,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:27:35.873408+00:00",
+          "monotonic_ns": 3855417902531,
+          "trial_id": "scale-7401-64-static-2-dc757a47b829",
+          "session_id": "scale-7401-64-static-2-dc757a47b829-w57",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 55929
+        },
+        {
+          "sequence": 55930,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:27:35.881227+00:00",
+          "monotonic_ns": 3855425723307,
+          "trial_id": "scale-7401-64-static-2-dc757a47b829",
+          "session_id": "scale-7401-64-static-2-dc757a47b829-w58",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 55930
+        },
+        {
+          "sequence": 55931,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:27:35.886912+00:00",
+          "monotonic_ns": 3855431407336,
+          "trial_id": "scale-7401-64-static-2-dc757a47b829",
+          "session_id": "scale-7401-64-static-2-dc757a47b829-w59",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 55931
+        },
+        {
+          "sequence": 55932,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:27:35.891775+00:00",
+          "monotonic_ns": 3855436270029,
+          "trial_id": "scale-7401-64-static-2-dc757a47b829",
+          "session_id": "scale-7401-64-static-2-dc757a47b829-w60",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 55932
+        },
+        {
+          "sequence": 55933,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:27:35.896748+00:00",
+          "monotonic_ns": 3855441243194,
+          "trial_id": "scale-7401-64-static-2-dc757a47b829",
+          "session_id": "scale-7401-64-static-2-dc757a47b829-w61",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 55933
+        },
+        {
+          "sequence": 55934,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:27:35.901545+00:00",
+          "monotonic_ns": 3855446041625,
+          "trial_id": "scale-7401-64-static-2-dc757a47b829",
+          "session_id": "scale-7401-64-static-2-dc757a47b829-w62",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 55934
+        },
+        {
+          "sequence": 55935,
+          "kind": "native_cleanup_finalize_error",
+          "at": "2026-11-10T13:27:35.907657+00:00",
+          "monotonic_ns": 3855452151734,
+          "trial_id": "scale-7401-64-static-2-dc757a47b829",
+          "session_id": "scale-7401-64-static-2-dc757a47b829-w63",
+          "error": "native_program_active: Dynamo finalization requires no program and no active requests",
+          "uncompressed_line": 55935
+        }
+      ],
+      "final_native_active_bindings": 10,
+      "final_program_protocol": {
+        "expected_final_events": 64,
+        "final_events": 54,
+        "symmetric_program_complete": false
+      },
+      "cleanup_success": false,
+      "physical_resource_cleanup": [
+        {
+          "at": "2026-11-10T13:28:55.837314+00:00",
+          "uncompressed_line": 58564,
+          "returncode": 0,
+          "objects_by_kind": {
+            "actor": 64,
+            "tag": 434
+          },
+          "all_deleted_or_absent": true
+        }
+      ],
+      "disk_after_cleanup": {
+        "free_bytes": 97607045120,
+        "total_bytes": 154993672192,
+        "required_bytes": 6442450944,
+        "ready": true
+      },
+      "process_cleanup": {
+        "observed_pids": [],
+        "remaining_pids": [],
+        "errors": [],
+        "cleanup_success": true
+      },
+      "cluster_cleanup": {
+        "recorded_at": "2026-11-10T13:29:02.091063+00:00",
+        "status": "passed",
+        "github_run_id": "42815326346",
+        "github_run_attempt": "1",
+        "port_forwards": [
+          "ci-api.pid",
+          "ci-router.pid"
+        ],
+        "cluster_release_exit_code": 0,
+        "remaining_containers": [],
+        "errors": []
+      },
+      "postgres_released": true,
+      "snapshot_uuid_count": 434,
+      "retained_tag_count": 434,
+      "upload_tail": {
+        "records": 150,
+        "snapshot_ids": 14,
+        "logical_bytes_total": 2254888953,
+        "complete_11_component_snapshots": 13,
+        "complete_snapshot_logical_bytes_range": [
+          170974718,
+          175907525
+        ],
+        "sources": [
+          {
+            "path": "docs/evidence/live-runs/42815326346/13769950686/logs/ate-system-atelet-cnpt7.log.gz",
+            "sha256": "fc94110f1db487044243556b0294cf8b996e9be96082713b0387a1cc0750894d"
+          }
+        ]
+      },
+      "paired_policies": [
+        {
+          "trial_id": "scale-7401-64-agentcloud-v2-c2885c0a7e48",
+          "policy": "agentcloud-v2",
+          "paired_order": 0,
+          "trial_execution_status": "COMPLETED",
+          "offered": 384,
+          "completed": 384,
+          "request_status_counts": {
+            "COMPLETED": 384
+          },
+          "source": {
+            "path": "docs/evidence/scale/scale-7401-64-agentcloud-v2-c2885c0a7e48/result.json",
+            "sha256": "3df93f4e06cafeeac2c1a40e8511dc52e73eb957552461edaff5a0384eadfb11"
+          }
+        }
+      ],
+      "sources": [
+        {
+          "path": "docs/evidence/scale/scale-7401-64-static-2-dc757a47b829/result.json",
+          "sha256": "43f739dffb85573682af169dec0f98567c29587514c07d46ed8bc27b846e1c14"
+        },
+        {
+          "path": "docs/evidence/scale/scale-7401-64-static-2-dc757a47b829/events.jsonl.gz",
+          "sha256": "4414b1b126cc8ae8319afea9ca5ac1ceb1dd41904478c4a47b41beec2631fbd0"
+        },
+        {
+          "path": "docs/evidence/live-runs/42815326346/13769950686/ci-live-cleanup.json",
+          "sha256": "f3c9a403df7054de0c8bfe8b64fc108a7eeee27c0b277ee7f09311a4d8ec1707"
+        },
+        {
+          "path": "docs/evidence/scale/scale-7401-64-static-2-dc757a47b829/final-process-cleanup.json.gz",
+          "sha256": "b322d866993841a373a776e8042a14f59c122d79d27705b60165d10b99cb076b"
+        },
+        {
+          "path": "docs/evidence/live-runs/42815326346/13769950686/artifact.json",
+          "sha256": "c39c2db8c5d018ea1e353b322417dfc2ce97bc149ff465d80170c185fe831439"
+        }
+      ]
+    }
+  ]
+}

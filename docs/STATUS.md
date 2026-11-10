@@ -1,6 +1,6 @@
 # AgentCloud 交付状态
 
-AgentCloud 围绕 64 个有状态 Agent 共享四个 gVisor 槽位，交付持久化恢复、原生跨栈反馈和成本调度。源码 `20113d5` 完成 1,336 项原生测试、16/16 类实机故障及真实 `gpt-6-luna` Coding 的 8 轮模型／10 次工具／8 次 MEMORY 恢复。RTX 4070 完成五个压力点、30/30 组 CUDA 对照。调度源码 `a7e324a` 的 Gate 1 完成 24/24 trial、6,912/6,912 请求与全部资源清理；正式留出与关键边界正在 Actions 执行。规模性能、容错和物理 GPU 证据分别固定源码与运行身份。
+AgentCloud 围绕 64 个有状态 Agent 共享四个 gVisor 槽位，交付持久化恢复、原生跨栈反馈和成本调度。源码 `20113d5` 完成 1,336 项原生测试、16/16 类实机故障及真实 `gpt-6-luna` Coding 的 8 轮模型／10 次工具／8 次 MEMORY 恢复。RTX 4070 完成五个压力点、30/30 组 CUDA 对照。调度源码 `a7e324a` 的 Gate 1 完成 24/24 trial、6,912/6,912 请求与全部资源清理；正式 Gate 2 完成 50/50 trial、14,400/14,400 请求与全部清理；关键边界完成 13/18 trial、6,105/6,912 请求，九组集群清理通过。规模性能、容错和物理 GPU 证据分别固定源码与运行身份。
 
 | 组件 | 已验证能力 | 证据 |
 | --- | --- | --- |
@@ -18,7 +18,7 @@ AgentCloud 围绕 64 个有状态 Agent 共享四个 gVisor 槽位，交付持�
 | Gate 1 首轮 | `52af93d`，23/24 trial、6,717/6,912 请求；N32 相对旧成本策略两项改善；N64/7101 的 CI 令牌过期，原始失败与独立验证分列 | [首轮完整分母](evidence/gate1-summary.json)、[令牌有效期归因](evidence/gate1-credential-expiry.json) |
 | Gate 1 独立验证 | N64/7101，1,536/1,536 请求、3/4 trial；全部清理通过；v2 最终释放与自主挂起竞争，原失败保留 | [完整四策略](evidence/gate1-revalidation-summary.json)、[原始竞态](evidence/gate1-lifecycle-race.json) |
 | Gate 1 `a7e324a` | N32／N64 三种子 24/24 trial、6,912/6,912 请求与清理通过；v2 相对旧成本策略两项改善，TTL2 对照保留资源与尾延迟取舍 | [独立 cohort 与完整计划分母](evidence/gate1-a7e324a-summary.json)、[运行身份](evidence/workflow-launch-42800756685.json) |
-| 正式留出与边界确认 | Gate 2 N32 完成 25/25 trial、4,800/4,800 请求；N64 执行中。边界 16 MiB／1 s 三种子通过；128 MiB／3 s 两组触发磁盘保护，后续策略保留未投递分母。总计划为 50＋18 trial | [Gate 2 完整分母](evidence/gate2-a7e324a-summary.json)、[边界确认](evidence/boundary-confirm-a7e324a-summary.json) |
+| 正式留出与边界确认 | Gate 2 完成 50/50 trial、14,400/14,400 请求与全部清理；边界完成 13/18 trial、6,105/6,912 请求：三个 TTL2 磁盘保护失败、两个后序 v2 未投递，九组集群清理通过 | [正式完整统计](evidence/gate2-a7e324a-summary.json)、[边界及存储归因](V2_EVALUATION.md#三种子边界确认) |
 | 公开 Agent 轨迹审查 | 五类公开源的许可、字段与有限样本核验；TraceLab v0.0.2 与 FreeInference 为独立真实轨迹阶段的数据规格 | [数据审查与采用条件](PUBLIC_TRACE_REVIEW.md)、[来源与摘要](evidence/public-trace-review.json) |
 | TraceLab 离线审核 | 云端完整核验 8,058 会话、665,453 轮、743,819 工具；303 会话深入审核、33 窗口合格；7 留出窗口来自 2 贡献者，32 family 准入门槛保持关闭 | [完整质量结果](PUBLIC_TRACE_IMPORT.md)、[原始证据索引](evidence/public-traces/index.json) |
 | CUDA 物理 KV | RTX 4070 Laptop、OPT-125M、30 组 KEEP/释放对照；64 会话总时间 −22.5%，16 会话 +44.5%，反转范围 48～64 会话 | [物理 GPU 验证](GPU_VALIDATION.md) |
@@ -30,6 +30,8 @@ AgentCloud 围绕 64 个有状态 Agent 共享四个 gVisor 槽位，交付持�
 | 控制面开销 | N=64 协调器平均 0.173 CPU 核，采样峰值 RSS 71.71 MiB；提交 p95/p99 为 19.037/97.197 ms | [阶段测量](evidence/control-plane-summary.json) |
 | 源码复现 | 固定上游 SHA、完整修改文件与摘要，在全新 checkout 还原并核验 | [源码复现](evidence/source-reproduction.json) |
 | 独立审查 | 生命周期与认证审查；成本路径竞争条件回归；源码与公开凭据扫描 | [协议审查](evidence/adversarial-review.json)、[交付审查](evidence/delivery-review.json) |
+
+[证据索引](evidence/validation-index.json)统一记录各阶段的源码、完整计划分母、原始报告摘要及正式配对结论。
 
 ## 已完成的重型验收
 
@@ -54,7 +56,7 @@ AgentCloud 围绕 64 个有状态 Agent 共享四个 gVisor 槽位，交付持�
 | [条件成本烟雾对照](https://github.com/lilong555/agentcloud/actions/runs/42746882665) | `a25010f` | 三策略 144/144 请求与清理通过 |
 | [三场景烟雾对照](https://github.com/lilong555/agentcloud/actions/runs/42746885292) | `a25010f` | 八组完成 384 请求；长尾 observed 在环境准备阶段退出，48 个未投递请求保留，9/9 清理通过 |
 
-N=32 和 N=64 时，AgentCloud 相比 TTL15 的 Stranded、Goodput 与交互 p95 达到预声明联合区间判据。闲置预留分别减少 53.52%/50.08%，Goodput 提高 24.81%/11.68%。TTL2 在当前负载下仍具有较低资源成本和较高 Goodput；全部策略及置信区间见[实验报告](EXPERIMENTS.md)。N=64 为四槽位饱和配置，交互 p95 为 237.983 秒，生产容量需要按业务 SLO 规划。
+历史 `dc9081f` cohort 的 N32／N64 中，Observed 相比 TTL15 的 Stranded、Goodput 与交互 p95 达到预声明联合区间判据。闲置预留分别减少 53.52%/50.08%，Goodput 提高 24.81%/11.68%。TTL2 在该历史负载下具有较低资源成本和较高 Goodput；全部策略及置信区间见[实验报告](EXPERIMENTS.md)。该 cohort 的 N64 为四槽位饱和配置，Observed 交互 p95 为 237.983 秒，生产容量按业务 SLO 规划。
 
 `cost-aware` 在 N=32 的三个种子中相对 TTL15 达到资源、Goodput 与交互 p95 的联合区间判据；TTL2 在该规模下的资源成本和延迟更低。长尾与等待分布变化的 N=8 单种子对照中，cost-aware 以较高闲置预留换取较低交互 p95。完整区间、源码身份与失败诊断见[条件成本对照](COST_SCHEDULING.md)。默认策略保持 `observed`。
 

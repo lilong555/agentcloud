@@ -71,18 +71,26 @@ Stranded GB·s、Goodput、恢复次数、恢复耗时、控制面 CPU/RSS 和�
 
 ### 正式留出结果
 
-N32 的五个留出种子完成 **25/25 trial、4,800/4,800 请求**，全部清理通过。以下为 v2 减基线的配对均值与 95% bootstrap 区间：
+N32／N64 的五个留出种子完成 **50/50 trial、14,400/14,400 请求**，全部 trial 和十组集群清理通过。以下为 v2 减基线的配对均值与 95% bootstrap 区间：
 
-| 基线 | 总 Actor 预留差 GB·s | 交互 P95 差 s |
+| 规模／基线 | 总 Actor 预留差 GB·s，95% CI | 交互 TTFT P95 差 s，95% CI |
 | --- | ---: | ---: |
-| TTL15 | −167.968 [−172.784, −163.749] | −43.165 [−60.249, −25.865] |
-| Observed | −49.661 [−56.791, −42.963] | −14.706 [−18.329, −10.844] |
-| 旧 cost-aware | −29.171 [−35.120, −23.320] | −23.226 [−35.439, −10.232] |
-| TTL2 | −8.129 [−11.686, −4.572] | +0.126 [−10.375, +10.047] |
+| N32／TTL15 | −167.968 [−172.774, −163.749] | −43.165 [−59.857, −25.875] |
+| N32／Observed | −49.661 [−56.438, −42.884] | −14.706 [−18.329, −10.844] |
+| N32／旧 cost-aware | −29.171 [−36.100, −23.359] | −23.226 [−35.439, −11.014] |
+| N32／TTL2 | −8.129 [−11.764, −4.572] | +0.126 [−9.610, +10.047] |
+| N64／TTL15 | −315.438 [−333.702, −296.780] | −101.355 [−115.215, −87.496] |
+| N64／Observed | −82.153 [−94.298, −69.301] | −28.601 [−38.201, −13.941] |
+| N64／旧 cost-aware | −41.974 [−68.390, −19.294] | −20.163 [−40.670, +0.344] |
+| N64／TTL2 | −3.746 [−12.191, +4.699] | +18.836 [+9.087, +27.482] |
 
-前三个基线达到联合改善判据。TTL2 对照显示资源减少，交互 P95 区间跨零；v2 与 TTL2 均为平均 112 次恢复，v2 累计恢复耗时增加 32.945 秒 [27.169, 38.352]。N64 仍在执行，[正式汇总](evidence/gate2-a7e324a-summary.json)始终保留完整 50 trial／14,400 请求计划。
+两种规模相对 TTL15 和 Observed 均达到资源与交互 P95 联合改善判据。相对旧 cost-aware，N32 联合改善成立，N64 资源减少有区间支持、P95 区间跨零。相对 TTL2，N32 资源减少、P95 区间跨零；N64 资源区间跨零、P95 增加有区间支持。
 
-16 MiB／1 s 边界完成三种子、6/6 trial、2,304/2,304 请求；v2−TTL2 总资源为 +18.393 GB·s [−16.494, +48.876]，交互 P95 为 +3.104 s [−10.951, +25.153]。两个指标区间均跨零。[边界确认汇总](evidence/boundary-confirm-a7e324a-summary.json)保留全部三个坐标；128 MiB／3 s 的 7402／7403 在先行 TTL2 运行中触发 6 GiB 磁盘余量保护，随后 v2 因前序协议清理未通过而保留为未投递。独立资源销毁成功，原失败及未投递分母完整归档；其余组继续执行。
+v2 与 TTL2 的平均恢复次数在 N32 均为 112、N64 均为 224。v2 的累计恢复耗时分别增加 32.945 秒 [26.832, 38.352] 和 116.221 秒 [103.048, 129.395]，恢复次数和每次恢复代价分别报告。[正式汇总及全部逐种子差值](evidence/gate2-a7e324a-summary.json) · [十组运行、清理与原始归档](evidence/gate2-run-42815241918.json)
+
+![正式留出资源与尾延迟](evidence/gate2-a7e324a-frontier.png)
+
+[正式边界确认](evidence/boundary-confirm-a7e324a-summary.json)完成全部 18 个计划 trial 的观测：13 个通过、3 个磁盘保护失败、2 个因前序清理失败而未启动，共 6,105/6,912 请求。完整配对、存储保护和资源销毁记录见下方工作集边界。
 
 早期 cohort 与独立重验按各自运行身份列出。
 
@@ -147,20 +155,56 @@ N64、四槽位、种子 7101 的初筛覆盖九个坐标。16/64 MiB 的六对�
 
 ![工作集边界的资源与首次准入代价](evidence/v2-boundary-admission.png)
 
-128 MiB／6 s 的 TTL2 完成 323/384 后到期，逻辑 Program 清理未完成，后续 v2 标记 `BLOCKED_CLEANUP`；Runner 最终 Kind 清理通过。三组边界确认采用 7401～7403 与统一 2,400 秒执行预算，冻结短等待优势、资源／准入取舍和高恢复成本三个坐标。最终交付据完整配对与失败分母记录适用范围，保持现有调度方案。
+128 MiB／6 s 的初筛中，TTL2 完成 323/384 后到期，逻辑 Program 清理未完成，后续 v2 标记 `BLOCKED_CLEANUP`；Runner 最终 Kind 清理通过。
+
+### 三种子边界确认
+
+正式确认固定 `a7e324a`、7401～7403、三坐标和两种策略相同的 2,400 秒预算。全部九个 Runner 结束，**13/18 trial、6,105/6,912 请求**通过，九组 Kind 资源清理均成功。下表采用逐种子 v2−TTL2 配对差；完整请求分母始终保留。[逐项统计](evidence/boundary-confirm-a7e324a-summary.json) · [工作流及全部归档](evidence/boundary-run-42815326346.json)
+
+| 工作集／等待 | 请求完成／计划 | 总 Actor GB·s 差，95% CI | 交互 P95 秒差，95% CI | 恢复次数差 |
+| --- | ---: | ---: | ---: | ---: |
+| 16 MiB／1 s | 2,304/2,304 | +18.393 [−16.494, +48.876] | +3.104 [−10.951, +25.153] | −2.333 |
+| 64 MiB／3 s | 2,304/2,304 | −67.904 [−75.187, −54.995] | +313.307 [+234.524, +371.753] | −240.667 |
+| 128 MiB／3 s | 1,497/2,304 | 完整配对不足 | 完整配对不足 | 按 trial 单列 |
+
+64 MiB／3 s 的平均恢复次数从 TTL2 的 384 降至 v2 的 143.333，累计恢复耗时减少 46.908 秒 [4.121, 108.527]。v2 的首轮累计槽位排队占 TTFT **98.733%**；后五轮累计槽位等待为 539.623 秒，TTL2 为 172,039.564 秒。首批 Actor 的驻留复用大幅降低后续恢复和排队，同时延长首次准入等待。交互 P95 的配对统计保留这一容量公平性代价。
+
+![三种子边界的逐轮延迟与资源](evidence/boundary-confirm-a7e324a-admission.png)
+
+128 MiB／3 s 的三个 TTL2 trial 均触发根分区 **6 GiB 余量保护**。7401 按 v2→TTL2 执行，v2 完成 384/384 请求、零终态绑定且清理通过；7402／7403 按 TTL2→v2 执行，后续 v2 保存为 `BLOCKED_CLEANUP`，各 384 个未投递请求进入分母。
+
+| seed | TTL2 完成／计划 | 首次磁盘保护 UTC | 未退役绑定 | 已销毁 Actor／Tag |
+| --- | ---: | --- | ---: | ---: |
+| 7401 | 370/384 | 13:27:21.098401 | 10 | 64／434 |
+| 7402 | 371/384 | 13:01:24.454115 | 11 | 64／435 |
+| 7403 | 372/384 | 13:07:07.867003 | 8 | 64／436 |
+
+保护触发后，共享停止标志中断其余会话。仍活跃的原生 Program 使绑定终结返回 `native_program_active`；Actor、Tag、进程、独立数据库与 Kind 集群随后全部释放。失败会话的最终错误字段可被 `trial interrupted` 覆盖，首因由原始事件序列确定。[逐条故障、清理、摘要与源码关联](evidence/boundary-confirm-storage-a7e324a.json)
+
+每次挂起生成独立保留 Tag，三个 TTL2 trial 分别保留 434／435／436 个快照身份。atelet 日志尾部的完整快照逻辑字节量约为 163～168 MiB/份，支持快照保留积累造成存储压力的归因；物理压缩占用与连续磁盘余量尚缺采样。这批结果确立了当前 Runner 的存储包络：TTL2 三种子均触发保护，v2 一个种子完整执行、两个种子受前序失败阻断，策略效应以双边完整观测为准。
+
+当前方案的适用范围由标准负载与上述边界共同确定：未知等待较早释放改善旧动态策略；昂贵恢复下的驻留复用降低资源和恢复开销，首次容量公平性约束交互尾延迟。调度器保持冻结方案。
 
 ## 复现
 
 ```bash
-gh workflow run live-scale.yml -f scope=gate1 -f max_parallel=6 \
+gh workflow run live-scale.yml -f scope=gate2 -f max_parallel=10 \
   -f native_run_id=42769316617 \
   -f source_ref=a7e324a7165fa65b697023c9f7a768c9b27610fe
 
 python3 -m bench.analysis.scale --candidate agentcloud-v2 \
   --source-commit a7e324a7165fa65b697023c9f7a768c9b27610fe \
-  --stage gate1 --scenario fixed --github-run-id 42800756685 \
-  --matrix-config bench/configs/gate1.json \
-  --output docs/evidence/gate1-a7e324a-summary.json
+  --stage gate2 --scenario fixed --github-run-id 42815241918 \
+  --matrix-config bench/configs/gate2.json \
+  --output docs/evidence/gate2-a7e324a-summary.json --skip-figures
+
+python3 -m bench.analysis.frontier \
+  --input docs/evidence/gate2-a7e324a-summary.json \
+  --output docs/evidence/gate2-a7e324a-frontier
+
+gh workflow run live-scale.yml -f scope=boundary-confirm -f max_parallel=9 \
+  -f native_run_id=42769316617 \
+  -f source_ref=a7e324a7165fa65b697023c9f7a768c9b27610fe
 
 python3 -m bench.analysis.regime --stage boundary-confirm \
   --source-commit a7e324a7165fa65b697023c9f7a768c9b27610fe \

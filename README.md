@@ -15,7 +15,7 @@ flowchart LR
     D --> I[Inference Worker]
 ```
 
-[三分钟答辩与源码](docs/INTERVIEW_DEFENSE.md) · [验收状态](docs/STATUS.md) · [上游贡献](docs/UPSTREAM_PRS.md)
+[三分钟答辩与源码](docs/INTERVIEW_DEFENSE.md) · [验收状态](docs/STATUS.md) · [证据与源码索引](docs/evidence/validation-index.json) · [上游贡献](docs/UPSTREAM_PRS.md)
 
 ## 确定性状态与真实恢复
 
@@ -32,20 +32,24 @@ Inference Lease、Model Attempt ID、Actor UID／epoch、工具安全点与 dura
 
 对旧 cost-aware 的逐条回执与 Worker 采样复算，发现 research 未知等待的 **45/48 次挂起晚于需求返回完成**，N32 工具区间占额外预留资源的 **63.6%**，同时识别出反馈开关和 Program 寿命的配置混杂。`agentcloud-v2` 维护连续、持久的等待 episode，未知等待固定两秒期限，已知等待比较 KEEP 与实际恢复成本；TTL2、旧 cost-aware、v2 和 TTL2-Shadow 使用同 Runner、同种子、统一 E／FINAL 协议配对。
 
-**CPU Mocker＋真实 Substrate MEMORY：**冻结调度器 `a7e324a` 的 Gate 1 完成 N32／N64、每规模三个种子、四策略，共 **24/24 trial、6,912/6,912 请求**，零失败、全部清理通过。下表为逐种子 v2 减基线的均值与配对 95% bootstrap 区间：
+**CPU Mocker＋真实 Substrate MEMORY：**冻结调度器 `a7e324a` 的正式 Gate 2 使用 N32／N64、每规模五个留出种子 7301～7305、五种策略，完成 **50/50 trial、14,400/14,400 请求**，全部清理通过。下表为逐种子 v2 减基线的均值与配对 95% bootstrap 区间：
 
-| 并发／基线 | 总 Actor 预留差 GB·s | 交互 TTFT P95 差 s |
+| 规模／基线 | 总 Actor 预留差 GB·s，95% CI | 交互 TTFT P95 差 s，95% CI |
 | --- | ---: | ---: |
-| N32／旧 cost-aware | −24.871 [−31.002, −21.006] | −34.756 [−45.966, −26.088] |
-| N64／旧 cost-aware | −57.959 [−89.810, −28.796] | −53.641 [−126.680, −5.379] |
-| N32／TTL2 | −1.724 [−6.038, +5.685] | +8.897 [+2.553, +13.776] |
-| N64／TTL2 | −6.683 [−15.116, +9.062] | +5.253 [−8.286, +15.149] |
+| N32／旧 cost-aware | −29.171 [−36.100, −23.359] | −23.226 [−35.439, −11.014] |
+| N64／旧 cost-aware | −41.974 [−68.390, −19.294] | −20.163 [−40.670, +0.344] |
+| N32／TTL2 | −8.129 [−11.764, −4.572] | +0.126 [−9.610, +10.047] |
+| N64／TTL2 | −3.746 [−12.191, +4.699] | +18.836 [+9.087, +27.482] |
 
-两种规模均支持 v2 相对旧 cost-aware 的资源与交互 P95 联合改善。相对 TTL2，两规模资源区间跨零，N32 的交互 P95 较高，N64 的 P95 区间跨零。冻结方案已通过 [Gate 2 进入检查](docs/evidence/gate2-entry-a7e324a.json)，留出种子与工作集确认按既定协议执行。工作集初筛还显示：64 MiB／3 s 下，恢复从 384 次降至 141 次，总预留下降 8.7%，交互 P95 从 205.941 s 升至 564.447 s；首次容量排队占 v2 首轮累计 TTFT 的 98.82%。
+两种规模相对 TTL15 和 Observed 均达到资源与交互 P95 联合改善判据。相对旧 cost-aware，N32 联合改善成立，N64 资源减少有区间支持、P95 区间跨零。相对 TTL2，N32 资源减少、P95 区间跨零；N64 资源区间跨零、P95 增加有区间支持。
 
-[轨迹归因](docs/SCHEDULER_DIAGNOSIS.md) · [配对数据](docs/evidence/gate1-a7e324a-summary.json) · [资源与尾延迟图](docs/evidence/gate1-a7e324a-frontier.png) · [留出确认、边界与停止条件](docs/V2_EVALUATION.md)
+![正式留出资源与尾延迟](docs/evidence/gate2-a7e324a-frontier.png)
 
-正式留出 N32 的五种子、五策略已完成 **25/25 trial、4,800/4,800 请求**：v2 对旧 cost-aware 的资源与交互 P95 联合改善成立；对 TTL2 节省 8.129 GB·s，交互 P95 差的区间跨零。N64 与关键工作集确认结果按完整计划持续归档。[正式留出数据](docs/evidence/gate2-a7e324a-summary.json)
+三种子边界确认显示，64 MiB／3 s 下平均减少 240.667 次恢复、节省 67.904 GB·s，交互 P95 增加 313.307 s；v2 首轮容量排队占累计 TTFT 的 98.733%。128 MiB／3 s 的三个 TTL2 trial 均触发 6 GiB 磁盘保护；v2 一个种子完整执行，两个种子因前序清理失败而未投递。边界共 **13/18 trial、6,105/6,912 请求**，九组集群清理通过。
+
+发现阶段 Gate 1 完成 **24/24 trial、6,912/6,912 请求**，TTL2-Shadow 单独量化观测计算开销；历史 60 组规模矩阵、正式留出与边界确认分别保留源码、完整分母及原始失败。
+
+[轨迹归因](docs/SCHEDULER_DIAGNOSIS.md) · [正式配对数据](docs/evidence/gate2-a7e324a-summary.json) · [Gate 1 与 Shadow](docs/V2_EVALUATION.md#gate-1-实测) · [工作集边界与停止条件](docs/V2_EVALUATION.md#三种子边界确认)
 
 ## 真实 GPU：收益反转与官方 KV 事件
 

@@ -34,9 +34,20 @@ N64/7101 的完整四策略独立验证完成 **1,536/1,536 请求、3/4 trial**
 
 两种规模对旧成本策略均达到联合改善判据；TTL2 对照保留资源与延迟取舍。[完整统计](evidence/gate1-a7e324a-summary.json) · [帕累托图与配对区间](evidence/gate1-a7e324a-frontier.png)
 
-[Gate 2](https://github.com/lilong555/agentcloud/actions/runs/42815241918) 使用冻结的相同源码、7301～7305 和五个策略，50 trial／14,400 请求。N32 已完成 25/25 trial、4,800/4,800 请求与全部清理；v2 相对旧 cost-aware 平均节省 29.171 GB·s、23.226 秒交互 P95，两项配对区间均改善。相对 TTL2，资源减少 8.129 GB·s [4.572, 11.686]，交互 P95 差为 +0.126 s [−10.375, +10.047]。N64 仍在执行。[完整计划与已归档结果](evidence/gate2-a7e324a-summary.json)
+[Gate 2](https://github.com/lilong555/agentcloud/actions/runs/42815241918) 使用相同冻结源码、N32／N64、7301～7305 和五个策略，完成 **50/50 trial、14,400/14,400 请求**，全部清理通过。逐种子配对结果如下：
 
-[边界确认](https://github.com/lilong555/agentcloud/actions/runs/42815326346) 使用 7401～7403 的三个关键坐标，18 trial／6,912 请求。16 MiB／1 s 完成三种子、6/6 trial、2,304/2,304 请求，两项对 TTL2 的配对区间均跨零。128 MiB／3 s 的两个先行 TTL2 trial 触发磁盘余量保护，后续 v2 因前序协议清理失败退出投递；资源销毁成功，失败与未投递保留在分母。其余组继续执行。[完整分母](evidence/boundary-confirm-a7e324a-summary.json) · [指标、区间与协议](V2_EVALUATION.md#正式留出结果)
+| 规模／基线 | 总 Actor 预留差 GB·s，95% CI | 交互 TTFT P95 差 s，95% CI |
+| --- | ---: | ---: |
+| N32／旧 cost-aware | −29.171 [−36.100, −23.359] | −23.226 [−35.439, −11.014] |
+| N64／旧 cost-aware | −41.974 [−68.390, −19.294] | −20.163 [−40.670, +0.344] |
+| N32／TTL2 | −8.129 [−11.764, −4.572] | +0.126 [−9.610, +10.047] |
+| N64／TTL2 | −3.746 [−12.191, +4.699] | +18.836 [+9.087, +27.482] |
+
+两种规模相对 TTL15 和 Observed 均达到资源与交互 P95 联合改善判据。相对旧 cost-aware，N32 联合改善成立，N64 资源减少有区间支持、P95 区间跨零。相对 TTL2，N32 资源减少、P95 区间跨零；N64 资源区间跨零、P95 增加有区间支持。
+
+[全部五策略、逐种子差值及完整计划](evidence/gate2-a7e324a-summary.json) · [资源与尾延迟图](evidence/gate2-a7e324a-frontier.png) · [全部运行与清理](evidence/gate2-run-42815241918.json)
+
+[边界确认](https://github.com/lilong555/agentcloud/actions/runs/42815326346) 的九个 Runner 全部结束，完成 **13/18 trial、6,105/6,912 请求**，九组 Kind 清理均通过。16 MiB／1 s 的两项配对区间均跨零；64 MiB／3 s 平均减少 240.667 次恢复、67.904 GB·s，总资源改善伴随 +313.307 s 交互 P95，首轮容量排队占 v2 累计 TTFT 的 98.733%。128 MiB／3 s 的三个 TTL2 trial 分别完成 370／371／372 个请求后触发 6 GiB 磁盘保护；v2 在 7401 完成 384/384，7402／7403 因前序协议清理失败保留为未投递。Actor、Tag、进程、数据库及集群均已销毁。[完整分母](evidence/boundary-confirm-a7e324a-summary.json) · [存储故障原始证据](evidence/boundary-confirm-storage-a7e324a.json) · [正式边界与区间](V2_EVALUATION.md#三种子边界确认)
 
 
 ## 公开真实轨迹的数据规格
