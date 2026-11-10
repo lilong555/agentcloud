@@ -57,20 +57,23 @@ func (c *Controller) observeLocked(ctx context.Context, name string, value float
 }
 
 type DiagnosticSession struct {
-	WorkspaceID    string    `json:"workspace_id"`
-	SessionID      string    `json:"session_id"`
-	State          string    `json:"state"`
-	Gate           string    `json:"gate"`
-	Epoch          uint64    `json:"epoch"`
-	ActiveTools    int       `json:"active_tools"`
-	Backend        string    `json:"backend"`
-	ActualFidelity string    `json:"actual_fidelity"`
-	Manifest       *Manifest `json:"manifest,omitempty"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	QuiesceRetryAfter time.Time         `json:"quiesce_retry_after,omitempty"`
+	QuiesceTimeouts   uint64            `json:"quiesce_timeouts,omitempty"`
+	ToolRecovery      *ToolRecoveryHint `json:"tool_recovery,omitempty"`
+	WorkspaceID       string            `json:"workspace_id"`
+	SessionID         string            `json:"session_id"`
+	State             string            `json:"state"`
+	Gate              string            `json:"gate"`
+	Epoch             uint64            `json:"epoch"`
+	ActiveTools       int               `json:"active_tools"`
+	Backend           string            `json:"backend"`
+	ActualFidelity    string            `json:"actual_fidelity"`
+	Manifest          *Manifest         `json:"manifest,omitempty"`
+	UpdatedAt         time.Time         `json:"updated_at"`
 }
 
 func diagnosticSession(s *Session) DiagnosticSession {
-	return DiagnosticSession{WorkspaceID: s.WorkspaceID, SessionID: s.SessionID, State: s.State, Gate: s.Gate, Epoch: s.Epoch, ActiveTools: s.ActiveTools, Backend: s.Backend, ActualFidelity: s.ActualFidelity, Manifest: copyValue(s.Manifest), UpdatedAt: s.UpdatedAt}
+	return DiagnosticSession{WorkspaceID: s.WorkspaceID, SessionID: s.SessionID, State: s.State, Gate: s.Gate, Epoch: s.Epoch, ActiveTools: s.ActiveTools, Backend: s.Backend, ActualFidelity: s.ActualFidelity, Manifest: copyValue(s.Manifest), UpdatedAt: s.UpdatedAt, QuiesceRetryAfter: s.QuiesceRetryAfter, QuiesceTimeouts: s.QuiesceTimeouts, ToolRecovery: unknownTools(s)}
 }
 
 type DiagnosticStatus struct {

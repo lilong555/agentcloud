@@ -21,6 +21,8 @@ import (
 )
 
 type Config struct {
+	QuiesceDrainTimeout       time.Duration
+	QuiesceCooldown           time.Duration
 	EnableAutonomousScheduler bool
 	SchedulerInterval         time.Duration
 	SchedulerStableFor        time.Duration
@@ -44,15 +46,19 @@ type Config struct {
 	Scheduling                policy.LifecycleConfig
 	QueueObserver             QueueObserver
 	EnableExperimentControls  bool
+	SnapshotGC                SnapshotGCConfig
 }
 type APIError struct {
 	Code    string
 	Message string
 	Status  int
+	Details map[string]any
 }
 
-func (e *APIError) Error() string                    { return e.Message }
-func problem(status int, code, message string) error { return &APIError{code, message, status} }
+func (e *APIError) Error() string { return e.Message }
+func problem(status int, code, message string) error {
+	return &APIError{Code: code, Message: message, Status: status}
+}
 
 type Controller struct {
 	dirty               map[string]map[string]bool
@@ -75,14 +81,24 @@ type Controller struct {
 	schedulerBusy       map[string]bool
 	signalLocks         keyedMutex[string]
 	unhealthy           error
+	snapshotGCWake      chan struct{}
 }
 
 func New(ctx context.Context, cfg Config) (*Controller, error) {
 	if cfg.Backend == nil {
 		return nil, errors.New("execution backend is required")
 	}
+	if err := cfg.SnapshotGC.defaults(); err != nil {
+		return nil, err
+	}
 	if cfg.MaxSessions == 0 {
 		cfg.MaxSessions = 256
+	}
+	if cfg.QuiesceDrainTimeout <= 0 {
+		cfg.QuiesceDrainTimeout = 30 * time.Second
+	}
+	if cfg.QuiesceCooldown <= 0 {
+		cfg.QuiesceCooldown = 30 * time.Second
 	}
 	if cfg.MaxRequests == 0 {
 		cfg.MaxRequests = 4096
@@ -188,6 +204,7 @@ func New(ctx context.Context, cfg Config) (*Controller, error) {
 		return nil, err
 	}
 	c.registerGauges()
+	c.startSnapshotGC()
 	c.workers.Add(1)
 	go c.strandingLoop()
 	if cfg.EnableAutonomousScheduler {
@@ -507,6 +524,9 @@ func (c *Controller) Tool(ctx context.Context, tenant, id string, input ToolRequ
 			return nil, problem(409, "payload_conflict", "operation ID has another payload")
 		}
 		out := copyValue(receipt)
+		if out.Status == "OUTCOME_UNKNOWN" {
+			out.Recovery = unknownTools(s)
+		}
 		c.mu.Unlock()
 		return out, nil
 	}
@@ -514,7 +534,13 @@ func (c *Controller) Tool(ctx context.Context, tenant, id string, input ToolRequ
 		c.mu.Unlock()
 		return nil, problem(409, "stale_epoch", "execution epoch differs")
 	}
-	if s.Gate != "OPEN" || s.State != "RUNNING" {
+	if unknownTools(s) != nil && input.Kind != "file_read" {
+		err := unknownToolProblem(s)
+		c.mu.Unlock()
+		return nil, err
+	}
+	inspection := input.Kind == "file_read" && toolInspectionAllowed(s)
+	if (s.Gate != "OPEN" || s.State != "RUNNING") && !inspection {
 		if c.cfg.EnableAutonomousScheduler && s.State != "RECOVERY_REQUIRED" {
 			if _, e := c.requestReturnLocked(s, LifecycleRequest{OperationID: input.ID, ExpectedEpoch: input.Epoch}); e == nil {
 				_ = c.persistContext(ctx)
@@ -589,6 +615,15 @@ func (c *Controller) Tool(ctx context.Context, tenant, id string, input ToolRequ
 	if toolErr != nil {
 		receipt.Status = "OUTCOME_UNKNOWN"
 		receipt.Error = toolErr.Error()
+		if hint := runtimeUnknownHint(toolErr); hint != nil {
+			if s.ToolRecovery == nil {
+				s.ToolRecovery = hint
+			} else {
+				s.ToolRecovery.UnknownOperations = append(s.ToolRecovery.UnknownOperations, hint.UnknownOperations...)
+			}
+		}
+		s.ToolRecovery = unknownTools(s)
+		receipt.Recovery = copyValue(s.ToolRecovery)
 		s.State = "RECOVERY_REQUIRED"
 		s.Gate = "CLOSED"
 	} else {
@@ -673,6 +708,11 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 			c.mu.Unlock()
 			return out, manifest, nil
 		}
+		if prior.Status == "ABORTED" {
+			err := quiesceProblem(prior.ErrorCode, prior.Error, prior.RetryAfter, s.ToolRecovery)
+			c.mu.Unlock()
+			return nil, nil, err
+		}
 		if action != "resume" || prior.Status != "WAITING_CAPACITY" {
 			c.mu.Unlock()
 			return nil, nil, problem(409, "lifecycle_unknown", "lifecycle operation requires reconciliation")
@@ -681,6 +721,16 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 	if s.Epoch != input.ExpectedEpoch {
 		c.mu.Unlock()
 		return nil, nil, problem(409, "stale_epoch", "execution epoch differs")
+	}
+	if action != "resume" && unknownTools(s) != nil {
+		err := unknownToolProblem(s)
+		c.mu.Unlock()
+		return nil, nil, err
+	}
+	if action != "resume" && time.Now().Before(s.QuiesceRetryAfter) {
+		err := quiesceProblem("quiesce_cooldown", "safe point drain is cooling down", s.QuiesceRetryAfter, nil)
+		c.mu.Unlock()
+		return nil, nil, err
 	}
 	if s.State == "RECOVERY_REQUIRED" || s.State == "CREATING" || s.State == "QUIESCING" || s.State == "SUSPENDING" || s.State == "RESUMING" {
 		c.mu.Unlock()
@@ -708,6 +758,9 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 	receipt.AttemptCount++
 	receipt.LastAttemptAt, receipt.RetryAfter = time.Now().UTC(), time.Time{}
 	s.Lifecycle[input.OperationID] = receipt
+	if action != "resume" && !prepared {
+		c.recordSnapshotIntentLocked(s, input.OperationID)
+	}
 	s.Gate = "CLOSED"
 	if !prepared {
 		s.BarrierGeneration++
@@ -729,18 +782,20 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 	if action == "resume" {
 		c.signalContext(ctx, snapshot, "RESUMING")
 	}
+	drainDeadline := time.Now().Add(c.cfg.QuiesceDrainTimeout)
+	waitedForTools := false
 	for action != "resume" {
 		c.lock()
 		active := s.ActiveTools
-		unknown := false
-		for _, r := range s.Tools {
-			if r.Status == "OUTCOME_UNKNOWN" {
-				unknown = true
-			}
-		}
+		unknown := unknownTools(s)
 		c.mu.Unlock()
-		if unknown {
-			err = errors.New("unknown tool result prevents a safe point")
+		if unknown != nil {
+			err = &quiesceRejected{code: "OUTCOME_UNKNOWN", recovery: unknown}
+			break
+		}
+		waitedForTools = waitedForTools || active > 0
+		if waitedForTools && !time.Now().Before(drainDeadline) {
+			err = &quiesceRejected{code: "DRAIN_TIMEOUT"}
 			break
 		}
 		if active == 0 {
@@ -748,7 +803,7 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 		}
 		select {
 		case <-ctx.Done():
-			err = ctx.Err()
+			err = &quiesceRejected{code: "DRAIN_CANCELLED"}
 		case <-time.After(10 * time.Millisecond):
 		}
 		if err != nil {
@@ -796,6 +851,11 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 	}
 	c.lock()
 	if err != nil {
+		if rejected := asQuiesceRejection(err); action != "resume" && !prepared && rejected != nil {
+			abortErr := c.abortQuiesceLocked(ctx, s, receipt, rejected)
+			c.mu.Unlock()
+			return nil, nil, abortErr
+		}
 		var waiting *resumeCapacityWaitError
 		if action == "resume" && errors.As(err, &waiting) && waiting.proof.matches(snapshot) {
 			receipt.Status, receipt.Error = "WAITING_CAPACITY", err.Error()
@@ -852,6 +912,7 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 	}
 	receipt.Status = "COMPLETED"
 	receipt.Manifest = manifest
+	c.recordCommittedSnapshotLocked(s, input.OperationID, manifest)
 	c.event(s, "lifecycle."+action+".completed", input.OperationID)
 	err = c.persistContext(ctx)
 	out := copyValue(s)
@@ -865,6 +926,7 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 		state = "SUSPENDED"
 	}
 	c.signalContext(ctx, out, state)
+	c.wakeSnapshotGC()
 	return out, manifest, nil
 }
 

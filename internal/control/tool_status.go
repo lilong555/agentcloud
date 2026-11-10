@@ -34,5 +34,9 @@ func (c *Controller) ToolStatus(tenant, id, operation string) (*ToolReceipt, err
 	if receipt == nil {
 		return nil, problem(404, "tool_not_found", "tool receipt not found")
 	}
-	return copyValue(receipt), nil
+	result := copyValue(receipt)
+	if result.Status == "OUTCOME_UNKNOWN" {
+		result.Recovery = unknownTools(s)
+	}
+	return result, nil
 }

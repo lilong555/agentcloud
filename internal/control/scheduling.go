@@ -57,6 +57,8 @@ type BoundaryDecision struct {
 	Manifest                 *Manifest                `json:"manifest,omitempty"`
 	ErrorCode                string                   `json:"error_code,omitempty"`
 	Error                    string                   `json:"error,omitempty"`
+	RetryAfter               time.Time                `json:"retry_after,omitempty"`
+	Recovery                 *ToolRecoveryHint        `json:"recovery,omitempty"`
 }
 
 func boundaryEstimate(override *int64, fallback int64) int64 {
@@ -67,6 +69,9 @@ func boundaryEstimate(override *int64, fallback int64) int64 {
 }
 
 func boundarySafe(s *Session) bool {
+	if time.Now().Before(s.QuiesceRetryAfter) || s.ToolRecovery != nil {
+		return false
+	}
 	if s.State != "RUNNING" && s.State != "CHECKPOINTED" || s.ActiveTools != 0 {
 		return false
 	}
@@ -275,6 +280,9 @@ func (c *Controller) ModelBoundary(ctx context.Context, tenant, id string, input
 	receipt.FinishedAt, receipt.ActualLifecycleElapsedMS = &now, &elapsed
 	if lifecycleErr != nil {
 		receipt.Status, receipt.Error = "OUTCOME_UNKNOWN", lifecycleErr.Error()
+		if lifecycle := s.Lifecycle[input.OperationID]; lifecycle != nil && lifecycle.Status == "ABORTED" {
+			receipt.Status, receipt.ResultEpoch, receipt.SessionState = "ABORTED", s.Epoch, s.State
+		}
 		if api, ok := lifecycleErr.(*APIError); ok {
 			receipt.ErrorCode = api.Code
 		}
@@ -282,7 +290,9 @@ func (c *Controller) ModelBoundary(ctx context.Context, tenant, id string, input
 		receipt.Status, receipt.ResultEpoch, receipt.SessionState, receipt.Manifest = "COMPLETED", result.Epoch, result.State, manifest
 	}
 	c.event(s, "scheduling.completed", input.OperationID)
-	err = c.persistContext(ctx)
+	commitCtx, stop := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer stop()
+	err = c.persistContext(commitCtx)
 	out := copyValue(receipt)
 	c.mu.Unlock()
 	if err != nil {
@@ -297,6 +307,9 @@ func replayBoundary(prior *BoundaryDecision, hash string) (*BoundaryDecision, er
 	}
 	if prior.Status == "OUTCOME_UNKNOWN" || prior.Status == "RUNNING" {
 		return copyValue(prior), problem(409, "scheduling_unknown", "scheduling completion requires reconciliation")
+	}
+	if prior.Status == "ABORTED" {
+		return copyValue(prior), quiesceProblem(prior.ErrorCode, prior.Error, prior.RetryAfter, copyValue(prior.Recovery))
 	}
 	return copyValue(prior), nil
 }

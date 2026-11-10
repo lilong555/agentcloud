@@ -35,12 +35,13 @@ type Measurement struct {
 }
 
 type Runtime struct {
-	Registry    *prometheus.Registry
-	Provider    *sdktrace.TracerProvider
-	metrics     map[string]prometheus.Observer
-	stranded    prometheus.Counter
-	released    prometheus.Counter
-	unavailable *prometheus.CounterVec
+	Registry        *prometheus.Registry
+	Provider        *sdktrace.TracerProvider
+	metrics         map[string]prometheus.Observer
+	stranded        prometheus.Counter
+	released        prometheus.Counter
+	quiesceTimeouts prometheus.Counter
+	unavailable     *prometheus.CounterVec
 }
 
 type Config struct {
@@ -86,8 +87,9 @@ func New(ctx context.Context, cfg Config) (*Runtime, error) {
 	}
 	r.stranded = prometheus.NewCounter(prometheus.CounterOpts{Name: "stranded_worker_gb_s", Help: "Observed assigned Worker memory in decimal GB times idle model/think seconds, excluding tool intervals."})
 	r.released = prometheus.NewCounter(prometheus.CounterOpts{Name: "dynamo_released_acting_tokens", Help: "Native applied state updates' observed released acting token budget."})
+	r.quiesceTimeouts = prometheus.NewCounter(prometheus.CounterOpts{Name: "quiesce_timeout_total", Help: "Tool drain timeouts before snapshot mutation."})
 	r.unavailable = prometheus.NewCounterVec(prometheus.CounterOpts{Name: "agentcloud_observation_unavailable_total", Help: "Missing or invalid native observations by bounded metric name."}, []string{"metric"})
-	r.Registry.MustRegister(r.stranded, r.released, r.unavailable)
+	r.Registry.MustRegister(r.stranded, r.released, r.quiesceTimeouts, r.unavailable)
 	return r, nil
 }
 func (r *Runtime) Close(ctx context.Context) error { return r.Provider.Shutdown(ctx) }
@@ -141,6 +143,8 @@ func Observe(ctx context.Context, name string, value float64, source string) {
 			r.stranded.Add(value)
 		case "dynamo_released_acting_tokens":
 			r.released.Add(value)
+		case "quiesce_timeout_total":
+			r.quiesceTimeouts.Add(value)
 		default:
 			if h := r.metrics[name]; h != nil {
 				h.Observe(value)

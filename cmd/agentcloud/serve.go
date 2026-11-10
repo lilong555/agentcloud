@@ -37,6 +37,11 @@ func serve(args []string, stdout, stderr io.Writer) error {
 	database := flags.String("database-url", os.Getenv("AGENTCLOUD_DATABASE_URL"), "PostgreSQL URL; empty uses fsync JSON")
 	tokens := flags.String("tokens", os.Getenv("AGENTCLOUD_TOKENS"), "comma-separated token=tenant bindings")
 	backend := flags.String("backend", "local", "local or substrate")
+	snapshotKeep := flags.Int("snapshot-retention", 2, "每个Workspace保留的已验证COMMITTED恢复点数")
+	snapshotGCInterval := flags.Duration("snapshot-gc-interval", 30*time.Second, "Snapshot Tag后台回收与故障重试间隔")
+	snapshotGCBatch := flags.Int("snapshot-gc-batch", 8, "每轮Snapshot Tag最大删除尝试数")
+	snapshotOrphanGrace := flags.Duration("snapshot-orphan-grace", time.Hour, "已终止checkpoint操作孤儿Tag回收宽限")
+	snapshotGCDisabled := flags.Bool("disable-snapshot-gc", false, "关闭Snapshot Tag自动回收，用于受控存储写放大实验")
 	modelURL := flags.String("model-url", os.Getenv("AGENTCLOUD_MODEL_URL"), "OpenAI-compatible model base URL or mock://deterministic")
 	allowShell := flags.Bool("allow-local-shell", false, "enable controlled local development shell commands")
 	modelConcurrency := flags.Int("model-concurrency", 4, "maximum parallel physical model attempts")
@@ -170,7 +175,7 @@ func serve(args []string, stdout, stderr io.Writer) error {
 		}
 		sink = bridge
 	}
-	c, err := control.New(ctx, control.Config{EnableAutonomousScheduler: *autonomous, SchedulerInterval: *schedulerInterval, SchedulerStableFor: *schedulerStable, SchedulerIdlePrior: *schedulerIdlePrior, SchedulerPolicy: *schedulerPolicy, SchedulerShadow: *schedulerShadow, Observability: telemetry, Signals: sink, DataDir: *data, DatabaseURL: *database, Backend: execution, ModelURL: *modelURL, ModelAPIKey: os.Getenv("AGENTCLOUD_MODEL_API_KEY"), ModelConcurrency: *modelConcurrency, ModelTimeout: *modelTimeout, Tokens: bindings, EnableExperimentControls: *experimentControls})
+	c, err := control.New(ctx, control.Config{EnableAutonomousScheduler: *autonomous, SchedulerInterval: *schedulerInterval, SchedulerStableFor: *schedulerStable, SchedulerIdlePrior: *schedulerIdlePrior, SchedulerPolicy: *schedulerPolicy, SchedulerShadow: *schedulerShadow, Observability: telemetry, Signals: sink, DataDir: *data, DatabaseURL: *database, Backend: execution, ModelURL: *modelURL, ModelAPIKey: os.Getenv("AGENTCLOUD_MODEL_API_KEY"), ModelConcurrency: *modelConcurrency, ModelTimeout: *modelTimeout, Tokens: bindings, EnableExperimentControls: *experimentControls, SnapshotGC: control.SnapshotGCConfig{Disabled: *snapshotGCDisabled, Keep: *snapshotKeep, Interval: *snapshotGCInterval, Batch: *snapshotGCBatch, OrphanGrace: *snapshotOrphanGrace}})
 	if err != nil {
 		return err
 	}

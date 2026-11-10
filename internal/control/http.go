@@ -33,12 +33,16 @@ func respond(w http.ResponseWriter, status int, value any) {
 func failure(w http.ResponseWriter, err error) {
 	var api *APIError
 	if !errors.As(err, &api) {
-		api = &APIError{"internal_error", "request could not be durably completed", 500}
+		api = &APIError{Code: "internal_error", Message: "request could not be durably completed", Status: 500}
 	}
 	if api.Code == "resume_capacity_wait" {
 		w.Header().Set("Retry-After", "1")
 	}
-	respond(w, api.Status, map[string]any{"error": map[string]string{"code": api.Code, "message": api.Message}})
+	detail := map[string]any{"code": api.Code, "message": api.Message}
+	if api.Details != nil {
+		detail["details"] = api.Details
+	}
+	respond(w, api.Status, map[string]any{"error": detail})
 }
 
 type endpoint func(http.ResponseWriter, *http.Request, string) error

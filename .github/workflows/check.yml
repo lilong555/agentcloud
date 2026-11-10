@@ -37,9 +37,11 @@ jobs:
       - name: Fetch locked source and apply delivery
         run: python3 scripts/upstream.py --fetch substrate dynamo
       - name: Contract and runtime verification
-        run: python3 scripts/check.py --go go
+        run: make check GO=go
       - name: Verify complete source delivery
         run: make verify-delivery
+      - name: Audit archived evidence
+        run: make evidence-audit
       - name: Build service
         run: go build -o bin/agentcloud ./cmd/agentcloud
       - uses: actions/upload-artifact@v4

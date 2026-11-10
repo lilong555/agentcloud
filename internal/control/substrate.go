@@ -102,14 +102,15 @@ func (b *SubstrateBackend) call(ctx context.Context, name, path string, input, o
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
 		var body struct {
 			Error struct {
-				Code string `json:"code"`
+				Code    string          `json:"code"`
+				Details json.RawMessage `json:"details"`
 			} `json:"error"`
 		}
 		code := ""
 		if json.Unmarshal(data, &body) == nil {
 			code = body.Error.Code
 		}
-		return &runtimeHTTPError{status: response.StatusCode, code: code, body: string(data)}
+		return &runtimeHTTPError{status: response.StatusCode, code: code, body: string(data), details: body.Error.Details}
 	}
 	if output != nil {
 		return json.Unmarshal(data, output)
@@ -232,11 +233,11 @@ func (b *SubstrateBackend) Tool(ctx context.Context, s *Session, input ToolReque
 }
 func (b *SubstrateBackend) Checkpoint(ctx context.Context, s *Session, operation string) (Actor, string, error) {
 	var barrier runtimeBarrierReceipt
-	if err := retryRuntimeRPC(ctx, "/runtime/v1/quiesce", 30*time.Second, func(attempt context.Context) error {
+	if err := retryRuntimeRPC(ctx, "/runtime/v1/quiesce", 40*time.Second, func(attempt context.Context) error {
 		barrier = runtimeBarrierReceipt{}
-		return b.call(attempt, s.Actor.Name, "/runtime/v1/quiesce", map[string]any{"operation_id": operation, "expected_epoch": s.Epoch, "barrier_generation": s.BarrierGeneration}, &barrier)
+		return b.call(attempt, s.Actor.Name, "/runtime/v1/quiesce", map[string]any{"operation_id": operation, "expected_epoch": s.Epoch, "barrier_generation": s.BarrierGeneration, "actor_uid": s.Actor.UID}, &barrier)
 	}); err != nil {
-		return Actor{}, "", err
+		return Actor{}, "", b.rejectQuiesce(ctx, s, operation, err)
 	}
 	if barrier.OperationID != operation || barrier.Epoch != s.Epoch || barrier.Generation != s.BarrierGeneration || barrier.Watermark != s.ReceiptWatermark || barrier.State != "QUIESCED" || barrier.Gate != "CLOSED" || barrier.Active != 0 {
 		return Actor{}, "", errors.New("runtime barrier differs from coordinator receipt watermark")

@@ -8,7 +8,7 @@ import re
 import threading
 import time
 import uuid
-from runtime.client import Client,CloudError
+from runtime.client import Client,CloudError,tool_outcome_error
 from runtime.coding.runner import PROGRAM,stable_id
 from runtime.coding.repository import FILES, TEST_COMMAND, RepositoryContext
 
@@ -108,6 +108,20 @@ class ActorAgentRuntime:
             time.sleep(.02)
         return next_state
 
+    def recover_tool(self, state, error, tool_call=None):
+        details = dict(error.details)
+        details.setdefault('recovery', dict(read_only_first=True, automatic_write_replay=False,
+            allowed_tools=['file_read'], steps=['保留原操作 ID，先用 file_read 检查工作区并依据持久回执对账。']))
+        structured = dict(code='OUTCOME_UNKNOWN', message=error.message, details=details)
+        messages = state.get('messages', [])
+        if tool_call:
+            messages = messages + [dict(role='tool', tool_call_id=tool_call['id'],
+                                       content=json.dumps({'error':structured}, ensure_ascii=False))]
+            if state['run_id'] in self.contexts:
+                self.contexts[state['run_id']].messages = messages
+        return self.transition(state, 'RECOVERY_REQUIRED', reason=str(error),
+            tool_error=structured, recovery=details['recovery'], messages=messages)
+
     def run(self,run_id):
         if self.read(run_id).get('agent_kind')=='model-tools':
             from runtime.coding.model_agent import run_model_agent
@@ -126,9 +140,16 @@ class ActorAgentRuntime:
                     for index,(path,content) in enumerate(FILES.items()):
                         written=self.client.tool(sid,epoch,stable_id(sid,'repository-write',index),'file_write',path=path,content=content)
                         if written['status']!='COMPLETED':
-                            self.transition(state,'RECOVERY_REQUIRED',reason='tool outcome '+written['status']);return
+                            if written['status']=='OUTCOME_UNKNOWN':
+                                self.recover_tool(state,tool_outcome_error(written,stable_id(sid,'repository-write',index)))
+                            else:
+                                self.transition(state,'RECOVERY_REQUIRED',reason='tool outcome '+written['status'])
+                            return
                         receipts.append(written['receipt_seq'])
                     failed=self.client.tool(sid,epoch,stable_id(sid,'repository-baseline',0),'shell',command=TEST_COMMAND,timeout_ms=10000)
+                    if failed['status']=='OUTCOME_UNKNOWN':
+                        self.recover_tool(state,tool_outcome_error(failed,stable_id(sid,'repository-baseline',0)))
+                        return
                     if failed['status']!='COMPLETED' or failed['result'].get('exit_code')==0:
                         self.transition(state,'RECOVERY_REQUIRED',reason='repository baseline must expose failing tests');return
                     context=RepositoryContext(self.tools.root)
@@ -171,8 +192,15 @@ class ActorAgentRuntime:
                     repaired=context.repair()
                     patched=self.client.tool(sid,epoch,stable_id(sid,'repository-repair',0),'file_write',path='shop/pricing.py',content=repaired)
                     if patched['status']!='COMPLETED':
-                        self.transition(state,'RECOVERY_REQUIRED',reason='repository patch outcome '+patched['status']);return
+                        if patched['status']=='OUTCOME_UNKNOWN':
+                            self.recover_tool(state,tool_outcome_error(patched,stable_id(sid,'repository-repair',0)))
+                        else:
+                            self.transition(state,'RECOVERY_REQUIRED',reason='repository patch outcome '+patched['status'])
+                        return
                     tested=self.client.tool(sid,epoch,stable_id(sid,'repository-test',0),'shell',command=TEST_COMMAND,timeout_ms=10000)
+                    if tested['status']=='OUTCOME_UNKNOWN':
+                        self.recover_tool(state,tool_outcome_error(tested,stable_id(sid,'repository-test',0)))
+                        return
                     if tested['status']!='COMPLETED' or tested['result'].get('exit_code')!=0 or 'Ran 4 tests' not in tested['result'].get('stderr',''):
                         self.transition(state,'RECOVERY_REQUIRED',reason='coding repository tests failed');return
                     self.transition(state,'COMPLETED',epoch=epoch,result=tested['result'],
@@ -182,7 +210,12 @@ class ActorAgentRuntime:
                         patch_sha256=hashlib.sha256(repaired.encode()).hexdigest(),
                         application_restart=self.boot_id!=state['origin_boot_id'])
                     return
-            except (CloudError,OSError,TimeoutError):
+            except CloudError as exc:
+                if exc.code.lower() in ('outcome_unknown','tools_unknown','tool_unknown'):
+                    self.recover_tool(self.read(run_id),exc)
+                    return
+                time.sleep(.1)
+            except (OSError,TimeoutError):
                 # Registered IDs survive connection cancellation and process restart.
                 time.sleep(.1)
             except Exception as exc:

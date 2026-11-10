@@ -24,6 +24,9 @@ type Actor struct {
 	SnapshotFidelity    string `json:"snapshot_fidelity,omitempty"`
 }
 type Session struct {
+	QuiesceRetryAfter       time.Time                       `json:"quiesce_retry_after,omitempty"`
+	QuiesceTimeouts         uint64                          `json:"quiesce_timeouts,omitempty"`
+	ToolRecovery            *ToolRecoveryHint               `json:"tool_recovery,omitempty"`
 	DynamoFinalized         bool                            `json:"dynamo_finalized,omitempty"`
 	DynamoFinalizedEpoch    uint64                          `json:"dynamo_finalized_epoch,omitempty"`
 	DynamoFinalizedSnapshot *dynamo.Snapshot                `json:"dynamo_finalized_snapshot,omitempty"`
@@ -55,6 +58,7 @@ type Session struct {
 	Tools                   map[string]*ToolReceipt         `json:"tools"`
 	Lifecycle               map[string]*LifecycleReceipt    `json:"lifecycle"`
 	Manifest                *Manifest                       `json:"manifest,omitempty"`
+	SnapshotGC              *SnapshotGCState                `json:"snapshot_gc,omitempty"`
 	CreatedAt               time.Time                       `json:"created_at"`
 	UpdatedAt               time.Time                       `json:"updated_at"`
 }
@@ -90,16 +94,17 @@ type ToolResult struct {
 	ExitCode int    `json:"exit_code"`
 }
 type ToolReceipt struct {
-	ID          string     `json:"tool_op_id"`
-	Epoch       uint64     `json:"epoch"`
-	Status      string     `json:"status"`
-	PayloadHash string     `json:"payload_hash"`
-	Sequence    uint64     `json:"receipt_seq"`
-	Result      ToolResult `json:"result"`
-	Error       string     `json:"error,omitempty"`
-	Deadline    time.Time  `json:"deadline,omitempty"`
-	StartedAt   time.Time  `json:"started_at"`
-	FinishedAt  *time.Time `json:"finished_at,omitempty"`
+	Recovery    *ToolRecoveryHint `json:"recovery,omitempty"`
+	ID          string            `json:"tool_op_id"`
+	Epoch       uint64            `json:"epoch"`
+	Status      string            `json:"status"`
+	PayloadHash string            `json:"payload_hash"`
+	Sequence    uint64            `json:"receipt_seq"`
+	Result      ToolResult        `json:"result"`
+	Error       string            `json:"error,omitempty"`
+	Deadline    time.Time         `json:"deadline,omitempty"`
+	StartedAt   time.Time         `json:"started_at"`
+	FinishedAt  *time.Time        `json:"finished_at,omitempty"`
 }
 type LifecycleRequest struct {
 	OperationID       string `json:"operation_id"`
@@ -108,6 +113,7 @@ type LifecycleRequest struct {
 	AfterModelRequest string `json:"after_model_request,omitempty"`
 }
 type LifecycleReceipt struct {
+	ErrorCode     string               `json:"error_code,omitempty"`
 	OperationID   string               `json:"operation_id"`
 	Action        string               `json:"action"`
 	Epoch         uint64               `json:"epoch"`

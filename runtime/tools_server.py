@@ -18,25 +18,34 @@ MAX_BYTES = 1024 * 1024
 
 
 class ToolFailure(RuntimeError):
-    def __init__(self, code, message, status=409):
+    def __init__(self, code, message, status=409, details=None):
         super().__init__(message)
         self.code, self.status = code, status
+        self.details = details or {}
+
+    def error(self):
+        return dict(code=self.code, message=str(self), details=self.details)
 
 
 class ToolRuntime:
-    def __init__(self, root: str, epoch: int = 1):
+    def __init__(self, root: str, epoch: int = 1, *, drain_timeout=30, clock=time.monotonic):
         self.root = Path(root).resolve()
         self.root.mkdir(parents=True, exist_ok=True)
         self.condition = threading.Condition(threading.RLock())
         self.db = sqlite3.connect(self.root / '.agentcloud-tools.sqlite3', check_same_thread=False)
         self.db.execute('CREATE TABLE IF NOT EXISTS receipts (id TEXT PRIMARY KEY, hash TEXT, status TEXT, result TEXT, seq INTEGER UNIQUE)')
         self.db.execute('CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT)')
+        self.db.execute('CREATE TABLE IF NOT EXISTS tool_inputs (id TEXT PRIMARY KEY, kind TEXT, payload TEXT)')
         self.db.commit()
         prior = self.db.execute("SELECT value FROM metadata WHERE key='epoch'").fetchone()
         self.epoch = int(prior[0]) if prior else epoch
         # A boot always requires coordinator attach before admitting mutations.
         self.open = False
         self.active = 0
+        self.attached_since_boot = False
+        self.drain_timeout, self.clock = drain_timeout, clock
+        prior_barrier = self.db.execute("SELECT value FROM metadata WHERE key='barrier'").fetchone()
+        self.barrier = json.loads(prior_barrier[0]) if prior_barrier else None
         self.db.execute("UPDATE receipts SET status='OUTCOME_UNKNOWN' WHERE status='RUNNING'")
         self.db.commit()
 
@@ -108,25 +117,141 @@ class ToolRuntime:
             self.db.execute("INSERT OR REPLACE INTO metadata VALUES ('attach_identity',?)", (identity,))
             self.db.commit()
             self.open = True
+            self.attached_since_boot = True
             return dict(epoch=epoch, gate='OPEN', actor_uid=actor_uid, identity_attested=bool(identity_file), manifest_id=body.get('manifest_id'))
+
+    def _save_barrier(self):
+        self.db.execute("INSERT OR REPLACE INTO metadata VALUES ('barrier',?)", (json.dumps(self.barrier),))
+        self.db.commit()
+
+    def _barrier_identity(self, body):
+        return dict(operation_id=body['operation_id'], epoch=int(body['expected_epoch']),
+                    barrier_generation=int(body['barrier_generation']))
+
+    def _check_barrier(self, identity):
+        if identity['epoch'] != self.epoch:
+            raise ToolFailure('STALE_EPOCH', '安全点代次失配')
+        if self.barrier and self.barrier['epoch'] == self.epoch:
+            if identity['barrier_generation'] < self.barrier['barrier_generation']:
+                raise ToolFailure('STALE_BARRIER', '安全点屏障代次陈旧')
+            if identity['barrier_generation'] == self.barrier['barrier_generation']:
+                if identity['operation_id'] != self.barrier['operation_id']:
+                    raise ToolFailure('BARRIER_PAYLOAD_MISMATCH', '屏障代次已绑定其他操作')
+                return True
+            if self.barrier['status'] not in ('CANCELLED',):
+                raise ToolFailure('BARRIER_ACTIVE', '当前屏障保持原安全点状态')
+        return False
+
+    def _current_barrier(self, identity):
+        return self.barrier and all(self.barrier.get(key) == value for key, value in identity.items())
+
+    def _validate_barrier_actor(self, body):
+        row = self.db.execute("SELECT value FROM metadata WHERE key='actor_uid'").fetchone()
+        actor_uid = row[0] if row else None
+        if 'actor_uid' in body and body['actor_uid'] != actor_uid:
+            raise ToolFailure('ACTOR_UID_MISMATCH', '安全点请求的Actor身份与激活绑定失配')
+        identity_file = os.environ.get('AGENTCLOUD_ACTOR_UID_FILE')
+        if identity_file:
+            try:
+                trusted_uid = Path(identity_file).read_text().strip()
+            except OSError as exc:
+                raise ToolFailure('ACTOR_IDENTITY_UNAVAILABLE', '可信Actor UID投影当前不可读', 503) from exc
+            if not actor_uid or trusted_uid != actor_uid:
+                raise ToolFailure('ACTOR_UID_REPLACED', '安全点入口的可信Actor UID与激活绑定失配')
+        return actor_uid, bool(identity_file)
+
+    def unknown_details(self, **identity):
+        rows = self.db.execute("SELECT r.id,r.seq,r.result,i.kind,i.payload FROM receipts r "
+            "LEFT JOIN tool_inputs i ON r.id=i.id WHERE r.status='OUTCOME_UNKNOWN' ORDER BY r.seq").fetchall()
+        unknown = []
+        suggested = []
+        for op, seq, result, kind, payload in rows:
+            item = dict(tool_op_id=op, receipt_seq=seq, status='OUTCOME_UNKNOWN', kind=kind,
+                        automatic_replay=False)
+            if result:
+                item['result'] = json.loads(result)
+            if payload:
+                inputs = json.loads(payload)
+                if 'path' in inputs:
+                    item['path'] = inputs['path']
+                    suggested.append(dict(kind='file_read', path=inputs['path']))
+            unknown.append(item)
+        return dict(identity, unknown_operations=unknown, recovery=dict(read_only_first=True,
+            automatic_write_replay=False, allowed_tools=['file_read'], suggested_tools=suggested,
+            steps=['保留原工具操作 ID，先用 file_read 检查相关源码、输出文件与工作区。',
+                   '依据持久回执和工作区实际内容完成对账，再由恢复流程决定后续写操作。']))
+
+    def cancel_quiesce(self, body):
+        with self.condition:
+            identity = self._barrier_identity(body)
+            actor_uid, identity_attested = self._validate_barrier_actor(body)
+            matches = self._check_barrier(identity)
+            if matches and self.barrier['status'] == 'QUIESCED':
+                raise ToolFailure('BARRIER_COMMITTED', '已确认安全点保留关闭状态')
+            # A cancellation received before its quiesce is a durable tombstone.
+            if not matches:
+                self.barrier = dict(identity, resume_open=self.open, status='CANCELLED')
+            else:
+                self.barrier['status'] = 'CANCELLED'
+            self.open = bool(self.barrier['resume_open'] and self.attached_since_boot)
+            self._save_barrier()
+            self.condition.notify_all()
+            return dict(identity, state='CANCELLED', gate='OPEN' if self.open else 'CLOSED',
+                        actor_uid=actor_uid, identity_attested=identity_attested)
 
     def quiesce(self, body):
         with self.condition:
-            if int(body['expected_epoch']) != self.epoch:
-                raise ToolFailure('STALE_EPOCH', '安全点代次失配')
+            identity = self._barrier_identity(body)
+            self._validate_barrier_actor(body)
+            matches = self._check_barrier(identity)
+            if matches:
+                status = self.barrier['status']
+                if status == 'CANCELLED':
+                    raise ToolFailure('BARRIER_CANCELLED', '安全点请求已取消', details=identity)
+                if status == 'QUIESCED':
+                    return self.barrier['receipt']
+                if status == 'DRAIN_TIMEOUT':
+                    raise ToolFailure('DRAIN_TIMEOUT', '已准入工具仍在运行', 504,
+                                      dict(identity, active_tools=self.active))
+                if status == 'OUTCOME_UNKNOWN':
+                    raise ToolFailure('OUTCOME_UNKNOWN', '未知副作用需要工作区检查与对账',
+                                      details=self.unknown_details(**identity))
+            else:
+                self.barrier = dict(identity, resume_open=self.open, status='DRAINING',
+                                    deadline=self.clock() + self.drain_timeout)
+                self._save_barrier()
             self.open = False
-            until = time.monotonic() + 30
+            until = self.barrier['deadline']
+            waited_for_tools = bool(self.active)
             while self.active:
-                remaining = until - time.monotonic()
+                if self.epoch != identity['epoch'] or not self._current_barrier(identity) or self.barrier['status'] == 'CANCELLED':
+                    raise ToolFailure('BARRIER_CANCELLED', '安全点请求已取消', details=identity)
+                remaining = until - self.clock()
                 if remaining <= 0:
-                    raise ToolFailure('DRAIN_TIMEOUT', '已准入工具仍在运行', 504)
+                    self.barrier['status'] = 'DRAIN_TIMEOUT'
+                    self._save_barrier()
+                    raise ToolFailure('DRAIN_TIMEOUT', '已准入工具仍在运行', 504,
+                                      dict(identity, active_tools=self.active))
                 self.condition.wait(remaining)
+            if self.epoch != identity['epoch'] or not self._current_barrier(identity) or self.barrier['status'] == 'CANCELLED':
+                raise ToolFailure('BARRIER_CANCELLED', '安全点请求已取消', details=identity)
+            if self.barrier['status'] == 'DRAIN_TIMEOUT' or waited_for_tools and self.clock() >= until:
+                self.barrier['status'] = 'DRAIN_TIMEOUT'
+                self._save_barrier()
+                raise ToolFailure('DRAIN_TIMEOUT', '工具排空超过安全点期限', 504,
+                                  dict(identity, active_tools=self.active))
             watermark = self.db.execute('SELECT COALESCE(MAX(seq),0) FROM receipts').fetchone()[0]
             unknown = self.db.execute("SELECT COUNT(*) FROM receipts WHERE status='OUTCOME_UNKNOWN'").fetchone()[0]
             if unknown:
-                raise ToolFailure('OUTCOME_UNKNOWN', '未知副作用需要人工或后端对账')
-            return dict(operation_id=body['operation_id'], epoch=self.epoch, barrier_generation=body['barrier_generation'],
+                self.barrier['status'] = 'OUTCOME_UNKNOWN'
+                self._save_barrier()
+                raise ToolFailure('OUTCOME_UNKNOWN', '未知副作用需要工作区检查与对账',
+                                  details=self.unknown_details(**identity))
+            receipt = dict(operation_id=body['operation_id'], epoch=self.epoch, barrier_generation=body['barrier_generation'],
                 receipt_watermark=watermark, state='QUIESCED', gate='CLOSED', active_tools=0)
+            self.barrier.update(status='QUIESCED', receipt=receipt)
+            self._save_barrier()
+            return receipt
 
     def execute(self, body):
         op = body['tool_op_id']
@@ -154,12 +279,19 @@ class ToolRuntime:
                 if previous[0] != digest:
                     raise ToolFailure('PAYLOAD_MISMATCH', '操作ID已绑定其他输入')
                 if previous[1] != 'COMPLETED':
+                    if previous[1] == 'OUTCOME_UNKNOWN':
+                        raise ToolFailure('OUTCOME_UNKNOWN', '原工具操作结果未知，先检查工作区再对账',
+                            details=self.unknown_details(tool_op_id=op, epoch=self.epoch))
                     raise ToolFailure(previous[1], '已有工具请求保持原执行状态')
                 return dict(tool_op_id=op,status=previous[1],result=json.loads(previous[2]),receipt_seq=previous[3],epoch=self.epoch)
             if not self.open:
                 raise ToolFailure('GATE_CLOSED', '当前安全点已关闭工具准入')
+            if body['kind'] != 'file_read' and self.db.execute("SELECT 1 FROM receipts WHERE status='OUTCOME_UNKNOWN' LIMIT 1").fetchone():
+                raise ToolFailure('OUTCOME_UNKNOWN', '工作区存在未知副作用，先执行只读检查',
+                                  details=self.unknown_details(requested_tool_op_id=op, epoch=self.epoch))
             seq = self.db.execute('SELECT COALESCE(MAX(seq),0)+1 FROM receipts').fetchone()[0]
             self.db.execute('INSERT INTO receipts VALUES (?,?,?,?,?)',(op,digest,'RUNNING',None,seq))
+            self.db.execute('INSERT INTO tool_inputs VALUES (?,?,?)',(op,body['kind'],json.dumps(canonical)))
             self.db.commit()
             self.active += 1
         try:
@@ -172,6 +304,10 @@ class ToolRuntime:
             with self.condition:
                 self.db.execute('UPDATE receipts SET status=?,result=? WHERE id=?',('OUTCOME_UNKNOWN',json.dumps({'error':str(exc)}),op))
                 self.db.commit()
+                details = self.unknown_details(tool_op_id=op, epoch=self.epoch)
+            if isinstance(exc, Exception):
+                raise ToolFailure('OUTCOME_UNKNOWN', '工具结果未知，保留原操作并先检查工作区',
+                                  getattr(exc, 'status', 409), details) from exc
             raise
         finally:
             with self.condition:
@@ -298,12 +434,14 @@ def serve(root, port, host='0.0.0.0', token=None, snapshot_fidelity=('VOLUMES',)
                 if length > MAX_BYTES*2:
                     raise ToolFailure('REQUEST_TOO_LARGE','请求超过大小上限',413)
                 body = json.loads(self.rfile.read(length))
-                handlers = {'/runtime/v1/tools':runtime.execute,'/runtime/v1/quiesce':runtime.quiesce,'/runtime/v1/attach':runtime.attach,'/runtime/v1/agents/start':agents.start}
+                handlers = {'/runtime/v1/tools':runtime.execute,'/runtime/v1/quiesce':runtime.quiesce,
+                    '/runtime/v1/quiesce/cancel':runtime.cancel_quiesce,
+                    '/runtime/v1/attach':runtime.attach,'/runtime/v1/agents/start':agents.start}
                 if self.path not in handlers:
                     raise ToolFailure('NOT_FOUND','路径未注册',404)
                 self.reply(200,handlers[self.path](body))
             except ToolFailure as exc:
-                self.reply(exc.status,{'error':{'code':exc.code,'message':str(exc)}})
+                self.reply(exc.status,{'error':exc.error()})
             except (KeyError,ValueError,TypeError) as exc:
                 self.reply(400,{'error':{'code':'INVALID_REQUEST','message':str(exc)}})
             except Exception as exc:

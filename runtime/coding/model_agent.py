@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 import time
 import uuid
-from runtime.client import CloudError
+from runtime.client import CloudError, tool_outcome_error
 from runtime.coding.repository import MODEL_FILES, fingerprint
 from runtime.coding.runner import stable_id
 
@@ -56,6 +56,8 @@ def _publish_terminal(runtime, state, epoch):
     if receipt['status'] == 'RUNNING':
         return None
     if receipt['status'] != 'COMPLETED':
+        if receipt['status'] == 'OUTCOME_UNKNOWN':
+            raise tool_outcome_error(receipt, state['completion_operation_id'])
         raise RuntimeError('终态发布回执需要对账 ' + receipt['status'])
     if receipt.get('result', {}).get('content') != content:
         raise RuntimeError('终态发布回执内容失配')
@@ -101,6 +103,8 @@ def run_model_agent(runtime,run_id):
                 for index,(path,content) in enumerate(repository.items()):
                     runtime.tools.path(path)
                     result=runtime.client.tool(sid,epoch,stable_id(sid,'model-repository',index),'file_write',path=path,content=content)
+                    if result['status']=='OUTCOME_UNKNOWN':
+                        raise tool_outcome_error(result,stable_id(sid,'model-repository',index))
                     if result['status']!='COMPLETED': raise RuntimeError('源码上传回执需要对账')
                 messages=[dict(role='system',content='你在真实Python仓库中修复缺陷。使用read_file、write_file、shell自主定位问题。先运行现有单测取得失败输出，再修改源码并复测。每次工具返回真实结果，依据结果继续工作，测试成功后结束。代码修改内容由你生成。'),
                           dict(role='user',content=state['task']+'\n仓库文件：'+json.dumps(sorted(repository),ensure_ascii=False))]
@@ -152,6 +156,8 @@ def run_model_agent(runtime,run_id):
                     if kind=='shell': args['timeout_ms']=30000
                     op=stable_id(sid,'model-tool-'+str(state['turn']),index)
                     result=runtime.client.tool(sid,epoch,op,kind,**args)
+                    if result['status']=='OUTCOME_UNKNOWN':
+                        raise tool_outcome_error(result,op)
                     if result['status']!='COMPLETED': raise RuntimeError('模型工具副作用需要对账 '+result['status'])
                     context.messages=state['messages']+[dict(role='tool',tool_call_id=call['id'],content=json.dumps(result['result'],ensure_ascii=False))]
                     context.refresh()
@@ -159,6 +165,8 @@ def run_model_agent(runtime,run_id):
                         tool_trace=state['tool_trace']+[dict(turn=state['turn'],tool_call_id=call['id'],tool_op_id=op,name=name,arguments=args,result=result['result'])])
                 if not calls:
                     verified=runtime.client.tool(sid,epoch,stable_id(sid,'model-final-test',state['turn']),'shell',command=state.get('test_command','python3 -B -m unittest discover -s tests -v'),timeout_ms=30000)
+                    if verified['status']=='OUTCOME_UNKNOWN':
+                        raise tool_outcome_error(verified,stable_id(sid,'model-final-test',state['turn']))
                     if verified['status']!='COMPLETED': raise RuntimeError('最终测试回执需要对账')
                     context.refresh()
                     modified=[name for name,value in context.source_hashes.items() if state['initial_source_hashes'].get(name)!=value]
@@ -169,6 +177,18 @@ def run_model_agent(runtime,run_id):
                 state=runtime.transition(state,'MODEL_REGISTERING',epoch=epoch,turn=state['turn']+1,messages=context.messages)
         except CloudError as exc:
             state=runtime.read(run_id)
+            if exc.code.lower() in ('outcome_unknown','tools_unknown','tool_unknown'):
+                call = None
+                if state['status']=='EXECUTING_MODEL_TOOLS':
+                    calls = state.get('pending_tool_calls', [])
+                    index = state.get('tool_index', 0)
+                    if index < len(calls):
+                        call = calls[index]
+                        exc.details.setdefault('tool_op_id',stable_id(state['session_id'],'model-tool-'+str(state['turn']),index))
+                if state['status']=='TERMINAL_PUBLISHING':
+                    exc.details.setdefault('tool_op_id',state['completion_operation_id'])
+                runtime.recover_tool(state,exc,call)
+                return
             if state['status']=='TERMINAL_PUBLISHING' and (exc.code.lower() in (
                 'outcome_unknown','payload_conflict','payload_mismatch','tools_unknown','tool_unknown') or
                 400<=exc.status<500 and exc.status not in (423,429) and exc.code.lower()!='stale_epoch'):

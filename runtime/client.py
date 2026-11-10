@@ -9,9 +9,34 @@ import urllib.request
 
 
 class CloudError(RuntimeError):
-    def __init__(self, code: str, message: str, status: int = 0):
+    def __init__(self, code: str, message: str, status: int = 0, details: dict | None = None):
         super().__init__(f"{code}: {message}")
         self.code, self.status = code, status
+        self.message, self.details = message, details or {}
+
+    def error(self):
+        return dict(code=self.code, message=self.message, details=self.details)
+
+
+def tool_outcome_error(receipt, tool_op_id=None):
+    """Preserve the original tool identity and recovery facts for the Harness."""
+    details = dict(receipt.get('details') or receipt.get('recovery_details') or {})
+    result = receipt.get('result') or {}
+    error = result.get('error') or {}
+    if isinstance(error, dict):
+        details = dict(error.get('details') or {}, **details)
+    recovery = receipt.get('recovery') or details.get('recovery')
+    if recovery:
+        details['recovery'] = dict(recovery, read_only_first=True, automatic_write_replay=False)
+    operation = receipt.get('tool_op_id') or tool_op_id
+    if operation:
+        details.setdefault('tool_op_id', operation)
+    unknown = recovery.get('unknown_operations') if recovery else None
+    details.setdefault('unknown_operations', unknown or [dict(tool_op_id=operation,
+        status='OUTCOME_UNKNOWN', receipt_seq=receipt.get('receipt_seq'), automatic_replay=False)])
+    details.setdefault('recovery', dict(read_only_first=True, automatic_write_replay=False,
+        allowed_tools=['file_read'], steps=['保留原工具操作 ID，先用 file_read 检查工作区和相关文件，再依据持久回执对账。']))
+    return CloudError('OUTCOME_UNKNOWN', '工具结果未知，先检查工作区并完成对账', 409, details)
 
 
 class _ServerNameHTTPSConnection(http.client.HTTPSConnection):
@@ -72,7 +97,7 @@ class Client:
                 error = json.load(exc)['error']
             except (ValueError, KeyError):
                 error = {'code': 'HTTP_ERROR', 'message': str(exc)}
-            raise CloudError(error['code'], error['message'], exc.code) from exc
+            raise CloudError(error['code'], error['message'], exc.code, error.get('details')) from exc
 
     @staticmethod
     def path(session_id: str) -> str:

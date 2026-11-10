@@ -15,9 +15,10 @@ import (
 )
 
 type runtimeHTTPError struct {
-	status int
-	code   string
-	body   string
+	status  int
+	code    string
+	body    string
+	details json.RawMessage
 }
 
 func (e *runtimeHTTPError) Error() string {
@@ -66,7 +67,12 @@ func retryRuntimeRPC(parent context.Context, path string, limit time.Duration, i
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		attempt, stop := context.WithTimeout(ctx, 10*time.Second)
+		attemptLimit := 10 * time.Second
+		if path == "/runtime/v1/quiesce" {
+			// The runtime owns a 30-second drain deadline; allow its terminal reply.
+			attemptLimit = 35 * time.Second
+		}
+		attempt, stop := context.WithTimeout(ctx, attemptLimit)
 		err := invoke(attempt)
 		stop()
 		if err == nil {

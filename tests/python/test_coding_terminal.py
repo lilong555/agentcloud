@@ -205,6 +205,54 @@ class CodingTerminalTests(unittest.TestCase):
         self.assertIn('OUTCOME_UNKNOWN', state['reason'])
         self.assertEqual(len(self.client.publish_calls), 1)
         self.assertEqual(self.client.receipts, {})
+        self.assertEqual(state['tool_error']['details']['tool_op_id'],completion_operation_id('coding-session'))
+        self.assertTrue(state['recovery']['read_only_first'])
+        self.assertFalse(state['recovery']['automatic_write_replay'])
+
+    def _pending_model_write(self):
+        state = self.runtime.read('coding-run')
+        call = dict(id='model-write-call',type='function',function=dict(name='write_file',
+            arguments=json.dumps(dict(path='solution.py',content='answer = 43\n'))))
+        messages = state['messages'] + [dict(role='assistant',content=None,tool_calls=[call])]
+        self.runtime.transition(state,'EXECUTING_MODEL_TOOLS',messages=messages,
+            pending_tool_calls=[call],tool_index=0)
+
+    def test_model_unknown_receipt_records_original_id_and_read_only_guidance(self):
+        self._pending_model_write()
+        recovery = dict(code='OUTCOME_UNKNOWN',unknown_operations=['original-operation'],
+            automatic_retry=False,allowed_tools=['file_read'],next_action='inspect_workspace_read_only')
+        with patch.object(self.client,'tool',return_value=dict(status='OUTCOME_UNKNOWN',
+            result={},recovery=recovery)) as invoked:
+            self.run_agent()
+            state = self.runtime.read('coding-run')
+            self.assertEqual(state['status'],'RECOVERY_REQUIRED')
+            self.assertEqual(invoked.call_count,1)
+            self.run_agent()
+            self.assertEqual(invoked.call_count,1)
+        message = state['messages'][-1]
+        self.assertEqual(message['role'],'tool')
+        self.assertEqual(message['tool_call_id'],'model-write-call')
+        error = json.loads(message['content'])['error']
+        self.assertEqual(error['code'],'OUTCOME_UNKNOWN')
+        self.assertEqual(error['details']['tool_op_id'],invoked.call_args.args[2])
+        self.assertEqual(error['details']['unknown_operations'],['original-operation'])
+        self.assertTrue(error['details']['recovery']['read_only_first'])
+        self.assertFalse(error['details']['recovery']['automatic_write_replay'])
+        self.assertEqual(state['tool_index'],0)
+        self.assertEqual(Path(self.directory.name,'solution.py').read_text(),'answer = 42\n')
+
+    def test_model_unknown_http_error_preserves_recovery_message(self):
+        self._pending_model_write()
+        details = dict(tool_op_id='durable-original',unknown_operations=[dict(tool_op_id='durable-original')],
+            recovery=dict(read_only_first=True,automatic_write_replay=False,allowed_tools=['file_read']))
+        with patch.object(self.client,'tool',side_effect=CloudError('OUTCOME_UNKNOWN',
+            '先检查工作区',409,details)) as invoked:
+            self.run_agent()
+        state = self.runtime.read('coding-run')
+        self.assertEqual(state['status'],'RECOVERY_REQUIRED')
+        self.assertEqual(invoked.call_count,1)
+        self.assertEqual(state['tool_error']['details']['tool_op_id'],'durable-original')
+        self.assertEqual(json.loads(state['messages'][-1]['content'])['error']['details'],details)
 
     def test_conflicting_publication_blocks_completion(self):
         self.client.publish_failure = 'conflict'
