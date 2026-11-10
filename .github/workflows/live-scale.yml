@@ -3,9 +3,9 @@ on:
   workflow_dispatch:
     inputs:
       scope:
-        description: 'smoke/matrix: established policy; cost-smoke/cost-matrix: paired cost-aware evaluation'
+        description: 'Paired scheduling experiments; workload scopes include long tails, changing waits and open-loop arrivals'
         type: choice
-        options: [smoke, matrix, cost-smoke, cost-matrix]
+        options: [smoke, matrix, cost-smoke, cost-matrix, workload-smoke, workload-matrix]
         default: smoke
       max_parallel:
         description: 'Independent GitHub hosted runners'
@@ -24,18 +24,15 @@ jobs:
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
     steps:
+      - uses: actions/checkout@v4
       - id: plan
         env:
           SCOPE: ${{ inputs.scope || 'smoke' }}
         run: |
           python3 - <<'PY'
-          import itertools,json,os
-          policies=['eager-0','static-2','static-5','static-15','agentcloud']
-          cases=[dict(n=n,policy=policy,seed=seed) for n,policy,seed in itertools.product([8,16,32,64],policies,[7101,7102,7103])]
-          if os.environ['SCOPE']=='smoke': cases=[dict(n=8,policy='agentcloud',seed=7101)]
-          if os.environ['SCOPE']=='cost-smoke': cases=[dict(n=8,policy=p,seed=7101) for p in ['static-2','agentcloud','cost-aware']]
-          if os.environ['SCOPE']=='cost-matrix': cases=[dict(n=n,policy=p,seed=s) for n,p,s in itertools.product([32,64],policies+['cost-aware'],[7101,7102,7103])]
-          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('matrix='+json.dumps({'include':cases})+'\n')
+          import json,os
+          from bench.scale_plan import matrix
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('matrix='+json.dumps(matrix(os.environ['SCOPE']))+'\n')
           PY
   native:
     if: '!inputs.native_run_id'
@@ -102,7 +99,7 @@ jobs:
       - name: Prepare Kind, gVisor MEMORY, durable storage and two Workers
         run: bash scripts/ci_live_prepare.sh
       - name: Run six-round growing-context trial
-        run: python3 -m bench.scale --concurrency '${{ matrix.n }}' --policies '${{ matrix.policy }}' --seeds '${{ matrix.seed }}'
+        run: python3 -m bench.scale --config '${{ matrix.config }}' --concurrency '${{ matrix.n }}' --policies '${{ matrix.policy }}' --seeds '${{ matrix.seed }}'
       - name: Collect runtime and resource evidence
         if: always()
         run: python3 scripts/ci_live_collect.py
@@ -115,7 +112,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: real-scale-n${{ matrix.n }}-${{ matrix.policy }}-s${{ matrix.seed }}
+          name: real-scale-${{ matrix.scenario }}-n${{ matrix.n }}-${{ matrix.policy }}-s${{ matrix.seed }}
           path: artifacts/ci-live-evidence/
           if-no-files-found: error
           retention-days: 30

@@ -79,6 +79,11 @@ def summarize(trials, samples=2000, seed=9031, candidate="agentcloud"):
     configurations={json.dumps({k:v for k,v in t['config'].items() if k not in selectors},sort_keys=True) for t in trials}
     if len(configurations) != 1:
         raise ValueError('resource or workload configurations differ; select a common frozen configuration')
+    if any(t.get('arrival_trace_sha256') for t in trials):
+        for n,s in {(t['concurrency'],t['seed']) for t in trials}:
+            traces={t.get('arrival_trace_sha256') for t in trials if (t['concurrency'],t['seed'])==(n,s)}
+            if None in traces or len(traces)!=1:
+                raise ValueError('paired arrival traces differ; compare the same planned workload')
     primary, audit = primary_attempts(trials)
     rng, groups = random.Random(seed), []
     for concurrency, policy in sorted({(t['concurrency'], t['policy']) for t in primary}):
@@ -208,6 +213,7 @@ def main():
     p.add_argument('--input-dir', type=Path, default=Path('docs/evidence/scale'))
     p.add_argument('--output', type=Path, default=Path('docs/evidence/scale-summary.json'))
     p.add_argument('--source-commit')
+    p.add_argument('--scenario', help='Select one frozen workload scenario, including its failed attempts')
     p.add_argument('--candidate', default='agentcloud', choices=['agentcloud','cost-aware'])
     p.add_argument('--matrix-config', type=Path, default=Path('bench/configs/scale-live.json'))
     p.add_argument('--bootstrap-samples', type=int, default=2000)
@@ -217,12 +223,14 @@ def main():
     selected = [(path,json.loads(path.read_text())) for path in paths]
     if args.source_commit:
         selected = [(path,t) for path,t in selected if t.get('source_commit') == args.source_commit]
+    if args.scenario:
+        selected = [(path,t) for path,t in selected if t.get('workload_scenario','fixed') == args.scenario]
     selected = [(path,with_cleanup(path,t)) for path,t in selected]
     paths,trials=zip(*selected) if selected else ([],[])
     result = summarize(trials, args.bootstrap_samples, candidate=args.candidate)
     result['matrix'] = matrix_coverage(trials, json.loads(args.matrix_config.read_text()))
     result.update(schema_version=2, execution_kind='real-substrate-memory-native-dynamo-cpu-mocker',
-        upstream_execution=True, gpu_execution=False, source_commit_filter=args.source_commit, sources=[str(path) for path in paths])
+        upstream_execution=True, gpu_execution=False, source_commit_filter=args.source_commit, workload_scenario=args.scenario, sources=[str(path) for path in paths])
     write_json(args.output, result)
     with args.output.with_suffix('.csv').open('w', newline='') as handle:
         columns = ['concurrency','policy','trials','offered','completed','failed_or_unoffered','ttft_p50','ttft_p95','ttft_p99','resume_p50','resume_p95','resume_p99','interactive_p95_seconds'] + list(SCALARS) + ['cached_tokens']

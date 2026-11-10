@@ -56,10 +56,18 @@ GitHub Actions 的 `Real Actor scale experiments` 提供：
 
 - `cost-smoke`：N=8，种子 7101，TTL=2、原 observed 策略和 cost-aware，各运行一个完整六轮试验。
 - `cost-matrix`：N=32/64，种子 7101/7102/7103，TTL=0/2/5/15、observed 和 cost-aware，共 36 个试验。
+- `workload-smoke`：长尾、等待分布变化、开放环三类场景，N=8、种子 7201，TTL=2、observed、cost-aware，共 9 个试验。
+- `workload-matrix`：上述三类场景，N=16，种子 7201/7202/7203，四个 TTL、observed、cost-aware，共 54 个试验。
 
 两组均沿用四租户、两 Worker、四 Actor 槽位、真实 gVisor MEMORY、PostgreSQL 与原生 Dynamo CPU Mocker。推理前缀依次为 1K/2K/4K/8K/12K/16K。每个 trial 保存策略、源码提交、配置和清理结果。首轮、失败、未投递及重跑保留各自身份。
 
 主对照为 TTL=2，原 observed 与其余 TTL 单独报告。完整配对组同时检查 Stranded 下降、Goodput 改善及交互 p95 的配对 95% 区间；少于三个完整种子对时只报告描述性结果。推广默认策略前还需在独立的混合长尾、负载变化与开放环到达场景验证资源收益和租户 SLO。
+
+三类泛化场景使用独立的 7201/7202/7203 种子。`tail` 的闲置长度以 80% 概率取画像均值的 0.1 倍、20% 概率取 4.6 倍，保持原均值；`phase` 从第三轮完成开始将同一闲置轨迹放大两倍。`open` 为每个 Workspace 预先生成独立的指数到达序列，初始请求在 12 秒内均匀错开，平均到达间隔 24 秒；全局第 60 秒后到达率变为三倍。到达时间跨越变点时按分段累计强度计算。
+
+开放环请求在同一 Workspace 内按 FIFO 执行，后续到达时间在实验开始前固定。TTFT 从原定到达时刻计时，前序请求积压计入 `trajectory_queue_seconds`；排队超过请求期限的任务记录 `DEADLINE_EXCEEDED`。失败后的未执行请求保留原定时间和全量分母。每个 trial 保存完整 `arrival-trace.json` 及 SHA256；分析器核对相同种子和规模的各策略使用同一到达轨迹。未来时刻由负载驱动保管，协调器只接收已经发生的 idle START/END 和返回需求。
+
+每类场景分别汇总，资源与到达配置保持一致。源码 SHA、请求分母、三种场景的原始结果和独立置信区间共同构成验收证据。
 
 ```bash
 python3 -m bench.analysis.scale \
@@ -68,6 +76,14 @@ python3 -m bench.analysis.scale \
   --candidate cost-aware \
   --matrix-config bench/configs/cost-aware-matrix.json \
   --output docs/evidence/cost-aware-summary.json
+```
+
+```bash
+python3 -m bench.analysis.scale \
+  --input-dir docs/evidence/scale --source-commit <frozen-commit> \
+  --scenario open --candidate cost-aware \
+  --matrix-config bench/configs/cost-open-matrix.json \
+  --output docs/evidence/cost-open-summary.json
 ```
 
 ## 依据

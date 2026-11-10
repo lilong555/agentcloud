@@ -66,6 +66,17 @@ class ScaleAnalysisTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'configurations differ'):
             summarize([a,b],samples=10)
 
+    def test_paired_policy_traces_must_match_even_when_one_trial_failed(self):
+        a,b=trial('a',1),trial('b',2,status='failed',policy='static-2')
+        a['arrival_trace_sha256']='trace-a'
+        b['arrival_trace_sha256']='trace-b'
+        with self.assertRaisesRegex(ValueError,'arrival traces differ'):
+            summarize([a,b],samples=10)
+        b['arrival_trace_sha256']='trace-a'
+        report=summarize([a,b],samples=10)
+        self.assertEqual(report['all_attempts']['planned_requests'],4)
+        self.assertEqual(report['all_attempts']['completed_requests'],2)
+
     def test_coordinator_revision_changes_require_explicit_source_selection(self):
         a,b=trial('a',1),trial('b',2)
         a['source_commit']='coordinator-a'

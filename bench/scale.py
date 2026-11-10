@@ -19,12 +19,12 @@ from bench.analysis.resources import integrate
 from bench.postgres import connection, execute
 from bench.substrate_live import Evidence, clean, quantile, timestamp, write_json
 from bench.worker_readiness import current_workers, placement_capacity
+from bench.workloads.arrivals import ArrivalTrace, KINDS
 from experiments.dynamo.native_mocker import Stack
 from runtime.client import Client, CloudError
 from scripts.disk_guard import inspect
 
 ROOT=Path(__file__).resolve().parents[1]
-KINDS=('interactive','coding','research','batch')
 AUTONOMOUS_POLICIES=('agentcloud','cost-aware')
 
 
@@ -54,9 +54,11 @@ class Trial:
     def __init__(self,config,args,seed,concurrency,policy,order):
         self.config,self.args=config,args
         self.seed,self.n,self.policy,self.order=seed,concurrency,policy,order
+        self.arrivals=ArrivalTrace(config,seed,concurrency)
         self.id=f'scale-{seed}-{concurrency}-{policy}-{uuid.uuid4().hex[:6]}'
         self.private=ROOT/'artifacts/scale'/self.id;self.private.mkdir(parents=True)
         self.output=args.output_dir/self.id;self.output.mkdir(parents=True)
+        write_json(self.output/'arrival-trace.json',self.arrivals.document)
         self.ev=Evidence(self.output/'events.jsonl');self.stopped=threading.Event();self.slots=FairSlots(config['worker_slots'],self.stopped)
         self.lock=threading.Lock();self.samples=[];self.resumes=[];self.idle=[];self.tools=[];self.sessions=[];self.service_samples=[]
         self.rows=[dict(session_id=f'{self.id}-w{index}',tenant=f'tenant-{chr(97+(index//len(KINDS)+index)%config["tenants"])}',
@@ -244,7 +246,13 @@ class Trial:
         rows=[row for row in self.rows if row['workspace_index']==entry['index']]
         try:
             for turn,row in enumerate(rows):
-                row.update(status='FAILED',arrival_at=self.started if turn==0 else entry['next_arrival'])
+                arrival=row.get('arrival_at',self.started if turn==0 else entry['next_arrival'])
+                while time.time()<arrival:
+                    self.guard();time.sleep(min(self.config['poll_seconds'],max(0,arrival-time.time())))
+                row.update(status='FAILED',arrival_at=arrival,trajectory_queue_seconds=max(0,time.time()-arrival))
+                if row['trajectory_queue_seconds']>=self.config['request_deadline_seconds']:
+                    row['status']='DEADLINE_EXCEEDED'
+                    raise TimeoutError('scheduled arrival expired in the serial workspace queue')
                 row['gateway_queue_seconds']=self.resume(entry,f'return-{turn}')
                 if previous: self.client(entry).claim(entry['id'],previous,entry['state']['epoch'])
                 proof=self.tool(entry,f'work-{turn}',f'python3 actor_mix.py work --kind {entry["kind"]} --seed {self.seed+entry["index"]} --turn {turn}')
@@ -260,7 +268,6 @@ class Trial:
                 self.event('model_submit',**row)
                 self.client(entry).call('POST',self.client(entry).path(entry['id'])+'/requests',dict(logical_request_id=row['logical_request_id'],payload=payload,terminal_turn=turn==len(rows)-1))
                 idle=dict(uid=entry['state']['actor']['uid'],start=row['submitted_at'],end=None);self.idle.append(idle)
-                gap=self.config['think_seconds'][entry['kind']] if turn+1<len(rows) else 0
                 deadline=time.monotonic()+self.config['request_deadline_seconds'];result=None;window=None;ttl_applied=False
                 while True:
                     state=self.refresh(entry)
@@ -276,10 +283,10 @@ class Trial:
                             row.update(status='COMPLETED',token_trace_validated=True)
                             row['cached_tokens']=(row['usage'].get('prompt_tokens_details') or {}).get('cached_tokens')
                             self.snapshot(entry,'model_complete')
+                            entry['next_arrival']=self.arrivals.next_arrival(entry['index'],turn,self.started,row['completed_at'])
                             # This describes a window that has already begun. Its deadline is a fixed safety TTL.
-                            if gap:
+                            if entry['next_arrival']>time.time():
                                 window=self.client(entry).call('POST',self.client(entry).path(entry['id'])+'/idle-window',dict(operation_id=f'think-{turn}',expected_epoch=state['epoch'],phase='START',ttl_ms=600000))
-                            entry['next_arrival']=row['completed_at']+gap
                     if result is not None and time.time()>=entry['next_arrival']: break
                     if self.policy not in AUTONOMOUS_POLICIES and not ttl_applied and time.time()>=row['submitted_at']+float(self.policy.split('-')[-1]):
                         self.suspend(entry,f'idle-{turn}');ttl_applied=True
@@ -287,7 +294,7 @@ class Trial:
                     time.sleep(self.config['poll_seconds'])
                 if window:
                     self.client(entry).call('POST',self.client(entry).path(entry['id'])+'/idle-window',dict(operation_id=f'think-{turn}',expected_epoch=window['epoch'],phase='END'))
-                idle['end']=entry['next_arrival']
+                idle['end']=max(row['completed_at'],entry['next_arrival'])
                 output=result.get('result',{}).get('choices',[{}])[0].get('message',{}).get('content','') or ''
                 history.extend(output.split());history.append(f'token{100+turn}');previous=row['logical_request_id']
                 self.event('model_result',**row)
@@ -311,6 +318,8 @@ class Trial:
             cached_tokens=sum(r.get('cached_tokens') or 0 for r in complete),
             native_pause_events=max((s.get('pause_events',0) for s in self.native_snapshots),default=0),
             native_final_events=max((s.get('final_events',0) for s in self.native_snapshots),default=0))
+        result['arrival_queue_seconds']={kind:{f'p{p}':quantile([r.get('trajectory_queue_seconds') for r in self.rows if r['workload']==kind],p/100) for p in (50,95,99)} for kind in KINDS}
+        result['scheduled_arrivals_by_finish']=sum(r.get('arrival_at',float('inf'))<=self.finished for r in self.rows)
         result['service_process_resources']={}
         for component in ('coordinator','native_frontend','native_mocker'):
             rows=[row for row in self.service_samples if row['component']==component and self.started<=row['at']<=self.finished]
@@ -348,18 +357,22 @@ class Trial:
             raise KeyboardInterrupt(f'signal {signum}')
         prior_handlers={sig:signal.signal(sig,interrupted) for sig in (signal.SIGINT,signal.SIGTERM)}
         attempted_at=time.time()
-        source={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [ROOT/'bench/scale.py',ROOT/'bench/configs/scale-live.json',ROOT/'bench/workloads/actor_mix.py',ROOT/'bench/worker_readiness.py',ROOT/'bench/worker_probe/main.go',ROOT/'bench/analysis/resources.py',ROOT/'experiments/dynamo/native_mocker.py',ROOT/'integrations/dynamo/manifest.json',ROOT/'integrations/substrate/manifest.json']}
+        source={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [ROOT/'bench/scale.py',ROOT/'bench/configs/scale-live.json',ROOT/'bench/workloads/actor_mix.py',ROOT/'bench/workloads/arrivals.py',ROOT/'bench/worker_readiness.py',ROOT/'bench/worker_probe/main.go',ROOT/'bench/analysis/resources.py',ROOT/'experiments/dynamo/native_mocker.py',ROOT/'integrations/dynamo/manifest.json',ROOT/'integrations/substrate/manifest.json']}
+        source['selected_config']=hashlib.sha256(self.args.config.read_bytes()).hexdigest()
         report=dict(schema_version=1,trial_id=self.id,seed=self.seed,concurrency=self.n,policy=self.policy,order=self.order,status='failed',config=self.config,
             gpu_execution=False,execution_kind='real-substrate-memory-native-dynamo-cpu-mocker',source_sha256=source,
             source_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
             attempted_at=attempted_at,runner=dict(os=os.getenv('RUNNER_OS'),arch=os.getenv('RUNNER_ARCH'),name=os.getenv('RUNNER_NAME')),
             github_run_id=os.getenv('GITHUB_RUN_ID'),github_run_attempt=os.getenv('GITHUB_RUN_ATTEMPT'),
-            arrival_pattern='closed-loop workspace trajectories with paired seeds and fixed think intervals',
+            arrival_pattern=self.arrivals.mode,arrival_trace_sha256=self.arrivals.sha256,
+            workload_scenario=self.config.get('workload_scenario','fixed'),
             scheduler_inputs='server_observed' if self.policy in AUTONOMOUS_POLICIES else 'static_ttl')
         try:
             self.start()
             with futures.ThreadPoolExecutor(max_workers=self.config['worker_slots']) as pool: entries=list(pool.map(self.provision,range(self.n)))
             self.event('all_workspaces_ready',count=len(entries),state='SUSPENDED',fidelity='MEMORY');self.started=time.time()
+            self.arrivals.bind(self.rows,self.started)
+            self.event('arrival_trace_ready',sha256=self.arrivals.sha256,mode=self.arrivals.mode,planned_requests=len(self.rows))
             with futures.ThreadPoolExecutor(max_workers=self.n) as pool: list(pool.map(self.session_run,entries))
             self.finished=time.time();time.sleep(.3)
             report['metrics']=self.metrics()
