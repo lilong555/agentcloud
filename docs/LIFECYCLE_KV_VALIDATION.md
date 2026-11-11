@@ -10,7 +10,7 @@
 - 单节点 Kind、runsc ptrace、两个 Substrate Worker、一个测试 Actor；Actor 使用 1 MiB RAM 探针，记录 nonce、PID、堆哈希和 AST 对象身份。
 - 两个 Mocker 各自运行独立进程、Worker ID、模拟缓存及 ZMQ 事件流；服务使用 file discovery、TCP request plane、ZMQ event plane。
 
-工作流：[`lifecycle-kv-mocker.yml`](../.github/workflows/lifecycle-kv-mocker.yml)。`smoke` 使用种子 7101，每个亲和配置运行一组 B/C 和一组增长上下文；`full` 使用 7101、7102、7103 三个独立 runner，每个配置运行三组 B/C 和一组增长上下文。每台 runner 内按 `off,hard` 顺序执行，Hard Affinity TTL 为 300 秒。
+工作流：[`lifecycle-kv-mocker.yml`](../.github/workflows/lifecycle-kv-mocker.yml)。`smoke` 使用种子 7101，每个亲和配置运行一组 B/C 和一组增长上下文；`full` 使用 7101、7102、7103 三个独立 runner，每个配置运行三组 B/C、一组增长上下文和两组路由对照，共 54 次真实生命周期 Trial。每台 runner 内按 `off,hard` 顺序执行，Hard Affinity TTL 为 300 秒。
 
 ```bash
 gh workflow run lifecycle-kv-mocker.yml --ref main \
@@ -29,6 +29,8 @@ gh workflow run lifecycle-kv-mocker.yml --ref main \
 | D | 新 Session ID、相同前缀、显式指定已热 Worker | 观察跨 Session 的模拟 Prefix Cache 复用 |
 | E | 相同前缀、显式指定冷 Worker | 独立 Worker 缓存隔离及冷缓存计数 |
 | Growth | 真实恢复后，在 256 Token 前缀后追加 32 Token | 按实际共享前缀和总长度计算命中与重算 |
+| Loaded | 恢复后向原缓存 Worker 注入 768 Token 输入、512 Token 输出的背景请求 | 核验活动请求与时间重叠，记录未指定 Worker 的恢复请求选择 |
+| Conflict | 休眠期间在另一 Worker 预热完整增长上下文 | 两 Worker 分别持有 256/288 Token 前缀，观察 Session Affinity 与缓存成本选择 |
 
 每次 B/C/Growth 均要求 `COMMITTED` 的 MEMORY Manifest、持久 Tag UID 和 Snapshot UUID；恢复后 Epoch 推进、Actor version 增加、boot ID 变化，RAM 探针完整保持。休眠时要求 Substrate Actor 已释放 Worker 分配，Dynamo 的新鲜 SUSPENDED 回执记录逻辑预算归零。Hard 配置额外检查恢复请求选择原 Worker。
 

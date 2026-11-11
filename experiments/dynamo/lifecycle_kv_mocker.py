@@ -7,9 +7,7 @@ The lifecycle action requires a prepared Substrate cluster and PostgreSQL.
 from __future__ import annotations
 
 import argparse
-from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
-import hashlib
 import importlib.metadata as metadata
 import json
 import os
@@ -21,7 +19,6 @@ import shutil
 import signal
 import subprocess
 import sys
-import threading
 import time
 import traceback
 from types import SimpleNamespace
@@ -226,6 +223,7 @@ class Stack(ControlStack):
         req = urllib.request.Request(self.front + "/v1/completions", data=json.dumps(payload).encode(), headers=headers)
         started, first, chunks, extensions, done = time.monotonic(), None, [], {}, False
         row = {"name": name, "token_ids": tokens, "identity": public(receipt), "session_final": final,
+               "started_monotonic_seconds": started,
                "routing_control": {"kind": "explicit_worker", "worker_id": worker} if worker is not None
                                   else {"kind": "native_router_selection"}}
         try:
@@ -251,7 +249,8 @@ class Stack(ControlStack):
             if not usages:
                 raise RuntimeError("Mocker response contains no token accounting")
             row.update(http_status=200, worker_id=kv.selected_worker(extensions), response={"usage": usages[-1]},
-                       chunks=chunks, nvext=extensions, elapsed_seconds=time.monotonic() - started)
+                       chunks=chunks, nvext=extensions, elapsed_seconds=time.monotonic() - started,
+                       completed_monotonic_seconds=time.monotonic())
             if first is not None:
                 row["client_ttft_seconds"] = first
             self.request_count += 1
@@ -306,6 +305,7 @@ class Experiment:
         selected = row["worker_id"]
         result = {**cache_observation(row["response"], len(tokens), kv.overlap(before["query"], selected)),
                   "worker_id": selected, "elapsed_seconds": row["elapsed_seconds"],
+                  "started_monotonic_seconds": row["started_monotonic_seconds"],
                   "routing_control": row["routing_control"], "request_evidence": name + ".json"}
         if "client_ttft_seconds" in row:
             result["client_ttft_seconds"] = row["client_ttft_seconds"]
@@ -313,6 +313,29 @@ class Experiment:
                      and (worker is None or selected == worker), result)
         self.stack.wait(lambda: self.query(tokens), lambda q: kv.overlap(q, selected) >= len(tokens) // 16 * 16)
         return result
+
+    def under_load(self, tokens, name, receipt, source_worker):
+        load_binding = self.stack.bind(label=name + "-load")
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(self.stack.infer, [3900] * 768, name + "-background", load_binding,
+                                 final=True, worker=source_worker, max_tokens=512)
+            active, _ = self.stack.wait(lambda: self.stack.native(load_binding),
+                lambda r: r["snapshot"].get("session_active_requests", 0) > 0, 10)
+            query = self.query(tokens)
+            self.require(name + "-warm-worker-loaded", not future.done()
+                         and kv.overlap(query, source_worker) >= 256,
+                         {"active": active, "query": query, "source_worker": source_worker})
+            result = self.measured(tokens, name, receipt)
+            background = future.result(timeout=60)
+        self.require(name + "-overlapping-load", background["worker_id"] == source_worker
+            and background["started_monotonic_seconds"] <= result["started_monotonic_seconds"]
+            < background["completed_monotonic_seconds"], {
+                "background_start": background["started_monotonic_seconds"],
+                "background_end": background["completed_monotonic_seconds"],
+                "request_start": result["started_monotonic_seconds"]})
+        return result, {"active_before_request": active, "cache_before_request": query,
+                        "background_request_evidence": name + "-background.json",
+                        "background_elapsed_seconds": background["elapsed_seconds"]}
 
     def evict(self, tokens, worker, label):
         removed_before = sum(o.snapshot()["counts"].get("BlockRemoved", 0) for o in self.stack.observers)
@@ -328,7 +351,9 @@ class Experiment:
             self.measured(pressure, f"{label}-pressure-{self.pressure_id}", receipt, final=True, worker=worker)
             count += 1
         query, _ = self.stack.wait(lambda: self.query(tokens), lambda q: kv.overlap(q, worker) == 0)
-        removed_after = sum(o.snapshot()["counts"].get("BlockRemoved", 0) for o in self.stack.observers)
+        removed_after, _ = self.stack.wait(
+            lambda: sum(o.snapshot()["counts"].get("BlockRemoved", 0) for o in self.stack.observers),
+            lambda count: count > removed_before, 5)
         self.require(label + "-confirmed-eviction", count > 0 and removed_after > removed_before,
                      {"pressure_requests": count, "removed_events_delta": removed_after - removed_before, "query": query})
         return {"worker_id": worker, "pressure_requests": count,
@@ -349,6 +374,26 @@ class Experiment:
             and forced["simulated_cached_tokens"] == 0, {"A": [cold, hot], "D": other, "E": forced})
         self.report["controls"] = {"A": {"cold": cold, "hot": hot}, "D_new_session_same_worker": other,
                                     "E_explicit_cold_worker": forced}
+
+    def routing_controls(self):
+        results = {}
+        for group, value in (("loaded", 80), ("conflict", 81)):
+            tokens = [value] * 256
+            receipt = self.stack.bind(label=group + "-control")
+            first = self.measured(tokens, group + "-cold", receipt)
+            other = next(w for w in self.stack.worker_ids if w != first["worker_id"])
+            if group == "loaded":
+                second, load = self.under_load(tokens, group + "-hot", receipt, first["worker_id"])
+                results[group] = {"first": first, "second": second, "load": load}
+            else:
+                grown = tokens + [90] * 32
+                self.measured(grown, "conflict-prepare-other", self.stack.bind(label="conflict-alternate"),
+                              final=True, worker=other)
+                second = self.measured(grown, "conflict-next", receipt)
+                results[group] = {"first": first, "second": second, "other_worker_id": other}
+            if self.args.affinity == "hard":
+                self.require(group + "-configuration-affinity", first["worker_id"] == second["worker_id"], second)
+        self.report["routing_controls"] = results
 
 
 class RealLifecycle(Lifecycle):
@@ -381,6 +426,11 @@ class RealLifecycle(Lifecycle):
             trial["cache_while_suspended"] = self.e.snapshot(label + "-suspended-cache", tokens)
             if group == "C":
                 trial["eviction"] = self.e.evict(tokens, first["worker_id"], label)
+            second_tokens = tokens + [1400 + j for j in range(32)] if growing else tokens
+            if group == "conflict":
+                alternative = next(w for w in self.stack.worker_ids if w != first["worker_id"])
+                trial["alternate_worker_prewarm"] = self.e.measured(second_tokens, label + "-alternate-warm",
+                    self.stack.bind(label=label + "-alternate"), final=True, worker=alternative)
             started = time.monotonic()
             after = self.call("POST", Client.path(self.sid) + "/resume", {
                 "expected_epoch": suspended["epoch"], "operation_id": label + "-resume"})
@@ -397,13 +447,16 @@ class RealLifecycle(Lifecycle):
             self.e.require(label + "-memory-identity-budget", True, {
                 "epoch_before": trial["before"]["epoch"], "epoch_after": after["epoch"],
                 "actual_fidelity": after["actual_fidelity"], "old_lease_http_status": denied["http_status"]})
-            second_tokens = tokens + [1400 + j for j in range(32)] if growing else tokens
-            second = self.e.measured(second_tokens, label + "-turn2", new)
+            if group == "loaded":
+                second, trial["load"] = self.e.under_load(second_tokens, label + "-turn2", new, first["worker_id"])
+            else:
+                second = self.e.measured(second_tokens, label + "-turn2", new)
             trial["turn2"] = second
             trial["same_worker_after_resume"] = first["worker_id"] == second["worker_id"]
             trial["input_kind"] = "shared_256_prefix_plus_32_tokens" if growing else "identical_256_token_ids"
             self.e.require(label + "-cache-treatment",
-                second["simulated_cached_tokens"] == 0 if group == "C" else second["simulated_cached_tokens"] > 0,
+                second["simulated_cached_tokens"] == 0 if group == "C" else
+                second["simulated_cached_tokens"] > 0 if group in ("B", "growth") else True,
                 second)
             if self.args.affinity == "hard":
                 self.e.require(label + "-hard-affinity-preserved", trial["same_worker_after_resume"], second)
@@ -419,12 +472,17 @@ class RealLifecycle(Lifecycle):
     def run(self):
         self.start()
         self.report["planned_trials"] = [f"pair-{i:02d}-{g}" for i in range(self.args.pairs) for g in ("B", "C")] + ["growth-B"]
+        if self.args.routing_probes:
+            self.report["planned_trials"] += ["loaded-B", "conflict-B"]
         randomizer = random.Random(self.args.seed)
         for index in range(self.args.pairs):
             for group in ("B", "C"):
                 tokens = [randomizer.randrange(100, 1200) for _ in range(256)]
                 self.cycle(f"pair-{index:02d}-{group}", group, tokens)
         self.cycle("growth-B", "growth", [randomizer.randrange(100, 1200) for _ in range(256)], growing=True)
+        if self.args.routing_probes:
+            self.cycle("loaded-B", "loaded", [randomizer.randrange(100, 1200) for _ in range(256)])
+            self.cycle("conflict-B", "conflict", [randomizer.randrange(100, 1200) for _ in range(256)], growing=True)
         self.report["actor_lifecycle_integration"] = True
 
 
@@ -476,12 +534,17 @@ def run_one(args, ready):
         experiment.require("native-two-worker-discovery", len(set(stack.worker_ids)) == 2,
                            stack.http(stack.indexer, "/workers"))
         experiment.controls()
+        if args.routing_probes and args.action == "config":
+            experiment.routing_controls()
         if args.action == "run":
             lifecycle = RealLifecycle(experiment)
             lifecycle.run()
         else:
             # A bounded configuration probe also checks actual engine eviction.
-            experiment.evict([7] * 256, report["controls"]["A"]["cold"]["worker_id"], "config")
+            target = report["controls"]["A"]["cold"]["worker_id"]
+            experiment.measured([7] * 256, "eviction-prime", stack.bind(label="eviction-prime"),
+                                final=True, worker=target)
+            experiment.evict([7] * 256, target, "config")
         for index, observer in enumerate(stack.observers):
             evidence = observer.snapshot()
             experiment.require(f"worker-{index}-event-stream", bool(evidence["counts"].get("BlockStored"))
@@ -514,6 +577,7 @@ def arguments(argv=None):
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--modes", default="off,hard")
     parser.add_argument("--pairs", type=int, default=1)
+    parser.add_argument("--routing-probes", action="store_true")
     parser.add_argument("--seed", type=int, default=7101)
     parser.add_argument("--client-dir", type=Path, default=ROOT / "artifacts/substrate/client")
     parser.add_argument("--actor-template", default="agentcloud-matrix")

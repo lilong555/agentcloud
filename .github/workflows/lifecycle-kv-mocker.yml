@@ -103,11 +103,16 @@ jobs:
         run: '"$HOME/.local/share/agentcloud/go/bin/go" build -p 2 -o artifacts/substrate/fault-probe ./tests/faults/probe'
       - name: Validate MEMORY lifecycle with affinity off and hard
         timeout-minutes: 30
-        run: >-
-          .venv-dynamo/bin/python -m experiments.dynamo.lifecycle_kv_mocker run
-          --output-dir artifacts/lifecycle-kv-mocker/lifecycle
-          --seed '${{ matrix.seed }}' --pairs '${{ needs.plan.outputs.pairs }}'
-          --timeout-seconds 800
+        env:
+          SUITE: ${{ inputs.suite }}
+          SEED: ${{ matrix.seed }}
+          PAIRS: ${{ needs.plan.outputs.pairs }}
+        run: |
+          extra=()
+          if [[ "$SUITE" == full ]]; then extra+=(--routing-probes); fi
+          .venv-dynamo/bin/python -m experiments.dynamo.lifecycle_kv_mocker run \
+            --output-dir artifacts/lifecycle-kv-mocker/lifecycle \
+            --seed "$SEED" --pairs "$PAIRS" --timeout-seconds 800 "${extra[@]}"
       - name: Collect runtime diagnostics
         if: always()
         run: python3 scripts/ci_live_collect.py
