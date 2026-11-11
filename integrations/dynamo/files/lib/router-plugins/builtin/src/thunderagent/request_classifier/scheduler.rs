@@ -79,7 +79,14 @@ pub(crate) struct RequestState {
     prior_program: Option<Program>,
     began_program: bool,
     placement_target: Option<WorkerWithDpRank>,
+    sent_worker: Option<WorkerWithDpRank>,
     pub(crate) notify: Arc<Notify>,
+}
+
+impl RequestState {
+    pub(super) fn session_id(&self) -> &str {
+        &self.session_id
+    }
 }
 
 pub(crate) struct RequestRegistration {
@@ -188,6 +195,10 @@ pub(crate) struct State {
     paused_programs: HashSet<String>,
     marked_for_pause: usize,
     normal_usage: HashMap<WorkerWithDpRank, usize>,
+    held_usage: HashMap<WorkerWithDpRank, usize>,
+    selected_workers: HashMap<String, WorkerWithDpRank>,
+    pub(crate) cache_candidates: HashMap<String, serde_json::Value>,
+    pub(crate) cache_observations: HashMap<String, super::cache_observation::CacheObservation>,
     pub(crate) requests: HashMap<String, RequestState>,
     sessions: HashMap<String, SessionRequests>,
     pub(crate) arrival_order: VecDeque<WaitingRequest>,
@@ -211,6 +222,10 @@ impl State {
             paused_programs: HashSet::new(),
             marked_for_pause: 0,
             normal_usage: HashMap::new(),
+            held_usage: HashMap::new(),
+            selected_workers: HashMap::new(),
+            cache_candidates: HashMap::new(),
+            cache_observations: HashMap::new(),
             requests: HashMap::new(),
             sessions: HashMap::new(),
             arrival_order: VecDeque::new(),
@@ -257,6 +272,8 @@ impl State {
         } else if self.execution_bindings.len() >= self.config.max_tracked_requests {
             return Err(ExecutionFeedbackError::InvalidBinding);
         }
+        self.cache_observations.remove(&binding.session_id);
+        self.cache_candidates.remove(&binding.session_id);
         let feedback = ExecutionFeedback::new(binding.clone(), now);
         self.execution_bindings
             .insert(binding.session_id.clone(), feedback.clone());
@@ -348,6 +365,7 @@ impl State {
                 prior_program: None,
                 began_program: false,
                 placement_target: None,
+                sent_worker: None,
                 notify: Arc::clone(&notify),
             },
         );
@@ -375,6 +393,9 @@ impl State {
         {
             return Err(ExecutionFeedbackError::SessionActive);
         }
+        self.cache_observations.remove(session_id);
+        self.cache_candidates.remove(session_id);
+        self.selected_workers.remove(session_id);
         self.execution_bindings.remove(session_id);
         Ok(())
     }
@@ -416,7 +437,29 @@ impl State {
         let history = feedback
             .map(|f| &f.admission_history)
             .or_else(|| program.map(|p| &p.admission_history));
+        let cache_observation = self.cache_observations.get(session_id).map(|o| {
+            let mut value = o.snapshot(chrono::Utc::now());
+            if self
+                .selected_workers
+                .get(session_id)
+                .copied()
+                .is_some_and(|w| w.worker_id != o.worker_id || w.dp_rank != o.dp_rank)
+            {
+                value["valid"] = false.into();
+                value["invalid_reason"] = "worker_changed".into();
+            }
+            value
+        });
         serde_json::json!({
+            "cache_observation": cache_observation,
+            "cache_candidates": self.cache_candidates.get(session_id),
+            "cache_reselect": self.config.cache_reselect,
+            "worker_budget_tokens": self.normal_usage.iter().map(|(w,t)| serde_json::json!({"worker_id":w.worker_id,"dp_rank":w.dp_rank,"tokens":t})).collect::<Vec<_>>(),
+            "selected_worker_id": self.selected_workers.get(session_id).map(|w|w.worker_id),
+            "selected_dp_rank": self.selected_workers.get(session_id).map(|w|w.dp_rank),
+            "assigned_worker_id": program.and_then(|p|p.assigned_worker).map(|w|w.worker_id),
+            "assigned_dp_rank": program.and_then(|p|p.assigned_worker).map(|w|w.dp_rank),
+            "assigned_worker": program.and_then(|p|p.assigned_worker).map(|w| serde_json::json!({"worker_id":w.worker_id,"dp_rank":w.dp_rank})),
             "program_present": program.is_some(),
             "admission_history": history,
             "last_admission_wait_ms": history.and_then(|h| h.back()).map(|r| &r["wait_ms"]),
@@ -517,6 +560,152 @@ impl State {
             }
         }
         self.normal_usage = normal_usage;
+        self.held_usage.clear();
+        self.refresh_holds();
+    }
+
+    pub(crate) fn cache_reselect(&self) -> bool {
+        self.config.cache_reselect
+    }
+
+    // A pre-dispatch migration holds the rollback worker and the destination.
+    // On one worker it reserves max(old,new), so its own charge is counted once.
+    fn refresh_holds(&mut self) {
+        let mut held = HashMap::<WorkerWithDpRank, usize>::new();
+        if self.config.cache_reselect {
+            for request in self
+                .requests
+                .values()
+                .filter(|r| r.began_program && !r.session_final && r.sent_worker.is_none())
+            {
+                let current = self
+                    .programs
+                    .get(&request.session_id)
+                    .and_then(|p| self.program_charge(p));
+                let prior = request
+                    .prior_program
+                    .as_ref()
+                    .and_then(|p| self.program_charge(p));
+                if let Some((worker, tokens)) = prior {
+                    let same = current.filter(|(w, _)| *w == worker).map_or(0, |(_, t)| t);
+                    let extra = tokens.saturating_sub(same);
+                    let entry = held.entry(worker).or_default();
+                    *entry = entry.saturating_add(extra);
+                }
+            }
+        }
+        for (worker, tokens) in std::mem::take(&mut self.held_usage) {
+            self.subtract_charge(Some((worker, tokens)));
+        }
+        for (&worker, &tokens) in &held {
+            self.add_charge(Some((worker, tokens)));
+        }
+        self.held_usage = held;
+    }
+
+    pub(crate) fn select_cache_worker(
+        &mut self,
+        session_id: &str,
+        ranked: &[(WorkerWithDpRank, f64)],
+        capacities: &WorkerCapacitySnapshot,
+        now: Instant,
+    ) -> Result<WorkerWithDpRank, String> {
+        self.refresh_normal_usage(now);
+        let request_id = self
+            .sessions
+            .get(session_id)
+            .and_then(|s| s.current.clone())
+            .ok_or("no released session request")?;
+        let request = self
+            .requests
+            .get(&request_id)
+            .ok_or("request ended before selection")?;
+        if let Some(worker) = request.sent_worker {
+            return ranked
+                .iter()
+                .any(|(candidate, _)| *candidate == worker && capacities.is_live(worker))
+                .then_some(worker)
+                .ok_or("committed worker is unavailable".into());
+        }
+        if request.session_final {
+            return ranked
+                .iter()
+                .min_by(|a, b| a.1.total_cmp(&b.1).then_with(|| a.0.cmp(&b.0)))
+                .map(|(w, _)| *w)
+                .ok_or("no eligible worker".into());
+        }
+        let current = self
+            .programs
+            .get(session_id)
+            .and_then(|p| self.program_charge(p));
+        let prior = request
+            .prior_program
+            .as_ref()
+            .and_then(|p| self.program_charge(p));
+        let required = self.buffered_program_tokens(session_id);
+        let pin = request.pinned_worker;
+        let selected = ranked
+            .iter()
+            .filter(|(worker, _)| capacities.is_live(*worker) && pin.is_none_or(|p| p == *worker))
+            .filter(|(worker, _)| {
+                let used = self.normal_usage.get(worker).copied().unwrap_or(0);
+                let own = current.filter(|(w, _)| w == worker).map_or(0, |(_, t)| t);
+                let held = prior
+                    .filter(|(w, _)| w == worker)
+                    .map_or(0, |(_, t)| t.saturating_sub(own));
+                let projected = used
+                    .saturating_sub(own)
+                    .saturating_sub(held)
+                    .saturating_add(
+                        required.max(prior.filter(|(w, _)| w == worker).map_or(0, |(_, t)| t)),
+                    );
+                capacities
+                    .capacity(*worker)
+                    .is_none_or(|capacity| projected <= capacity)
+            })
+            .min_by(|a, b| a.1.total_cmp(&b.1).then_with(|| a.0.cmp(&b.0)))
+            .map(|(w, _)| *w)
+            .ok_or("no cache candidate has admission capacity")?;
+        self.set_assignment(session_id, Some(selected));
+        self.requests.get_mut(&request_id).unwrap().placement_target = Some(selected);
+        self.refresh_holds();
+        Ok(selected)
+    }
+
+    pub(crate) fn accept_cache_observation(
+        &mut self,
+        binding: &ExecutionBinding,
+        observation: super::cache_observation::CacheObservation,
+    ) -> Result<(), ExecutionFeedbackError> {
+        let current = self
+            .execution_bindings
+            .get(&binding.session_id)
+            .ok_or(ExecutionFeedbackError::UnknownSession)?;
+        if current.binding != *binding {
+            return Err(ExecutionFeedbackError::IdentityMismatch);
+        }
+        observation.validate(binding.epoch, chrono::Utc::now())?;
+        if self
+            .selected_workers
+            .get(&binding.session_id)
+            .is_some_and(|worker| {
+                worker.worker_id != observation.worker_id || worker.dp_rank != observation.dp_rank
+            })
+        {
+            return Err(ExecutionFeedbackError::InvalidUpdate);
+        }
+        if let Some(old) = self.cache_observations.get(&binding.session_id) {
+            if observation.observed_at <= old.observed_at
+                || (observation.worker_id == old.worker_id
+                    && observation.worker_epoch == old.worker_epoch
+                    && observation.event_watermark < old.event_watermark)
+            {
+                return Err(ExecutionFeedbackError::Replay);
+            }
+        }
+        self.cache_observations
+            .insert(binding.session_id.clone(), observation);
+        Ok(())
     }
 
     fn update_program<R>(
@@ -566,6 +755,12 @@ impl State {
         let charge = self.program_charge(&program);
         self.subtract_charge(charge);
         self.paused_programs.remove(session_id);
+        if !self.execution_bindings.contains_key(session_id) {
+            self.cache_candidates.remove(session_id);
+            if !self.requests.values().any(|r| r.session_id == session_id) {
+                self.selected_workers.remove(session_id);
+            }
+        }
         Some(program)
     }
 
@@ -684,6 +879,10 @@ impl State {
             }
         }
 
+        if self.config.cache_reselect {
+            self.refresh_holds();
+        }
+
         if !capacities.has_usable_capacity() {
             return self.release_request(
                 request_id,
@@ -693,11 +892,13 @@ impl State {
 
         let mut changed = false;
         if let Some(worker) = assigned_worker {
-            if capacities.is_live(worker) {
+            if capacities.is_live(worker) && !self.config.cache_reselect {
                 return self.release_request(request_id, Some(worker));
             }
-            self.set_assignment(&session_id, None);
-            changed = true;
+            if !capacities.is_live(worker) {
+                self.set_assignment(&session_id, None);
+                changed = true;
+            }
         }
 
         if was_new && !self.paused_programs.is_empty() {
@@ -710,8 +911,14 @@ impl State {
             .filter(|(worker, _)| capacities.is_live(*worker))
             .filter_map(|(worker, capacity)| {
                 let used = self.normal_usage.get(&worker).copied().unwrap_or(0);
+                let own = self
+                    .programs
+                    .get(&session_id)
+                    .and_then(|p| self.program_charge(p))
+                    .filter(|(w, _)| *w == worker)
+                    .map_or(0, |(_, t)| t);
                 capacity
-                    .checked_sub(used)
+                    .checked_sub(used.saturating_sub(own))
                     .is_some_and(|remaining| remaining >= required)
                     .then_some((worker, used))
             })
@@ -848,6 +1055,7 @@ impl State {
             return false;
         };
         self.remove_waiting_arrival(request_id);
+        self.refresh_holds();
         notify.notify_waiters();
         true
     }
@@ -1015,6 +1223,21 @@ impl State {
                     })
                     .map(|(worker, _)| worker)
             });
+            if self.config.cache_reselect
+                && target.is_some_and(|worker| {
+                    !capacities.is_live(worker)
+                        || capacities.capacity(worker).is_some_and(|capacity| {
+                            self.normal_usage
+                                .get(&worker)
+                                .copied()
+                                .unwrap_or(0)
+                                .saturating_add(self.buffered_program_tokens(&session_id))
+                                > capacity
+                        })
+                })
+            {
+                continue;
+            }
             if self.resume_program(&session_id, target) {
                 if let Some(worker) = target {
                     let Some(program) = self.programs.get(&session_id) else {
@@ -1217,6 +1440,9 @@ impl State {
         }
         let session_id = request.session_id.clone();
         self.set_assignment(&session_id, Some(worker));
+        self.selected_workers.insert(session_id.clone(), worker);
+        self.requests.get_mut(request_id).unwrap().sent_worker = Some(worker);
+        self.refresh_holds();
         true
     }
 
@@ -1255,7 +1481,10 @@ impl State {
 
         if request.session_final && request.began_program {
             self.remove_program(&request.session_id);
-        } else if completed && request.phase == RequestPhase::Released {
+        } else if completed
+            && request.phase == RequestPhase::Released
+            && (!self.config.cache_reselect || request.sent_worker.is_some())
+        {
             let pause = self
                 .update_program(&request.session_id, |program| {
                     program.status = ProgramStatus::Acting;
@@ -1272,7 +1501,21 @@ impl State {
             }
         } else if request.began_program {
             match request.prior_program {
-                Some(prior) => {
+                Some(mut prior) => {
+                    if self.config.cache_reselect
+                        && let Some(worker) = request.sent_worker
+                    {
+                        prior.assigned_worker = Some(worker);
+                        prior.token_total = request.progress.context_tokens();
+                        prior.request_progress = None;
+                        prior.acting_since = Some(now);
+                    }
+                    if prior
+                        .assigned_worker
+                        .is_some_and(|worker| !capacities.is_live(worker))
+                    {
+                        prior.assigned_worker = None;
+                    }
                     self.replace_program(request.session_id.clone(), prior);
                 }
                 None => {
@@ -1281,6 +1524,7 @@ impl State {
             }
         }
 
+        self.refresh_holds();
         let next = self.sessions.get(&request.session_id).and_then(|session| {
             session
                 .current
@@ -1354,7 +1598,23 @@ impl State {
             .collect();
         for session_id in &removed {
             self.set_assignment(session_id, None);
+            self.selected_workers.remove(session_id);
+            if let Some(observation) = self.cache_observations.get_mut(session_id) {
+                observation.valid = false;
+                observation.invalid_reason = Some("worker_removed".into());
+            }
         }
+        for request in self.requests.values_mut() {
+            if let Some(prior) = request.prior_program.as_mut() {
+                if prior
+                    .assigned_worker
+                    .is_some_and(|worker| !capacities.is_live(worker))
+                {
+                    prior.assigned_worker = None;
+                }
+            }
+        }
+        self.refresh_holds();
         !removed.is_empty()
     }
 
@@ -1417,6 +1677,9 @@ impl State {
 
     fn worker_usage(&self, now: Instant) -> HashMap<WorkerWithDpRank, WorkerUsage> {
         let mut usage = self.normal_worker_usage();
+        for (&worker, &tokens) in &self.held_usage {
+            usage.entry(worker).or_default().decayed = tokens;
+        }
         for program in self.programs.values() {
             if program.lifecycle == ProgramLifecycle::Active
                 && let Some(worker) = program.assigned_worker
@@ -1563,6 +1826,264 @@ mod tests {
             execution_feedback: None,
             admission_history: VecDeque::new(),
         }
+    }
+
+    fn reselect_state(now: Instant, tokens: usize) -> State {
+        let mut state = state(ThunderAgentConfig {
+            cache_reselect: true,
+            buffer_per_program: 0,
+            ..Default::default()
+        });
+        let mut program = Program::new(tokens);
+        program.status = ProgramStatus::Acting;
+        program.acting_since = Some(now);
+        program.assigned_worker = Some(WorkerWithDpRank::new(1, 0));
+        state.insert_program("session".into(), program);
+        state
+    }
+    fn route_request(
+        state: &mut State,
+        id: &str,
+        session: &str,
+        tokens: usize,
+        pin: Option<WorkerWithDpRank>,
+        capacities: &WorkerCapacitySnapshot,
+        now: Instant,
+    ) -> Arc<Notify> {
+        state
+            .register(
+                RequestRegistration::new(
+                    id.into(),
+                    session.into(),
+                    tokens,
+                    RequestProgress::new(tokens).0,
+                    false,
+                )
+                .with_pinned_worker(pin),
+                capacities,
+                now,
+            )
+            .unwrap()
+    }
+    #[test]
+    fn cache_reselect_reserves_migration_once_and_cancellation_restores_original_worker() {
+        let now = Instant::now();
+        let capacities = capacities(&[(1, 1000), (2, 1000)]);
+        let w1 = WorkerWithDpRank::new(1, 0);
+        let w2 = WorkerWithDpRank::new(2, 0);
+        let mut state = reselect_state(now, 400);
+        route_request(&mut state, "next", "session", 500, None, &capacities, now);
+        assert_eq!(
+            state
+                .select_cache_worker("session", &[(w1, 256.0), (w2, 224.0)], &capacities, now)
+                .unwrap(),
+            w2
+        );
+        assert_eq!(state.normal_usage[&w1], 400);
+        assert_eq!(state.normal_usage[&w2], 500);
+        assert_eq!(
+            state
+                .select_cache_worker("session", &[(w1, 256.0), (w2, 224.0)], &capacities, now)
+                .unwrap(),
+            w2
+        );
+        assert_eq!(state.normal_usage[&w2], 500);
+        state.cancel_request("next", &capacities, now);
+        assert_eq!(state.programs["session"].assigned_worker, Some(w1));
+        assert_eq!(state.normal_usage[&w1], 400);
+        assert!(!state.normal_usage.contains_key(&w2));
+        assert!(state.held_usage.is_empty());
+    }
+    #[test]
+    fn cache_reselect_skips_full_candidates_and_preserves_hard_pin() {
+        let now = Instant::now();
+        let capacities = capacities(&[(1, 1000), (2, 1000)]);
+        let w1 = WorkerWithDpRank::new(1, 0);
+        let w2 = WorkerWithDpRank::new(2, 0);
+        let mut state = reselect_state(now, 400);
+        let mut busy = Program::new(800);
+        busy.assigned_worker = Some(w2);
+        state.insert_program("busy".into(), busy);
+        route_request(&mut state, "next", "session", 500, None, &capacities, now);
+        assert_eq!(
+            state
+                .select_cache_worker("session", &[(w1, 256.0), (w2, 0.0)], &capacities, now)
+                .unwrap(),
+            w1
+        );
+        assert_eq!(state.normal_usage[&w1], 500);
+        assert_eq!(state.normal_usage[&w2], 800);
+        state.cancel_request("next", &capacities, now);
+        route_request(
+            &mut state,
+            "pin",
+            "session",
+            500,
+            Some(w1),
+            &capacities,
+            now,
+        );
+        assert_eq!(
+            state
+                .select_cache_worker("session", &[(w1, 256.0), (w2, 0.0)], &capacities, now)
+                .unwrap(),
+            w1
+        );
+    }
+    #[test]
+    fn cache_reselect_sent_commits_worker_and_same_session_requests_remain_serial() {
+        let now = Instant::now();
+        let capacities = capacities(&[(1, 1000), (2, 1000)]);
+        let w1 = WorkerWithDpRank::new(1, 0);
+        let w2 = WorkerWithDpRank::new(2, 0);
+        let mut state = reselect_state(now, 400);
+        route_request(&mut state, "next", "session", 500, None, &capacities, now);
+        let tail = route_request(&mut state, "tail", "session", 500, None, &capacities, now);
+        assert_eq!(state.wait_status("tail", &tail), WaitStatus::Waiting);
+        state
+            .select_cache_worker("session", &[(w1, 256.0), (w2, 224.0)], &capacities, now)
+            .unwrap();
+        state.sent("next", w2);
+        assert!(!state.normal_usage.contains_key(&w1));
+        assert_eq!(state.normal_usage[&w2], 500);
+        assert!(state.held_usage.is_empty());
+        state.cancel_request("tail", &capacities, now);
+        state.cancel_request("next", &capacities, now);
+        assert_eq!(state.programs["session"].assigned_worker, Some(w2));
+        assert!(!state.normal_usage.contains_key(&w1));
+        assert!(state.requests.is_empty());
+        assert!(state.held_usage.is_empty());
+    }
+    #[test]
+    fn cache_reselect_reservation_blocks_other_sessions_until_sent() {
+        let now = Instant::now();
+        let capacities = capacities(&[(1, 600), (2, 600)]);
+        let w1 = WorkerWithDpRank::new(1, 0);
+        let w2 = WorkerWithDpRank::new(2, 0);
+        let mut state = reselect_state(now, 400);
+        route_request(&mut state, "next", "session", 500, None, &capacities, now);
+        state
+            .select_cache_worker("session", &[(w1, 256.0), (w2, 224.0)], &capacities, now)
+            .unwrap();
+        let other = route_request(
+            &mut state,
+            "other",
+            "other-session",
+            300,
+            None,
+            &capacities,
+            now,
+        );
+        assert_eq!(state.wait_status("other", &other), WaitStatus::Waiting);
+        state.sent("next", w2);
+        state.reconcile(&capacities, now);
+        assert_eq!(
+            state.wait_status("other", &other),
+            WaitStatus::Released(Some(w1))
+        );
+        assert_eq!(state.normal_usage[&w1], 300);
+        assert_eq!(state.normal_usage[&w2], 500);
+    }
+    #[test]
+    fn cache_reselect_timeout_keeps_capacity_exhausted_request_waiting() {
+        let now = Instant::now();
+        let capacities = capacities(&[(1, 600), (2, 600)]);
+        let w1 = WorkerWithDpRank::new(1, 0);
+        let w2 = WorkerWithDpRank::new(2, 0);
+        let mut state = reselect_state(now, 400);
+        route_request(&mut state, "next", "session", 500, None, &capacities, now);
+        state
+            .select_cache_worker("session", &[(w1, 256.0), (w2, 224.0)], &capacities, now)
+            .unwrap();
+        let other = route_request(
+            &mut state,
+            "other",
+            "other-session",
+            300,
+            None,
+            &capacities,
+            now,
+        );
+        state.reconcile(&capacities, now + Duration::from_secs(2000));
+        assert_eq!(state.wait_status("other", &other), WaitStatus::Waiting);
+        assert!(state.normal_usage.values().all(|tokens| *tokens <= 600));
+    }
+
+    #[test]
+    fn cache_reselect_completed_without_sent_restores_prior_placement() {
+        let now = Instant::now();
+        let capacities = capacities(&[(1, 1000), (2, 1000)]);
+        let w1 = WorkerWithDpRank::new(1, 0);
+        let w2 = WorkerWithDpRank::new(2, 0);
+        let mut state = reselect_state(now, 400);
+        route_request(&mut state, "next", "session", 500, None, &capacities, now);
+        state
+            .select_cache_worker("session", &[(w1, 256.0), (w2, 224.0)], &capacities, now)
+            .unwrap();
+        state.on_event(
+            ClassifyEvent::Completed {
+                request_id: "next".into(),
+                worker: w2,
+                context_tokens: None,
+            },
+            &capacities,
+            now,
+        );
+        assert_eq!(state.programs["session"].assigned_worker, Some(w1));
+        assert_eq!(state.normal_usage[&w1], 400);
+        assert!(!state.normal_usage.contains_key(&w2));
+        assert!(state.held_usage.is_empty());
+    }
+
+    #[test]
+    fn cache_reselect_worker_removal_clears_rollback_and_rejects_ineligible_selection() {
+        let now = Instant::now();
+        let initial = capacities(&[(1, 1000), (2, 1000)]);
+        let w1 = WorkerWithDpRank::new(1, 0);
+        let w2 = WorkerWithDpRank::new(2, 0);
+        let mut state = reselect_state(now, 400);
+        route_request(&mut state, "next", "session", 500, None, &initial, now);
+        state
+            .select_cache_worker("session", &[(w1, 256.0), (w2, 224.0)], &initial, now)
+            .unwrap();
+        let removed = WorkerCapacitySnapshot::new([(w2, 1000)]).with_live_workers([w2]);
+        state.clear_removed_workers(&removed);
+        assert!(!state.normal_usage.contains_key(&w1));
+        assert!(
+            state
+                .select_cache_worker("session", &[(w1, 0.0)], &removed, now)
+                .is_err()
+        );
+        state.cancel_request("next", &removed, now);
+        assert_eq!(state.programs["session"].assigned_worker, None);
+        assert!(state.normal_usage.is_empty());
+        assert!(state.held_usage.is_empty());
+    }
+    #[test]
+    fn cache_observation_replay_and_execution_epoch_rotation_clear_previous_signal() {
+        let now = Instant::now();
+        let mut state = state(ThunderAgentConfig::default());
+        let mut binding =
+            super::super::execution_feedback::tests::signal(super::super::SandboxState::Suspended)
+                .binding;
+        state
+            .register_execution_binding(binding.clone(), now)
+            .unwrap();
+        let observation = super::super::cache_observation::tests::observation(binding.epoch);
+        state
+            .accept_cache_observation(&binding, observation.clone())
+            .unwrap();
+        assert_eq!(
+            state.accept_cache_observation(&binding, observation),
+            Err(ExecutionFeedbackError::Replay)
+        );
+        binding.epoch += 1;
+        state
+            .register_execution_binding(binding.clone(), now)
+            .unwrap();
+        assert!(state.execution_snapshot(&binding.session_id, now)["cache_observation"].is_null());
+        state.retire_execution_binding(&binding.session_id).unwrap();
+        assert!(state.cache_observations.is_empty());
     }
 
     #[test]

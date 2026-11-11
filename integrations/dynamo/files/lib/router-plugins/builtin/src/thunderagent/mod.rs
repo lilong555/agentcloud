@@ -33,6 +33,31 @@ pub(super) fn register(
 #[cfg(test)]
 mod tests {
     #[test]
+    fn registers_cache_reselect_classifier_and_worker_selector() {
+        let mut registry = crate::default_registry();
+        crate::register(&mut registry).unwrap();
+        let policy = tempfile::NamedTempFile::new().unwrap();
+        std::fs::write(policy.path(),"request_classifier:\n  type: thunderagent\n  parameters:\n    cache_reselect: true\nworker_selection:\n  aggregated:\n    type: thunderagent\n    parameters:\n      cache_reselect: true\n").unwrap();
+        let config = dynamo_kv_router::KvRouterConfig {
+            router_policy_config: Some(policy.path().display().to_string()),
+            ..Default::default()
+        };
+        let plugins = registry.resolve_plugins(&config).unwrap();
+        assert!(plugins.worker_selection().is_some());
+        let classifier = plugins.request_classifier().unwrap()(
+            dynamo_kv_router::plugins::request_classifier::RequestClassifierContext::new(
+                16,
+                Vec::new,
+            ),
+        );
+        use dynamo_kv_router::plugins::worker_selection::WorkerInputs;
+        assert_eq!(
+            classifier.required_worker_inputs(),
+            WorkerInputs::CACHE | WorkerInputs::LOAD
+        );
+    }
+
+    #[test]
     fn registers_classifier_and_worker_selector() {
         let mut registry = crate::default_registry();
         crate::register(&mut registry).unwrap();

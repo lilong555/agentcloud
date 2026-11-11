@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
+pub(super) mod cache_observation;
 mod capacity;
 mod execution_feedback;
 mod scheduler;
@@ -11,8 +12,8 @@ pub use execution_feedback::{
     SandboxStateUpdate,
 };
 
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, OnceLock, Weak};
 use std::time::Instant;
 
 use async_trait::async_trait;
@@ -22,7 +23,7 @@ use dynamo_kv_router::plugins::request_classifier::{
     RequestClassifierContext, RequestClassifierFactory, RequestClassifierParameters,
     RequestClassifierProviderError, RequestClassifierRegistryError, RequestProgress,
 };
-use dynamo_kv_router::plugins::worker_selection::WorkerCandidates;
+use dynamo_kv_router::plugins::worker_selection::{WorkerCandidates, WorkerInputs};
 use dynamo_runtime::error::{DynamoError, ErrorClass};
 use parking_lot::Mutex;
 use thiserror::Error;
@@ -59,9 +60,11 @@ fn classifier_provider(
     let control_server = super::execution_control::from_environment()
         .map_err(RequestClassifierProviderError::new)?;
     Ok(Arc::new(move |context| {
+        let block_size = context.block_size();
         let capacity_provider = capacity_provider(context);
         let classifier = ThunderAgentClassifier::new(config.clone(), capacity_provider)
-            .expect("ThunderAgent configuration was validated during catalog resolution");
+            .expect("ThunderAgent configuration was validated during catalog resolution")
+            .with_block_size(block_size);
         if let Some(server) = &control_server {
             server.attach(classifier.execution_feedback());
         }
@@ -98,9 +101,32 @@ pub(crate) enum ThunderAgentError {
 
 struct Inner {
     state: Mutex<State>,
+    block_size: u32,
     capacity_provider: Arc<dyn WorkerCapacityProvider>,
     scheduler_started: AtomicBool,
     inference_leases: Mutex<std::collections::HashMap<String, String>>,
+}
+
+// Only live in-flight sessions are registered. Each opaque routing session belongs
+// to one classifier; cross-classifier identity collisions fail closed.
+fn selections() -> &'static Mutex<std::collections::HashMap<String, Weak<Inner>>> {
+    static SELECTIONS: OnceLock<Mutex<std::collections::HashMap<String, Weak<Inner>>>> =
+        OnceLock::new();
+    SELECTIONS.get_or_init(|| Mutex::new(std::collections::HashMap::new()))
+}
+
+pub(super) fn reserve_cache_selection(
+    session_id: &str,
+    ranked: &[(dynamo_kv_router::protocols::WorkerWithDpRank, f64)],
+) -> Option<Result<dynamo_kv_router::protocols::WorkerWithDpRank, String>> {
+    let inner = selections().lock().get(session_id)?.upgrade()?;
+    let capacities = inner.capacity_provider.snapshot();
+    let result =
+        inner
+            .state
+            .lock()
+            .select_cache_worker(session_id, ranked, &capacities, Instant::now());
+    Some(result)
 }
 
 fn verify_inference_lease(
@@ -208,6 +234,18 @@ impl Inner {
         );
     }
 
+    fn prune_selections(&self, state: &State) {
+        selections().lock().retain(|session, weak| {
+            weak.upgrade().is_some_and(|owner| {
+                !std::ptr::eq(owner.as_ref(), self)
+                    || state
+                        .requests
+                        .values()
+                        .any(|request| request.session_id() == session)
+            })
+        });
+    }
+
     fn on_event(&self, event: ClassifyEvent) {
         let request_id = match &event {
             ClassifyEvent::Sent { request_id, .. }
@@ -221,6 +259,7 @@ impl Inner {
         }
         let capacities = self.capacity_provider.snapshot();
         state.on_event(event, &capacities, Instant::now());
+        self.prune_selections(&state);
     }
 
     fn cancel_request(&self, request_id: &str, notify: &Arc<Notify>) {
@@ -230,6 +269,7 @@ impl Inner {
         }
         let capacities = self.capacity_provider.snapshot();
         state.cancel_request(request_id, &capacities, Instant::now());
+        self.prune_selections(&state);
     }
 }
 
@@ -335,6 +375,17 @@ impl ExecutionFeedbackControl {
         Ok(())
     }
 
+    pub fn update_cache_observation(
+        &self,
+        binding: &ExecutionBinding,
+        observation: cache_observation::CacheObservation,
+    ) -> Result<(), ExecutionFeedbackError> {
+        self.inner
+            .state
+            .lock()
+            .accept_cache_observation(binding, observation)
+    }
+
     pub fn session_snapshot(&self, session_id: &str) -> serde_json::Value {
         self.inner.reconcile();
         self.inner
@@ -367,6 +418,12 @@ impl ExecutionFeedbackControl {
 }
 
 impl ThunderAgentClassifier {
+    fn with_block_size(mut self, block_size: u32) -> Self {
+        Arc::get_mut(&mut self.inner)
+            .expect("unshared new classifier")
+            .block_size = block_size;
+        self
+    }
     pub fn execution_feedback(&self) -> ExecutionFeedbackControl {
         ExecutionFeedbackControl {
             inner: Arc::clone(&self.inner),
@@ -396,6 +453,7 @@ impl ThunderAgentClassifier {
         Ok(Self {
             inner: Arc::new(Inner {
                 state: Mutex::new(State::new(config)),
+                block_size: 1,
                 capacity_provider,
                 scheduler_started: AtomicBool::new(false),
                 inference_leases: Mutex::new(std::collections::HashMap::new()),
@@ -406,10 +464,14 @@ impl ThunderAgentClassifier {
 
 #[async_trait]
 impl RequestClassifier for ThunderAgentClassifier {
+    fn required_worker_inputs(&self) -> WorkerInputs {
+        WorkerInputs::CACHE | WorkerInputs::LOAD
+    }
+
     fn classify(
         &mut self,
         request: ClassifyRequest,
-        _workers: WorkerCandidates<'_>,
+        workers: WorkerCandidates<'_>,
     ) -> ClassifyFuture {
         let started_at = Instant::now();
         let queued_at = chrono::Utc::now();
@@ -422,6 +484,23 @@ impl RequestClassifier for ThunderAgentClassifier {
             });
         };
         let session_id = session.session_id().to_owned();
+        let reselect = self.inner.state.lock().cache_reselect();
+        let cache_candidates = serde_json::json!({
+            "request_id":request_id,"observed_at":chrono::Utc::now(),"source_kind":"native_router_candidate_snapshot",
+            "block_size_tokens":self.inner.block_size,"history_tokens":request.isl_tokens(),
+            "prefix_digest":request.sequence_hashes().and_then(|h|h.last()).map(|h|format!("{h:016x}")),
+            "sequence_hashes":request.sequence_hashes(),
+            "candidates":workers.iter().map(|candidate|{
+                let worker=candidate.worker();let cache=candidate.cache();let load=candidate.load();
+                serde_json::json!({"worker_id":worker.worker_id,"dp_rank":worker.dp_rank,
+                    "device_overlap_tokens":cache.map(|c|c.device_overlap_blocks()*f64::from(self.inner.block_size)),
+                    "host_overlap_tokens":cache.map(|c|c.host_overlap_blocks()*f64::from(self.inner.block_size)),
+                    "disk_overlap_tokens":cache.map(|c|c.disk_overlap_blocks()*f64::from(self.inner.block_size)),
+                    "has_tier_matches":cache.map(|c|c.has_tier_matches()),
+                    "active_prefill_tokens":load.filter(|l|l.is_available()).map(|l|l.active_prefill_tokens()),
+                    "active_decode_blocks":load.filter(|l|l.is_available()).map(|l|l.active_decode_blocks()),
+                    "worker_epoch":null,"event_watermark":null,"gap_pending":null})
+            }).collect::<Vec<_>>()});
         // Hold the lease guard through registration, serializing validation with retirement.
         let leases = self.inner.inference_leases.lock();
         let supplied = session
@@ -441,6 +520,22 @@ impl RequestClassifier for ThunderAgentClassifier {
         let input_tokens = request.isl_tokens();
         let progress = request.progress().clone();
         let pinned_worker = request.pinned_worker();
+        let mut registry = reselect.then(|| selections().lock());
+        if let Some(registry) = registry.as_mut() {
+            if registry
+                .get(&session_id)
+                .and_then(Weak::upgrade)
+                .is_some_and(|owner| !Arc::ptr_eq(&owner, &self.inner))
+            {
+                return Box::pin(async move {
+                    Err(Box::new(ThunderAgentError::DuplicateRequestId(request_id))
+                        as Box<ClassifierError>)
+                });
+            }
+            registry.insert(session_id.clone(), Arc::downgrade(&self.inner));
+        }
+        let registry_session = session_id.clone();
+        drop(registry);
         let notify = match self.inner.register(
             request_id.clone(),
             session_id,
@@ -451,10 +546,20 @@ impl RequestClassifier for ThunderAgentClassifier {
         ) {
             Ok(notify) => notify,
             Err(error) => {
+                self.inner.prune_selections(&self.inner.state.lock());
                 return Box::pin(async move { Err(Box::new(error) as Box<ClassifierError>) });
             }
         };
-
+        self.inner
+            .state
+            .lock()
+            .cache_candidates
+            .insert(registry_session.clone(), cache_candidates);
+        if reselect {
+            selections()
+                .lock()
+                .insert(registry_session.clone(), Arc::downgrade(&self.inner));
+        }
         drop(leases);
         let inner = Arc::clone(&self.inner);
         let mut pending = PendingClassification::new(inner, request_id, notify);
@@ -465,7 +570,9 @@ impl RequestClassifier for ThunderAgentClassifier {
             await_release(pending, request)
                 .await
                 .map(|(mut request, worker)| {
-                    if let Some(worker) = worker {
+                    if reselect && request.pinned_worker().is_none() {
+                        request.clear_worker_selection_target();
+                    } else if let Some(worker) = worker {
                         request.set_worker_selection_target(worker);
                     }
                     request

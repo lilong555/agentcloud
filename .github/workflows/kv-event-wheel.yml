@@ -40,6 +40,15 @@ jobs:
           --max-rss-mib 12000 --min-available-mib 1536 --min-free-gib 12
           --timeout 5400 --log artifacts/kv-event-build.log --
           python3 -m experiments.dynamo.kv_events_build
+      - name: Test native ThunderAgent routing and execution contracts
+        working-directory: upstream/dynamo
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/artifacts/kv-event-target
+          PROTOC: ${{ github.workspace }}/artifacts/kv-event-wheel/build-tools/bin/protoc
+        run: |
+          set -o pipefail
+          cargo test --locked -p dynamo-router-policies --lib thunderagent -- --nocapture \
+            2>&1 | tee ../../artifacts/kv-event-native-tests.log
       - uses: actions/upload-artifact@v4
         if: success()
         with:
@@ -54,5 +63,7 @@ jobs:
         if: always()
         with:
           name: kv-event-build-log
-          path: artifacts/kv-event-build.log
+          path: |
+            artifacts/kv-event-build.log
+            artifacts/kv-event-native-tests.log
           retention-days: 14

@@ -109,6 +109,16 @@
           "package": "dynamo-llm",
           "test": "protocols::common::extensions::tests::agent_context_serialization_preserves_public_headers_and_redacts_inference_lease",
           "language": "rust"
+        },
+        {
+          "language": "rust",
+          "package": "dynamo-router-policies",
+          "test": "lib::llm::src::protocols::common::extensions::tests::cache_salt_header_override_has_precedence"
+        },
+        {
+          "language": "rust",
+          "package": "dynamo-router-policies",
+          "test": "lib::llm::src::protocols::common::extensions::tests::cache_salt_header_override_ignores_only_empty_values"
         }
       ]
     },
@@ -149,8 +159,24 @@
       ]
     },
     {
+      "path": "lib/router-plugins/builtin/src/thunderagent/config.rs",
+      "kind": "source",
+      "symbols": [
+        "ThunderAgentConfig.cache_reselect",
+        "ThunderAgentConfig::validate"
+      ],
+      "tests": [
+        {
+          "language": "rust",
+          "package": "dynamo-router-policies",
+          "test": "thunderagent::config::tests::validates_control_values"
+        }
+      ],
+      "sha256": "7b8e90c70a7e6c9cfed907e2fe87998b5982344830f5137fb1bc872e9e4b0641"
+    },
+    {
       "path": "lib/router-plugins/builtin/src/thunderagent/execution_control.rs",
-      "sha256": "57bf4b9a2ab10df0bc0c7f2fffaf3ce6280f400ef756640bde1ebc2349d088dd",
+      "sha256": "baa31167fd8b48b8c49021b7b2cf2ae3a1c834f20e95f04714e5be8b98acd91c",
       "kind": "source",
       "symbols": [
         "ControlServer::router",
@@ -158,7 +184,8 @@
         "update",
         "session",
         "finalize",
-        "authenticate"
+        "authenticate",
+        "cache_observation"
       ],
       "tests": [
         {
@@ -185,12 +212,17 @@
           "package": "dynamo-router-policies",
           "test": "thunderagent::execution_control::tests::concurrent_final_register_and_state_keep_one_generation_and_tenant_scope",
           "language": "rust"
+        },
+        {
+          "language": "rust",
+          "package": "dynamo-router-policies",
+          "test": "thunderagent::execution_control::tests::cache_observation_endpoint_authenticates_scope_generation_and_epoch"
         }
       ]
     },
     {
       "path": "lib/router-plugins/builtin/src/thunderagent/mod.rs",
-      "sha256": "6c5ee58efdc21b1c571f1b8bf81a7a5e1564fbbd519967af91a94893fd7d2e6d",
+      "sha256": "55936dca75a302f51267572d248e4ee240fd8c851512824b1eab536a8a05db6f",
       "kind": "source",
       "symbols": [
         "execution_control exports",
@@ -201,8 +233,34 @@
           "package": "dynamo-router-policies",
           "test": "thunderagent::tests::registers_classifier_and_worker_selector",
           "language": "rust"
+        },
+        {
+          "language": "rust",
+          "package": "dynamo-router-policies",
+          "test": "thunderagent::tests::registers_cache_reselect_classifier_and_worker_selector"
         }
       ]
+    },
+    {
+      "path": "lib/router-plugins/builtin/src/thunderagent/request_classifier/cache_observation.rs",
+      "kind": "source",
+      "symbols": [
+        "CacheObservation::validate",
+        "CacheObservation::snapshot"
+      ],
+      "tests": [
+        {
+          "language": "rust",
+          "package": "dynamo-router-policies",
+          "test": "thunderagent::request_classifier::cache_observation::tests::missing_stats_remain_null_and_expiry_gap_epoch_are_fenced"
+        },
+        {
+          "language": "rust",
+          "package": "dynamo-router-policies",
+          "test": "thunderagent::request_classifier::cache_observation::tests::validates_target_prefix_survival_exposure_and_loss_buckets"
+        }
+      ],
+      "sha256": "9dcd6ac0d74359e3e007d96927195458af4dfc002f5b39a535dc8432772612db"
     },
     {
       "path": "lib/router-plugins/builtin/src/thunderagent/request_classifier/execution_feedback.rs",
@@ -238,7 +296,7 @@
     },
     {
       "path": "lib/router-plugins/builtin/src/thunderagent/request_classifier/mod.rs",
-      "sha256": "f02645c4f89fbfcb7577dd32460646b20bbb888bff08a4bd8718a8674ca2ecdf",
+      "sha256": "b12b3ae12cee97f299c426c292ac69f7c9c786b316a78a1481eeb5e6ca990f6e",
       "kind": "source",
       "symbols": [
         "ExecutionFeedbackControl",
@@ -277,7 +335,7 @@
     },
     {
       "path": "lib/router-plugins/builtin/src/thunderagent/request_classifier/scheduler.rs",
-      "sha256": "ed553a3b20a1366395a67a5710a735e1714b1132d3be6d054476d7cf640280ee",
+      "sha256": "1a4b7c3081e9ec6b7da3b1500ac67d68f90d621a05f17c377dd66dc4801e1633",
       "kind": "source",
       "symbols": [
         "State::register_execution_binding",
@@ -285,7 +343,10 @@
         "State::program_tokens",
         "State::execution_snapshot",
         "State::record_admission",
-        "State::retire_execution_binding"
+        "State::retire_execution_binding",
+        "State::select_cache_worker",
+        "State::refresh_holds",
+        "State::accept_cache_observation"
       ],
       "tests": [
         {
@@ -307,8 +368,65 @@
           "package": "dynamo-router-policies",
           "test": "thunderagent::request_classifier::tests::retirement_rejects_active_inference_and_reclaims_finalized_bindings_and_leases",
           "language": "rust"
+        },
+        {
+          "language": "rust",
+          "package": "dynamo-router-policies",
+          "test": "thunderagent::request_classifier::scheduler::tests::cache_reselect_reserves_migration_once_and_cancellation_restores_original_worker"
+        },
+        {
+          "language": "rust",
+          "package": "dynamo-router-policies",
+          "test": "thunderagent::request_classifier::scheduler::tests::cache_reselect_skips_full_candidates_and_preserves_hard_pin"
+        },
+        {
+          "language": "rust",
+          "package": "dynamo-router-policies",
+          "test": "thunderagent::request_classifier::scheduler::tests::cache_reselect_sent_commits_worker_and_same_session_requests_remain_serial"
+        },
+        {
+          "language": "rust",
+          "package": "dynamo-router-policies",
+          "test": "thunderagent::request_classifier::scheduler::tests::cache_reselect_reservation_blocks_other_sessions_until_sent"
+        },
+        {
+          "language": "rust",
+          "package": "dynamo-router-policies",
+          "test": "thunderagent::request_classifier::scheduler::tests::cache_reselect_timeout_keeps_capacity_exhausted_request_waiting"
+        },
+        {
+          "language": "rust",
+          "package": "dynamo-router-policies",
+          "test": "thunderagent::request_classifier::scheduler::tests::cache_reselect_completed_without_sent_restores_prior_placement"
+        },
+        {
+          "language": "rust",
+          "package": "dynamo-router-policies",
+          "test": "thunderagent::request_classifier::scheduler::tests::cache_reselect_worker_removal_clears_rollback_and_rejects_ineligible_selection"
+        },
+        {
+          "language": "rust",
+          "package": "dynamo-router-policies",
+          "test": "thunderagent::request_classifier::scheduler::tests::cache_observation_replay_and_execution_epoch_rotation_clear_previous_signal"
         }
       ]
+    },
+    {
+      "path": "lib/router-plugins/builtin/src/thunderagent/worker_selection/mod.rs",
+      "kind": "source",
+      "symbols": [
+        "ThunderAgentScorer::score",
+        "ThunderAgentPicker::pick",
+        "worker_selection_provider"
+      ],
+      "tests": [
+        {
+          "language": "rust",
+          "package": "dynamo-router-policies",
+          "test": "thunderagent::worker_selection::tests::cache_score_prefers_longer_prefix_and_load_releases_hot_worker"
+        }
+      ],
+      "sha256": "ddfaad0a44eec642871385e311d2da3150a4e137d6398e5f910ae3ab0521c7e8"
     }
   ]
 }

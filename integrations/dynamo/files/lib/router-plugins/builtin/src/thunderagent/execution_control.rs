@@ -76,6 +76,7 @@ impl ControlServer {
             .route("/v1/execution/capabilities", get(capabilities))
             .route("/v1/execution/bindings", post(register))
             .route("/v1/execution/state", post(update))
+            .route("/v1/execution/cache-observation", post(cache_observation))
             .route("/v1/execution/session", post(session))
             .route("/v1/execution/finalize", post(finalize))
             .layer(DefaultBodyLimit::max(8192))
@@ -270,7 +271,7 @@ async fn authenticate(
 
 async fn capabilities(State(server): State<Arc<ControlServer>>) -> Json<Value> {
     Json(
-        json!({"protocol_version":1,"binding_finalization":true,"active_bindings":server.sessions.lock().len(),"retired_bindings_retained":server.tombstones.lock().len(),"execution_feedback":true,"trusted_bindings":true,"opaque_routing_sessions":true,"admission_history":true,"admission_attempt_header":"x-agentcloud-attempt-id","inference_lease_header":"x-agentcloud-inference-lease","classifier_count":server.classifiers.lock().len(),"max_body_bytes":8192,"requests_per_second":server.config.requests_per_second,"ttl_ms":{"min":100,"max":60000},"native_frontend":true,"gpu_execution":false}),
+        json!({"protocol_version":1,"binding_finalization":true,"active_bindings":server.sessions.lock().len(),"retired_bindings_retained":server.tombstones.lock().len(),"execution_feedback":true,"trusted_bindings":true,"opaque_routing_sessions":true,"admission_history":true,"cache_observation":true,"cache_observation_ttl_ms":2000,"cache_reselect":true,"admission_attempt_header":"x-agentcloud-attempt-id","inference_lease_header":"x-agentcloud-inference-lease","classifier_count":server.classifiers.lock().len(),"max_body_bytes":8192,"requests_per_second":server.config.requests_per_second,"ttl_ms":{"min":100,"max":60000},"native_frontend":true,"gpu_execution":false}),
     )
 }
 
@@ -404,6 +405,50 @@ async fn session(
         .classifier(s.classifier_id)?
         .session_snapshot(&s.routing_session_id);
     Ok(receipt(&s, snapshot, false))
+}
+
+async fn cache_observation(
+    State(server): State<Arc<ControlServer>>,
+    Extension(c): Extension<Credential>,
+    body: Bytes,
+) -> Result<Json<Value>, ApiError> {
+    let mut value: Value = serde_json::from_slice(&body)
+        .map_err(|_| ApiError(StatusCode::BAD_REQUEST, "invalid_json"))?;
+    let observation = value
+        .as_object_mut()
+        .and_then(|o| o.remove("cache_observation"))
+        .ok_or(ApiError(
+            StatusCode::BAD_REQUEST,
+            "missing_cache_observation",
+        ))?;
+    let observation: super::request_classifier::cache_observation::CacheObservation =
+        serde_json::from_value(observation)
+            .map_err(|_| ApiError(StatusCode::BAD_REQUEST, "invalid_cache_observation"))?;
+    let binding_bytes = serde_json::to_vec(&value)
+        .map_err(|_| ApiError(StatusCode::BAD_REQUEST, "invalid_json"))?;
+    let (b, _, generation) = binding(&binding_bytes)?;
+    if !ControlServer::authorized(&c, &b) {
+        return Err(ApiError(StatusCode::FORBIDDEN, "scope_mismatch"));
+    }
+    let sessions = server.sessions.lock();
+    let s = sessions
+        .get(&ControlServer::key(&b))
+        .ok_or(ApiError(StatusCode::NOT_FOUND, "unknown_session"))?;
+    if generation.as_deref() != Some(s.generation.as_str()) {
+        return Err(ApiError(StatusCode::CONFLICT, "stale_generation"));
+    }
+    if s.binding != b {
+        return Err(ApiError(StatusCode::CONFLICT, "identity_mismatch"));
+    }
+    let classifier = server.classifier(s.classifier_id)?;
+    let mut internal = b;
+    internal.session_id = s.routing_session_id.clone();
+    classifier.update_cache_observation(&internal, observation)?;
+    Ok(receipt(
+        s,
+        classifier.session_snapshot(&s.routing_session_id),
+        false,
+    ))
 }
 
 async fn finalize(
@@ -569,6 +614,92 @@ mod tests {
             serde_json::from_slice(&bytes).unwrap_or(Value::Null),
         )
     }
+    #[tokio::test]
+    async fn cache_observation_endpoint_authenticates_scope_generation_and_epoch() {
+        let server = server(10000);
+        let identity = bind("tenant-a", "cache", 1);
+        let (_, registered) = call(
+            server.clone(),
+            "/v1/execution/bindings",
+            identity.clone(),
+            TOKEN,
+        )
+        .await;
+        let mut body = identity.clone();
+        body["registration_generation"] = registered["binding_generation"].clone();
+        body["cache_observation"] = serde_json::to_value(
+            super::super::request_classifier::cache_observation::tests::observation(1),
+        )
+        .unwrap();
+        assert_eq!(
+            call(
+                server.clone(),
+                "/v1/execution/cache-observation",
+                body.clone(),
+                "wrong-token"
+            )
+            .await
+            .0,
+            StatusCode::UNAUTHORIZED
+        );
+        let (status, receipt) = call(
+            server.clone(),
+            "/v1/execution/cache-observation",
+            body.clone(),
+            TOKEN,
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK);
+        assert_eq!(
+            receipt["snapshot"]["cache_observation"]["worker_epoch"],
+            "run:pid:start"
+        );
+        assert!(receipt["snapshot"]["cache_observation"]["loss_events"].is_null());
+        assert_eq!(
+            call(
+                server.clone(),
+                "/v1/execution/cache-observation",
+                body.clone(),
+                TOKEN
+            )
+            .await
+            .1["error"],
+            "replay"
+        );
+        body["workspace_id"] = json!("other");
+        assert_eq!(
+            call(
+                server.clone(),
+                "/v1/execution/cache-observation",
+                body.clone(),
+                TOKEN
+            )
+            .await
+            .0,
+            StatusCode::NOT_FOUND
+        );
+        let mut rotated = identity;
+        rotated["epoch"] = json!(2);
+        rotated["registration_generation"] = registered["binding_generation"].clone();
+        let (status, receipt) = call(
+            server.clone(),
+            "/v1/execution/bindings",
+            rotated.clone(),
+            TOKEN,
+        )
+        .await;
+        assert_eq!(status, StatusCode::OK);
+        assert!(receipt["snapshot"]["cache_observation"].is_null());
+        rotated["registration_generation"] = receipt["binding_generation"].clone();
+        rotated["cache_observation"] = body["cache_observation"].clone();
+        assert_eq!(
+            call(server, "/v1/execution/cache-observation", rotated, TOKEN)
+                .await
+                .1["error"],
+            "stale_epoch"
+        );
+    }
+
     #[tokio::test]
     async fn finalization_reclaims_binding_capacity_and_rejects_retired_generation_after_churn() {
         let server = server(10000);
