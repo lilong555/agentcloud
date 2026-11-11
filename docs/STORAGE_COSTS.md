@@ -8,12 +8,15 @@ AgentCloud 同时报告总 Actor 预留 GB·s、交互 TTFT 分位数、恢复�
 | --- | --- |
 | `actor_reserved_gb_s` | Worker 实际 Actor reservation 按时间积分，十进制 GB·s |
 | `snapshot_tag_count` | lifecycle 中累计 COMMITTED Tag UID 的去重数，含已删除项与初始化；当前保留量由 `retained` 单列 |
-| `snapshot_write_bytes` | 完整 trial 中实际观测的物理快照写入量；缺测为 `null` |
-| `peak_storage_bytes` | 归属于该 trial 的快照物理存储峰值；缺测为 `null` |
+| `snapshot_write_bytes` | 完整 trial 中实际观测的物理快照写入量；当前状态：`uncollected_in_ci_runner` |
+| `peak_storage_bytes` | 归属于该 trial 的快照物理存储峰值；当前状态：`uncollected_in_ci_runner` |
 | `snapshot_logical_upload_bytes_observed` | 有界日志尾部实际观察到的压缩前逻辑上传字节，带采样覆盖；单独呈现 |
-| `snapshot_write_amplification` | 完整物理写入字节／有明确定义的有效持久数据字节，分子或分母缺测时保留 `null` |
+| `snapshot_write_amplification` | 完整物理写入字节／有明确定义的有效持久数据字节；当前物理分子与有效数据分母均未采集 |
+| `snapshot_logical_bytes_estimated_range` | Tag 数 × 尾部完整快照样本的压缩前字节范围；状态：`logical_extrapolation_from_bounded_log_tail` |
 
 总预留积分包括挂起、恢复和工具阶段的真实 reservation。写放大比值需要实际 I/O 与基准有效数据量；堆工作集、单次逻辑快照大小和物理对象压缩大小各有自己的口径。Tag 删除减少后续保留占用，已发生的累计写入继续保留在成本中。
+
+公开物理存储指标统一展示为 **`uncollected_in_ci_runner (see 128MiB boundary report)`**。[公开指标 JSON](evidence/release-metrics.json)使用数值或明确的状态字段。供分析器读取的数值型汇总保持数值／空值兼容格式，每个空值均由相邻 `_field_status` 及顶层 `field_status_definitions` 解释；空负载分组使用 `not_applicable_no_requests`，前序清理阻断使用 `not_executed_after_cleanup_failure`。公开回放的逻辑上传记录数为零，表示该轮未采集上传日志，累计 Tag 数仍来自真实回执。
 
 ## 冻结实验的快照压力
 
@@ -29,7 +32,17 @@ AgentCloud 同时报告总 Actor 预留 GB·s、交互 TTFT 分位数、恢复�
 
 64 MiB／3 s 下，v2 平均减少 240.667 次快照及恢复，Actor 积分减少 67.904 GB·s，交互 P95 增加 313.307 s。资源与快照频率改善伴随首次容量排队延迟；完整区间在 [v2 评估](V2_EVALUATION.md#三种子边界确认)。
 
-128 MiB／3 s 的 TTL2 三个种子完成 370／371／372 个请求，保留 434／435／436 个独立 Tag，其中各含 64 个初始恢复点。三次均触发 6 GiB 磁盘余量保护。v2 在种子 7401 完成全部 384 请求并创建 199 个 Tag，另两次被前序清理失败阻断。尾部日志记录的单次逻辑快照约 163～168 MiB；原始物理写入和峰值占用缺少完整采样，相应字段为 `null`。这组数据直接支持快照抖动与保留容量压力分析，物理 I/O 降幅待相应采样核验。
+128 MiB／3 s 的 TTL2 三个种子完成 370／371／372 个请求，保留 434／435／436 个独立 Tag，其中各含 64 个初始恢复点。三次均触发 6 GiB 磁盘余量保护。v2 在种子 7401 完成全部 384 请求并创建 199 个 Tag，另两次被前序清理失败阻断。尾部日志记录的单次逻辑快照约 163～168 MiB，物理写入和峰值占用的状态为 `uncollected_in_ci_runner (see 128MiB boundary report)`。三个边界坐标的总计为 13/18 trial；128 MiB／3 s 单坐标为 1/6 完整通过、三个 TTL2 失败、两个 v2 被前序清理阻断。
+
+### 128 MiB 累计逻辑快照量估算
+
+| TTL2 种子 | 累计 Tag，含初始化 | 完整快照样本字节范围 | 外推逻辑 GiB |
+| --- | ---: | ---: | ---: |
+| 7401 | 434 | 170,974,718～175,907,525 | 69.107～71.101 |
+| 7402 | 435 | 170,922,749～175,819,665 | 69.245～71.229 |
+| 7403 | 436 | 170,988,106～175,991,406 | 69.431～71.462 |
+
+公式为 `snapshot_tag_count × complete_snapshot_logical_bytes_range / 2^30`；[机器可读估算](evidence/release-metrics.json)保存精确字节、样本数量、公式、来源路径和 `physical_measurement=false`。范围来自有界日志尾部向全部 Tag 的外推，用于描述约 70 GiB 的累计逻辑快照规模；统计置信区间、块设备写入和压缩后峰值占用分别需要对应采样。6 GiB 保护触发由原始错误事件直接确认。成本迟滞控制快照频率，GC 控制保留量，两者共同覆盖存储治理需求。
 
 ## 恢复点轮转
 
@@ -59,7 +72,7 @@ GC 在快照提交后唤醒，每 30 秒兜底执行，单批最多八个删除�
 ## 离线复算
 
 ```bash
-python3 -m bench.analysis.storage
+python3 -m bench.analysis.storage --output artifacts/snapshot-storage-recomputed.json
 python3 scripts/public_replay_snapshot_audit.py 42858419910
 python3 scripts/public_replay_resource_audit.py 42858419910
 ```

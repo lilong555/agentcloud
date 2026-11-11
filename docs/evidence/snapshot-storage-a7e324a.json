@@ -1,5 +1,12 @@
 {
   "schema_version": 1,
+  "field_status_definitions": {
+    "insufficient_complete_samples": "当前分组或配对的完整执行样本不足，均值、区间或总量保持缺测；样本和计划分母见相同分组。",
+    "no_complete_snapshot_in_bounded_log_tail": "容器日志尾部缺少完整快照分量集合，逻辑字节区间无完整样本。",
+    "not_executed_after_cleanup_failure": "trial_execution_status=BLOCKED_CLEANUP；前序清理失败使该计划 trial 保留在分母，执行观测为空。",
+    "uncollected_complete_trial_quota": "现有逻辑配额观测来自有界诊断历史；完整 trial 的累计 acting Token 释放量未采集。",
+    "uncollected_in_ci_runner": "uncollected_in_ci_runner (see 128MiB boundary report): 未采集完整 trial 的块设备物理写入、压缩对象占用或连续磁盘余量；参考 docs/STORAGE_COSTS.md 与 docs/evidence/boundary-confirm-storage-a7e324a.json。"
+  },
   "execution_kind": "archived-snapshot-storage-cost-analysis",
   "units": {
     "actor_reserved_gb_s": "decimal GB seconds",
@@ -19,6 +26,10 @@
   "conclusion": "现有证据支持逐策略快照创建次数核算；物理快照写入量、压缩占用峰值及 I/O 风暴抑制尚缺实测。",
   "groups": [
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815241918",
       "scenario": "fixed",
       "concurrency": 32,
@@ -39,6 +50,10 @@
       "logical_upload_bytes_observed": 0
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815241918",
       "scenario": "fixed",
       "concurrency": 32,
@@ -59,6 +74,10 @@
       "logical_upload_bytes_observed": 1385539571
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815241918",
       "scenario": "fixed",
       "concurrency": 32,
@@ -79,6 +98,10 @@
       "logical_upload_bytes_observed": 2097468441
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815241918",
       "scenario": "fixed",
       "concurrency": 32,
@@ -99,6 +122,10 @@
       "logical_upload_bytes_observed": 0
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815241918",
       "scenario": "fixed",
       "concurrency": 32,
@@ -119,6 +146,10 @@
       "logical_upload_bytes_observed": 0
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815241918",
       "scenario": "fixed",
       "concurrency": 64,
@@ -139,6 +170,10 @@
       "logical_upload_bytes_observed": 0
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815241918",
       "scenario": "fixed",
       "concurrency": 64,
@@ -159,6 +194,10 @@
       "logical_upload_bytes_observed": 0
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815241918",
       "scenario": "fixed",
       "concurrency": 64,
@@ -179,6 +218,10 @@
       "logical_upload_bytes_observed": 715717601
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815241918",
       "scenario": "fixed",
       "concurrency": 64,
@@ -199,6 +242,10 @@
       "logical_upload_bytes_observed": 1425088593
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815241918",
       "scenario": "fixed",
       "concurrency": 64,
@@ -219,6 +266,11 @@
       "logical_upload_bytes_observed": 1389720480
     },
     {
+      "_field_status": {
+        "actor_reserved_gb_s_mean": "insufficient_complete_samples",
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815326346",
       "scenario": "boundary-h128-w3",
       "concurrency": 64,
@@ -239,6 +291,10 @@
       "logical_upload_bytes_observed": 0
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815326346",
       "scenario": "boundary-h128-w3",
       "concurrency": 64,
@@ -259,6 +315,10 @@
       "logical_upload_bytes_observed": 6932173513
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815326346",
       "scenario": "boundary-h16-w1",
       "concurrency": 64,
@@ -279,6 +339,10 @@
       "logical_upload_bytes_observed": 2161014121
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815326346",
       "scenario": "boundary-h16-w1",
       "concurrency": 64,
@@ -299,6 +363,10 @@
       "logical_upload_bytes_observed": 0
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815326346",
       "scenario": "boundary-h64-w3",
       "concurrency": 64,
@@ -319,6 +387,10 @@
       "logical_upload_bytes_observed": 2695155633
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815326346",
       "scenario": "boundary-h64-w3",
       "concurrency": 64,
@@ -341,6 +413,10 @@
   ],
   "paired_comparisons": [
     {
+      "_field_status": {
+        "snapshot_write_bytes_difference": "uncollected_in_ci_runner",
+        "peak_storage_bytes_difference": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815241918",
       "scenario": "fixed",
       "concurrency": 32,
@@ -386,6 +462,10 @@
       "count_verdict": "no_uniform_count_reduction"
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes_difference": "uncollected_in_ci_runner",
+        "peak_storage_bytes_difference": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815241918",
       "scenario": "fixed",
       "concurrency": 32,
@@ -431,6 +511,10 @@
       "count_verdict": "no_uniform_count_reduction"
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes_difference": "uncollected_in_ci_runner",
+        "peak_storage_bytes_difference": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815241918",
       "scenario": "fixed",
       "concurrency": 32,
@@ -476,6 +560,10 @@
       "count_verdict": "no_uniform_count_reduction"
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes_difference": "uncollected_in_ci_runner",
+        "peak_storage_bytes_difference": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815241918",
       "scenario": "fixed",
       "concurrency": 32,
@@ -521,6 +609,10 @@
       "count_verdict": "no_uniform_count_reduction"
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes_difference": "uncollected_in_ci_runner",
+        "peak_storage_bytes_difference": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815241918",
       "scenario": "fixed",
       "concurrency": 64,
@@ -566,6 +658,10 @@
       "count_verdict": "no_uniform_count_reduction"
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes_difference": "uncollected_in_ci_runner",
+        "peak_storage_bytes_difference": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815241918",
       "scenario": "fixed",
       "concurrency": 64,
@@ -611,6 +707,10 @@
       "count_verdict": "no_uniform_count_reduction"
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes_difference": "uncollected_in_ci_runner",
+        "peak_storage_bytes_difference": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815241918",
       "scenario": "fixed",
       "concurrency": 64,
@@ -656,6 +756,10 @@
       "count_verdict": "no_uniform_count_reduction"
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes_difference": "uncollected_in_ci_runner",
+        "peak_storage_bytes_difference": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815241918",
       "scenario": "fixed",
       "concurrency": 64,
@@ -701,6 +805,11 @@
       "count_verdict": "no_uniform_count_reduction"
     },
     {
+      "_field_status": {
+        "complete_pair_mean_tag_difference": "insufficient_complete_samples",
+        "snapshot_write_bytes_difference": "uncollected_in_ci_runner",
+        "peak_storage_bytes_difference": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815326346",
       "scenario": "boundary-h128-w3",
       "concurrency": 64,
@@ -722,6 +831,10 @@
       "count_verdict": "no_uniform_count_reduction"
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes_difference": "uncollected_in_ci_runner",
+        "peak_storage_bytes_difference": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815326346",
       "scenario": "boundary-h16-w1",
       "concurrency": 64,
@@ -755,6 +868,10 @@
       "count_verdict": "no_uniform_count_reduction"
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes_difference": "uncollected_in_ci_runner",
+        "peak_storage_bytes_difference": "uncollected_in_ci_runner"
+      },
       "github_run_id": "42815326346",
       "scenario": "boundary-h64-w3",
       "concurrency": 64,
@@ -790,6 +907,12 @@
   ],
   "trials": [
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7302-32-agentcloud-623eb642cad4",
       "seed": 7302,
       "policy": "agentcloud",
@@ -835,6 +958,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 118,
@@ -848,6 +974,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -873,6 +1002,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7302-32-agentcloud-v2-3fe2567bc106",
       "seed": 7302,
       "policy": "agentcloud-v2",
@@ -918,6 +1053,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 144,
@@ -931,6 +1069,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -956,6 +1097,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7302-32-cost-aware-d167417ce634",
       "seed": 7302,
       "policy": "cost-aware",
@@ -1920,6 +2067,9 @@
         ]
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -1945,6 +2095,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7302-32-static-15-76ed32282802",
       "seed": 7302,
       "policy": "static-15",
@@ -1990,6 +2146,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 104,
@@ -2003,6 +2162,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -2028,6 +2190,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7302-32-static-2-e574df4b187d",
       "seed": 7302,
       "policy": "static-2",
@@ -2073,6 +2241,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 144,
@@ -2086,6 +2257,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -2111,6 +2285,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7304-32-agentcloud-0df568b9ac92",
       "seed": 7304,
       "policy": "agentcloud",
@@ -2156,6 +2336,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 124,
@@ -2169,6 +2352,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -2194,6 +2380,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7304-32-agentcloud-v2-59e3656987b4",
       "seed": 7304,
       "policy": "agentcloud-v2",
@@ -2239,6 +2431,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 144,
@@ -2252,6 +2447,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -2277,6 +2475,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7304-32-cost-aware-c1e01f9f4b17",
       "seed": 7304,
       "policy": "cost-aware",
@@ -3241,6 +3445,9 @@
         ]
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -3266,6 +3473,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7304-32-static-15-cef4666a9171",
       "seed": 7304,
       "policy": "static-15",
@@ -3311,6 +3524,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 104,
@@ -3324,6 +3540,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -3349,6 +3568,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7304-32-static-2-f541bdd05843",
       "seed": 7304,
       "policy": "static-2",
@@ -3394,6 +3619,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 144,
@@ -3407,6 +3635,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -3432,6 +3663,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7305-32-agentcloud-1f2390ac77c3",
       "seed": 7305,
       "policy": "agentcloud",
@@ -3477,6 +3714,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 117,
@@ -3490,6 +3730,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -3515,6 +3758,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7305-32-agentcloud-v2-9fb97e6d548c",
       "seed": 7305,
       "policy": "agentcloud-v2",
@@ -3560,6 +3809,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 144,
@@ -3573,6 +3825,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -3598,6 +3853,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7305-32-cost-aware-96b034e17a3e",
       "seed": 7305,
       "policy": "cost-aware",
@@ -4562,6 +4823,9 @@
         ]
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -4587,6 +4851,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7305-32-static-15-250a681100d5",
       "seed": 7305,
       "policy": "static-15",
@@ -4632,6 +4902,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 104,
@@ -4645,6 +4918,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -4670,6 +4946,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7305-32-static-2-b9c77dac1a45",
       "seed": 7305,
       "policy": "static-2",
@@ -4715,6 +4997,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 144,
@@ -4728,6 +5013,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -4753,6 +5041,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7301-32-agentcloud-ba9f10dbb835",
       "seed": 7301,
       "policy": "agentcloud",
@@ -4798,6 +5092,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 122,
@@ -4811,6 +5108,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -4836,6 +5136,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7301-32-agentcloud-v2-aa91bd8ba041",
       "seed": 7301,
       "policy": "agentcloud-v2",
@@ -5800,6 +6106,9 @@
         ]
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -5825,6 +6134,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7301-32-cost-aware-bf8fb3bf71a7",
       "seed": 7301,
       "policy": "cost-aware",
@@ -5870,6 +6185,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 144,
@@ -5883,6 +6201,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -5908,6 +6229,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7301-32-static-15-273895803cd6",
       "seed": 7301,
       "policy": "static-15",
@@ -5953,6 +6280,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 104,
@@ -5966,6 +6296,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -5991,6 +6324,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7301-32-static-2-d65e92b2778c",
       "seed": 7301,
       "policy": "static-2",
@@ -6036,6 +6375,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 144,
@@ -6049,6 +6391,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -6074,6 +6419,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7303-32-agentcloud-ef280e1f99f8",
       "seed": 7303,
       "policy": "agentcloud",
@@ -6119,6 +6470,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 118,
@@ -6132,6 +6486,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -6157,6 +6514,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7303-32-agentcloud-v2-4f3db7c81cce",
       "seed": 7303,
       "policy": "agentcloud-v2",
@@ -7121,6 +7484,9 @@
         ]
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -7146,6 +7512,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7303-32-cost-aware-6eadea5dc054",
       "seed": 7303,
       "policy": "cost-aware",
@@ -7191,6 +7563,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 144,
@@ -7204,6 +7579,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -7229,6 +7607,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7303-32-static-15-229e7f7e8955",
       "seed": 7303,
       "policy": "static-15",
@@ -7274,6 +7658,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 104,
@@ -7287,6 +7674,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -7312,6 +7702,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7303-32-static-2-2c307056ae4a",
       "seed": 7303,
       "policy": "static-2",
@@ -7357,6 +7753,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 144,
@@ -7370,6 +7769,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -7395,6 +7797,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7303-64-agentcloud-1024bc521c96",
       "seed": 7303,
       "policy": "agentcloud",
@@ -7440,6 +7848,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 239,
@@ -7453,6 +7864,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -7478,6 +7892,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7303-64-agentcloud-v2-da857efbc715",
       "seed": 7303,
       "policy": "agentcloud-v2",
@@ -7523,6 +7943,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 288,
@@ -7536,6 +7959,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -7561,6 +7987,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7303-64-cost-aware-ebca487154de",
       "seed": 7303,
       "policy": "cost-aware",
@@ -7606,6 +8038,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 288,
@@ -7619,6 +8054,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -7644,6 +8082,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7303-64-static-15-c02df2793178",
       "seed": 7303,
       "policy": "static-15",
@@ -8608,6 +9052,9 @@
         ]
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -8633,6 +9080,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7303-64-static-2-519f09dc09a2",
       "seed": 7303,
       "policy": "static-2",
@@ -8678,6 +9131,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 288,
@@ -8691,6 +9147,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -8716,6 +9175,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7305-64-agentcloud-4b9d0b0f5ab6",
       "seed": 7305,
       "policy": "agentcloud",
@@ -8761,6 +9226,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 236,
@@ -8774,6 +9242,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -8799,6 +9270,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7305-64-agentcloud-v2-d48196d6b6bf",
       "seed": 7305,
       "policy": "agentcloud-v2",
@@ -8844,6 +9321,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 288,
@@ -8857,6 +9337,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -8882,6 +9365,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7305-64-cost-aware-d9a991cab7c3",
       "seed": 7305,
       "policy": "cost-aware",
@@ -8927,6 +9416,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 288,
@@ -8940,6 +9432,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -8965,6 +9460,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7305-64-static-15-7b3193496779",
       "seed": 7305,
       "policy": "static-15",
@@ -9929,6 +10430,9 @@
         ]
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -9954,6 +10458,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7305-64-static-2-98b5c61530b2",
       "seed": 7305,
       "policy": "static-2",
@@ -9999,6 +10509,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 288,
@@ -10012,6 +10525,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -10037,6 +10553,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7302-64-agentcloud-65a7ca3994d9",
       "seed": 7302,
       "policy": "agentcloud",
@@ -10082,6 +10604,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 238,
@@ -10095,6 +10620,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -10120,6 +10648,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7302-64-agentcloud-v2-8431ebb8cf9b",
       "seed": 7302,
       "policy": "agentcloud-v2",
@@ -10165,6 +10699,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 288,
@@ -10178,6 +10715,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -10203,6 +10743,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7302-64-cost-aware-5a4de6359116",
       "seed": 7302,
       "policy": "cost-aware",
@@ -11167,6 +11713,9 @@
         ]
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -11192,6 +11741,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7302-64-static-15-f025c16bf284",
       "seed": 7302,
       "policy": "static-15",
@@ -11237,6 +11792,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 208,
@@ -11250,6 +11808,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -11275,6 +11836,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7302-64-static-2-5b88cf81f718",
       "seed": 7302,
       "policy": "static-2",
@@ -11320,6 +11887,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 288,
@@ -11333,6 +11903,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -11358,6 +11931,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7304-64-agentcloud-cfbfdb353f11",
       "seed": 7304,
       "policy": "agentcloud",
@@ -11403,6 +11982,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 240,
@@ -11416,6 +11998,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -11441,6 +12026,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7304-64-agentcloud-v2-0afdd87760dd",
       "seed": 7304,
       "policy": "agentcloud-v2",
@@ -11486,6 +12077,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 288,
@@ -11499,6 +12093,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -11524,6 +12121,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7304-64-cost-aware-15025ff25179",
       "seed": 7304,
       "policy": "cost-aware",
@@ -11569,6 +12172,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 265,
@@ -11582,6 +12188,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -11607,6 +12216,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7304-64-static-15-816e41f46b7b",
       "seed": 7304,
       "policy": "static-15",
@@ -11652,6 +12267,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 208,
@@ -11665,6 +12283,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -11690,6 +12311,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7304-64-static-2-4835fe33db8c",
       "seed": 7304,
       "policy": "static-2",
@@ -12654,6 +13281,9 @@
         ]
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -12679,6 +13309,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7301-64-agentcloud-639a4031a048",
       "seed": 7301,
       "policy": "agentcloud",
@@ -12724,6 +13360,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 240,
@@ -12737,6 +13376,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -12762,6 +13404,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7301-64-agentcloud-v2-3528afde5f0d",
       "seed": 7301,
       "policy": "agentcloud-v2",
@@ -12807,6 +13455,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 288,
@@ -12820,6 +13471,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -12845,6 +13499,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7301-64-cost-aware-f1c98bbb606e",
       "seed": 7301,
       "policy": "cost-aware",
@@ -12890,6 +13550,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 281,
@@ -12903,6 +13566,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -12928,6 +13594,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7301-64-static-15-54f1e47ddee3",
       "seed": 7301,
       "policy": "static-15",
@@ -12973,6 +13645,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 208,
@@ -12986,6 +13661,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -13011,6 +13689,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7301-64-static-2-7eb8f9dcc1b1",
       "seed": 7301,
       "policy": "static-2",
@@ -13975,6 +14659,9 @@
         ]
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -14000,6 +14687,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7401-64-agentcloud-v2-0c038743e024",
       "seed": 7401,
       "policy": "agentcloud-v2",
@@ -14964,6 +15657,9 @@
         ]
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -14989,6 +15685,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7401-64-static-2-f80703398d84",
       "seed": 7401,
       "policy": "static-2",
@@ -15034,6 +15736,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 133,
@@ -15047,6 +15752,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -15072,6 +15780,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7402-64-agentcloud-v2-d506f5666332",
       "seed": 7402,
       "policy": "agentcloud-v2",
@@ -16036,6 +16750,9 @@
         ]
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -16061,6 +16778,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7402-64-static-2-47bdcba83f85",
       "seed": 7402,
       "policy": "static-2",
@@ -16106,6 +16829,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 448,
@@ -16119,6 +16845,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -16144,6 +16873,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7402-64-agentcloud-v2-3902ff6a9021",
       "seed": 7402,
       "policy": "agentcloud-v2",
@@ -17108,6 +17843,9 @@
         ]
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -17133,6 +17871,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7402-64-static-2-a2e832d706b4",
       "seed": 7402,
       "policy": "static-2",
@@ -17178,6 +17922,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 131,
@@ -17191,6 +17938,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -17216,6 +17966,14 @@
       ]
     },
     {
+      "_field_status": {
+        "actor_reserved_gb_s": "not_executed_after_cleanup_failure",
+        "snapshot_tag_count": "not_executed_after_cleanup_failure",
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "not_executed_after_cleanup_failure"
+      },
       "trial_id": "scale-7402-64-agentcloud-v2-43c46661ba20",
       "seed": 7402,
       "policy": "agentcloud-v2",
@@ -17239,6 +17997,12 @@
       "snapshot_write_amplification": null,
       "physical_storage_coverage_fraction": 0,
       "lifecycle_evidence": {
+        "_field_status": {
+          "committed_tag_count": "not_executed_after_cleanup_failure",
+          "initial_snapshot_tag_count": "not_executed_after_cleanup_failure",
+          "post_initial_snapshot_tag_count": "not_executed_after_cleanup_failure",
+          "all_counted_tags_verified_committed": "not_executed_after_cleanup_failure"
+        },
         "source_events": 0,
         "snapshot_uuid_count": 0,
         "snapshot_uuid_scope": "COMMITTED diagnostic manifests and explicit Runner suspend receipts",
@@ -17251,6 +18015,9 @@
       },
       "dynamo_released_acting_tokens": null,
       "dynamo_release_observation": {
+        "_field_status": {
+          "observed_tokens": "not_executed_after_cleanup_failure"
+        },
         "observed_tokens": null,
         "observations": 0,
         "trace_sessions": 0,
@@ -17258,6 +18025,11 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "lifecycle_tag_ids": "not_executed_after_cleanup_failure",
+          "snapshot_fraction": "not_executed_after_cleanup_failure",
+          "complete_snapshot_logical_bytes_range": "not_executed_after_cleanup_failure"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": null,
@@ -17271,6 +18043,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -17288,6 +18063,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7402-64-static-2-6db1fa1dcd04",
       "seed": 7402,
       "policy": "static-2",
@@ -18252,6 +19033,9 @@
         ]
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -18277,6 +19061,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7401-64-agentcloud-v2-23ef405acf42",
       "seed": 7401,
       "policy": "agentcloud-v2",
@@ -18322,6 +19112,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 200,
@@ -18335,6 +19128,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -18360,6 +19156,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7401-64-static-2-cdef42ef9b13",
       "seed": 7401,
       "policy": "static-2",
@@ -19324,6 +20126,9 @@
         ]
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -19349,6 +20154,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7403-64-agentcloud-v2-de0c79e687f1",
       "seed": 7403,
       "policy": "agentcloud-v2",
@@ -20313,6 +21124,9 @@
         ]
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -20338,6 +21152,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7403-64-static-2-ab1f0149d10c",
       "seed": 7403,
       "policy": "static-2",
@@ -20383,6 +21203,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 129,
@@ -20396,6 +21219,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -20421,6 +21247,14 @@
       ]
     },
     {
+      "_field_status": {
+        "actor_reserved_gb_s": "not_executed_after_cleanup_failure",
+        "snapshot_tag_count": "not_executed_after_cleanup_failure",
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "not_executed_after_cleanup_failure"
+      },
       "trial_id": "scale-7403-64-agentcloud-v2-fc086f2727e2",
       "seed": 7403,
       "policy": "agentcloud-v2",
@@ -20444,6 +21278,12 @@
       "snapshot_write_amplification": null,
       "physical_storage_coverage_fraction": 0,
       "lifecycle_evidence": {
+        "_field_status": {
+          "committed_tag_count": "not_executed_after_cleanup_failure",
+          "initial_snapshot_tag_count": "not_executed_after_cleanup_failure",
+          "post_initial_snapshot_tag_count": "not_executed_after_cleanup_failure",
+          "all_counted_tags_verified_committed": "not_executed_after_cleanup_failure"
+        },
         "source_events": 0,
         "snapshot_uuid_count": 0,
         "snapshot_uuid_scope": "COMMITTED diagnostic manifests and explicit Runner suspend receipts",
@@ -20456,6 +21296,9 @@
       },
       "dynamo_released_acting_tokens": null,
       "dynamo_release_observation": {
+        "_field_status": {
+          "observed_tokens": "not_executed_after_cleanup_failure"
+        },
         "observed_tokens": null,
         "observations": 0,
         "trace_sessions": 0,
@@ -20463,6 +21306,11 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "lifecycle_tag_ids": "not_executed_after_cleanup_failure",
+          "snapshot_fraction": "not_executed_after_cleanup_failure",
+          "complete_snapshot_logical_bytes_range": "not_executed_after_cleanup_failure"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": null,
@@ -20476,6 +21324,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -20493,6 +21344,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7403-64-static-2-0f50b45d916a",
       "seed": 7403,
       "policy": "static-2",
@@ -21457,6 +22314,9 @@
         ]
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -21482,6 +22342,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7403-64-agentcloud-v2-d0220a9e077c",
       "seed": 7403,
       "policy": "agentcloud-v2",
@@ -22446,6 +23312,9 @@
         ]
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -22471,6 +23340,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7403-64-static-2-85d27b402932",
       "seed": 7403,
       "policy": "static-2",
@@ -22516,6 +23391,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 448,
@@ -22529,6 +23407,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -22554,6 +23435,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7401-64-agentcloud-v2-c2885c0a7e48",
       "seed": 7401,
       "policy": "agentcloud-v2",
@@ -22599,6 +23486,9 @@
         "logical_quota_units": "acting tokens; separate from physical cached or avoided prefill tokens"
       },
       "logical_upload_coverage": {
+        "_field_status": {
+          "complete_snapshot_logical_bytes_range": "no_complete_snapshot_in_bounded_log_tail"
+        },
         "scope": "bounded_container_log_tail",
         "observed_snapshot_ids": 0,
         "lifecycle_tag_ids": 199,
@@ -22612,6 +23502,9 @@
         "sources": []
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [
@@ -22637,6 +23530,12 @@
       ]
     },
     {
+      "_field_status": {
+        "snapshot_write_bytes": "uncollected_in_ci_runner",
+        "peak_storage_bytes": "uncollected_in_ci_runner",
+        "snapshot_write_amplification": "uncollected_in_ci_runner",
+        "dynamo_released_acting_tokens": "uncollected_complete_trial_quota"
+      },
       "trial_id": "scale-7401-64-static-2-dc757a47b829",
       "seed": 7401,
       "policy": "static-2",
@@ -23601,6 +24500,9 @@
         ]
       },
       "physical_storage_evidence": {
+        "_field_status": {
+          "scope": "uncollected_in_ci_runner"
+        },
         "scope": null,
         "status": "not_collected",
         "missing_metrics": [

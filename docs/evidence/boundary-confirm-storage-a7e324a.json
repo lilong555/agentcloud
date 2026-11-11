@@ -1,5 +1,8 @@
 {
   "schema_version": 1,
+  "field_status_definitions": {
+    "uncollected_in_ci_runner": "uncollected_in_ci_runner (see 128MiB boundary report): 未采集完整 trial 的块设备物理写入、压缩对象占用或连续磁盘余量；参考 docs/STORAGE_COSTS.md 与 docs/evidence/boundary-confirm-storage-a7e324a.json。"
+  },
   "execution_kind": "boundary-storage-guard-failure-audit",
   "source_commit": "a7e324a7165fa65b697023c9f7a768c9b27610fe",
   "github_run_id": 42815326346,
@@ -21,6 +24,10 @@
   "interpretation": "Evidence of storage-envelope exhaustion; blocked policies preserve planned denominators and have no executed performance sample.",
   "storage_hypothesis": "Accumulated retained snapshots contribute to storage pressure.",
   "observability": {
+    "_field_status": {
+      "threshold_time_free_bytes": "uncollected_in_ci_runner",
+      "compressed_object_physical_bytes": "uncollected_in_ci_runner"
+    },
     "threshold_time_free_bytes": null,
     "continuous_disk_free_samples": false,
     "compressed_object_physical_bytes": null,

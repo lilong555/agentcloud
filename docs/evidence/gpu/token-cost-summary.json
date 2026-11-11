@@ -1,10 +1,13 @@
 {
   "schema_version": 1,
+  "field_status_definitions": {
+    "not_collected_cross_suspend_resume_gpu": "独立单 Worker vLLM 缓存实验已完成；跨 Actor Suspend/Resume 的物理 GPU 命中率消融未采集，lifecycle_integration=false。"
+  },
   "execution_kind": "token-kv-cost-evidence-reconciliation",
   "sources": [
     {
       "path": "docs/evidence/gpu/kv-events-summary.json",
-      "sha256": "512f4772813e7f6f4ad84e7ebbf04ef67b859b00138db6291339fc28e34807ed"
+      "sha256": "765072c351d088c6462bba06ce4ef97c09af335699fc30bb66ea57a45ce827d9"
     },
     {
       "path": "docs/evidence/gpu/cuda-kv-pressure-curve.json",
@@ -16,6 +19,9 @@
     }
   ],
   "physical_prefix": {
+    "_field_status": {
+      "cross_suspend_resume_gpu_hit_fraction": "not_collected_cross_suspend_resume_gpu"
+    },
     "workers": 1,
     "requests": 6,
     "hot": {

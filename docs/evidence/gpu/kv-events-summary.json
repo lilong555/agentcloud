@@ -1,5 +1,14 @@
 {
   "schema_version": 1,
+  "field_status_definitions": {
+    "no_resource_guard_stop_recorded": "本次尝试未记录资源保护停止原因；执行状态由 error、进程退出与清理记录给出。",
+    "not_applicable_successful_trial": "已通过 trial 的错误字段为空，表示执行无错误。",
+    "not_collected_cross_suspend_resume_gpu": "独立单 Worker vLLM 缓存实验已完成；跨 Actor Suspend/Resume 的物理 GPU 命中率消融未采集，lifecycle_integration=false。",
+    "source_commit_unrecorded_for_failed_attempt": "该失败尝试的原始记录缺少 source_commit；它保留在完整尝试分母，性能结论使用具有源码身份的成功样本。"
+  },
+  "_field_status": {
+    "cross_suspend_resume_gpu_hit_fraction": "not_collected_cross_suspend_resume_gpu"
+  },
   "execution_kind": "real-vllm-official-kv-events-single-worker-summary",
   "status": "passed",
   "gpu_execution": true,
@@ -27,6 +36,9 @@
       "source_commit": "0a979daece874dc03992576228d202078feaeda4",
       "error": "RuntimeError: signal 15",
       "cleanup": {
+        "_field_status": {
+          "resource_stop_reason": "no_resource_guard_stop_recorded"
+        },
         "process_exit_codes": [
           1,
           -15,
@@ -75,12 +87,18 @@
       }
     },
     {
+      "_field_status": {
+        "error": "not_applicable_successful_trial"
+      },
       "path": "docs/evidence/gpu/kv-events-6512813-observations/result.json",
       "sha256": "493e7514b3e1998ae6d888e3d3962395a421faa8e5b8e66d1b0837e70163369c",
       "status": "passed",
       "source_commit": "65128135fb2adae73d2301b0a4853279c4bf0dcb",
       "error": null,
       "cleanup": {
+        "_field_status": {
+          "resource_stop_reason": "no_resource_guard_stop_recorded"
+        },
         "process_exit_codes": [
           1,
           -15,
@@ -94,12 +112,18 @@
       }
     },
     {
+      "_field_status": {
+        "error": "not_applicable_successful_trial"
+      },
       "path": "docs/evidence/gpu/kv-events-6d37195-completions/result.json",
       "sha256": "440990a7749027f22c9baf2f8ee4d0f05dd29eccaa4b7a45ac76a987665f90e5",
       "status": "passed",
       "source_commit": "6d37195cd7cf19974505221ea801f9ccb4692294",
       "error": null,
       "cleanup": {
+        "_field_status": {
+          "resource_stop_reason": "no_resource_guard_stop_recorded"
+        },
         "process_exit_codes": [
           1,
           -15,
@@ -138,6 +162,9 @@
       "source_commit": "a31d62c9b85773ed5280d031e97a3c567aa4e7ac",
       "error": "TimeoutError: convergence timeout: {'object': 'list', 'data': []}",
       "cleanup": {
+        "_field_status": {
+          "resource_stop_reason": "no_resource_guard_stop_recorded"
+        },
         "process_exit_codes": [
           -9,
           -15,
@@ -151,12 +178,18 @@
       }
     },
     {
+      "_field_status": {
+        "source_commit": "source_commit_unrecorded_for_failed_attempt"
+      },
       "path": "docs/evidence/gpu/kv-events-b4116cb-port/result.json",
       "sha256": "9fbffa1758717cf94699555fadd49e144a6dec8f50e42bf9e56c2a6564c57a95",
       "status": "failed",
       "source_commit": null,
       "error": "RuntimeError: owned process 79692 exited 1",
       "cleanup": {
+        "_field_status": {
+          "resource_stop_reason": "no_resource_guard_stop_recorded"
+        },
         "process_exit_codes": [
           -15,
           0,
@@ -169,12 +202,18 @@
       }
     },
     {
+      "_field_status": {
+        "source_commit": "source_commit_unrecorded_for_failed_attempt"
+      },
       "path": "docs/evidence/gpu/kv-events-b91c716-libc/result.json",
       "sha256": "610d91c68fb91ae94919aae459729b2eea73e611818b3ad99d0987d52da0072e",
       "status": "failed",
       "source_commit": null,
       "error": "RuntimeError: owned process 75462 exited 1",
       "cleanup": {
+        "_field_status": {
+          "resource_stop_reason": "no_resource_guard_stop_recorded"
+        },
         "process_exit_codes": [
           1,
           1,
@@ -328,6 +367,9 @@
   "cross_suspend_resume_gpu_hit_fraction": null,
   "cross_suspend_resume_gpu_measurement": "not_collected; event observations are a standalone single-worker experiment",
   "cleanup": {
+    "_field_status": {
+      "resource_stop_reason": "no_resource_guard_stop_recorded"
+    },
     "process_exit_codes": [
       1,
       -15,

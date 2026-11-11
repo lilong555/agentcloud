@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "execution_kind": "local-release-quick-validation",
+  "recorded_at": "2026-11-11T04:00:43.860764+00:00",
+  "baseline_commit": "7d66db7fe3a1bb0c8371de3d2d942d747bfeb518",
+  "postgresql_version": "postgres (PostgreSQL) 14.24 (Ubuntu 14.24-0ubuntu0.22.04.1)",
+  "postgresql_isolation": "temporary data directory and private Unix socket; durability defaults enabled",
+  "postgresql_stopped": true,
+  "temporary_data_removed": true,
+  "cluster_experiments_started": 0,
+  "gpu_experiments_started": 0,
+  "commands": [
+    {
+      "name": "make-check",
+      "command": [
+        "make",
+        "check"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 44.872,
+      "log_path": "docs/evidence/final-release/make-check.log"
+    },
+    {
+      "name": "make-verify-delivery",
+      "command": [
+        "make",
+        "verify-delivery"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 6.23,
+      "log_path": "docs/evidence/final-release/make-verify-delivery.log"
+    },
+    {
+      "name": "deerflow-postgres-contracts",
+      "command": [
+        "adapters/deerflow/.venv/bin/python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests/python",
+        "-p",
+        "test_deerflow*.py",
+        "-v"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "duration_seconds": 11.391,
+      "log_path": "docs/evidence/final-release/deerflow-postgres-contracts.log"
+    }
+  ],
+  "status": "passed"
+}

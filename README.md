@@ -15,7 +15,16 @@ flowchart LR
     D --> I[Inference Worker]
 ```
 
-[三分钟答辩与源码](docs/INTERVIEW_DEFENSE.md) · [验收状态](docs/STATUS.md) · [证据与源码索引](docs/evidence/validation-index.json) · [上游贡献](docs/UPSTREAM_PRS.md)
+[最终 Checklist 与 Top 12](docs/FINAL_RELEASE_CHECKLIST.md) · [三分钟答辩与源码](docs/INTERVIEW_DEFENSE.md) · [验收状态](docs/STATUS.md) · [证据与源码索引](docs/evidence/validation-index.json) · [上游贡献](docs/UPSTREAM_PRS.md)
+
+| P2 GPU 与 Token 成本速览 | 已验证结果 | 证据范围 |
+| --- | --- | --- |
+| 跨 Suspend 的会话身份 | `X-Dynamo-Session-ID` 跨 Actor epoch 保持稳定，inference lease 旋转 | 原生身份契约；跨 Suspend 的物理 GPU 命中率为 `not_collected_cross_suspend_resume_gpu` |
+| vLLM Prefix Cache 与重算 | 三次热请求各命中 **240/256＝93.75%**，合计避免 **720 Re-prefill Token**；驱逐后三次各重算 256 token | 独立单 Worker、真实 GPU、官方 KVIndexer 对账 |
+| CUDA KV 驻留与重建 | **30/30** 组；KV 驻留 **576～2,304 MiB**，全部重算 **0.179～0.746 s**；计入重建后，64 会话耗时 **−22.5%**，反转位于 **48～64** 两个实测点之间 | RTX 4070 Laptop、OPT-125M、3 GiB allocator 预算 |
+| ThunderAgent `acting` 配额 | **708 → 0 → 708**；挂起释放 708 个逻辑 Token 配额 | 原生 CPU Mocker 的 Program 准入预算 |
+
+[P2 原始证据](docs/GPU_VALIDATION.md) · [带采集状态的公开指标汇总](docs/evidence/release-metrics.json)
 
 ## 确定性状态与真实恢复
 
@@ -64,7 +73,7 @@ Inference Lease、Model Attempt ID、Actor UID／epoch、工具安全点与 dura
 | N64，64 MiB／3 s，三种子均值 | 680.986／748.890 | 207.333／448 | 双方全部完成；v2 P95 增加 313.307 s |
 | N64，128 MiB／3 s，种子 7401 | 见逐 trial 资源积分 | 199／434 | v2 完成 384/384；TTL2 完成 370/384 后触发磁盘保护 |
 
-高工作集下，频繁挂起增加恢复点创建与存储保留压力。128 MiB 的三个 TTL2 trial 各留下 434／435／436 个 Tag，并触发 6 GiB 磁盘余量保护。存储汇总同时提供 `snapshot_write_bytes`、`peak_storage_bytes`；历史物理采样缺失项为 `null`，尾部逻辑上传字节单列。v2 的快照次数优势与首轮准入尾延迟共同构成适用边界。[完整成本与原始分母](docs/STORAGE_COSTS.md)
+高工作集下，频繁挂起增加恢复点创建与存储保留压力。128 MiB 的三个 TTL2 trial 各留下 434／435／436 个 Tag，并触发 6 GiB 磁盘余量保护。按尾部完整快照样本外推，每 trial 累计逻辑快照量约 **69.1～71.5 GiB**；物理写入与峰值占用明确标为 `uncollected_in_ci_runner (see 128MiB boundary report)`。v2 的快照次数优势与首轮准入尾延迟共同构成适用边界。[完整成本与原始分母](docs/STORAGE_COSTS.md)
 
 生产生命周期默认每个 Workspace 保留最近 **K=2 个已验证 COMMITTED 恢复点**，保护当前 manifest 和未决操作；旧 Tag 与过期孤儿通过持久删除意图、身份围栏及有界退避回收。公开轨迹回放中，四策略各 33 个 Workspace 最终均保留 66 个恢复点，累计回收 98 个旧 Tag，删除待办为零。[实机 GC 对账](docs/evidence/public-traces/runs/42858419910/snapshot-gc-reconciliation.json)记录累计创建量、保留量及删除墓碑；历史实验保持其原始保留策略。
 
@@ -87,7 +96,7 @@ Inference Lease、Model Attempt ID、Actor UID／epoch、工具安全点与 dura
 | 驱逐后同输入 | 命中 0，重算 256；Prefill 中位数 9.213 ms | 度量缓存消失后的实际工作量 |
 | ThunderAgent acting 配额 | **708 → 0 → 708**，SUSPENDED 回收 708 个逻辑 Token 配额 | 原生 CPU Mocker 的准入预算释放与恢复 |
 
-真实 GPU 命中数据来自独立缓存事件实验；跨 Suspend/Resume 的物理命中率消融字段为 `null`。30 组 CUDA 曲线同时记录 KV 驻留 **576～2,304 MiB** 与重算 **0.179～0.746 s**，支持显存驻留和返回代价的分层核算。[统一 Token 成本 JSON](docs/evidence/gpu/token-cost-summary.json)
+真实 GPU 命中数据来自独立缓存事件实验；跨 Suspend/Resume 的物理命中率消融标为 `not_collected_cross_suspend_resume_gpu`。30 组 CUDA 曲线同时记录 KV 驻留 **576～2,304 MiB** 与重算 **0.179～0.746 s**，支持显存驻留和返回代价的分层核算。[统一 Token 成本 JSON](docs/evidence/gpu/token-cost-summary.json)
 
 ## 公开真实轨迹与样本分布
 

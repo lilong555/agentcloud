@@ -65,7 +65,7 @@ python3 -m bench.analysis.cuda_kv \
 | 48 | 1,728 | 0.606 | 1.431／1.810 | +26.5% |
 | 64 | 2,304 | 0.746 | 2.434／1.887 | −22.5% |
 
-原生 ThunderAgent 在同一绑定跨 Actor epoch 时保持 `X-Dynamo-Session-ID`，并旋转 inference lease。稳定路由身份为前缀亲和性提供连续键；原生测试验证身份连续和旧 lease 失效。真实 GPU 的热缓存命中由下节独立事件实验测得，跨 Suspend/Resume 的物理命中率消融尚未采集，汇总中为 `null`。
+原生 ThunderAgent 在同一绑定跨 Actor epoch 时保持 `X-Dynamo-Session-ID`，并旋转 inference lease。稳定路由身份为前缀亲和性提供连续键；原生测试验证身份连续和旧 lease 失效。真实 GPU 的热缓存命中由下节独立事件实验测得，跨 Suspend/Resume 的物理命中率消融标为 `not_collected_cross_suspend_resume_gpu`；数值接口中的空值附有同名采集状态说明。[公开指标](evidence/release-metrics.json)使用明确状态字段展示该项。
 
 [原生 CPU Mocker 回执](evidence/dynamo-native-mocker.json)记录 acting 逻辑配额 **708 → 0 → 708**：SUSPENDED 释放 708 个配额 Token，RESUMING 恢复预算。它度量 Program 准入可用量；CUDA 张量、vLLM block 与物理 Prefill 使用各自观测。
 
@@ -108,6 +108,6 @@ vLLM 为输出 logits 保留至少一个待计算 token，复用按完整 block 
 完整依赖、模型元数据准备和资源参数见[单 Worker 复现入口](../experiments/dynamo/kv_events_README.md)。对账汇总可离线重建：
 
 ```bash
-python3 -m bench.analysis.kv_events
-python3 -m bench.analysis.token_costs
+python3 -m bench.analysis.kv_events --output artifacts/kv-events-recomputed.json
+python3 -m bench.analysis.token_costs --output artifacts/token-costs-recomputed.json
 ```

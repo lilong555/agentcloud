@@ -1,5 +1,11 @@
 {
   "schema_version": 2,
+  "field_status_definitions": {
+    "insufficient_complete_samples": "当前分组或配对的完整执行样本不足，均值、区间或总量保持缺测；样本和计划分母见相同分组。",
+    "not_applicable_successful_trial": "已通过 trial 的错误字段为空，表示执行无错误。",
+    "numeric_missing_sentinel": "分析格式用空值表示缺测数值；此处声明缺测编码，实际指标的采集状态由相邻 _field_status 给出。",
+    "uncollected_in_ci_runner": "uncollected_in_ci_runner (see 128MiB boundary report): 未采集完整 trial 的块设备物理写入、压缩对象占用或连续磁盘余量；参考 docs/STORAGE_COSTS.md 与 docs/evidence/boundary-confirm-storage-a7e324a.json。"
+  },
   "execution_kind": "real-actor-paired-boundary-summary",
   "gpu_execution": false,
   "groups": [
@@ -7,6 +13,12 @@
       "candidate_policy": "agentcloud-v2",
       "groups": [
         {
+          "_field_status": {
+            "stranded_worker_gb_s": "insufficient_complete_samples",
+            "actor_reserved_gb_s": "insufficient_complete_samples",
+            "snapshot_write_bytes": "uncollected_in_ci_runner",
+            "peak_storage_bytes": "uncollected_in_ci_runner"
+          },
           "concurrency": 64,
           "policy": "agentcloud-v2",
           "trials": 3,
@@ -41,6 +53,10 @@
           "trials_with_resource_observation": 1,
           "resource_observation_complete": false,
           "ci95": {
+            "_field_status": {
+              "stranded_worker_gb_s": "insufficient_complete_samples",
+              "actor_reserved_gb_s": "insufficient_complete_samples"
+            },
             "ttft_p50": [
               4.277290523052216,
               5.157323372364044
@@ -131,6 +147,12 @@
                 }
               ],
               "lifecycle": {
+                "_field_status": {
+                  "committed_tag_count": "insufficient_complete_samples",
+                  "initial_snapshot_tag_count": "insufficient_complete_samples",
+                  "post_initial_snapshot_tag_count": "insufficient_complete_samples",
+                  "all_counted_tags_verified_committed": "insufficient_complete_samples"
+                },
                 "source_events": 0,
                 "snapshot_uuid_count": 0,
                 "snapshot_uuid_scope": "COMMITTED diagnostic manifests and explicit Runner suspend receipts",
@@ -142,6 +164,9 @@
                 "deleted_or_absent": {}
               },
               "physical": {
+                "_field_status": {
+                  "scope": "uncollected_in_ci_runner"
+                },
                 "scope": null,
                 "status": "not_collected",
                 "missing_metrics": [
@@ -160,6 +185,12 @@
                 }
               ],
               "lifecycle": {
+                "_field_status": {
+                  "committed_tag_count": "insufficient_complete_samples",
+                  "initial_snapshot_tag_count": "insufficient_complete_samples",
+                  "post_initial_snapshot_tag_count": "insufficient_complete_samples",
+                  "all_counted_tags_verified_committed": "insufficient_complete_samples"
+                },
                 "source_events": 0,
                 "snapshot_uuid_count": 0,
                 "snapshot_uuid_scope": "COMMITTED diagnostic manifests and explicit Runner suspend receipts",
@@ -171,6 +202,9 @@
                 "deleted_or_absent": {}
               },
               "physical": {
+                "_field_status": {
+                  "scope": "uncollected_in_ci_runner"
+                },
                 "scope": null,
                 "status": "not_collected",
                 "missing_metrics": [
@@ -211,6 +245,9 @@
                 }
               },
               "physical": {
+                "_field_status": {
+                  "scope": "uncollected_in_ci_runner"
+                },
                 "scope": null,
                 "status": "not_collected",
                 "missing_metrics": [
@@ -226,6 +263,10 @@
           "autonomous_decisions": 86,
           "service_process_resources": {
             "coordinator": {
+              "_field_status": {
+                "mean_cpu_cores": "insufficient_complete_samples",
+                "cpu_seconds_total": "insufficient_complete_samples"
+              },
               "observed_trials": 1,
               "planned_trials": 3,
               "mean_cpu_cores": null,
@@ -234,6 +275,10 @@
               "source": "Linux /proc; CPU averaged across seed trials; peak RSS is the maximum observed sample"
             },
             "native_frontend": {
+              "_field_status": {
+                "mean_cpu_cores": "insufficient_complete_samples",
+                "cpu_seconds_total": "insufficient_complete_samples"
+              },
               "observed_trials": 1,
               "planned_trials": 3,
               "mean_cpu_cores": null,
@@ -242,6 +287,10 @@
               "source": "Linux /proc; CPU averaged across seed trials; peak RSS is the maximum observed sample"
             },
             "native_mocker": {
+              "_field_status": {
+                "mean_cpu_cores": "insufficient_complete_samples",
+                "cpu_seconds_total": "insufficient_complete_samples"
+              },
               "observed_trials": 1,
               "planned_trials": 3,
               "mean_cpu_cores": null,
@@ -252,6 +301,10 @@
           }
         },
         {
+          "_field_status": {
+            "snapshot_write_bytes": "uncollected_in_ci_runner",
+            "peak_storage_bytes": "uncollected_in_ci_runner"
+          },
           "concurrency": 64,
           "policy": "static-2",
           "trials": 3,
@@ -398,6 +451,9 @@
                 }
               },
               "physical": {
+                "_field_status": {
+                  "scope": "uncollected_in_ci_runner"
+                },
                 "scope": null,
                 "status": "not_collected",
                 "missing_metrics": [
@@ -438,6 +494,9 @@
                 }
               },
               "physical": {
+                "_field_status": {
+                  "scope": "uncollected_in_ci_runner"
+                },
                 "scope": null,
                 "status": "not_collected",
                 "missing_metrics": [
@@ -478,6 +537,9 @@
                 }
               },
               "physical": {
+                "_field_status": {
+                  "scope": "uncollected_in_ci_runner"
+                },
                 "scope": null,
                 "status": "not_collected",
                 "missing_metrics": [
@@ -493,6 +555,10 @@
           "autonomous_decisions": 0,
           "service_process_resources": {
             "coordinator": {
+              "_field_status": {
+                "mean_cpu_cores": "insufficient_complete_samples",
+                "cpu_seconds_total": "insufficient_complete_samples"
+              },
               "observed_trials": 3,
               "planned_trials": 3,
               "mean_cpu_cores": null,
@@ -501,6 +567,10 @@
               "source": "Linux /proc; CPU averaged across seed trials; peak RSS is the maximum observed sample"
             },
             "native_frontend": {
+              "_field_status": {
+                "mean_cpu_cores": "insufficient_complete_samples",
+                "cpu_seconds_total": "insufficient_complete_samples"
+              },
               "observed_trials": 3,
               "planned_trials": 3,
               "mean_cpu_cores": null,
@@ -509,6 +579,10 @@
               "source": "Linux /proc; CPU averaged across seed trials; peak RSS is the maximum observed sample"
             },
             "native_mocker": {
+              "_field_status": {
+                "mean_cpu_cores": "insufficient_complete_samples",
+                "cpu_seconds_total": "insufficient_complete_samples"
+              },
               "observed_trials": 3,
               "planned_trials": 3,
               "mean_cpu_cores": null,
@@ -611,6 +685,10 @@
               ]
             },
             "snapshot_tag_count": {
+              "_field_status": {
+                "mean_difference": "insufficient_complete_samples",
+                "paired_seed_bootstrap_ci95": "insufficient_complete_samples"
+              },
               "pairs_observed": 0,
               "mean_difference": null,
               "paired_seed_bootstrap_ci95": [
@@ -620,6 +698,10 @@
               "population": "both executed and passed trials; failure denominators retained in matrix"
             },
             "snapshot_write_bytes": {
+              "_field_status": {
+                "mean_difference": "uncollected_in_ci_runner",
+                "paired_seed_bootstrap_ci95": "uncollected_in_ci_runner"
+              },
               "pairs_observed": 0,
               "mean_difference": null,
               "paired_seed_bootstrap_ci95": [
@@ -629,6 +711,10 @@
               "population": "both executed and passed trials; failure denominators retained in matrix"
             },
             "peak_storage_bytes": {
+              "_field_status": {
+                "mean_difference": "uncollected_in_ci_runner",
+                "paired_seed_bootstrap_ci95": "uncollected_in_ci_runner"
+              },
               "pairs_observed": 0,
               "mean_difference": null,
               "paired_seed_bootstrap_ci95": [
@@ -691,6 +777,9 @@
           "github_run_id": "42815326346"
         },
         {
+          "_field_status": {
+            "error": "not_applicable_successful_trial"
+          },
           "trial_id": "scale-7401-64-agentcloud-v2-c2885c0a7e48",
           "source_commit": "a7e324a7165fa65b697023c9f7a768c9b27610fe",
           "status": "passed",
@@ -712,6 +801,9 @@
         }
       ],
       "storage_metrics": {
+        "_field_status": {
+          "missing_observations": "numeric_missing_sentinel"
+        },
         "snapshot_tag_count": "unique retained Tag UIDs, including initial COMMITTED recovery points",
         "snapshot_write_bytes": "measured physical trial writes; logical upload samples remain in separate storage evidence",
         "peak_storage_bytes": "measured trial-attributed peak storage occupancy",
@@ -940,6 +1032,10 @@
       "candidate_policy": "agentcloud-v2",
       "groups": [
         {
+          "_field_status": {
+            "snapshot_write_bytes": "uncollected_in_ci_runner",
+            "peak_storage_bytes": "uncollected_in_ci_runner"
+          },
           "concurrency": 64,
           "policy": "agentcloud-v2",
           "trials": 3,
@@ -1086,6 +1182,9 @@
                 }
               },
               "physical": {
+                "_field_status": {
+                  "scope": "uncollected_in_ci_runner"
+                },
                 "scope": null,
                 "status": "not_collected",
                 "missing_metrics": [
@@ -1126,6 +1225,9 @@
                 }
               },
               "physical": {
+                "_field_status": {
+                  "scope": "uncollected_in_ci_runner"
+                },
                 "scope": null,
                 "status": "not_collected",
                 "missing_metrics": [
@@ -1166,6 +1268,9 @@
                 }
               },
               "physical": {
+                "_field_status": {
+                  "scope": "uncollected_in_ci_runner"
+                },
                 "scope": null,
                 "status": "not_collected",
                 "missing_metrics": [
@@ -1207,6 +1312,10 @@
           }
         },
         {
+          "_field_status": {
+            "snapshot_write_bytes": "uncollected_in_ci_runner",
+            "peak_storage_bytes": "uncollected_in_ci_runner"
+          },
           "concurrency": 64,
           "policy": "static-2",
           "trials": 3,
@@ -1353,6 +1462,9 @@
                 }
               },
               "physical": {
+                "_field_status": {
+                  "scope": "uncollected_in_ci_runner"
+                },
                 "scope": null,
                 "status": "not_collected",
                 "missing_metrics": [
@@ -1393,6 +1505,9 @@
                 }
               },
               "physical": {
+                "_field_status": {
+                  "scope": "uncollected_in_ci_runner"
+                },
                 "scope": null,
                 "status": "not_collected",
                 "missing_metrics": [
@@ -1433,6 +1548,9 @@
                 }
               },
               "physical": {
+                "_field_status": {
+                  "scope": "uncollected_in_ci_runner"
+                },
                 "scope": null,
                 "status": "not_collected",
                 "missing_metrics": [
@@ -1575,6 +1693,10 @@
               "population": "both executed and passed trials; failure denominators retained in matrix"
             },
             "snapshot_write_bytes": {
+              "_field_status": {
+                "mean_difference": "uncollected_in_ci_runner",
+                "paired_seed_bootstrap_ci95": "uncollected_in_ci_runner"
+              },
               "pairs_observed": 0,
               "mean_difference": null,
               "paired_seed_bootstrap_ci95": [
@@ -1584,6 +1706,10 @@
               "population": "both executed and passed trials; failure denominators retained in matrix"
             },
             "peak_storage_bytes": {
+              "_field_status": {
+                "mean_difference": "uncollected_in_ci_runner",
+                "paired_seed_bootstrap_ci95": "uncollected_in_ci_runner"
+              },
               "pairs_observed": 0,
               "mean_difference": null,
               "paired_seed_bootstrap_ci95": [
@@ -1606,6 +1732,9 @@
       ],
       "attempt_audit": [
         {
+          "_field_status": {
+            "error": "not_applicable_successful_trial"
+          },
           "trial_id": "scale-7401-64-static-2-f80703398d84",
           "source_commit": "a7e324a7165fa65b697023c9f7a768c9b27610fe",
           "status": "passed",
@@ -1616,6 +1745,9 @@
           "github_run_id": "42815326346"
         },
         {
+          "_field_status": {
+            "error": "not_applicable_successful_trial"
+          },
           "trial_id": "scale-7403-64-static-2-ab1f0149d10c",
           "source_commit": "a7e324a7165fa65b697023c9f7a768c9b27610fe",
           "status": "passed",
@@ -1626,6 +1758,9 @@
           "github_run_id": "42815326346"
         },
         {
+          "_field_status": {
+            "error": "not_applicable_successful_trial"
+          },
           "trial_id": "scale-7402-64-static-2-a2e832d706b4",
           "source_commit": "a7e324a7165fa65b697023c9f7a768c9b27610fe",
           "status": "passed",
@@ -1636,6 +1771,9 @@
           "github_run_id": "42815326346"
         },
         {
+          "_field_status": {
+            "error": "not_applicable_successful_trial"
+          },
           "trial_id": "scale-7401-64-agentcloud-v2-0c038743e024",
           "source_commit": "a7e324a7165fa65b697023c9f7a768c9b27610fe",
           "status": "passed",
@@ -1646,6 +1784,9 @@
           "github_run_id": "42815326346"
         },
         {
+          "_field_status": {
+            "error": "not_applicable_successful_trial"
+          },
           "trial_id": "scale-7402-64-agentcloud-v2-3902ff6a9021",
           "source_commit": "a7e324a7165fa65b697023c9f7a768c9b27610fe",
           "status": "passed",
@@ -1656,6 +1797,9 @@
           "github_run_id": "42815326346"
         },
         {
+          "_field_status": {
+            "error": "not_applicable_successful_trial"
+          },
           "trial_id": "scale-7403-64-agentcloud-v2-de0c79e687f1",
           "source_commit": "a7e324a7165fa65b697023c9f7a768c9b27610fe",
           "status": "passed",
@@ -1667,6 +1811,9 @@
         }
       ],
       "storage_metrics": {
+        "_field_status": {
+          "missing_observations": "numeric_missing_sentinel"
+        },
         "snapshot_tag_count": "unique retained Tag UIDs, including initial COMMITTED recovery points",
         "snapshot_write_bytes": "measured physical trial writes; logical upload samples remain in separate storage evidence",
         "peak_storage_bytes": "measured trial-attributed peak storage occupancy",
@@ -1895,6 +2042,10 @@
       "candidate_policy": "agentcloud-v2",
       "groups": [
         {
+          "_field_status": {
+            "snapshot_write_bytes": "uncollected_in_ci_runner",
+            "peak_storage_bytes": "uncollected_in_ci_runner"
+          },
           "concurrency": 64,
           "policy": "agentcloud-v2",
           "trials": 3,
@@ -2041,6 +2192,9 @@
                 }
               },
               "physical": {
+                "_field_status": {
+                  "scope": "uncollected_in_ci_runner"
+                },
                 "scope": null,
                 "status": "not_collected",
                 "missing_metrics": [
@@ -2081,6 +2235,9 @@
                 }
               },
               "physical": {
+                "_field_status": {
+                  "scope": "uncollected_in_ci_runner"
+                },
                 "scope": null,
                 "status": "not_collected",
                 "missing_metrics": [
@@ -2121,6 +2278,9 @@
                 }
               },
               "physical": {
+                "_field_status": {
+                  "scope": "uncollected_in_ci_runner"
+                },
                 "scope": null,
                 "status": "not_collected",
                 "missing_metrics": [
@@ -2162,6 +2322,10 @@
           }
         },
         {
+          "_field_status": {
+            "snapshot_write_bytes": "uncollected_in_ci_runner",
+            "peak_storage_bytes": "uncollected_in_ci_runner"
+          },
           "concurrency": 64,
           "policy": "static-2",
           "trials": 3,
@@ -2308,6 +2472,9 @@
                 }
               },
               "physical": {
+                "_field_status": {
+                  "scope": "uncollected_in_ci_runner"
+                },
                 "scope": null,
                 "status": "not_collected",
                 "missing_metrics": [
@@ -2348,6 +2515,9 @@
                 }
               },
               "physical": {
+                "_field_status": {
+                  "scope": "uncollected_in_ci_runner"
+                },
                 "scope": null,
                 "status": "not_collected",
                 "missing_metrics": [
@@ -2388,6 +2558,9 @@
                 }
               },
               "physical": {
+                "_field_status": {
+                  "scope": "uncollected_in_ci_runner"
+                },
                 "scope": null,
                 "status": "not_collected",
                 "missing_metrics": [
@@ -2530,6 +2703,10 @@
               "population": "both executed and passed trials; failure denominators retained in matrix"
             },
             "snapshot_write_bytes": {
+              "_field_status": {
+                "mean_difference": "uncollected_in_ci_runner",
+                "paired_seed_bootstrap_ci95": "uncollected_in_ci_runner"
+              },
               "pairs_observed": 0,
               "mean_difference": null,
               "paired_seed_bootstrap_ci95": [
@@ -2539,6 +2716,10 @@
               "population": "both executed and passed trials; failure denominators retained in matrix"
             },
             "peak_storage_bytes": {
+              "_field_status": {
+                "mean_difference": "uncollected_in_ci_runner",
+                "paired_seed_bootstrap_ci95": "uncollected_in_ci_runner"
+              },
               "pairs_observed": 0,
               "mean_difference": null,
               "paired_seed_bootstrap_ci95": [
@@ -2561,6 +2742,9 @@
       ],
       "attempt_audit": [
         {
+          "_field_status": {
+            "error": "not_applicable_successful_trial"
+          },
           "trial_id": "scale-7402-64-static-2-47bdcba83f85",
           "source_commit": "a7e324a7165fa65b697023c9f7a768c9b27610fe",
           "status": "passed",
@@ -2571,6 +2755,9 @@
           "github_run_id": "42815326346"
         },
         {
+          "_field_status": {
+            "error": "not_applicable_successful_trial"
+          },
           "trial_id": "scale-7401-64-agentcloud-v2-23ef405acf42",
           "source_commit": "a7e324a7165fa65b697023c9f7a768c9b27610fe",
           "status": "passed",
@@ -2581,6 +2768,9 @@
           "github_run_id": "42815326346"
         },
         {
+          "_field_status": {
+            "error": "not_applicable_successful_trial"
+          },
           "trial_id": "scale-7403-64-static-2-85d27b402932",
           "source_commit": "a7e324a7165fa65b697023c9f7a768c9b27610fe",
           "status": "passed",
@@ -2591,6 +2781,9 @@
           "github_run_id": "42815326346"
         },
         {
+          "_field_status": {
+            "error": "not_applicable_successful_trial"
+          },
           "trial_id": "scale-7402-64-agentcloud-v2-d506f5666332",
           "source_commit": "a7e324a7165fa65b697023c9f7a768c9b27610fe",
           "status": "passed",
@@ -2601,6 +2794,9 @@
           "github_run_id": "42815326346"
         },
         {
+          "_field_status": {
+            "error": "not_applicable_successful_trial"
+          },
           "trial_id": "scale-7401-64-static-2-cdef42ef9b13",
           "source_commit": "a7e324a7165fa65b697023c9f7a768c9b27610fe",
           "status": "passed",
@@ -2611,6 +2807,9 @@
           "github_run_id": "42815326346"
         },
         {
+          "_field_status": {
+            "error": "not_applicable_successful_trial"
+          },
           "trial_id": "scale-7403-64-agentcloud-v2-d0220a9e077c",
           "source_commit": "a7e324a7165fa65b697023c9f7a768c9b27610fe",
           "status": "passed",
@@ -2622,6 +2821,9 @@
         }
       ],
       "storage_metrics": {
+        "_field_status": {
+          "missing_observations": "numeric_missing_sentinel"
+        },
         "snapshot_tag_count": "unique retained Tag UIDs, including initial COMMITTED recovery points",
         "snapshot_write_bytes": "measured physical trial writes; logical upload samples remain in separate storage evidence",
         "peak_storage_bytes": "measured trial-attributed peak storage occupancy",

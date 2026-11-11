@@ -10,7 +10,7 @@
 
 **GPU 给出物理收益的适用条件。** RTX 4070 上完成 30 组真实 CUDA 测量，释放 KV 并计入全部重建后，16 会话总耗时增加 44.5%，64 会话下降 22.5%，反转位于 48～64 两个实测点之间。独立 vLLM 实验接通官方 KVEvent、KVIndexer 与默认 CACHE Selector，六请求的新增 Prefill token 预测误差从 120 降至 0；Prefill 中位数差约 0.221 ms，交付定位为物理缓存对账观测。
 
-[验收索引](STATUS.md) · [调度归因](SCHEDULER_DIAGNOSIS.md) · [v2 配对协议](V2_EVALUATION.md) · [GPU 原始数据](GPU_VALIDATION.md)
+[最终 Checklist、三条简历与 Top 12 速查卡](FINAL_RELEASE_CHECKLIST.md) · [验收索引](STATUS.md) · [调度归因](SCHEDULER_DIAGNOSIS.md) · [v2 配对协议](V2_EVALUATION.md) · [GPU 原始数据](GPU_VALIDATION.md)
 
 ## 状态围栏与 16 类故障
 
@@ -25,6 +25,12 @@
 | Inference Lease／generation | Dynamo 终结、旧身份拒收和容量回收 | [Rust finalize](../integrations/dynamo/files/lib/router-plugins/builtin/src/thunderagent/execution_control.rs#L409) |
 
 外部服务执行成功、协调器尚未收到结果时，系统保存 `OUTCOME_UNKNOWN` 并保持闭闸，通过目标服务的幂等键或结果查询完成对账。Exactly-Once 外部副作用需要目标服务参与；确定性恢复来自持久回执、身份围栏和明确的未知状态处理。
+
+### 两阶段发布的实际状态名
+
+Go 在外部快照操作前持久化 `LifecycleReceipt.status=RUNNING` 与快照账本 `PENDING` 意图，随后核验 durable Tag，原子发布 `Manifest.state=COMMITTED` 和 `LifecycleReceipt.status=COMPLETED`。DeerFlow 图与沙箱绑定使用 `PREPARED → COMMITTED`，核对图摘要、连续工具回执、Actor UID、epoch 和 Tag 来源。设计中的 PREPARING 阶段对应这些准备意图；源码状态名分别按所属账本引用。
+
+[Go 准备意图](../internal/control/controller.go#L753) · [Go 提交](../internal/control/controller.go#L900) · [图绑定准备](../adapters/deerflow/checkpoint_manifest.py#L51) · [图绑定提交](../adapters/deerflow/checkpoint_manifest.py#L83)
 
 ### 安全点排空超时的处理
 
@@ -91,6 +97,14 @@ research 未知分支晚完成 **45/48 次**，对应已覆盖 Worker 样本的 
 
 **磁盘包络决定高工作集实验的完成边界。** 正式 128 MiB／3 s 使用相同 2,400 s 预算，三个 TTL2 trial 在完成 370／371／372 个请求后触发 6 GiB 磁盘保护。v2 在 7401 完成 384/384，7402／7403 因前序协议清理失败而未投递。各 TTL2 trial 保留 434～436 个独立快照 Tag，物理资源最终全部销毁。三个坐标合计 13/18 trial、6,105/6,912 请求，九组集群清理通过；高工作集性能结论保留双边样本完整性要求。[原始失败链与清理](evidence/boundary-confirm-storage-a7e324a.json) · [全部确认与边界](V2_EVALUATION.md#三种子边界确认)
 
+### 三项性能边界与归因
+
+**Gate 2，N64／16 MiB：驻留复用与首次准入公平性。** 64 会话竞争 4 个 Warm 槽位，超额订阅为 16:1。v2 相对 TTL2 的 Actor 预留差为 −3.746 GB·s，95% 区间 [−12.191, +4.699] 跨零；交互 P95 增加 18.836 s，区间 [+9.087, +27.482]。Runner 的 [FairSlots.acquire](../bench/scale.py#L146)先授予槽位，[resume](../bench/scale.py#L342)随后登记 ReturnDemand；[HoldingRate](../internal/control/scheduler_v2.go#L191)使用已经登记的返回需求，首次排队压力尚未完整进入 KEEP 成本。已有会话驻留复用延长后到会话的首次等待。Gate 2 中双方平均恢复次数均为 224，v2 累计恢复耗时另增加 116.221 s；资源均值下降、恢复代价和前置公平性共同解释实测取舍。少恢复的直接证据来自 64 MiB／3 s 边界，该坐标 v2 首轮排队占累计 TTFT 的 98.733%。[正式数据](evidence/gate2-a7e324a-summary.json) · [边界逐轮分解](evidence/boundary-confirm-a7e324a-summary.json)
+
+**TTL2，128 MiB／3 s：快照频率与磁盘容量约束。** TTL2 在 16 MiB 的低恢复成本负载中是强基线；128 MiB 下三个 trial 各产生 434／435／436 个 Tag，包含各 64 个初始化恢复点，随后触发 6 GiB 磁盘余量保护。完整尾部样本约为 163～168 MiB/快照，逐 trial 以 Tag 数乘样本范围外推，累计逻辑快照量约 **69.1～71.5 GiB**，体现频繁快照形成的逻辑写入放大。物理写入、压缩峰值及写放大比值的采集状态为 `uncollected_in_ci_runner (see 128MiB boundary report)`。v2 的成本迟滞减少高成本快照频率，K=2 GC 控制恢复点保留量；已发生的累计写入继续单独计量。三个边界坐标合计 **13/18 trial**；其中 128 MiB 坐标为 **1/6** 完整通过、三个 TTL2 失败、两个 v2 被前序清理阻断。[失败账本](evidence/boundary-confirm-storage-a7e324a.json) · [逻辑估算与物理采集状态](STORAGE_COSTS.md)
+
+**公开 TraceLab：单轮窗口占 79%，二轮复用机会有限。** 33 个合格窗口中，**26 个仅含一次模型调用，26/33＝78.8%（约 79%）**，其余七个为多轮。v2 的短暂 KEEP 面向连续交互，单轮结束的窗口没有第二轮可复用，因此更容易体现驻留和首次准入成本。四策略全部完成 192/192 请求；v2／TTL2 累计 Tag 为 99／105，总 Actor 预留增加 1.4%，交互 P95 增加 26.4%。这组结果覆盖八个贡献者 family、同 Runner 单次配对；源码路径与样本结构支持上述机制解释，单因素因果贡献保持为未采集状态。[样本分布与原文](evidence/public-traces/runs/42858419910/live-replay.json) · [公开汇总](evidence/release-metrics.json)
+
 ### v2 与 TTL2 的帕累托取舍
 
 “TTL2 是有力的短等待基线。Gate 2 N32 中，v2 节省 8.129 GB·s，P95 配对区间跨零；N64 中，P95 增加 18.836 秒有区间支持。两者在 Gate 2 的快照次数相同。高工作集下，64 MiB／3 s 的 v2 快照均值降到 207.333，TTL2 为 448，同时 v2 首次准入更慢。我的结论同时保留资源、尾延迟与快照频率，按业务 SLO 和恢复成本选择适用区域。”
@@ -103,7 +117,7 @@ research 未知分支晚完成 **45/48 次**，对应已覆盖 Worker 样本的 
 
 ### 为什么 GB·s 之外还要记录快照成本
 
-“快速挂起可以降低驻留，却增加快照持久化与恢复。完整成本是 Actor GB·s、快照 Tag 数、物理写入字节、峰值存储和恢复延迟的向量。128 MiB 的 TTL2 保留 434～436 个 Tag 后触发磁盘保护，7401 的 v2 为 199 个并完成全部请求。历史物理 I/O 缺测字段保留 null，压缩前逻辑日志单列。生产 Tag GC 默认保留最近两个已验证 COMMITTED 点，保护当前与未知操作引用，通过 UID/version 围栏、持久删除意图和退避处理失败。GC 控制保留占用，快照次数继续反映累计写入压力。”
+“快速挂起可以降低驻留，却增加快照持久化与恢复。完整成本是 Actor GB·s、快照 Tag 数、物理写入字节、峰值存储和恢复延迟的向量。128 MiB 的 TTL2 保留 434～436 个 Tag 后触发磁盘保护，7401 的 v2 为 199 个并完成全部请求。物理 I/O 采集状态为 uncollected_in_ci_runner；按完整日志样本外推的累计逻辑快照量约 69.1～71.5 GiB，压缩前逻辑样本和估算公式单列。生产 Tag GC 默认保留最近两个已验证 COMMITTED 点，保护当前与未知操作引用，通过 UID/version 围栏、持久删除意图和退避处理失败。GC 控制保留占用，快照次数继续反映累计写入压力。”
 
 [成本定义与所有分母](STORAGE_COSTS.md) · [GC 引用保护](../internal/control/snapshot_gc.go#L180) · [删除前持久声明](../internal/control/snapshot_gc.go#L412)
 

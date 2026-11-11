@@ -2,6 +2,14 @@
 
 真实模型、规模调度、故障恢复与资源热力图分别保存原始证据。Azure CPA 的真实 `gpt-6-luna` 已完成两类 Agent 功能任务；规模与故障矩阵由独立 GitHub Actions 执行，当前运行结果由 [STATUS](STATUS.md)索引。
 
+## 三项性能边界与归因
+
+**Gate 2，N64／16 MiB：驻留复用与首次准入公平性。** 64 会话竞争 4 个 Warm 槽位，超额订阅为 16:1。v2 相对 TTL2 的 Actor 预留差为 −3.746 GB·s，95% 区间 [−12.191, +4.699] 跨零；交互 P95 增加 18.836 s，区间 [+9.087, +27.482]。Runner 的 [FairSlots.acquire](../bench/scale.py#L146)先授予槽位，[resume](../bench/scale.py#L342)随后登记 ReturnDemand；[HoldingRate](../internal/control/scheduler_v2.go#L191)使用已经登记的返回需求，首次排队压力尚未完整进入 KEEP 成本。已有会话驻留复用延长后到会话的首次等待。Gate 2 中双方平均恢复次数均为 224，v2 累计恢复耗时另增加 116.221 s；资源均值下降、恢复代价和前置公平性共同解释实测取舍。少恢复的直接证据来自 64 MiB／3 s 边界，该坐标 v2 首轮排队占累计 TTFT 的 98.733%。[正式数据](evidence/gate2-a7e324a-summary.json) · [边界逐轮分解](evidence/boundary-confirm-a7e324a-summary.json)
+
+**TTL2，128 MiB／3 s：快照频率与磁盘容量约束。** TTL2 在 16 MiB 的低恢复成本负载中是强基线；128 MiB 下三个 trial 各产生 434／435／436 个 Tag，包含各 64 个初始化恢复点，随后触发 6 GiB 磁盘余量保护。完整尾部样本约为 163～168 MiB/快照，逐 trial 以 Tag 数乘样本范围外推，累计逻辑快照量约 **69.1～71.5 GiB**，体现频繁快照形成的逻辑写入放大。物理写入、压缩峰值及写放大比值的采集状态为 `uncollected_in_ci_runner (see 128MiB boundary report)`。v2 的成本迟滞减少高成本快照频率，K=2 GC 控制恢复点保留量；已发生的累计写入继续单独计量。三个边界坐标合计 **13/18 trial**；其中 128 MiB 坐标为 **1/6** 完整通过、三个 TTL2 失败、两个 v2 被前序清理阻断。[失败账本](evidence/boundary-confirm-storage-a7e324a.json) · [逻辑估算与物理采集状态](STORAGE_COSTS.md)
+
+**公开 TraceLab：单轮窗口占 79%，二轮复用机会有限。** 33 个合格窗口中，**26 个仅含一次模型调用，26/33＝78.8%（约 79%）**，其余七个为多轮。v2 的短暂 KEEP 面向连续交互，单轮结束的窗口没有第二轮可复用，因此更容易体现驻留和首次准入成本。四策略全部完成 192/192 请求；v2／TTL2 累计 Tag 为 99／105，总 Actor 预留增加 1.4%，交互 P95 增加 26.4%。这组结果覆盖八个贡献者 family、同 Runner 单次配对；源码路径与样本结构支持上述机制解释，单因素因果贡献保持为未采集状态。[样本分布与原文](evidence/public-traces/runs/42858419910/live-replay.json) · [公开汇总](evidence/release-metrics.json)
+
 ## 真实模型 Agent
 
 | 任务 | 实际执行 | 恢复与正确性 |
@@ -51,19 +59,19 @@ N64/7101 的完整四策略独立验证完成 **1,536/1,536 请求、3/4 trial**
 
 ### 驻留、快照与持久化成本
 
-[完整存储核算](evidence/snapshot-storage-a7e324a.json)按 COMMITTED manifest 的 retained Tag UID 去重，与实际清理回执逐项核验。快照数含初始恢复点；均值采用已执行且可观测的 trial，未投递 trial 的存储指标为 `null`，计划请求分母完整保留。
+[完整存储核算](evidence/snapshot-storage-a7e324a.json)按 COMMITTED manifest 的 retained Tag UID 去重，与实际清理回执逐项核验。快照数含初始恢复点；均值采用已执行且可观测的 trial，未投递 trial 的存储指标标为 `not_executed_after_cleanup_failure`，计划请求分母完整保留。
 
 | 负载与样本 | v2／TTL2 Actor GB·s | v2／TTL2 快照 Tag 数 | `snapshot_write_bytes` | `peak_storage_bytes` |
 | --- | ---: | ---: | --- | --- |
-| Gate 2 N32，五个完整种子对 | 212.070／220.199 | 144／144 | `null` | `null` |
-| Gate 2 N64，五个完整种子对 | 420.748／424.494 | 288／288 | `null` | `null` |
-| N64，16 MiB／1 s，三个完整种子对 | 461.271／442.879 | 128.667／131 | `null` | `null` |
-| N64，64 MiB／3 s，三个完整种子对 | 680.986／748.890 | 207.333／448 | `null` | `null` |
-| N64，128 MiB／3 s，7401 实际执行 | 逐 trial 保留 | 199／434 | `null` | `null` |
+| Gate 2 N32，五个完整种子对 | 212.070／220.199 | 144／144 | 未采集（U） | 未采集（U） |
+| Gate 2 N64，五个完整种子对 | 420.748／424.494 | 288／288 | 未采集（U） | 未采集（U） |
+| N64，16 MiB／1 s，三个完整种子对 | 461.271／442.879 | 128.667／131 | 未采集（U） | 未采集（U） |
+| N64，64 MiB／3 s，三个完整种子对 | 680.986／748.890 | 207.333／448 | 未采集（U） | 未采集（U） |
+| N64，128 MiB／3 s，7401 实际执行 | 逐 trial 保留 | 199／434 | 未采集（U） | 未采集（U） |
 
 Gate 2 中 v2 与 TTL2 的快照次数相同。64 MiB／3 s 的 v2 复用减少平均 240.667 个快照，资源节省与首次准入尾延迟同时报告。128 MiB 的 TTL2 三个 trial 创建 434／435／436 个 Tag，各含 64 个初始恢复点，运行阶段分别创建 370／371／372 个；7401 的 v2 创建 199 个 Tag，其中 135 个位于初始化之后。该种子的 v2 完成 384/384 请求，TTL2 完成 370/384，另外两种子的 v2 保留未投递状态。
 
-atelet 有界日志尾部记录的完整快照逻辑大小约 163～168 MiB，指标 `snapshot_logical_upload_bytes_observed` 附来源和覆盖。历史试验的完整物理写入量、压缩占用峰值和写放大比值保持 `null`，物理 I/O 降幅随相应实测证据报告。当前恢复点轮转治理与冻结实验的保留行为分别归档。[指标定义与 Tag GC](STORAGE_COSTS.md)
+atelet 有界日志尾部记录的完整快照逻辑大小约 163～168 MiB，指标 `snapshot_logical_upload_bytes_observed` 附来源和覆盖。表中 U 表示 `uncollected_in_ci_runner (see 128MiB boundary report)`：完整物理写入量、压缩占用峰值和物理写放大比值未采集；约 70 GiB 的累计逻辑估算另列于存储报告。当前恢复点轮转治理与冻结实验的保留行为分别归档。[指标定义与 Tag GC](STORAGE_COSTS.md)
 
 
 ## 公开真实轨迹的数据规格
@@ -111,7 +119,7 @@ atelet 有界日志尾部记录的完整快照逻辑大小约 163～168 MiB，�
 | 三请求避免的 Re-prefill Token | 720 | 0 |
 | Prefill 中位数 ms | 8.992 | 9.213 |
 
-`X-Dynamo-Session-ID` 保持同一活跃绑定跨 Actor epoch 的会话身份，Inference Lease 随执行代次轮转。上述 GPU 数据来自单 Worker 的热缓存与驱逐对账；跨 Actor Suspend／Resume 的 GPU 命中率及会话身份消融在汇总中为 `null`／未采集。原生 CPU Mocker 的一个 Program 在 SUSPENDED 时将 acting 配额从 708 降至 0，恢复后为 708，实际释放 708 个逻辑配额 Token；该量与物理命中 Token 分别计量。
+`X-Dynamo-Session-ID` 保持同一活跃绑定跨 Actor epoch 的会话身份，Inference Lease 随执行代次轮转。上述 GPU 数据来自单 Worker 的热缓存与驱逐对账；跨 Actor Suspend／Resume 的物理 GPU 命中率消融状态为 `not_collected_cross_suspend_resume_gpu`。原生 CPU Mocker 的一个 Program 在 SUSPENDED 时将 acting 配额从 708 降至 0，恢复后为 708，实际释放 708 个逻辑配额 Token；该量与物理命中 Token 分别计量。
 
 ### KV 驻留与重算延迟的反转
 
