@@ -1,0 +1,3056 @@
+{
+  "trial_id": "growth-B",
+  "group": "growth",
+  "status": "passed",
+  "started_at": "2026-11-11T09:13:07.019008+00:00",
+  "execution_feedback_source": "real_agentcloud_coordinator",
+  "model_request_origin": "external_test_driver",
+  "before": {
+    "quiesce_retry_after": "0001-01-01T00:00:00Z",
+    "idle_since": "2026-11-11T09:13:06.84963326Z",
+    "running_since": "2026-11-11T09:13:05.3890476Z",
+    "last_resumed_at": "2026-11-11T09:13:05.3890476Z",
+    "tenant_id": "tenant-a",
+    "workspace_id": "lkv-22c09eabde154c6abf24",
+    "session_id": "lkv-22c09eabde154c6abf24",
+    "mode": "external",
+    "profile": "coding",
+    "ablation_group": "E",
+    "state": "RUNNING",
+    "gate": "OPEN",
+    "epoch": 7,
+    "barrier_generation": 12,
+    "receipt_watermark": 14,
+    "next_receipt": 14,
+    "signal_sequence": 65,
+    "actor": {
+      "assigned_worker": "bcd59cf1-7bd8-4471-9259-9ccf952fd8b7",
+      "assigned_memory_bytes": 268435456,
+      "name": "ac-lkv-22c09eabde154c6abf24",
+      "uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+      "version": 33,
+      "snapshot_uuid": "ba1a307e-d3c0-4b86-8430-5317112d5e15",
+      "snapshot_generation": 6,
+      "actual_fidelity": "MEMORY",
+      "boot_id": "36118d20e05cf48c82449eb2c1fd3a4a",
+      "retained_tag": "ac-snapshot-ce036c0e9972822be4b3d8b8",
+      "retained_tag_uid": "eafd03a8-8840-479e-a7f6-9a76301e10ed",
+      "snapshot_fidelity": "MEMORY"
+    },
+    "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+    "backend": "substrate",
+    "actual_fidelity": "MEMORY",
+    "active_tools": 0,
+    "tools": {
+      "install-memory-probe": {
+        "tool_op_id": "install-memory-probe",
+        "epoch": 1,
+        "status": "COMPLETED",
+        "payload_hash": "159593e4bb00f7a3c9374372af064279739af7406043fa8ae7feabf1729e4ea1",
+        "receipt_seq": 1,
+        "result": {
+          "content": "\"\"\"Four deterministic workloads and a persistent RAM probe inside a gVisor Actor.\"\"\"\nimport argparse\nimport ast\nimport csv\nimport hashlib\nimport http.server\nimport io\nimport json\nimport os\nfrom pathlib import Path\nimport resource\nimport subprocess\nimport sys\nimport threading\nimport time\nimport urllib.request\nimport uuid\n\nPORT = 18771\n\n\ndef random_heap(mib):\n    # Fill the retained allocation directly: initialization has no second full-size copy.\n    heap = bytearray(mib * 2**20)\n    view = memoryview(heap)\n    with open('/dev/urandom', 'rb', buffering=0) as source:\n        offset = 0\n        while offset < len(view):\n            count = source.readinto(view[offset:])\n            if not count:\n                raise OSError('random source ended before every RAM page was initialized')\n            offset += count\n    return heap\n\n\ndef memory_server(mib):\n    # Random data materializes every page and exercises snapshot transfer cost.\n    heap = random_heap(mib)\n    tree = ast.parse('def value(x):\\n    return x * 7 + 11\\n')\n    nonce = uuid.uuid4().hex\n    context = {'turns': 0, 'workspace_nonce': nonce}\n\n    class Handler(http.server.BaseHTTPRequestHandler):\n        def do_GET(self):\n            if self.path == '/advance':\n                context['turns'] += 1\n            body = json.dumps(dict(nonce=nonce, pid=os.getpid(), heap_bytes=len(heap),\n                heap_sha256=hashlib.sha256(heap).hexdigest(), ast_identity=id(tree),\n                ast_sha256=hashlib.sha256(ast.dump(tree).encode()).hexdigest(), context=context,\n                max_rss_kib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)).encode()\n            self.send_response(200)\n            self.send_header('Content-Type', 'application/json')\n            self.send_header('Content-Length', str(len(body)))\n            self.end_headers()\n            self.wfile.write(body)\n\n        def log_message(self, *_):\n            pass\n\n    http.server.HTTPServer(('127.0.0.1', PORT), Handler).serve_forever()\n\n\ndef proof(advance=False):\n    with urllib.request.urlopen(f'http://127.0.0.1:{PORT}/'+('advance' if advance else 'proof'), timeout=10) as response:\n        return json.load(response)\n\n\ndef start_memory(mib):\n    try:\n        return proof()\n    except OSError:\n        pass\n    with open('memory-probe.log', 'ab', buffering=0) as log:\n        subprocess.Popen([sys.executable, str(Path(__file__).resolve()), 'memory', '--memory-mib', str(mib)],\n                         stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)\n    deadline = time.monotonic()+15\n    while time.monotonic() < deadline:\n        try:\n            return proof()\n        except OSError:\n            time.sleep(.05)\n    raise RuntimeError('Actor RAM probe did not become ready')\n\n\ndef workload(kind, seed, turn):\n    begin = time.perf_counter()\n    directory = Path(f'round-{turn}')\n    directory.mkdir(exist_ok=True)\n    if kind == 'coding':\n        modules = []\n        for m in range(8):\n            text = '\\n'.join(f'def f{i}(x):\\n    return (x * {i+1} + {seed}) % 1000003' for i in range(256))\n            path = directory/f'module{m}.py'\n            path.write_text(text)\n            modules.append(path)\n        subprocess.run([sys.executable, '-m', 'compileall', '-q', str(directory)], check=True)\n        namespace = {}\n        exec(compile(modules[0].read_text(), str(modules[0]), 'exec'), namespace)\n        assert namespace['f3'](13) == (52+seed) % 1000003\n        result = dict(kind='multi-file-python-compilation', modules=len(modules), functions=2048,\n                      test_assertions=1, compiled_files=len(list(directory.rglob('*.pyc'))))\n    elif kind == 'research':\n        articles = [(f'source={seed}:{i}\\n'+'research evidence data\\n'*4096).encode() for i in range(8)]\n\n        class Source(http.server.BaseHTTPRequestHandler):\n            def do_GET(self):\n                time.sleep(.025)\n                data = articles[int(self.path[1:])]\n                self.send_response(200)\n                self.send_header('Content-Length', str(len(data)))\n                self.end_headers()\n                self.wfile.write(data)\n\n            def log_message(self, *_):\n                pass\n\n        server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Source)\n        thread = threading.Thread(target=server.serve_forever, kwargs={'poll_interval': .01}, daemon=True)\n        thread.start()\n        try:\n            retrieved = []\n            for i in range(len(articles)):\n                with urllib.request.urlopen(f'http://127.0.0.1:{server.server_port}/{i}', timeout=5) as response:\n                    content = response.read()\n                assert content == articles[i]\n                (directory/f'source-{i}.txt').write_bytes(content)\n                retrieved.append(content)\n        finally:\n            server.shutdown()\n            server.server_close()\n            thread.join()\n        result = dict(kind='http-research-and-source-verification', documents=8,\n                      bytes_read=sum(map(len, retrieved)), source='Actor-local controlled HTTP fixture',\n                      per_document_service_delay_seconds=.025,\n                      corpus_sha256=hashlib.sha256(b''.join(retrieved)).hexdigest())\n    elif kind == 'batch':\n        expected = 0\n        for batch in range(16):\n            rows = [(batch*256+i, (i+seed) % 997) for i in range(256)]\n            expected += sum(value for _, value in rows)\n            with (directory/f'batch-{batch}.csv').open('w') as handle:\n                csv.writer(handle).writerows(rows)\n                handle.flush()\n                os.fsync(handle.fileno())\n        actual = 0\n        for path in directory.glob('*.csv'):\n            with path.open() as handle:\n                actual += sum(int(row[1]) for row in csv.reader(handle))\n        assert actual == expected\n        result = dict(kind='fsync-csv-batch-and-aggregation', files=16, rows=4096, checksum=actual)\n    elif kind == 'interactive':\n        data = {'workspace': seed, 'round': turn, 'items': [{'price': i+1, 'quantity': 2} for i in range(20)]}\n        (directory/'request.json').write_text(json.dumps(data))\n        parsed = json.loads((directory/'request.json').read_text())\n        total = sum(item['price']*item['quantity'] for item in parsed['items'])\n        assert total == 420\n        result = dict(kind='interactive-file-query', items=20, total=total)\n    else:\n        raise ValueError(kind)\n    result.update(wall_seconds=time.perf_counter()-begin, seed=seed, turn=turn, ram=proof(True))\n    (directory/'receipt.json').write_text(json.dumps(result))\n    return result\n\n\ndef main():\n    parser = argparse.ArgumentParser(description=__doc__)\n    parser.add_argument('action', choices=['start', 'memory', 'proof', 'work'])\n    parser.add_argument('--memory-mib', type=int, default=16)\n    parser.add_argument('--kind', choices=['coding', 'research', 'batch', 'interactive'], default='coding')\n    parser.add_argument('--seed', type=int, default=7101)\n    parser.add_argument('--turn', type=int, default=0)\n    args = parser.parse_args()\n    if args.memory_mib < 1 or args.memory_mib > 1024:\n        parser.error('memory working set must be within 1..1024 MiB')\n    if args.action == 'memory':\n        memory_server(args.memory_mib)\n        return\n    result = start_memory(args.memory_mib) if args.action == 'start' else proof() if args.action == 'proof' else workload(args.kind, args.seed, args.turn)\n    print(json.dumps(result))\n\n\nif __name__ == '__main__':\n    main()\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:00.477153692Z",
+        "started_at": "2026-11-11T09:12:30.477153521Z",
+        "finished_at": "2026-11-11T09:12:30.506697143Z"
+      },
+      "pair-00-B-ram-after": {
+        "tool_op_id": "pair-00-B-ram-after",
+        "epoch": 2,
+        "status": "COMPLETED",
+        "payload_hash": "165db8d67d0e7d7b35089c3a16601162edab96dc13ceb92737133242342fd34e",
+        "receipt_seq": 4,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:09.237062404Z",
+        "started_at": "2026-11-11T09:12:39.237061883Z",
+        "finished_at": "2026-11-11T09:12:40.581755319Z"
+      },
+      "pair-00-B-ram-before": {
+        "tool_op_id": "pair-00-B-ram-before",
+        "epoch": 1,
+        "status": "COMPLETED",
+        "payload_hash": "111e6292f399d224f4d86e07b0ae136667b8f255a7442f8ea25ca2bad9ef1a1a",
+        "receipt_seq": 3,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:04.963687684Z",
+        "started_at": "2026-11-11T09:12:34.963687644Z",
+        "finished_at": "2026-11-11T09:12:36.351859348Z"
+      },
+      "pair-00-C-ram-after": {
+        "tool_op_id": "pair-00-C-ram-after",
+        "epoch": 3,
+        "status": "COMPLETED",
+        "payload_hash": "9edf6453958ff38177ea4fe396782e8a1467dd72cd8f4f3b9b3c30698769c73f",
+        "receipt_seq": 6,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:14.642589948Z",
+        "started_at": "2026-11-11T09:12:44.642589908Z",
+        "finished_at": "2026-11-11T09:12:45.911040173Z"
+      },
+      "pair-00-C-ram-before": {
+        "tool_op_id": "pair-00-C-ram-before",
+        "epoch": 2,
+        "status": "COMPLETED",
+        "payload_hash": "30470e71a8b021876dbc201b6dbfd6e9203af393a4b578a77f2cbd007079955a",
+        "receipt_seq": 5,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:10.641662898Z",
+        "started_at": "2026-11-11T09:12:40.641662848Z",
+        "finished_at": "2026-11-11T09:12:41.881582019Z"
+      },
+      "pair-01-B-ram-after": {
+        "tool_op_id": "pair-01-B-ram-after",
+        "epoch": 4,
+        "status": "COMPLETED",
+        "payload_hash": "b7aaa58c8e550d9cad4c790974ff0a8bf4e0e167c4d750f9985dcb369daf1fd6",
+        "receipt_seq": 8,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:19.699636125Z",
+        "started_at": "2026-11-11T09:12:49.699636075Z",
+        "finished_at": "2026-11-11T09:12:51.003948214Z"
+      },
+      "pair-01-B-ram-before": {
+        "tool_op_id": "pair-01-B-ram-before",
+        "epoch": 3,
+        "status": "COMPLETED",
+        "payload_hash": "6242d8488544e3936a98bc21c6f7232e364cb716f55e510ca8d4e38cbfa50bf4",
+        "receipt_seq": 7,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:15.984696813Z",
+        "started_at": "2026-11-11T09:12:45.984696763Z",
+        "finished_at": "2026-11-11T09:12:47.213307814Z"
+      },
+      "pair-01-C-ram-after": {
+        "tool_op_id": "pair-01-C-ram-after",
+        "epoch": 5,
+        "status": "COMPLETED",
+        "payload_hash": "9724e50bfefcc75b40e46205af122ba41c7dbefade0b9cb29e0bf1ae866f65de",
+        "receipt_seq": 10,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:25.155839083Z",
+        "started_at": "2026-11-11T09:12:55.155839032Z",
+        "finished_at": "2026-11-11T09:12:56.409073553Z"
+      },
+      "pair-01-C-ram-before": {
+        "tool_op_id": "pair-01-C-ram-before",
+        "epoch": 4,
+        "status": "COMPLETED",
+        "payload_hash": "cfd1f074cd0a9b77d2c84af1813d75fe76e528016d1de49b4539db7381b1a5f6",
+        "receipt_seq": 9,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:21.112844915Z",
+        "started_at": "2026-11-11T09:12:51.112844865Z",
+        "finished_at": "2026-11-11T09:12:52.396673118Z"
+      },
+      "pair-02-B-ram-after": {
+        "tool_op_id": "pair-02-B-ram-after",
+        "epoch": 6,
+        "status": "COMPLETED",
+        "payload_hash": "c2291f407248fde0c7ff58a5d4654b3eb43c2eff7c0d88bf24a2ed2f170e5354",
+        "receipt_seq": 12,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:30.047870341Z",
+        "started_at": "2026-11-11T09:13:00.047870301Z",
+        "finished_at": "2026-11-11T09:13:01.312760784Z"
+      },
+      "pair-02-B-ram-before": {
+        "tool_op_id": "pair-02-B-ram-before",
+        "epoch": 5,
+        "status": "COMPLETED",
+        "payload_hash": "ff46b66338cf1f5fe319b359e1aaa5a31c1604c52e17bb7df6aacf30369c5f8d",
+        "receipt_seq": 11,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:26.511330534Z",
+        "started_at": "2026-11-11T09:12:56.511330494Z",
+        "finished_at": "2026-11-11T09:12:57.708318165Z"
+      },
+      "pair-02-C-ram-after": {
+        "tool_op_id": "pair-02-C-ram-after",
+        "epoch": 7,
+        "status": "COMPLETED",
+        "payload_hash": "27cf059dbf6a8d85d5294a2d880eb53f7282d26c793485c7acdc29e5fc89b867",
+        "receipt_seq": 14,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:35.435356771Z",
+        "started_at": "2026-11-11T09:13:05.435356721Z",
+        "finished_at": "2026-11-11T09:13:06.849633791Z"
+      },
+      "pair-02-C-ram-before": {
+        "tool_op_id": "pair-02-C-ram-before",
+        "epoch": 6,
+        "status": "COMPLETED",
+        "payload_hash": "c8537b10e415fcba32a5c98da822f9176d7aa0332a9eeaac40d77b1f1afcab30",
+        "receipt_seq": 13,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:31.431086021Z",
+        "started_at": "2026-11-11T09:13:01.431085961Z",
+        "finished_at": "2026-11-11T09:13:02.593203954Z"
+      },
+      "start-memory-probe": {
+        "tool_op_id": "start-memory-probe",
+        "epoch": 1,
+        "status": "COMPLETED",
+        "payload_hash": "23ffdf7c1ccf97f94a86e0f2880244b97a4232771e4e021a61406aac6f1a5e21",
+        "receipt_seq": 2,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:12:50.514429115Z",
+        "started_at": "2026-11-11T09:12:30.514429065Z",
+        "finished_at": "2026-11-11T09:12:34.952838234Z"
+      }
+    },
+    "lifecycle": {
+      "pair-00-B-resume": {
+        "operation_id": "pair-00-B-resume",
+        "action": "resume",
+        "epoch": 1,
+        "payload_hash": "229ebe219dfd0794bb824b853294eae3dfe361b28e7ff69a286cfd2efecbf098",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:38.832833285Z",
+        "retry_after": "0001-01-01T00:00:00Z"
+      },
+      "pair-00-B-suspend": {
+        "operation_id": "pair-00-B-suspend",
+        "action": "suspend",
+        "epoch": 1,
+        "payload_hash": "b4a3f9d459e0a3e76d95e76a098d0971602fde576e766b58f4ccbf557d3d3313",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:36.403456444Z",
+        "retry_after": "0001-01-01T00:00:00Z",
+        "manifest": {
+          "manifest_id": "dc45ff0a7d99e2aa3e926fb34eea5bf5",
+          "state": "COMMITTED",
+          "epoch": 1,
+          "barrier_generation": 1,
+          "receipt_watermark": 3,
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "a1395db5-53f4-4393-be44-21c644b5e1d3",
+          "snapshot_generation": 1,
+          "fidelity": "MEMORY",
+          "retained_tag": "ac-snapshot-51fdd6fb2b8acb9b91122e3f",
+          "retained_tag_uid": "cf33ee9b-ac9a-4eef-b152-d29ea217d293",
+          "created_at": "2026-11-11T09:12:38.493875497Z"
+        }
+      },
+      "pair-00-C-resume": {
+        "operation_id": "pair-00-C-resume",
+        "action": "resume",
+        "epoch": 2,
+        "payload_hash": "bb2109cfe97a66709e36543a89e7ea4228a3acc64be5eb083f3877067cb7d392",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:44.357228703Z",
+        "retry_after": "0001-01-01T00:00:00Z"
+      },
+      "pair-00-C-suspend": {
+        "operation_id": "pair-00-C-suspend",
+        "action": "suspend",
+        "epoch": 2,
+        "payload_hash": "bfc284c912e7aaf533abc1565adf9454dc10d20e42302fd33a22062834f87433",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:41.93594757Z",
+        "retry_after": "0001-01-01T00:00:00Z",
+        "manifest": {
+          "manifest_id": "31a90214cb94a701418c8a9f25cd1834",
+          "state": "COMMITTED",
+          "epoch": 2,
+          "barrier_generation": 3,
+          "receipt_watermark": 5,
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "558da4fe-0189-4a6f-bf07-38782304e8dc",
+          "snapshot_generation": 2,
+          "fidelity": "MEMORY",
+          "retained_tag": "ac-snapshot-361f84f58e9649243580bf47",
+          "retained_tag_uid": "fc8049cb-a733-4797-b208-94e287745353",
+          "created_at": "2026-11-11T09:12:43.661446559Z"
+        }
+      },
+      "pair-01-B-resume": {
+        "operation_id": "pair-01-B-resume",
+        "action": "resume",
+        "epoch": 3,
+        "payload_hash": "ddef082347f4e541421ebe896e1d064e35c1c6048b591f4b031ab1ab919af5ef",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:49.409102668Z",
+        "retry_after": "0001-01-01T00:00:00Z"
+      },
+      "pair-01-B-suspend": {
+        "operation_id": "pair-01-B-suspend",
+        "action": "suspend",
+        "epoch": 3,
+        "payload_hash": "58c82da7554c69207b1f331f55f01e41774a4c17655e681aef63a881fa9b4895",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:47.273099157Z",
+        "retry_after": "0001-01-01T00:00:00Z",
+        "manifest": {
+          "manifest_id": "c2ec9e7b5df69408cbab122f25361526",
+          "state": "COMMITTED",
+          "epoch": 3,
+          "barrier_generation": 5,
+          "receipt_watermark": 7,
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "925fcebd-e4ca-448a-b199-0eee35543d53",
+          "snapshot_generation": 3,
+          "fidelity": "MEMORY",
+          "retained_tag": "ac-snapshot-0c9fa230da1e7998b779bda1",
+          "retained_tag_uid": "d39b1661-07a9-41f3-ad02-41cc7c0f5847",
+          "created_at": "2026-11-11T09:12:49.06482234Z"
+        }
+      },
+      "pair-01-C-resume": {
+        "operation_id": "pair-01-C-resume",
+        "action": "resume",
+        "epoch": 4,
+        "payload_hash": "105e5a109937183983a98f1a4228f1d3128887f4e0d7c509e3099128e56204a0",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:54.595537995Z",
+        "retry_after": "0001-01-01T00:00:00Z"
+      },
+      "pair-01-C-suspend": {
+        "operation_id": "pair-01-C-suspend",
+        "action": "suspend",
+        "epoch": 4,
+        "payload_hash": "a94c61b1fe5f681ebd6b73929ce5613a66d467a51739e3d5ee40c9ac8fa470eb",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:52.463422536Z",
+        "retry_after": "0001-01-01T00:00:00Z",
+        "manifest": {
+          "manifest_id": "af44b11d8e496bceb9831ed890daec54",
+          "state": "COMMITTED",
+          "epoch": 4,
+          "barrier_generation": 7,
+          "receipt_watermark": 9,
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "377d0c43-6ba0-47f7-a689-dde5c2a96f48",
+          "snapshot_generation": 4,
+          "fidelity": "MEMORY",
+          "retained_tag": "ac-snapshot-da7d92797733f26281786a4b",
+          "retained_tag_uid": "9f05b749-c0ad-4972-b8ec-4f196b8a313c",
+          "created_at": "2026-11-11T09:12:53.929483208Z"
+        }
+      },
+      "pair-02-B-resume": {
+        "operation_id": "pair-02-B-resume",
+        "action": "resume",
+        "epoch": 5,
+        "payload_hash": "1cc16e15e7b7e89ca4d94867795ea1b10d0277e82811082a2a3201ed935449e5",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:59.700394197Z",
+        "retry_after": "0001-01-01T00:00:00Z"
+      },
+      "pair-02-B-suspend": {
+        "operation_id": "pair-02-B-suspend",
+        "action": "suspend",
+        "epoch": 5,
+        "payload_hash": "4327f83f82579dbe60987b7f30f7ab2cbbede00dde020f1ae70c60e4c139cb12",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:57.778902261Z",
+        "retry_after": "0001-01-01T00:00:00Z",
+        "manifest": {
+          "manifest_id": "f8170372fdd759a85c459da4f05a2398",
+          "state": "COMMITTED",
+          "epoch": 5,
+          "barrier_generation": 9,
+          "receipt_watermark": 11,
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "7eab3a75-eef6-469c-9ad2-68cc3c4c9f77",
+          "snapshot_generation": 5,
+          "fidelity": "MEMORY",
+          "retained_tag": "ac-snapshot-bfb6c04d6897d0d6d3d652c9",
+          "retained_tag_uid": "a68b83ed-cbfe-49a9-b4c3-eb86d9a2792a",
+          "created_at": "2026-11-11T09:12:59.359391809Z"
+        }
+      },
+      "pair-02-C-resume": {
+        "operation_id": "pair-02-C-resume",
+        "action": "resume",
+        "epoch": 6,
+        "payload_hash": "b714ee38d8e470b8f2417f881064b76504ef1e811de8009d776dcaf8683eac5d",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:13:05.158046312Z",
+        "retry_after": "0001-01-01T00:00:00Z"
+      },
+      "pair-02-C-suspend": {
+        "operation_id": "pair-02-C-suspend",
+        "action": "suspend",
+        "epoch": 6,
+        "payload_hash": "57d2ade01b242198a635d20285212e8f5773de93ebff091b379d0a8aa1bee7d2",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:13:02.718855045Z",
+        "retry_after": "0001-01-01T00:00:00Z",
+        "manifest": {
+          "manifest_id": "67b5a1cfebdd438ec461d6410561748b",
+          "state": "COMMITTED",
+          "epoch": 6,
+          "barrier_generation": 11,
+          "receipt_watermark": 13,
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "ba1a307e-d3c0-4b86-8430-5317112d5e15",
+          "snapshot_generation": 6,
+          "fidelity": "MEMORY",
+          "retained_tag": "ac-snapshot-ce036c0e9972822be4b3d8b8",
+          "retained_tag_uid": "eafd03a8-8840-479e-a7f6-9a76301e10ed",
+          "created_at": "2026-11-11T09:13:04.443015644Z"
+        }
+      }
+    },
+    "manifest": {
+      "manifest_id": "67b5a1cfebdd438ec461d6410561748b",
+      "state": "COMMITTED",
+      "epoch": 6,
+      "barrier_generation": 11,
+      "receipt_watermark": 13,
+      "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+      "snapshot_uuid": "ba1a307e-d3c0-4b86-8430-5317112d5e15",
+      "snapshot_generation": 6,
+      "fidelity": "MEMORY",
+      "retained_tag": "ac-snapshot-ce036c0e9972822be4b3d8b8",
+      "retained_tag_uid": "eafd03a8-8840-479e-a7f6-9a76301e10ed",
+      "created_at": "2026-11-11T09:13:04.443015644Z"
+    },
+    "snapshot_gc": {
+      "tags": {
+        "ac-snapshot-0c9fa230da1e7998b779bda1": {
+          "operation_id": "pair-01-B-suspend",
+          "manifest_id": "c2ec9e7b5df69408cbab122f25361526",
+          "tag_name": "ac-snapshot-0c9fa230da1e7998b779bda1",
+          "tag_uid": "d39b1661-07a9-41f3-ad02-41cc7c0f5847",
+          "actor_name": "ac-lkv-22c09eabde154c6abf24",
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "925fcebd-e4ca-448a-b199-0eee35543d53",
+          "snapshot_generation": 3,
+          "state": "COMMITTED",
+          "created_at": "2026-11-11T09:12:49.06482234Z",
+          "committed_at": "2026-11-11T09:12:49.06482234Z",
+          "verified_at": "2026-11-11T09:12:53.961126629Z",
+          "delete_state": "DELETED",
+          "delete_attempts": 1,
+          "delete_started_at": "2026-11-11T09:12:59.376823651Z",
+          "deleted_at": "2026-11-11T09:12:59.443122704Z",
+          "retry_after": "0001-01-01T00:00:00Z"
+        },
+        "ac-snapshot-361f84f58e9649243580bf47": {
+          "operation_id": "pair-00-C-suspend",
+          "manifest_id": "31a90214cb94a701418c8a9f25cd1834",
+          "tag_name": "ac-snapshot-361f84f58e9649243580bf47",
+          "tag_uid": "fc8049cb-a733-4797-b208-94e287745353",
+          "actor_name": "ac-lkv-22c09eabde154c6abf24",
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "558da4fe-0189-4a6f-bf07-38782304e8dc",
+          "snapshot_generation": 2,
+          "state": "COMMITTED",
+          "created_at": "2026-11-11T09:12:43.661446559Z",
+          "committed_at": "2026-11-11T09:12:43.661446559Z",
+          "verified_at": "2026-11-11T09:12:49.085872768Z",
+          "delete_state": "DELETED",
+          "delete_attempts": 1,
+          "delete_started_at": "2026-11-11T09:12:53.96112752Z",
+          "deleted_at": "2026-11-11T09:12:54.030011854Z",
+          "retry_after": "0001-01-01T00:00:00Z"
+        },
+        "ac-snapshot-51fdd6fb2b8acb9b91122e3f": {
+          "operation_id": "pair-00-B-suspend",
+          "manifest_id": "dc45ff0a7d99e2aa3e926fb34eea5bf5",
+          "tag_name": "ac-snapshot-51fdd6fb2b8acb9b91122e3f",
+          "tag_uid": "cf33ee9b-ac9a-4eef-b152-d29ea217d293",
+          "actor_name": "ac-lkv-22c09eabde154c6abf24",
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "a1395db5-53f4-4393-be44-21c644b5e1d3",
+          "snapshot_generation": 1,
+          "state": "COMMITTED",
+          "created_at": "2026-11-11T09:12:38.493875497Z",
+          "committed_at": "2026-11-11T09:12:38.493875497Z",
+          "verified_at": "2026-11-11T09:12:38.493875497Z",
+          "delete_state": "DELETED",
+          "delete_attempts": 1,
+          "delete_started_at": "2026-11-11T09:12:49.085872848Z",
+          "deleted_at": "2026-11-11T09:12:49.286100611Z",
+          "retry_after": "0001-01-01T00:00:00Z"
+        },
+        "ac-snapshot-bfb6c04d6897d0d6d3d652c9": {
+          "operation_id": "pair-02-B-suspend",
+          "manifest_id": "f8170372fdd759a85c459da4f05a2398",
+          "tag_name": "ac-snapshot-bfb6c04d6897d0d6d3d652c9",
+          "tag_uid": "a68b83ed-cbfe-49a9-b4c3-eb86d9a2792a",
+          "actor_name": "ac-lkv-22c09eabde154c6abf24",
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "7eab3a75-eef6-469c-9ad2-68cc3c4c9f77",
+          "snapshot_generation": 5,
+          "state": "COMMITTED",
+          "created_at": "2026-11-11T09:12:59.359391809Z",
+          "committed_at": "2026-11-11T09:12:59.359391809Z",
+          "verified_at": "2026-11-11T09:13:04.461627292Z",
+          "delete_started_at": "0001-01-01T00:00:00Z",
+          "deleted_at": "0001-01-01T00:00:00Z",
+          "retry_after": "0001-01-01T00:00:00Z"
+        },
+        "ac-snapshot-ce036c0e9972822be4b3d8b8": {
+          "operation_id": "pair-02-C-suspend",
+          "manifest_id": "67b5a1cfebdd438ec461d6410561748b",
+          "tag_name": "ac-snapshot-ce036c0e9972822be4b3d8b8",
+          "tag_uid": "eafd03a8-8840-479e-a7f6-9a76301e10ed",
+          "actor_name": "ac-lkv-22c09eabde154c6abf24",
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "ba1a307e-d3c0-4b86-8430-5317112d5e15",
+          "snapshot_generation": 6,
+          "state": "COMMITTED",
+          "created_at": "2026-11-11T09:13:04.443015644Z",
+          "committed_at": "2026-11-11T09:13:04.443015644Z",
+          "verified_at": "2026-11-11T09:13:04.461626771Z",
+          "delete_started_at": "0001-01-01T00:00:00Z",
+          "deleted_at": "0001-01-01T00:00:00Z",
+          "retry_after": "0001-01-01T00:00:00Z"
+        },
+        "ac-snapshot-da7d92797733f26281786a4b": {
+          "operation_id": "pair-01-C-suspend",
+          "manifest_id": "af44b11d8e496bceb9831ed890daec54",
+          "tag_name": "ac-snapshot-da7d92797733f26281786a4b",
+          "tag_uid": "9f05b749-c0ad-4972-b8ec-4f196b8a313c",
+          "actor_name": "ac-lkv-22c09eabde154c6abf24",
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "377d0c43-6ba0-47f7-a689-dde5c2a96f48",
+          "snapshot_generation": 4,
+          "state": "COMMITTED",
+          "created_at": "2026-11-11T09:12:53.929483208Z",
+          "committed_at": "2026-11-11T09:12:53.929483208Z",
+          "verified_at": "2026-11-11T09:12:59.376823541Z",
+          "delete_state": "DELETED",
+          "delete_attempts": 1,
+          "delete_started_at": "2026-11-11T09:13:04.461627402Z",
+          "deleted_at": "2026-11-11T09:13:04.530275104Z",
+          "retry_after": "0001-01-01T00:00:00Z"
+        }
+      }
+    },
+    "created_at": "2026-11-11T09:12:26.963201473Z",
+    "updated_at": "2026-11-11T09:13:06.864186939Z"
+  },
+  "ram_before": {
+    "nonce": "f22bdb86761d426999e6681c0c115583",
+    "pid": 10,
+    "heap_bytes": 1048576,
+    "heap_sha256": "df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052",
+    "ast_identity": 139948380461904,
+    "ast_sha256": "1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af",
+    "context": {
+      "turns": 0,
+      "workspace_nonce": "f22bdb86761d426999e6681c0c115583"
+    },
+    "max_rss_kib": 39796
+  },
+  "binding_before": {
+    "protocol_version": 1,
+    "accepted": true,
+    "applied": true,
+    "reconciled": true,
+    "binding": {
+      "source_id": "coordinator-local",
+      "tenant_id": "tenant-a",
+      "workspace_id": "lkv-22c09eabde154c6abf24",
+      "session_id": "lkv-22c09eabde154c6abf24",
+      "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+      "epoch": 7
+    },
+    "routing_session_id": "ac:2398ef2a2c3c4cf4bd2ffee1a8b21544",
+    "classifier_id": 0,
+    "binding_generation": "8106883c7b424215b28e1ef6dde39c51",
+    "sequence": 67,
+    "received_at": "2026-11-11T09:13:08.358389878Z",
+    "snapshot": {
+      "program_present": true,
+      "admission_history": [
+        {
+          "request_id": "fbbb546f-ebbb-45bf-8f08-b51dc729e8ef",
+          "client_request_id": null,
+          "queued_at": "2026-11-11T09:13:06.886014965Z",
+          "admitted_at": "2026-11-11T09:13:06.886178180Z",
+          "wait_ms": 0.163215
+        }
+      ],
+      "last_admission_wait_ms": 0.163215,
+      "released_acting_tokens": 0,
+      "phase": "Acting",
+      "lifecycle": "Active",
+      "baseline_tokens": 257,
+      "logical_budget_tokens": 257,
+      "execution_multiplier": 1.0,
+      "state": "RUNNING_FAST",
+      "sequence": 67,
+      "fresh": true,
+      "session_waiting_requests": 0,
+      "session_active_requests": 0,
+      "waiting_requests": 0,
+      "paused_programs": 0,
+      "completed_events": 34,
+      "aborted_events": 0,
+      "pause_events": 0,
+      "final_events": 21
+    },
+    "inference_lease_sha256": "9a850ff304dd573688ee784e4535c92808d66c6f5805a81e58b76a609f858fe9"
+  },
+  "turn1": {
+    "prompt_tokens": 256,
+    "simulated_cached_tokens": 0,
+    "derived_recomputed_prompt_tokens": 256,
+    "indexed_prefix_tokens": 0,
+    "simulated_hit_fraction": 0.0,
+    "cache_count_source": "official_mocker_engine_usage",
+    "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+    "worker_id": 959529033414927889,
+    "elapsed_seconds": 0.029370797999945353,
+    "started_monotonic_seconds": 1022.099109427,
+    "routing_control": {
+      "kind": "native_router_selection"
+    },
+    "request_evidence": "growth-B-turn1.json",
+    "client_ttft_seconds": 0.029218570000011823
+  },
+  "native_before": {
+    "protocol_version": 1,
+    "accepted": true,
+    "applied": true,
+    "reconciled": true,
+    "binding": {
+      "source_id": "coordinator-local",
+      "tenant_id": "tenant-a",
+      "workspace_id": "lkv-22c09eabde154c6abf24",
+      "session_id": "lkv-22c09eabde154c6abf24",
+      "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+      "epoch": 7
+    },
+    "routing_session_id": "ac:2398ef2a2c3c4cf4bd2ffee1a8b21544",
+    "classifier_id": 0,
+    "binding_generation": "8106883c7b424215b28e1ef6dde39c51",
+    "sequence": 67,
+    "received_at": "2026-11-11T09:13:08.434576314Z",
+    "snapshot": {
+      "program_present": true,
+      "admission_history": [
+        {
+          "request_id": "fbbb546f-ebbb-45bf-8f08-b51dc729e8ef",
+          "client_request_id": null,
+          "queued_at": "2026-11-11T09:13:06.886014965Z",
+          "admitted_at": "2026-11-11T09:13:06.886178180Z",
+          "wait_ms": 0.163215
+        },
+        {
+          "request_id": "df553b62-b8d0-4d21-b1fb-b5c4877fff07",
+          "client_request_id": null,
+          "queued_at": "2026-11-11T09:13:08.367205778Z",
+          "admitted_at": "2026-11-11T09:13:08.367348752Z",
+          "wait_ms": 0.142974
+        }
+      ],
+      "last_admission_wait_ms": 0.142974,
+      "released_acting_tokens": 0,
+      "phase": "Acting",
+      "lifecycle": "Active",
+      "baseline_tokens": 257,
+      "logical_budget_tokens": 257,
+      "execution_multiplier": 1.0,
+      "state": "RUNNING_FAST",
+      "sequence": 67,
+      "fresh": true,
+      "session_waiting_requests": 0,
+      "session_active_requests": 0,
+      "waiting_requests": 0,
+      "paused_programs": 0,
+      "completed_events": 35,
+      "aborted_events": 0,
+      "pause_events": 0,
+      "final_events": 21
+    }
+  },
+  "suspend_seconds": 1.8019980899999837,
+  "suspended": {
+    "quiesce_retry_after": "0001-01-01T00:00:00Z",
+    "idle_since": "2026-11-11T09:13:08.348656531Z",
+    "running_since": "2026-11-11T09:13:05.3890476Z",
+    "last_resumed_at": "2026-11-11T09:13:05.3890476Z",
+    "tenant_id": "tenant-a",
+    "workspace_id": "lkv-22c09eabde154c6abf24",
+    "session_id": "lkv-22c09eabde154c6abf24",
+    "mode": "external",
+    "profile": "coding",
+    "ablation_group": "E",
+    "state": "SUSPENDED",
+    "gate": "CLOSED",
+    "epoch": 7,
+    "barrier_generation": 13,
+    "receipt_watermark": 15,
+    "next_receipt": 15,
+    "signal_sequence": 68,
+    "actor": {
+      "assigned_worker": "bcd59cf1-7bd8-4471-9259-9ccf952fd8b7",
+      "assigned_memory_bytes": 268435456,
+      "name": "ac-lkv-22c09eabde154c6abf24",
+      "uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+      "version": 36,
+      "snapshot_uuid": "d67b349e-47a4-437e-858d-e988045524c1",
+      "snapshot_generation": 7,
+      "actual_fidelity": "MEMORY",
+      "boot_id": "36118d20e05cf48c82449eb2c1fd3a4a",
+      "retained_tag": "ac-snapshot-61acb1c8ee8769b49d8b4fed",
+      "retained_tag_uid": "6b8d73fa-e130-40ea-b3a6-61f08453f127",
+      "snapshot_fidelity": "MEMORY"
+    },
+    "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+    "backend": "substrate",
+    "actual_fidelity": "MEMORY",
+    "active_tools": 0,
+    "tools": {
+      "growth-B-ram-before": {
+        "tool_op_id": "growth-B-ram-before",
+        "epoch": 7,
+        "status": "COMPLETED",
+        "payload_hash": "21088f8e0aa41a39e5f2c3adae77d58094d7bd12d3ccf69c2d0870034ecd654a",
+        "receipt_seq": 15,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:37.021612781Z",
+        "started_at": "2026-11-11T09:13:07.021612731Z",
+        "finished_at": "2026-11-11T09:13:08.348657122Z"
+      },
+      "install-memory-probe": {
+        "tool_op_id": "install-memory-probe",
+        "epoch": 1,
+        "status": "COMPLETED",
+        "payload_hash": "159593e4bb00f7a3c9374372af064279739af7406043fa8ae7feabf1729e4ea1",
+        "receipt_seq": 1,
+        "result": {
+          "content": "\"\"\"Four deterministic workloads and a persistent RAM probe inside a gVisor Actor.\"\"\"\nimport argparse\nimport ast\nimport csv\nimport hashlib\nimport http.server\nimport io\nimport json\nimport os\nfrom pathlib import Path\nimport resource\nimport subprocess\nimport sys\nimport threading\nimport time\nimport urllib.request\nimport uuid\n\nPORT = 18771\n\n\ndef random_heap(mib):\n    # Fill the retained allocation directly: initialization has no second full-size copy.\n    heap = bytearray(mib * 2**20)\n    view = memoryview(heap)\n    with open('/dev/urandom', 'rb', buffering=0) as source:\n        offset = 0\n        while offset < len(view):\n            count = source.readinto(view[offset:])\n            if not count:\n                raise OSError('random source ended before every RAM page was initialized')\n            offset += count\n    return heap\n\n\ndef memory_server(mib):\n    # Random data materializes every page and exercises snapshot transfer cost.\n    heap = random_heap(mib)\n    tree = ast.parse('def value(x):\\n    return x * 7 + 11\\n')\n    nonce = uuid.uuid4().hex\n    context = {'turns': 0, 'workspace_nonce': nonce}\n\n    class Handler(http.server.BaseHTTPRequestHandler):\n        def do_GET(self):\n            if self.path == '/advance':\n                context['turns'] += 1\n            body = json.dumps(dict(nonce=nonce, pid=os.getpid(), heap_bytes=len(heap),\n                heap_sha256=hashlib.sha256(heap).hexdigest(), ast_identity=id(tree),\n                ast_sha256=hashlib.sha256(ast.dump(tree).encode()).hexdigest(), context=context,\n                max_rss_kib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)).encode()\n            self.send_response(200)\n            self.send_header('Content-Type', 'application/json')\n            self.send_header('Content-Length', str(len(body)))\n            self.end_headers()\n            self.wfile.write(body)\n\n        def log_message(self, *_):\n            pass\n\n    http.server.HTTPServer(('127.0.0.1', PORT), Handler).serve_forever()\n\n\ndef proof(advance=False):\n    with urllib.request.urlopen(f'http://127.0.0.1:{PORT}/'+('advance' if advance else 'proof'), timeout=10) as response:\n        return json.load(response)\n\n\ndef start_memory(mib):\n    try:\n        return proof()\n    except OSError:\n        pass\n    with open('memory-probe.log', 'ab', buffering=0) as log:\n        subprocess.Popen([sys.executable, str(Path(__file__).resolve()), 'memory', '--memory-mib', str(mib)],\n                         stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)\n    deadline = time.monotonic()+15\n    while time.monotonic() < deadline:\n        try:\n            return proof()\n        except OSError:\n            time.sleep(.05)\n    raise RuntimeError('Actor RAM probe did not become ready')\n\n\ndef workload(kind, seed, turn):\n    begin = time.perf_counter()\n    directory = Path(f'round-{turn}')\n    directory.mkdir(exist_ok=True)\n    if kind == 'coding':\n        modules = []\n        for m in range(8):\n            text = '\\n'.join(f'def f{i}(x):\\n    return (x * {i+1} + {seed}) % 1000003' for i in range(256))\n            path = directory/f'module{m}.py'\n            path.write_text(text)\n            modules.append(path)\n        subprocess.run([sys.executable, '-m', 'compileall', '-q', str(directory)], check=True)\n        namespace = {}\n        exec(compile(modules[0].read_text(), str(modules[0]), 'exec'), namespace)\n        assert namespace['f3'](13) == (52+seed) % 1000003\n        result = dict(kind='multi-file-python-compilation', modules=len(modules), functions=2048,\n                      test_assertions=1, compiled_files=len(list(directory.rglob('*.pyc'))))\n    elif kind == 'research':\n        articles = [(f'source={seed}:{i}\\n'+'research evidence data\\n'*4096).encode() for i in range(8)]\n\n        class Source(http.server.BaseHTTPRequestHandler):\n            def do_GET(self):\n                time.sleep(.025)\n                data = articles[int(self.path[1:])]\n                self.send_response(200)\n                self.send_header('Content-Length', str(len(data)))\n                self.end_headers()\n                self.wfile.write(data)\n\n            def log_message(self, *_):\n                pass\n\n        server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Source)\n        thread = threading.Thread(target=server.serve_forever, kwargs={'poll_interval': .01}, daemon=True)\n        thread.start()\n        try:\n            retrieved = []\n            for i in range(len(articles)):\n                with urllib.request.urlopen(f'http://127.0.0.1:{server.server_port}/{i}', timeout=5) as response:\n                    content = response.read()\n                assert content == articles[i]\n                (directory/f'source-{i}.txt').write_bytes(content)\n                retrieved.append(content)\n        finally:\n            server.shutdown()\n            server.server_close()\n            thread.join()\n        result = dict(kind='http-research-and-source-verification', documents=8,\n                      bytes_read=sum(map(len, retrieved)), source='Actor-local controlled HTTP fixture',\n                      per_document_service_delay_seconds=.025,\n                      corpus_sha256=hashlib.sha256(b''.join(retrieved)).hexdigest())\n    elif kind == 'batch':\n        expected = 0\n        for batch in range(16):\n            rows = [(batch*256+i, (i+seed) % 997) for i in range(256)]\n            expected += sum(value for _, value in rows)\n            with (directory/f'batch-{batch}.csv').open('w') as handle:\n                csv.writer(handle).writerows(rows)\n                handle.flush()\n                os.fsync(handle.fileno())\n        actual = 0\n        for path in directory.glob('*.csv'):\n            with path.open() as handle:\n                actual += sum(int(row[1]) for row in csv.reader(handle))\n        assert actual == expected\n        result = dict(kind='fsync-csv-batch-and-aggregation', files=16, rows=4096, checksum=actual)\n    elif kind == 'interactive':\n        data = {'workspace': seed, 'round': turn, 'items': [{'price': i+1, 'quantity': 2} for i in range(20)]}\n        (directory/'request.json').write_text(json.dumps(data))\n        parsed = json.loads((directory/'request.json').read_text())\n        total = sum(item['price']*item['quantity'] for item in parsed['items'])\n        assert total == 420\n        result = dict(kind='interactive-file-query', items=20, total=total)\n    else:\n        raise ValueError(kind)\n    result.update(wall_seconds=time.perf_counter()-begin, seed=seed, turn=turn, ram=proof(True))\n    (directory/'receipt.json').write_text(json.dumps(result))\n    return result\n\n\ndef main():\n    parser = argparse.ArgumentParser(description=__doc__)\n    parser.add_argument('action', choices=['start', 'memory', 'proof', 'work'])\n    parser.add_argument('--memory-mib', type=int, default=16)\n    parser.add_argument('--kind', choices=['coding', 'research', 'batch', 'interactive'], default='coding')\n    parser.add_argument('--seed', type=int, default=7101)\n    parser.add_argument('--turn', type=int, default=0)\n    args = parser.parse_args()\n    if args.memory_mib < 1 or args.memory_mib > 1024:\n        parser.error('memory working set must be within 1..1024 MiB')\n    if args.action == 'memory':\n        memory_server(args.memory_mib)\n        return\n    result = start_memory(args.memory_mib) if args.action == 'start' else proof() if args.action == 'proof' else workload(args.kind, args.seed, args.turn)\n    print(json.dumps(result))\n\n\nif __name__ == '__main__':\n    main()\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:00.477153692Z",
+        "started_at": "2026-11-11T09:12:30.477153521Z",
+        "finished_at": "2026-11-11T09:12:30.506697143Z"
+      },
+      "pair-00-B-ram-after": {
+        "tool_op_id": "pair-00-B-ram-after",
+        "epoch": 2,
+        "status": "COMPLETED",
+        "payload_hash": "165db8d67d0e7d7b35089c3a16601162edab96dc13ceb92737133242342fd34e",
+        "receipt_seq": 4,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:09.237062404Z",
+        "started_at": "2026-11-11T09:12:39.237061883Z",
+        "finished_at": "2026-11-11T09:12:40.581755319Z"
+      },
+      "pair-00-B-ram-before": {
+        "tool_op_id": "pair-00-B-ram-before",
+        "epoch": 1,
+        "status": "COMPLETED",
+        "payload_hash": "111e6292f399d224f4d86e07b0ae136667b8f255a7442f8ea25ca2bad9ef1a1a",
+        "receipt_seq": 3,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:04.963687684Z",
+        "started_at": "2026-11-11T09:12:34.963687644Z",
+        "finished_at": "2026-11-11T09:12:36.351859348Z"
+      },
+      "pair-00-C-ram-after": {
+        "tool_op_id": "pair-00-C-ram-after",
+        "epoch": 3,
+        "status": "COMPLETED",
+        "payload_hash": "9edf6453958ff38177ea4fe396782e8a1467dd72cd8f4f3b9b3c30698769c73f",
+        "receipt_seq": 6,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:14.642589948Z",
+        "started_at": "2026-11-11T09:12:44.642589908Z",
+        "finished_at": "2026-11-11T09:12:45.911040173Z"
+      },
+      "pair-00-C-ram-before": {
+        "tool_op_id": "pair-00-C-ram-before",
+        "epoch": 2,
+        "status": "COMPLETED",
+        "payload_hash": "30470e71a8b021876dbc201b6dbfd6e9203af393a4b578a77f2cbd007079955a",
+        "receipt_seq": 5,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:10.641662898Z",
+        "started_at": "2026-11-11T09:12:40.641662848Z",
+        "finished_at": "2026-11-11T09:12:41.881582019Z"
+      },
+      "pair-01-B-ram-after": {
+        "tool_op_id": "pair-01-B-ram-after",
+        "epoch": 4,
+        "status": "COMPLETED",
+        "payload_hash": "b7aaa58c8e550d9cad4c790974ff0a8bf4e0e167c4d750f9985dcb369daf1fd6",
+        "receipt_seq": 8,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:19.699636125Z",
+        "started_at": "2026-11-11T09:12:49.699636075Z",
+        "finished_at": "2026-11-11T09:12:51.003948214Z"
+      },
+      "pair-01-B-ram-before": {
+        "tool_op_id": "pair-01-B-ram-before",
+        "epoch": 3,
+        "status": "COMPLETED",
+        "payload_hash": "6242d8488544e3936a98bc21c6f7232e364cb716f55e510ca8d4e38cbfa50bf4",
+        "receipt_seq": 7,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:15.984696813Z",
+        "started_at": "2026-11-11T09:12:45.984696763Z",
+        "finished_at": "2026-11-11T09:12:47.213307814Z"
+      },
+      "pair-01-C-ram-after": {
+        "tool_op_id": "pair-01-C-ram-after",
+        "epoch": 5,
+        "status": "COMPLETED",
+        "payload_hash": "9724e50bfefcc75b40e46205af122ba41c7dbefade0b9cb29e0bf1ae866f65de",
+        "receipt_seq": 10,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:25.155839083Z",
+        "started_at": "2026-11-11T09:12:55.155839032Z",
+        "finished_at": "2026-11-11T09:12:56.409073553Z"
+      },
+      "pair-01-C-ram-before": {
+        "tool_op_id": "pair-01-C-ram-before",
+        "epoch": 4,
+        "status": "COMPLETED",
+        "payload_hash": "cfd1f074cd0a9b77d2c84af1813d75fe76e528016d1de49b4539db7381b1a5f6",
+        "receipt_seq": 9,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:21.112844915Z",
+        "started_at": "2026-11-11T09:12:51.112844865Z",
+        "finished_at": "2026-11-11T09:12:52.396673118Z"
+      },
+      "pair-02-B-ram-after": {
+        "tool_op_id": "pair-02-B-ram-after",
+        "epoch": 6,
+        "status": "COMPLETED",
+        "payload_hash": "c2291f407248fde0c7ff58a5d4654b3eb43c2eff7c0d88bf24a2ed2f170e5354",
+        "receipt_seq": 12,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:30.047870341Z",
+        "started_at": "2026-11-11T09:13:00.047870301Z",
+        "finished_at": "2026-11-11T09:13:01.312760784Z"
+      },
+      "pair-02-B-ram-before": {
+        "tool_op_id": "pair-02-B-ram-before",
+        "epoch": 5,
+        "status": "COMPLETED",
+        "payload_hash": "ff46b66338cf1f5fe319b359e1aaa5a31c1604c52e17bb7df6aacf30369c5f8d",
+        "receipt_seq": 11,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:26.511330534Z",
+        "started_at": "2026-11-11T09:12:56.511330494Z",
+        "finished_at": "2026-11-11T09:12:57.708318165Z"
+      },
+      "pair-02-C-ram-after": {
+        "tool_op_id": "pair-02-C-ram-after",
+        "epoch": 7,
+        "status": "COMPLETED",
+        "payload_hash": "27cf059dbf6a8d85d5294a2d880eb53f7282d26c793485c7acdc29e5fc89b867",
+        "receipt_seq": 14,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:35.435356771Z",
+        "started_at": "2026-11-11T09:13:05.435356721Z",
+        "finished_at": "2026-11-11T09:13:06.849633791Z"
+      },
+      "pair-02-C-ram-before": {
+        "tool_op_id": "pair-02-C-ram-before",
+        "epoch": 6,
+        "status": "COMPLETED",
+        "payload_hash": "c8537b10e415fcba32a5c98da822f9176d7aa0332a9eeaac40d77b1f1afcab30",
+        "receipt_seq": 13,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:31.431086021Z",
+        "started_at": "2026-11-11T09:13:01.431085961Z",
+        "finished_at": "2026-11-11T09:13:02.593203954Z"
+      },
+      "start-memory-probe": {
+        "tool_op_id": "start-memory-probe",
+        "epoch": 1,
+        "status": "COMPLETED",
+        "payload_hash": "23ffdf7c1ccf97f94a86e0f2880244b97a4232771e4e021a61406aac6f1a5e21",
+        "receipt_seq": 2,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:12:50.514429115Z",
+        "started_at": "2026-11-11T09:12:30.514429065Z",
+        "finished_at": "2026-11-11T09:12:34.952838234Z"
+      }
+    },
+    "lifecycle": {
+      "growth-B-suspend": {
+        "operation_id": "growth-B-suspend",
+        "action": "suspend",
+        "epoch": 7,
+        "payload_hash": "439592dcc4e7e4244d56e734ac030b7a24281878287c951280b7b83ef9d13d41",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:13:08.435417987Z",
+        "retry_after": "0001-01-01T00:00:00Z",
+        "manifest": {
+          "manifest_id": "99ea2eaefc450fb0408506085c0cfcb3",
+          "state": "COMMITTED",
+          "epoch": 7,
+          "barrier_generation": 13,
+          "receipt_watermark": 15,
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "d67b349e-47a4-437e-858d-e988045524c1",
+          "snapshot_generation": 7,
+          "fidelity": "MEMORY",
+          "retained_tag": "ac-snapshot-61acb1c8ee8769b49d8b4fed",
+          "retained_tag_uid": "6b8d73fa-e130-40ea-b3a6-61f08453f127",
+          "created_at": "2026-11-11T09:13:10.220720461Z"
+        }
+      },
+      "pair-00-B-resume": {
+        "operation_id": "pair-00-B-resume",
+        "action": "resume",
+        "epoch": 1,
+        "payload_hash": "229ebe219dfd0794bb824b853294eae3dfe361b28e7ff69a286cfd2efecbf098",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:38.832833285Z",
+        "retry_after": "0001-01-01T00:00:00Z"
+      },
+      "pair-00-B-suspend": {
+        "operation_id": "pair-00-B-suspend",
+        "action": "suspend",
+        "epoch": 1,
+        "payload_hash": "b4a3f9d459e0a3e76d95e76a098d0971602fde576e766b58f4ccbf557d3d3313",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:36.403456444Z",
+        "retry_after": "0001-01-01T00:00:00Z",
+        "manifest": {
+          "manifest_id": "dc45ff0a7d99e2aa3e926fb34eea5bf5",
+          "state": "COMMITTED",
+          "epoch": 1,
+          "barrier_generation": 1,
+          "receipt_watermark": 3,
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "a1395db5-53f4-4393-be44-21c644b5e1d3",
+          "snapshot_generation": 1,
+          "fidelity": "MEMORY",
+          "retained_tag": "ac-snapshot-51fdd6fb2b8acb9b91122e3f",
+          "retained_tag_uid": "cf33ee9b-ac9a-4eef-b152-d29ea217d293",
+          "created_at": "2026-11-11T09:12:38.493875497Z"
+        }
+      },
+      "pair-00-C-resume": {
+        "operation_id": "pair-00-C-resume",
+        "action": "resume",
+        "epoch": 2,
+        "payload_hash": "bb2109cfe97a66709e36543a89e7ea4228a3acc64be5eb083f3877067cb7d392",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:44.357228703Z",
+        "retry_after": "0001-01-01T00:00:00Z"
+      },
+      "pair-00-C-suspend": {
+        "operation_id": "pair-00-C-suspend",
+        "action": "suspend",
+        "epoch": 2,
+        "payload_hash": "bfc284c912e7aaf533abc1565adf9454dc10d20e42302fd33a22062834f87433",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:41.93594757Z",
+        "retry_after": "0001-01-01T00:00:00Z",
+        "manifest": {
+          "manifest_id": "31a90214cb94a701418c8a9f25cd1834",
+          "state": "COMMITTED",
+          "epoch": 2,
+          "barrier_generation": 3,
+          "receipt_watermark": 5,
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "558da4fe-0189-4a6f-bf07-38782304e8dc",
+          "snapshot_generation": 2,
+          "fidelity": "MEMORY",
+          "retained_tag": "ac-snapshot-361f84f58e9649243580bf47",
+          "retained_tag_uid": "fc8049cb-a733-4797-b208-94e287745353",
+          "created_at": "2026-11-11T09:12:43.661446559Z"
+        }
+      },
+      "pair-01-B-resume": {
+        "operation_id": "pair-01-B-resume",
+        "action": "resume",
+        "epoch": 3,
+        "payload_hash": "ddef082347f4e541421ebe896e1d064e35c1c6048b591f4b031ab1ab919af5ef",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:49.409102668Z",
+        "retry_after": "0001-01-01T00:00:00Z"
+      },
+      "pair-01-B-suspend": {
+        "operation_id": "pair-01-B-suspend",
+        "action": "suspend",
+        "epoch": 3,
+        "payload_hash": "58c82da7554c69207b1f331f55f01e41774a4c17655e681aef63a881fa9b4895",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:47.273099157Z",
+        "retry_after": "0001-01-01T00:00:00Z",
+        "manifest": {
+          "manifest_id": "c2ec9e7b5df69408cbab122f25361526",
+          "state": "COMMITTED",
+          "epoch": 3,
+          "barrier_generation": 5,
+          "receipt_watermark": 7,
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "925fcebd-e4ca-448a-b199-0eee35543d53",
+          "snapshot_generation": 3,
+          "fidelity": "MEMORY",
+          "retained_tag": "ac-snapshot-0c9fa230da1e7998b779bda1",
+          "retained_tag_uid": "d39b1661-07a9-41f3-ad02-41cc7c0f5847",
+          "created_at": "2026-11-11T09:12:49.06482234Z"
+        }
+      },
+      "pair-01-C-resume": {
+        "operation_id": "pair-01-C-resume",
+        "action": "resume",
+        "epoch": 4,
+        "payload_hash": "105e5a109937183983a98f1a4228f1d3128887f4e0d7c509e3099128e56204a0",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:54.595537995Z",
+        "retry_after": "0001-01-01T00:00:00Z"
+      },
+      "pair-01-C-suspend": {
+        "operation_id": "pair-01-C-suspend",
+        "action": "suspend",
+        "epoch": 4,
+        "payload_hash": "a94c61b1fe5f681ebd6b73929ce5613a66d467a51739e3d5ee40c9ac8fa470eb",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:52.463422536Z",
+        "retry_after": "0001-01-01T00:00:00Z",
+        "manifest": {
+          "manifest_id": "af44b11d8e496bceb9831ed890daec54",
+          "state": "COMMITTED",
+          "epoch": 4,
+          "barrier_generation": 7,
+          "receipt_watermark": 9,
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "377d0c43-6ba0-47f7-a689-dde5c2a96f48",
+          "snapshot_generation": 4,
+          "fidelity": "MEMORY",
+          "retained_tag": "ac-snapshot-da7d92797733f26281786a4b",
+          "retained_tag_uid": "9f05b749-c0ad-4972-b8ec-4f196b8a313c",
+          "created_at": "2026-11-11T09:12:53.929483208Z"
+        }
+      },
+      "pair-02-B-resume": {
+        "operation_id": "pair-02-B-resume",
+        "action": "resume",
+        "epoch": 5,
+        "payload_hash": "1cc16e15e7b7e89ca4d94867795ea1b10d0277e82811082a2a3201ed935449e5",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:59.700394197Z",
+        "retry_after": "0001-01-01T00:00:00Z"
+      },
+      "pair-02-B-suspend": {
+        "operation_id": "pair-02-B-suspend",
+        "action": "suspend",
+        "epoch": 5,
+        "payload_hash": "4327f83f82579dbe60987b7f30f7ab2cbbede00dde020f1ae70c60e4c139cb12",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:57.778902261Z",
+        "retry_after": "0001-01-01T00:00:00Z",
+        "manifest": {
+          "manifest_id": "f8170372fdd759a85c459da4f05a2398",
+          "state": "COMMITTED",
+          "epoch": 5,
+          "barrier_generation": 9,
+          "receipt_watermark": 11,
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "7eab3a75-eef6-469c-9ad2-68cc3c4c9f77",
+          "snapshot_generation": 5,
+          "fidelity": "MEMORY",
+          "retained_tag": "ac-snapshot-bfb6c04d6897d0d6d3d652c9",
+          "retained_tag_uid": "a68b83ed-cbfe-49a9-b4c3-eb86d9a2792a",
+          "created_at": "2026-11-11T09:12:59.359391809Z"
+        }
+      },
+      "pair-02-C-resume": {
+        "operation_id": "pair-02-C-resume",
+        "action": "resume",
+        "epoch": 6,
+        "payload_hash": "b714ee38d8e470b8f2417f881064b76504ef1e811de8009d776dcaf8683eac5d",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:13:05.158046312Z",
+        "retry_after": "0001-01-01T00:00:00Z"
+      },
+      "pair-02-C-suspend": {
+        "operation_id": "pair-02-C-suspend",
+        "action": "suspend",
+        "epoch": 6,
+        "payload_hash": "57d2ade01b242198a635d20285212e8f5773de93ebff091b379d0a8aa1bee7d2",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:13:02.718855045Z",
+        "retry_after": "0001-01-01T00:00:00Z",
+        "manifest": {
+          "manifest_id": "67b5a1cfebdd438ec461d6410561748b",
+          "state": "COMMITTED",
+          "epoch": 6,
+          "barrier_generation": 11,
+          "receipt_watermark": 13,
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "ba1a307e-d3c0-4b86-8430-5317112d5e15",
+          "snapshot_generation": 6,
+          "fidelity": "MEMORY",
+          "retained_tag": "ac-snapshot-ce036c0e9972822be4b3d8b8",
+          "retained_tag_uid": "eafd03a8-8840-479e-a7f6-9a76301e10ed",
+          "created_at": "2026-11-11T09:13:04.443015644Z"
+        }
+      }
+    },
+    "manifest": {
+      "manifest_id": "99ea2eaefc450fb0408506085c0cfcb3",
+      "state": "COMMITTED",
+      "epoch": 7,
+      "barrier_generation": 13,
+      "receipt_watermark": 15,
+      "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+      "snapshot_uuid": "d67b349e-47a4-437e-858d-e988045524c1",
+      "snapshot_generation": 7,
+      "fidelity": "MEMORY",
+      "retained_tag": "ac-snapshot-61acb1c8ee8769b49d8b4fed",
+      "retained_tag_uid": "6b8d73fa-e130-40ea-b3a6-61f08453f127",
+      "created_at": "2026-11-11T09:13:10.220720461Z"
+    },
+    "snapshot_gc": {
+      "tags": {
+        "ac-snapshot-0c9fa230da1e7998b779bda1": {
+          "operation_id": "pair-01-B-suspend",
+          "manifest_id": "c2ec9e7b5df69408cbab122f25361526",
+          "tag_name": "ac-snapshot-0c9fa230da1e7998b779bda1",
+          "tag_uid": "d39b1661-07a9-41f3-ad02-41cc7c0f5847",
+          "actor_name": "ac-lkv-22c09eabde154c6abf24",
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "925fcebd-e4ca-448a-b199-0eee35543d53",
+          "snapshot_generation": 3,
+          "state": "COMMITTED",
+          "created_at": "2026-11-11T09:12:49.06482234Z",
+          "committed_at": "2026-11-11T09:12:49.06482234Z",
+          "verified_at": "2026-11-11T09:12:53.961126629Z",
+          "delete_state": "DELETED",
+          "delete_attempts": 1,
+          "delete_started_at": "2026-11-11T09:12:59.376823651Z",
+          "deleted_at": "2026-11-11T09:12:59.443122704Z",
+          "retry_after": "0001-01-01T00:00:00Z"
+        },
+        "ac-snapshot-361f84f58e9649243580bf47": {
+          "operation_id": "pair-00-C-suspend",
+          "manifest_id": "31a90214cb94a701418c8a9f25cd1834",
+          "tag_name": "ac-snapshot-361f84f58e9649243580bf47",
+          "tag_uid": "fc8049cb-a733-4797-b208-94e287745353",
+          "actor_name": "ac-lkv-22c09eabde154c6abf24",
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "558da4fe-0189-4a6f-bf07-38782304e8dc",
+          "snapshot_generation": 2,
+          "state": "COMMITTED",
+          "created_at": "2026-11-11T09:12:43.661446559Z",
+          "committed_at": "2026-11-11T09:12:43.661446559Z",
+          "verified_at": "2026-11-11T09:12:49.085872768Z",
+          "delete_state": "DELETED",
+          "delete_attempts": 1,
+          "delete_started_at": "2026-11-11T09:12:53.96112752Z",
+          "deleted_at": "2026-11-11T09:12:54.030011854Z",
+          "retry_after": "0001-01-01T00:00:00Z"
+        },
+        "ac-snapshot-51fdd6fb2b8acb9b91122e3f": {
+          "operation_id": "pair-00-B-suspend",
+          "manifest_id": "dc45ff0a7d99e2aa3e926fb34eea5bf5",
+          "tag_name": "ac-snapshot-51fdd6fb2b8acb9b91122e3f",
+          "tag_uid": "cf33ee9b-ac9a-4eef-b152-d29ea217d293",
+          "actor_name": "ac-lkv-22c09eabde154c6abf24",
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "a1395db5-53f4-4393-be44-21c644b5e1d3",
+          "snapshot_generation": 1,
+          "state": "COMMITTED",
+          "created_at": "2026-11-11T09:12:38.493875497Z",
+          "committed_at": "2026-11-11T09:12:38.493875497Z",
+          "verified_at": "2026-11-11T09:12:38.493875497Z",
+          "delete_state": "DELETED",
+          "delete_attempts": 1,
+          "delete_started_at": "2026-11-11T09:12:49.085872848Z",
+          "deleted_at": "2026-11-11T09:12:49.286100611Z",
+          "retry_after": "0001-01-01T00:00:00Z"
+        },
+        "ac-snapshot-61acb1c8ee8769b49d8b4fed": {
+          "operation_id": "growth-B-suspend",
+          "manifest_id": "99ea2eaefc450fb0408506085c0cfcb3",
+          "tag_name": "ac-snapshot-61acb1c8ee8769b49d8b4fed",
+          "tag_uid": "6b8d73fa-e130-40ea-b3a6-61f08453f127",
+          "actor_name": "ac-lkv-22c09eabde154c6abf24",
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "d67b349e-47a4-437e-858d-e988045524c1",
+          "snapshot_generation": 7,
+          "state": "COMMITTED",
+          "created_at": "2026-11-11T09:13:10.220720461Z",
+          "committed_at": "2026-11-11T09:13:10.220720461Z",
+          "verified_at": "2026-11-11T09:13:10.220720461Z",
+          "delete_started_at": "0001-01-01T00:00:00Z",
+          "deleted_at": "0001-01-01T00:00:00Z",
+          "retry_after": "0001-01-01T00:00:00Z"
+        },
+        "ac-snapshot-bfb6c04d6897d0d6d3d652c9": {
+          "operation_id": "pair-02-B-suspend",
+          "manifest_id": "f8170372fdd759a85c459da4f05a2398",
+          "tag_name": "ac-snapshot-bfb6c04d6897d0d6d3d652c9",
+          "tag_uid": "a68b83ed-cbfe-49a9-b4c3-eb86d9a2792a",
+          "actor_name": "ac-lkv-22c09eabde154c6abf24",
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "7eab3a75-eef6-469c-9ad2-68cc3c4c9f77",
+          "snapshot_generation": 5,
+          "state": "COMMITTED",
+          "created_at": "2026-11-11T09:12:59.359391809Z",
+          "committed_at": "2026-11-11T09:12:59.359391809Z",
+          "verified_at": "2026-11-11T09:13:04.461627292Z",
+          "delete_started_at": "0001-01-01T00:00:00Z",
+          "deleted_at": "0001-01-01T00:00:00Z",
+          "retry_after": "0001-01-01T00:00:00Z"
+        },
+        "ac-snapshot-ce036c0e9972822be4b3d8b8": {
+          "operation_id": "pair-02-C-suspend",
+          "manifest_id": "67b5a1cfebdd438ec461d6410561748b",
+          "tag_name": "ac-snapshot-ce036c0e9972822be4b3d8b8",
+          "tag_uid": "eafd03a8-8840-479e-a7f6-9a76301e10ed",
+          "actor_name": "ac-lkv-22c09eabde154c6abf24",
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "ba1a307e-d3c0-4b86-8430-5317112d5e15",
+          "snapshot_generation": 6,
+          "state": "COMMITTED",
+          "created_at": "2026-11-11T09:13:04.443015644Z",
+          "committed_at": "2026-11-11T09:13:04.443015644Z",
+          "verified_at": "2026-11-11T09:13:04.461626771Z",
+          "delete_started_at": "0001-01-01T00:00:00Z",
+          "deleted_at": "0001-01-01T00:00:00Z",
+          "retry_after": "0001-01-01T00:00:00Z"
+        },
+        "ac-snapshot-da7d92797733f26281786a4b": {
+          "operation_id": "pair-01-C-suspend",
+          "manifest_id": "af44b11d8e496bceb9831ed890daec54",
+          "tag_name": "ac-snapshot-da7d92797733f26281786a4b",
+          "tag_uid": "9f05b749-c0ad-4972-b8ec-4f196b8a313c",
+          "actor_name": "ac-lkv-22c09eabde154c6abf24",
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "377d0c43-6ba0-47f7-a689-dde5c2a96f48",
+          "snapshot_generation": 4,
+          "state": "COMMITTED",
+          "created_at": "2026-11-11T09:12:53.929483208Z",
+          "committed_at": "2026-11-11T09:12:53.929483208Z",
+          "verified_at": "2026-11-11T09:12:59.376823541Z",
+          "delete_state": "DELETED",
+          "delete_attempts": 1,
+          "delete_started_at": "2026-11-11T09:13:04.461627402Z",
+          "deleted_at": "2026-11-11T09:13:04.530275104Z",
+          "retry_after": "0001-01-01T00:00:00Z"
+        }
+      }
+    },
+    "created_at": "2026-11-11T09:12:26.963201473Z",
+    "updated_at": "2026-11-11T09:13:10.220770096Z"
+  },
+  "native_suspended": {
+    "protocol_version": 1,
+    "accepted": true,
+    "applied": true,
+    "reconciled": true,
+    "binding": {
+      "source_id": "coordinator-local",
+      "tenant_id": "tenant-a",
+      "workspace_id": "lkv-22c09eabde154c6abf24",
+      "session_id": "lkv-22c09eabde154c6abf24",
+      "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+      "epoch": 7
+    },
+    "routing_session_id": "ac:2398ef2a2c3c4cf4bd2ffee1a8b21544",
+    "classifier_id": 0,
+    "binding_generation": "8106883c7b424215b28e1ef6dde39c51",
+    "sequence": 69,
+    "received_at": "2026-11-11T09:13:10.544253212Z",
+    "snapshot": {
+      "program_present": true,
+      "admission_history": [
+        {
+          "request_id": "fbbb546f-ebbb-45bf-8f08-b51dc729e8ef",
+          "client_request_id": null,
+          "queued_at": "2026-11-11T09:13:06.886014965Z",
+          "admitted_at": "2026-11-11T09:13:06.886178180Z",
+          "wait_ms": 0.163215
+        },
+        {
+          "request_id": "df553b62-b8d0-4d21-b1fb-b5c4877fff07",
+          "client_request_id": null,
+          "queued_at": "2026-11-11T09:13:08.367205778Z",
+          "admitted_at": "2026-11-11T09:13:08.367348752Z",
+          "wait_ms": 0.142974
+        }
+      ],
+      "last_admission_wait_ms": 0.142974,
+      "released_acting_tokens": 257,
+      "phase": "Acting",
+      "lifecycle": "Active",
+      "baseline_tokens": 257,
+      "logical_budget_tokens": 0,
+      "execution_multiplier": 0.0,
+      "state": "SUSPENDED",
+      "sequence": 69,
+      "fresh": true,
+      "session_waiting_requests": 0,
+      "session_active_requests": 0,
+      "waiting_requests": 0,
+      "paused_programs": 0,
+      "completed_events": 35,
+      "aborted_events": 0,
+      "pause_events": 0,
+      "final_events": 21
+    }
+  },
+  "substrate_suspended": {
+    "action": "inspect",
+    "actor": {
+      "name": "ac-lkv-22c09eabde154c6abf24",
+      "uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+      "version": 36,
+      "state": "SUSPENDED",
+      "snapshot_uuid": "d67b349e-47a4-437e-858d-e988045524c1",
+      "snapshot_generation": 7,
+      "snapshot_fidelity": "MEMORY",
+      "durable": true,
+      "resumed": false,
+      "cold_started": false,
+      "actual_fidelity": "MEMORY",
+      "restored_snapshot_uuid": "ba1a307e-d3c0-4b86-8430-5317112d5e15",
+      "restored_snapshot_generation": 6
+    }
+  },
+  "cache_while_suspended": {
+    "at": "2026-11-11T09:13:10.560364+00:00",
+    "query": {
+      "scores": {
+        "959529033414927889": {
+          "0": 256
+        }
+      },
+      "frequencies": [],
+      "instances": {
+        "959529033414927889": {
+          "longest_matched": 256,
+          "gpu": 256,
+          "dp": {
+            "0": 256
+          },
+          "cpu": 256,
+          "disk": 256
+        }
+      }
+    },
+    "workers": [
+      {
+        "instance_id": 959529033414927889,
+        "source": "zmq",
+        "status": "active",
+        "model_name": "agentcloud-tiny",
+        "routing_group": "default",
+        "block_size": 16,
+        "endpoints": {
+          "0": "tcp://127.0.0.1:21302"
+        },
+        "listeners": {
+          "0": {
+            "endpoint": "tcp://127.0.0.1:21302",
+            "engine_owned_mm_identity": false,
+            "status": "active"
+          }
+        }
+      },
+      {
+        "instance_id": 12194702509265453174,
+        "source": "zmq",
+        "status": "active",
+        "model_name": "agentcloud-tiny",
+        "routing_group": "default",
+        "block_size": 16,
+        "endpoints": {
+          "0": "tcp://127.0.0.1:17589"
+        },
+        "listeners": {
+          "0": {
+            "endpoint": "tcp://127.0.0.1:17589",
+            "engine_owned_mm_identity": false,
+            "status": "active"
+          }
+        }
+      }
+    ],
+    "dump": {
+      "agentcloud-tiny:default": {
+        "block_size": 16,
+        "events": [
+          {
+            "worker_id": 12194702509265453174,
+            "storage_tier": "device",
+            "residency_domain": "worker",
+            "event": {
+              "event_id": 0,
+              "data": {
+                "stored": {
+                  "parent_hash": null,
+                  "start_position": null,
+                  "blocks": [
+                    {
+                      "block_hash": 8771127959296939342,
+                      "tokens_hash": 8771127959296939342,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 11551211962395075892,
+                      "tokens_hash": 8771127959296939342,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 685227668715088507,
+                      "tokens_hash": 8771127959296939342,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 13091813955973897260,
+                      "tokens_hash": 8771127959296939342,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 7135528664630137380,
+                      "tokens_hash": 8771127959296939342,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 11406807180653849307,
+                      "tokens_hash": 8771127959296939342,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 9977382869393065958,
+                      "tokens_hash": 8771127959296939342,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 16767626595947181473,
+                      "tokens_hash": 8771127959296939342,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 9538818639845280455,
+                      "tokens_hash": 8771127959296939342,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 1083430245497476792,
+                      "tokens_hash": 8771127959296939342,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 12481278947479223774,
+                      "tokens_hash": 8771127959296939342,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 10967005617071469306,
+                      "tokens_hash": 8771127959296939342,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 17511263798900306163,
+                      "tokens_hash": 8771127959296939342,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 3561401720584569876,
+                      "tokens_hash": 8771127959296939342,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 2185384269660665833,
+                      "tokens_hash": 8771127959296939342,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 12290571664866712277,
+                      "tokens_hash": 8771127959296939342,
+                      "mm_extra_info": null
+                    }
+                  ]
+                }
+              },
+              "dp_rank": 0
+            }
+          },
+          {
+            "worker_id": 959529033414927889,
+            "storage_tier": "device",
+            "residency_domain": "worker",
+            "event": {
+              "event_id": 1,
+              "data": {
+                "stored": {
+                  "parent_hash": null,
+                  "start_position": null,
+                  "blocks": [
+                    {
+                      "block_hash": 6020325541069976962,
+                      "tokens_hash": 6020325541069976962,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 5132817844426441798,
+                      "tokens_hash": 9854045724508918093,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 4184517960884136057,
+                      "tokens_hash": 13991799191041867401,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 13568154879268931091,
+                      "tokens_hash": 213088457650565026,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 12135096700182000502,
+                      "tokens_hash": 7206437186287760878,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 6572672490097182491,
+                      "tokens_hash": 694857902976679649,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 5517489975240880864,
+                      "tokens_hash": 11784584472287982007,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 11539235280897860320,
+                      "tokens_hash": 3066105843272159736,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 9252671856278351686,
+                      "tokens_hash": 6840400117907654373,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 15373338235385223165,
+                      "tokens_hash": 16484987360965016311,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 11003815743293783719,
+                      "tokens_hash": 5556116278744233968,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 100745528822344346,
+                      "tokens_hash": 1700433877078378245,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 11163406195918031928,
+                      "tokens_hash": 373553993101417157,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 5413733463937369196,
+                      "tokens_hash": 6020325541069976962,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 2584749743869732099,
+                      "tokens_hash": 9854045724508918093,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 2520838367288469186,
+                      "tokens_hash": 13991799191041867401,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 13756948821203638136,
+                      "tokens_hash": 213088457650565026,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 10812389582706965287,
+                      "tokens_hash": 7206437186287760878,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 1601294256247305069,
+                      "tokens_hash": 694857902976679649,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 11068797532552754537,
+                      "tokens_hash": 11784584472287982007,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 16748933526675527216,
+                      "tokens_hash": 3066105843272159736,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 14906172307196386391,
+                      "tokens_hash": 6840400117907654373,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 17800093877606354086,
+                      "tokens_hash": 16484987360965016311,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 9317398676511271595,
+                      "tokens_hash": 5556116278744233968,
+                      "mm_extra_info": null
+                    }
+                  ]
+                }
+              },
+              "dp_rank": 0
+            }
+          },
+          {
+            "worker_id": 959529033414927889,
+            "storage_tier": "device",
+            "residency_domain": "worker",
+            "event": {
+              "event_id": 2,
+              "data": {
+                "stored": {
+                  "parent_hash": null,
+                  "start_position": null,
+                  "blocks": [
+                    {
+                      "block_hash": 5397235041035844539,
+                      "tokens_hash": 5397235041035844539,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 11289346572852023058,
+                      "tokens_hash": 5972223324484401945,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 12720940887990784342,
+                      "tokens_hash": 18324622617332145314,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 14305204459068479078,
+                      "tokens_hash": 3877404890404889232,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 15905305668045508299,
+                      "tokens_hash": 12108562391937736584,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 5701493335258344299,
+                      "tokens_hash": 6826026031710801711,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 2799847556852883547,
+                      "tokens_hash": 17294268069442744916,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 6508796875805265418,
+                      "tokens_hash": 1451691369782028584,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 13307856438759869343,
+                      "tokens_hash": 17376454903892859959,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 3862995906794654884,
+                      "tokens_hash": 11331914046327913740,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 9086250299444540652,
+                      "tokens_hash": 9527304573267646369,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 1162467305188973521,
+                      "tokens_hash": 12092703445162521600,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 6505233569931178826,
+                      "tokens_hash": 12623641130545703221,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 16723824389590082054,
+                      "tokens_hash": 5397235041035844539,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 11940559407313072229,
+                      "tokens_hash": 5972223324484401945,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 887284601829976524,
+                      "tokens_hash": 18324622617332145314,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 8499721672091003409,
+                      "tokens_hash": 3877404890404889232,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 17282272736376692212,
+                      "tokens_hash": 12108562391937736584,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 7724571669920709325,
+                      "tokens_hash": 6826026031710801711,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 13404117239765026251,
+                      "tokens_hash": 17294268069442744916,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 11531209979483644312,
+                      "tokens_hash": 1451691369782028584,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 1898302218081490088,
+                      "tokens_hash": 17376454903892859959,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 2473730412874222588,
+                      "tokens_hash": 11331914046327913740,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 7389553577947256062,
+                      "tokens_hash": 9527304573267646369,
+                      "mm_extra_info": null
+                    }
+                  ]
+                }
+              },
+              "dp_rank": 0
+            }
+          },
+          {
+            "worker_id": 959529033414927889,
+            "storage_tier": "device",
+            "residency_domain": "worker",
+            "event": {
+              "event_id": 3,
+              "data": {
+                "stored": {
+                  "parent_hash": null,
+                  "start_position": null,
+                  "blocks": [
+                    {
+                      "block_hash": 2248559929356265679,
+                      "tokens_hash": 2248559929356265679,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 11116317383356974896,
+                      "tokens_hash": 8598443114074169145,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 7976446429401101164,
+                      "tokens_hash": 18111607522402301487,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 17799437357968984147,
+                      "tokens_hash": 1039688108476617622,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 2309017722287378631,
+                      "tokens_hash": 4690252050042364188,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 1336284152719951775,
+                      "tokens_hash": 2007112352766393378,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 5945584254955433813,
+                      "tokens_hash": 9600106112098099923,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 11145445338938294477,
+                      "tokens_hash": 644260857675960228,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 1816313413155279105,
+                      "tokens_hash": 17384136320699551514,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 9116237149909202138,
+                      "tokens_hash": 1636296183037899026,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 15938528965595851680,
+                      "tokens_hash": 4592315890210934625,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 14527666181342862211,
+                      "tokens_hash": 12435544262994797213,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 12910480407674412370,
+                      "tokens_hash": 16969071156570345334,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 5416143705077801214,
+                      "tokens_hash": 11265892490123328802,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 3191326836099528918,
+                      "tokens_hash": 15656329577781770642,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 14281363132727597960,
+                      "tokens_hash": 9279126089302033758,
+                      "mm_extra_info": null
+                    }
+                  ]
+                }
+              },
+              "dp_rank": 0
+            }
+          },
+          {
+            "worker_id": 959529033414927889,
+            "storage_tier": "device",
+            "residency_domain": "worker",
+            "event": {
+              "event_id": 4,
+              "data": {
+                "stored": {
+                  "parent_hash": null,
+                  "start_position": null,
+                  "blocks": [
+                    {
+                      "block_hash": 12723427856916158930,
+                      "tokens_hash": 12723427856916158930,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 11367161974402526022,
+                      "tokens_hash": 15839195079315814502,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 12269246477839184034,
+                      "tokens_hash": 2018039806435587931,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 11081342609640820772,
+                      "tokens_hash": 14812455669449163355,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 12512464222322679355,
+                      "tokens_hash": 15189648221338190693,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 7652593074096463256,
+                      "tokens_hash": 14355381933714080937,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 5937838712435740643,
+                      "tokens_hash": 12016925681909117313,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 5336512403400743856,
+                      "tokens_hash": 6610999639216445679,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 9798892139858681643,
+                      "tokens_hash": 3750970272367767929,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 6181559864983878493,
+                      "tokens_hash": 15856235619155515112,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 6577866844599204231,
+                      "tokens_hash": 1790824805554783861,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 5275161552479820108,
+                      "tokens_hash": 10557285087905657924,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 1383716534156695587,
+                      "tokens_hash": 4454318714119421626,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 13618382290406680292,
+                      "tokens_hash": 12723427856916158930,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 17343276946207248431,
+                      "tokens_hash": 15839195079315814502,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 698665414621956613,
+                      "tokens_hash": 2018039806435587931,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 14741759728914011400,
+                      "tokens_hash": 14812455669449163355,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 4685046014212098010,
+                      "tokens_hash": 15189648221338190693,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 10981631690392110080,
+                      "tokens_hash": 14355381933714080937,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 5863601420873110959,
+                      "tokens_hash": 12016925681909117313,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 15128111498859914594,
+                      "tokens_hash": 6610999639216445679,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 2914638159122750282,
+                      "tokens_hash": 3750970272367767929,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 15403454875747238389,
+                      "tokens_hash": 15856235619155515112,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 17237644023849797519,
+                      "tokens_hash": 1790824805554783861,
+                      "mm_extra_info": null
+                    }
+                  ]
+                }
+              },
+              "dp_rank": 0
+            }
+          },
+          {
+            "worker_id": 959529033414927889,
+            "storage_tier": "device",
+            "residency_domain": "worker",
+            "event": {
+              "event_id": 5,
+              "data": {
+                "stored": {
+                  "parent_hash": null,
+                  "start_position": null,
+                  "blocks": [
+                    {
+                      "block_hash": 12885244276015540845,
+                      "tokens_hash": 12885244276015540845,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 2090477147311076553,
+                      "tokens_hash": 17070645268669840099,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 15448255943874449041,
+                      "tokens_hash": 11618351683659050078,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 8498843856415450027,
+                      "tokens_hash": 672816022695948467,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 11200737490348571188,
+                      "tokens_hash": 10039794722990885097,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 11508947832320243491,
+                      "tokens_hash": 6847494505381144802,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 5704001217613276480,
+                      "tokens_hash": 15422665057665701757,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 13985720885521775015,
+                      "tokens_hash": 6545334158743517065,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 674492322099088015,
+                      "tokens_hash": 7609476460952497263,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 5449051146808721589,
+                      "tokens_hash": 8284921072155367809,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 14223270419744752064,
+                      "tokens_hash": 18027883098069880988,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 12099670762862342464,
+                      "tokens_hash": 14666125264865478390,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 7684845942438865667,
+                      "tokens_hash": 11656749153570040204,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 4294867581458367827,
+                      "tokens_hash": 2294859674806357266,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 2080194295637920585,
+                      "tokens_hash": 993505264898837372,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 15592547051702206610,
+                      "tokens_hash": 7953288756412720368,
+                      "mm_extra_info": null
+                    }
+                  ]
+                }
+              },
+              "dp_rank": 0
+            }
+          },
+          {
+            "worker_id": 959529033414927889,
+            "storage_tier": "device",
+            "residency_domain": "worker",
+            "event": {
+              "event_id": 6,
+              "data": {
+                "stored": {
+                  "parent_hash": null,
+                  "start_position": null,
+                  "blocks": [
+                    {
+                      "block_hash": 10219673081077658168,
+                      "tokens_hash": 10219673081077658168,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 16748202971048856166,
+                      "tokens_hash": 669649743158961062,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 149681234228623768,
+                      "tokens_hash": 17516973769032952406,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 1693498873084948227,
+                      "tokens_hash": 5369801364131929468,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 17675729157146565619,
+                      "tokens_hash": 17638814636631400958,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 18089951699335120994,
+                      "tokens_hash": 12870239873080727402,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 9820495745907175931,
+                      "tokens_hash": 3678147123516952227,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 12603611845057343316,
+                      "tokens_hash": 2646581196864001440,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 15722698598658364930,
+                      "tokens_hash": 1223361012971293830,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 1429389114849097496,
+                      "tokens_hash": 10101158776514746962,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 2889118486723383250,
+                      "tokens_hash": 9311960911740087830,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 14156203793649113201,
+                      "tokens_hash": 4153757857423380377,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 7554581277646151299,
+                      "tokens_hash": 9168340522946883839,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 16951315183426340627,
+                      "tokens_hash": 10219673081077658168,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 14814570135092513854,
+                      "tokens_hash": 669649743158961062,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 5822361954074120159,
+                      "tokens_hash": 17516973769032952406,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 4540619783234038518,
+                      "tokens_hash": 5369801364131929468,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 9202199460710910214,
+                      "tokens_hash": 17638814636631400958,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 6945749396578178209,
+                      "tokens_hash": 12870239873080727402,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 9602174556850368826,
+                      "tokens_hash": 3678147123516952227,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 16437581011481966810,
+                      "tokens_hash": 2646581196864001440,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 4976244781498753041,
+                      "tokens_hash": 1223361012971293830,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 5227976599140318916,
+                      "tokens_hash": 10101158776514746962,
+                      "mm_extra_info": null
+                    },
+                    {
+                      "block_hash": 5568068657312694468,
+                      "tokens_hash": 9311960911740087830,
+                      "mm_extra_info": null
+                    }
+                  ]
+                }
+              },
+              "dp_rank": 0
+            }
+          }
+        ]
+      }
+    }
+  },
+  "resume_seconds": 0.28300765299991326,
+  "after": {
+    "quiesce_retry_after": "0001-01-01T00:00:00Z",
+    "idle_since": "0001-01-01T00:00:00Z",
+    "running_since": "2026-11-11T09:13:10.840444449Z",
+    "last_resumed_at": "2026-11-11T09:13:10.840444449Z",
+    "tenant_id": "tenant-a",
+    "workspace_id": "lkv-22c09eabde154c6abf24",
+    "session_id": "lkv-22c09eabde154c6abf24",
+    "mode": "external",
+    "profile": "coding",
+    "ablation_group": "E",
+    "state": "RUNNING",
+    "gate": "OPEN",
+    "epoch": 8,
+    "barrier_generation": 14,
+    "receipt_watermark": 15,
+    "next_receipt": 15,
+    "signal_sequence": 70,
+    "actor": {
+      "assigned_worker": "bcd59cf1-7bd8-4471-9259-9ccf952fd8b7",
+      "assigned_memory_bytes": 268435456,
+      "name": "ac-lkv-22c09eabde154c6abf24",
+      "uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+      "version": 38,
+      "snapshot_uuid": "d67b349e-47a4-437e-858d-e988045524c1",
+      "snapshot_generation": 7,
+      "actual_fidelity": "MEMORY",
+      "boot_id": "4bbdfd7d5cf841ce066ada00c995bf08",
+      "retained_tag": "ac-snapshot-61acb1c8ee8769b49d8b4fed",
+      "retained_tag_uid": "6b8d73fa-e130-40ea-b3a6-61f08453f127",
+      "snapshot_fidelity": "MEMORY"
+    },
+    "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+    "backend": "substrate",
+    "actual_fidelity": "MEMORY",
+    "active_tools": 0,
+    "tools": {
+      "growth-B-ram-before": {
+        "tool_op_id": "growth-B-ram-before",
+        "epoch": 7,
+        "status": "COMPLETED",
+        "payload_hash": "21088f8e0aa41a39e5f2c3adae77d58094d7bd12d3ccf69c2d0870034ecd654a",
+        "receipt_seq": 15,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:37.021612781Z",
+        "started_at": "2026-11-11T09:13:07.021612731Z",
+        "finished_at": "2026-11-11T09:13:08.348657122Z"
+      },
+      "install-memory-probe": {
+        "tool_op_id": "install-memory-probe",
+        "epoch": 1,
+        "status": "COMPLETED",
+        "payload_hash": "159593e4bb00f7a3c9374372af064279739af7406043fa8ae7feabf1729e4ea1",
+        "receipt_seq": 1,
+        "result": {
+          "content": "\"\"\"Four deterministic workloads and a persistent RAM probe inside a gVisor Actor.\"\"\"\nimport argparse\nimport ast\nimport csv\nimport hashlib\nimport http.server\nimport io\nimport json\nimport os\nfrom pathlib import Path\nimport resource\nimport subprocess\nimport sys\nimport threading\nimport time\nimport urllib.request\nimport uuid\n\nPORT = 18771\n\n\ndef random_heap(mib):\n    # Fill the retained allocation directly: initialization has no second full-size copy.\n    heap = bytearray(mib * 2**20)\n    view = memoryview(heap)\n    with open('/dev/urandom', 'rb', buffering=0) as source:\n        offset = 0\n        while offset < len(view):\n            count = source.readinto(view[offset:])\n            if not count:\n                raise OSError('random source ended before every RAM page was initialized')\n            offset += count\n    return heap\n\n\ndef memory_server(mib):\n    # Random data materializes every page and exercises snapshot transfer cost.\n    heap = random_heap(mib)\n    tree = ast.parse('def value(x):\\n    return x * 7 + 11\\n')\n    nonce = uuid.uuid4().hex\n    context = {'turns': 0, 'workspace_nonce': nonce}\n\n    class Handler(http.server.BaseHTTPRequestHandler):\n        def do_GET(self):\n            if self.path == '/advance':\n                context['turns'] += 1\n            body = json.dumps(dict(nonce=nonce, pid=os.getpid(), heap_bytes=len(heap),\n                heap_sha256=hashlib.sha256(heap).hexdigest(), ast_identity=id(tree),\n                ast_sha256=hashlib.sha256(ast.dump(tree).encode()).hexdigest(), context=context,\n                max_rss_kib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)).encode()\n            self.send_response(200)\n            self.send_header('Content-Type', 'application/json')\n            self.send_header('Content-Length', str(len(body)))\n            self.end_headers()\n            self.wfile.write(body)\n\n        def log_message(self, *_):\n            pass\n\n    http.server.HTTPServer(('127.0.0.1', PORT), Handler).serve_forever()\n\n\ndef proof(advance=False):\n    with urllib.request.urlopen(f'http://127.0.0.1:{PORT}/'+('advance' if advance else 'proof'), timeout=10) as response:\n        return json.load(response)\n\n\ndef start_memory(mib):\n    try:\n        return proof()\n    except OSError:\n        pass\n    with open('memory-probe.log', 'ab', buffering=0) as log:\n        subprocess.Popen([sys.executable, str(Path(__file__).resolve()), 'memory', '--memory-mib', str(mib)],\n                         stdin=subprocess.DEVNULL, stdout=log, stderr=log, start_new_session=True)\n    deadline = time.monotonic()+15\n    while time.monotonic() < deadline:\n        try:\n            return proof()\n        except OSError:\n            time.sleep(.05)\n    raise RuntimeError('Actor RAM probe did not become ready')\n\n\ndef workload(kind, seed, turn):\n    begin = time.perf_counter()\n    directory = Path(f'round-{turn}')\n    directory.mkdir(exist_ok=True)\n    if kind == 'coding':\n        modules = []\n        for m in range(8):\n            text = '\\n'.join(f'def f{i}(x):\\n    return (x * {i+1} + {seed}) % 1000003' for i in range(256))\n            path = directory/f'module{m}.py'\n            path.write_text(text)\n            modules.append(path)\n        subprocess.run([sys.executable, '-m', 'compileall', '-q', str(directory)], check=True)\n        namespace = {}\n        exec(compile(modules[0].read_text(), str(modules[0]), 'exec'), namespace)\n        assert namespace['f3'](13) == (52+seed) % 1000003\n        result = dict(kind='multi-file-python-compilation', modules=len(modules), functions=2048,\n                      test_assertions=1, compiled_files=len(list(directory.rglob('*.pyc'))))\n    elif kind == 'research':\n        articles = [(f'source={seed}:{i}\\n'+'research evidence data\\n'*4096).encode() for i in range(8)]\n\n        class Source(http.server.BaseHTTPRequestHandler):\n            def do_GET(self):\n                time.sleep(.025)\n                data = articles[int(self.path[1:])]\n                self.send_response(200)\n                self.send_header('Content-Length', str(len(data)))\n                self.end_headers()\n                self.wfile.write(data)\n\n            def log_message(self, *_):\n                pass\n\n        server = http.server.ThreadingHTTPServer(('127.0.0.1', 0), Source)\n        thread = threading.Thread(target=server.serve_forever, kwargs={'poll_interval': .01}, daemon=True)\n        thread.start()\n        try:\n            retrieved = []\n            for i in range(len(articles)):\n                with urllib.request.urlopen(f'http://127.0.0.1:{server.server_port}/{i}', timeout=5) as response:\n                    content = response.read()\n                assert content == articles[i]\n                (directory/f'source-{i}.txt').write_bytes(content)\n                retrieved.append(content)\n        finally:\n            server.shutdown()\n            server.server_close()\n            thread.join()\n        result = dict(kind='http-research-and-source-verification', documents=8,\n                      bytes_read=sum(map(len, retrieved)), source='Actor-local controlled HTTP fixture',\n                      per_document_service_delay_seconds=.025,\n                      corpus_sha256=hashlib.sha256(b''.join(retrieved)).hexdigest())\n    elif kind == 'batch':\n        expected = 0\n        for batch in range(16):\n            rows = [(batch*256+i, (i+seed) % 997) for i in range(256)]\n            expected += sum(value for _, value in rows)\n            with (directory/f'batch-{batch}.csv').open('w') as handle:\n                csv.writer(handle).writerows(rows)\n                handle.flush()\n                os.fsync(handle.fileno())\n        actual = 0\n        for path in directory.glob('*.csv'):\n            with path.open() as handle:\n                actual += sum(int(row[1]) for row in csv.reader(handle))\n        assert actual == expected\n        result = dict(kind='fsync-csv-batch-and-aggregation', files=16, rows=4096, checksum=actual)\n    elif kind == 'interactive':\n        data = {'workspace': seed, 'round': turn, 'items': [{'price': i+1, 'quantity': 2} for i in range(20)]}\n        (directory/'request.json').write_text(json.dumps(data))\n        parsed = json.loads((directory/'request.json').read_text())\n        total = sum(item['price']*item['quantity'] for item in parsed['items'])\n        assert total == 420\n        result = dict(kind='interactive-file-query', items=20, total=total)\n    else:\n        raise ValueError(kind)\n    result.update(wall_seconds=time.perf_counter()-begin, seed=seed, turn=turn, ram=proof(True))\n    (directory/'receipt.json').write_text(json.dumps(result))\n    return result\n\n\ndef main():\n    parser = argparse.ArgumentParser(description=__doc__)\n    parser.add_argument('action', choices=['start', 'memory', 'proof', 'work'])\n    parser.add_argument('--memory-mib', type=int, default=16)\n    parser.add_argument('--kind', choices=['coding', 'research', 'batch', 'interactive'], default='coding')\n    parser.add_argument('--seed', type=int, default=7101)\n    parser.add_argument('--turn', type=int, default=0)\n    args = parser.parse_args()\n    if args.memory_mib < 1 or args.memory_mib > 1024:\n        parser.error('memory working set must be within 1..1024 MiB')\n    if args.action == 'memory':\n        memory_server(args.memory_mib)\n        return\n    result = start_memory(args.memory_mib) if args.action == 'start' else proof() if args.action == 'proof' else workload(args.kind, args.seed, args.turn)\n    print(json.dumps(result))\n\n\nif __name__ == '__main__':\n    main()\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:00.477153692Z",
+        "started_at": "2026-11-11T09:12:30.477153521Z",
+        "finished_at": "2026-11-11T09:12:30.506697143Z"
+      },
+      "pair-00-B-ram-after": {
+        "tool_op_id": "pair-00-B-ram-after",
+        "epoch": 2,
+        "status": "COMPLETED",
+        "payload_hash": "165db8d67d0e7d7b35089c3a16601162edab96dc13ceb92737133242342fd34e",
+        "receipt_seq": 4,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:09.237062404Z",
+        "started_at": "2026-11-11T09:12:39.237061883Z",
+        "finished_at": "2026-11-11T09:12:40.581755319Z"
+      },
+      "pair-00-B-ram-before": {
+        "tool_op_id": "pair-00-B-ram-before",
+        "epoch": 1,
+        "status": "COMPLETED",
+        "payload_hash": "111e6292f399d224f4d86e07b0ae136667b8f255a7442f8ea25ca2bad9ef1a1a",
+        "receipt_seq": 3,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:04.963687684Z",
+        "started_at": "2026-11-11T09:12:34.963687644Z",
+        "finished_at": "2026-11-11T09:12:36.351859348Z"
+      },
+      "pair-00-C-ram-after": {
+        "tool_op_id": "pair-00-C-ram-after",
+        "epoch": 3,
+        "status": "COMPLETED",
+        "payload_hash": "9edf6453958ff38177ea4fe396782e8a1467dd72cd8f4f3b9b3c30698769c73f",
+        "receipt_seq": 6,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:14.642589948Z",
+        "started_at": "2026-11-11T09:12:44.642589908Z",
+        "finished_at": "2026-11-11T09:12:45.911040173Z"
+      },
+      "pair-00-C-ram-before": {
+        "tool_op_id": "pair-00-C-ram-before",
+        "epoch": 2,
+        "status": "COMPLETED",
+        "payload_hash": "30470e71a8b021876dbc201b6dbfd6e9203af393a4b578a77f2cbd007079955a",
+        "receipt_seq": 5,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:10.641662898Z",
+        "started_at": "2026-11-11T09:12:40.641662848Z",
+        "finished_at": "2026-11-11T09:12:41.881582019Z"
+      },
+      "pair-01-B-ram-after": {
+        "tool_op_id": "pair-01-B-ram-after",
+        "epoch": 4,
+        "status": "COMPLETED",
+        "payload_hash": "b7aaa58c8e550d9cad4c790974ff0a8bf4e0e167c4d750f9985dcb369daf1fd6",
+        "receipt_seq": 8,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:19.699636125Z",
+        "started_at": "2026-11-11T09:12:49.699636075Z",
+        "finished_at": "2026-11-11T09:12:51.003948214Z"
+      },
+      "pair-01-B-ram-before": {
+        "tool_op_id": "pair-01-B-ram-before",
+        "epoch": 3,
+        "status": "COMPLETED",
+        "payload_hash": "6242d8488544e3936a98bc21c6f7232e364cb716f55e510ca8d4e38cbfa50bf4",
+        "receipt_seq": 7,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:15.984696813Z",
+        "started_at": "2026-11-11T09:12:45.984696763Z",
+        "finished_at": "2026-11-11T09:12:47.213307814Z"
+      },
+      "pair-01-C-ram-after": {
+        "tool_op_id": "pair-01-C-ram-after",
+        "epoch": 5,
+        "status": "COMPLETED",
+        "payload_hash": "9724e50bfefcc75b40e46205af122ba41c7dbefade0b9cb29e0bf1ae866f65de",
+        "receipt_seq": 10,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:25.155839083Z",
+        "started_at": "2026-11-11T09:12:55.155839032Z",
+        "finished_at": "2026-11-11T09:12:56.409073553Z"
+      },
+      "pair-01-C-ram-before": {
+        "tool_op_id": "pair-01-C-ram-before",
+        "epoch": 4,
+        "status": "COMPLETED",
+        "payload_hash": "cfd1f074cd0a9b77d2c84af1813d75fe76e528016d1de49b4539db7381b1a5f6",
+        "receipt_seq": 9,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:21.112844915Z",
+        "started_at": "2026-11-11T09:12:51.112844865Z",
+        "finished_at": "2026-11-11T09:12:52.396673118Z"
+      },
+      "pair-02-B-ram-after": {
+        "tool_op_id": "pair-02-B-ram-after",
+        "epoch": 6,
+        "status": "COMPLETED",
+        "payload_hash": "c2291f407248fde0c7ff58a5d4654b3eb43c2eff7c0d88bf24a2ed2f170e5354",
+        "receipt_seq": 12,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:30.047870341Z",
+        "started_at": "2026-11-11T09:13:00.047870301Z",
+        "finished_at": "2026-11-11T09:13:01.312760784Z"
+      },
+      "pair-02-B-ram-before": {
+        "tool_op_id": "pair-02-B-ram-before",
+        "epoch": 5,
+        "status": "COMPLETED",
+        "payload_hash": "ff46b66338cf1f5fe319b359e1aaa5a31c1604c52e17bb7df6aacf30369c5f8d",
+        "receipt_seq": 11,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:26.511330534Z",
+        "started_at": "2026-11-11T09:12:56.511330494Z",
+        "finished_at": "2026-11-11T09:12:57.708318165Z"
+      },
+      "pair-02-C-ram-after": {
+        "tool_op_id": "pair-02-C-ram-after",
+        "epoch": 7,
+        "status": "COMPLETED",
+        "payload_hash": "27cf059dbf6a8d85d5294a2d880eb53f7282d26c793485c7acdc29e5fc89b867",
+        "receipt_seq": 14,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:35.435356771Z",
+        "started_at": "2026-11-11T09:13:05.435356721Z",
+        "finished_at": "2026-11-11T09:13:06.849633791Z"
+      },
+      "pair-02-C-ram-before": {
+        "tool_op_id": "pair-02-C-ram-before",
+        "epoch": 6,
+        "status": "COMPLETED",
+        "payload_hash": "c8537b10e415fcba32a5c98da822f9176d7aa0332a9eeaac40d77b1f1afcab30",
+        "receipt_seq": 13,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:13:31.431086021Z",
+        "started_at": "2026-11-11T09:13:01.431085961Z",
+        "finished_at": "2026-11-11T09:13:02.593203954Z"
+      },
+      "start-memory-probe": {
+        "tool_op_id": "start-memory-probe",
+        "epoch": 1,
+        "status": "COMPLETED",
+        "payload_hash": "23ffdf7c1ccf97f94a86e0f2880244b97a4232771e4e021a61406aac6f1a5e21",
+        "receipt_seq": 2,
+        "result": {
+          "stdout": "{\"nonce\": \"f22bdb86761d426999e6681c0c115583\", \"pid\": 10, \"heap_bytes\": 1048576, \"heap_sha256\": \"df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052\", \"ast_identity\": 139948380461904, \"ast_sha256\": \"1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af\", \"context\": {\"turns\": 0, \"workspace_nonce\": \"f22bdb86761d426999e6681c0c115583\"}, \"max_rss_kib\": 39796}\n",
+          "exit_code": 0
+        },
+        "deadline": "2026-11-11T09:12:50.514429115Z",
+        "started_at": "2026-11-11T09:12:30.514429065Z",
+        "finished_at": "2026-11-11T09:12:34.952838234Z"
+      }
+    },
+    "lifecycle": {
+      "growth-B-resume": {
+        "operation_id": "growth-B-resume",
+        "action": "resume",
+        "epoch": 7,
+        "payload_hash": "e3c4a33aa637527244edcdcf45b5c26a534b19be21f443ae7ff31b40162d8bef",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:13:10.567141892Z",
+        "retry_after": "0001-01-01T00:00:00Z"
+      },
+      "growth-B-suspend": {
+        "operation_id": "growth-B-suspend",
+        "action": "suspend",
+        "epoch": 7,
+        "payload_hash": "439592dcc4e7e4244d56e734ac030b7a24281878287c951280b7b83ef9d13d41",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:13:08.435417987Z",
+        "retry_after": "0001-01-01T00:00:00Z",
+        "manifest": {
+          "manifest_id": "99ea2eaefc450fb0408506085c0cfcb3",
+          "state": "COMMITTED",
+          "epoch": 7,
+          "barrier_generation": 13,
+          "receipt_watermark": 15,
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "d67b349e-47a4-437e-858d-e988045524c1",
+          "snapshot_generation": 7,
+          "fidelity": "MEMORY",
+          "retained_tag": "ac-snapshot-61acb1c8ee8769b49d8b4fed",
+          "retained_tag_uid": "6b8d73fa-e130-40ea-b3a6-61f08453f127",
+          "created_at": "2026-11-11T09:13:10.220720461Z"
+        }
+      },
+      "pair-00-B-resume": {
+        "operation_id": "pair-00-B-resume",
+        "action": "resume",
+        "epoch": 1,
+        "payload_hash": "229ebe219dfd0794bb824b853294eae3dfe361b28e7ff69a286cfd2efecbf098",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:38.832833285Z",
+        "retry_after": "0001-01-01T00:00:00Z"
+      },
+      "pair-00-B-suspend": {
+        "operation_id": "pair-00-B-suspend",
+        "action": "suspend",
+        "epoch": 1,
+        "payload_hash": "b4a3f9d459e0a3e76d95e76a098d0971602fde576e766b58f4ccbf557d3d3313",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:36.403456444Z",
+        "retry_after": "0001-01-01T00:00:00Z",
+        "manifest": {
+          "manifest_id": "dc45ff0a7d99e2aa3e926fb34eea5bf5",
+          "state": "COMMITTED",
+          "epoch": 1,
+          "barrier_generation": 1,
+          "receipt_watermark": 3,
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "a1395db5-53f4-4393-be44-21c644b5e1d3",
+          "snapshot_generation": 1,
+          "fidelity": "MEMORY",
+          "retained_tag": "ac-snapshot-51fdd6fb2b8acb9b91122e3f",
+          "retained_tag_uid": "cf33ee9b-ac9a-4eef-b152-d29ea217d293",
+          "created_at": "2026-11-11T09:12:38.493875497Z"
+        }
+      },
+      "pair-00-C-resume": {
+        "operation_id": "pair-00-C-resume",
+        "action": "resume",
+        "epoch": 2,
+        "payload_hash": "bb2109cfe97a66709e36543a89e7ea4228a3acc64be5eb083f3877067cb7d392",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:44.357228703Z",
+        "retry_after": "0001-01-01T00:00:00Z"
+      },
+      "pair-00-C-suspend": {
+        "operation_id": "pair-00-C-suspend",
+        "action": "suspend",
+        "epoch": 2,
+        "payload_hash": "bfc284c912e7aaf533abc1565adf9454dc10d20e42302fd33a22062834f87433",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:41.93594757Z",
+        "retry_after": "0001-01-01T00:00:00Z",
+        "manifest": {
+          "manifest_id": "31a90214cb94a701418c8a9f25cd1834",
+          "state": "COMMITTED",
+          "epoch": 2,
+          "barrier_generation": 3,
+          "receipt_watermark": 5,
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "558da4fe-0189-4a6f-bf07-38782304e8dc",
+          "snapshot_generation": 2,
+          "fidelity": "MEMORY",
+          "retained_tag": "ac-snapshot-361f84f58e9649243580bf47",
+          "retained_tag_uid": "fc8049cb-a733-4797-b208-94e287745353",
+          "created_at": "2026-11-11T09:12:43.661446559Z"
+        }
+      },
+      "pair-01-B-resume": {
+        "operation_id": "pair-01-B-resume",
+        "action": "resume",
+        "epoch": 3,
+        "payload_hash": "ddef082347f4e541421ebe896e1d064e35c1c6048b591f4b031ab1ab919af5ef",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:49.409102668Z",
+        "retry_after": "0001-01-01T00:00:00Z"
+      },
+      "pair-01-B-suspend": {
+        "operation_id": "pair-01-B-suspend",
+        "action": "suspend",
+        "epoch": 3,
+        "payload_hash": "58c82da7554c69207b1f331f55f01e41774a4c17655e681aef63a881fa9b4895",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:47.273099157Z",
+        "retry_after": "0001-01-01T00:00:00Z",
+        "manifest": {
+          "manifest_id": "c2ec9e7b5df69408cbab122f25361526",
+          "state": "COMMITTED",
+          "epoch": 3,
+          "barrier_generation": 5,
+          "receipt_watermark": 7,
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "925fcebd-e4ca-448a-b199-0eee35543d53",
+          "snapshot_generation": 3,
+          "fidelity": "MEMORY",
+          "retained_tag": "ac-snapshot-0c9fa230da1e7998b779bda1",
+          "retained_tag_uid": "d39b1661-07a9-41f3-ad02-41cc7c0f5847",
+          "created_at": "2026-11-11T09:12:49.06482234Z"
+        }
+      },
+      "pair-01-C-resume": {
+        "operation_id": "pair-01-C-resume",
+        "action": "resume",
+        "epoch": 4,
+        "payload_hash": "105e5a109937183983a98f1a4228f1d3128887f4e0d7c509e3099128e56204a0",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:54.595537995Z",
+        "retry_after": "0001-01-01T00:00:00Z"
+      },
+      "pair-01-C-suspend": {
+        "operation_id": "pair-01-C-suspend",
+        "action": "suspend",
+        "epoch": 4,
+        "payload_hash": "a94c61b1fe5f681ebd6b73929ce5613a66d467a51739e3d5ee40c9ac8fa470eb",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:52.463422536Z",
+        "retry_after": "0001-01-01T00:00:00Z",
+        "manifest": {
+          "manifest_id": "af44b11d8e496bceb9831ed890daec54",
+          "state": "COMMITTED",
+          "epoch": 4,
+          "barrier_generation": 7,
+          "receipt_watermark": 9,
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "377d0c43-6ba0-47f7-a689-dde5c2a96f48",
+          "snapshot_generation": 4,
+          "fidelity": "MEMORY",
+          "retained_tag": "ac-snapshot-da7d92797733f26281786a4b",
+          "retained_tag_uid": "9f05b749-c0ad-4972-b8ec-4f196b8a313c",
+          "created_at": "2026-11-11T09:12:53.929483208Z"
+        }
+      },
+      "pair-02-B-resume": {
+        "operation_id": "pair-02-B-resume",
+        "action": "resume",
+        "epoch": 5,
+        "payload_hash": "1cc16e15e7b7e89ca4d94867795ea1b10d0277e82811082a2a3201ed935449e5",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:59.700394197Z",
+        "retry_after": "0001-01-01T00:00:00Z"
+      },
+      "pair-02-B-suspend": {
+        "operation_id": "pair-02-B-suspend",
+        "action": "suspend",
+        "epoch": 5,
+        "payload_hash": "4327f83f82579dbe60987b7f30f7ab2cbbede00dde020f1ae70c60e4c139cb12",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:12:57.778902261Z",
+        "retry_after": "0001-01-01T00:00:00Z",
+        "manifest": {
+          "manifest_id": "f8170372fdd759a85c459da4f05a2398",
+          "state": "COMMITTED",
+          "epoch": 5,
+          "barrier_generation": 9,
+          "receipt_watermark": 11,
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "7eab3a75-eef6-469c-9ad2-68cc3c4c9f77",
+          "snapshot_generation": 5,
+          "fidelity": "MEMORY",
+          "retained_tag": "ac-snapshot-bfb6c04d6897d0d6d3d652c9",
+          "retained_tag_uid": "a68b83ed-cbfe-49a9-b4c3-eb86d9a2792a",
+          "created_at": "2026-11-11T09:12:59.359391809Z"
+        }
+      },
+      "pair-02-C-resume": {
+        "operation_id": "pair-02-C-resume",
+        "action": "resume",
+        "epoch": 6,
+        "payload_hash": "b714ee38d8e470b8f2417f881064b76504ef1e811de8009d776dcaf8683eac5d",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:13:05.158046312Z",
+        "retry_after": "0001-01-01T00:00:00Z"
+      },
+      "pair-02-C-suspend": {
+        "operation_id": "pair-02-C-suspend",
+        "action": "suspend",
+        "epoch": 6,
+        "payload_hash": "57d2ade01b242198a635d20285212e8f5773de93ebff091b379d0a8aa1bee7d2",
+        "status": "COMPLETED",
+        "attempt_count": 1,
+        "last_attempt_at": "2026-11-11T09:13:02.718855045Z",
+        "retry_after": "0001-01-01T00:00:00Z",
+        "manifest": {
+          "manifest_id": "67b5a1cfebdd438ec461d6410561748b",
+          "state": "COMMITTED",
+          "epoch": 6,
+          "barrier_generation": 11,
+          "receipt_watermark": 13,
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "ba1a307e-d3c0-4b86-8430-5317112d5e15",
+          "snapshot_generation": 6,
+          "fidelity": "MEMORY",
+          "retained_tag": "ac-snapshot-ce036c0e9972822be4b3d8b8",
+          "retained_tag_uid": "eafd03a8-8840-479e-a7f6-9a76301e10ed",
+          "created_at": "2026-11-11T09:13:04.443015644Z"
+        }
+      }
+    },
+    "manifest": {
+      "manifest_id": "99ea2eaefc450fb0408506085c0cfcb3",
+      "state": "COMMITTED",
+      "epoch": 7,
+      "barrier_generation": 13,
+      "receipt_watermark": 15,
+      "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+      "snapshot_uuid": "d67b349e-47a4-437e-858d-e988045524c1",
+      "snapshot_generation": 7,
+      "fidelity": "MEMORY",
+      "retained_tag": "ac-snapshot-61acb1c8ee8769b49d8b4fed",
+      "retained_tag_uid": "6b8d73fa-e130-40ea-b3a6-61f08453f127",
+      "created_at": "2026-11-11T09:13:10.220720461Z"
+    },
+    "snapshot_gc": {
+      "tags": {
+        "ac-snapshot-0c9fa230da1e7998b779bda1": {
+          "operation_id": "pair-01-B-suspend",
+          "manifest_id": "c2ec9e7b5df69408cbab122f25361526",
+          "tag_name": "ac-snapshot-0c9fa230da1e7998b779bda1",
+          "tag_uid": "d39b1661-07a9-41f3-ad02-41cc7c0f5847",
+          "actor_name": "ac-lkv-22c09eabde154c6abf24",
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "925fcebd-e4ca-448a-b199-0eee35543d53",
+          "snapshot_generation": 3,
+          "state": "COMMITTED",
+          "created_at": "2026-11-11T09:12:49.06482234Z",
+          "committed_at": "2026-11-11T09:12:49.06482234Z",
+          "verified_at": "2026-11-11T09:12:53.961126629Z",
+          "delete_state": "DELETED",
+          "delete_attempts": 1,
+          "delete_started_at": "2026-11-11T09:12:59.376823651Z",
+          "deleted_at": "2026-11-11T09:12:59.443122704Z",
+          "retry_after": "0001-01-01T00:00:00Z"
+        },
+        "ac-snapshot-361f84f58e9649243580bf47": {
+          "operation_id": "pair-00-C-suspend",
+          "manifest_id": "31a90214cb94a701418c8a9f25cd1834",
+          "tag_name": "ac-snapshot-361f84f58e9649243580bf47",
+          "tag_uid": "fc8049cb-a733-4797-b208-94e287745353",
+          "actor_name": "ac-lkv-22c09eabde154c6abf24",
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "558da4fe-0189-4a6f-bf07-38782304e8dc",
+          "snapshot_generation": 2,
+          "state": "COMMITTED",
+          "created_at": "2026-11-11T09:12:43.661446559Z",
+          "committed_at": "2026-11-11T09:12:43.661446559Z",
+          "verified_at": "2026-11-11T09:12:49.085872768Z",
+          "delete_state": "DELETED",
+          "delete_attempts": 1,
+          "delete_started_at": "2026-11-11T09:12:53.96112752Z",
+          "deleted_at": "2026-11-11T09:12:54.030011854Z",
+          "retry_after": "0001-01-01T00:00:00Z"
+        },
+        "ac-snapshot-51fdd6fb2b8acb9b91122e3f": {
+          "operation_id": "pair-00-B-suspend",
+          "manifest_id": "dc45ff0a7d99e2aa3e926fb34eea5bf5",
+          "tag_name": "ac-snapshot-51fdd6fb2b8acb9b91122e3f",
+          "tag_uid": "cf33ee9b-ac9a-4eef-b152-d29ea217d293",
+          "actor_name": "ac-lkv-22c09eabde154c6abf24",
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "a1395db5-53f4-4393-be44-21c644b5e1d3",
+          "snapshot_generation": 1,
+          "state": "COMMITTED",
+          "created_at": "2026-11-11T09:12:38.493875497Z",
+          "committed_at": "2026-11-11T09:12:38.493875497Z",
+          "verified_at": "2026-11-11T09:12:38.493875497Z",
+          "delete_state": "DELETED",
+          "delete_attempts": 1,
+          "delete_started_at": "2026-11-11T09:12:49.085872848Z",
+          "deleted_at": "2026-11-11T09:12:49.286100611Z",
+          "retry_after": "0001-01-01T00:00:00Z"
+        },
+        "ac-snapshot-61acb1c8ee8769b49d8b4fed": {
+          "operation_id": "growth-B-suspend",
+          "manifest_id": "99ea2eaefc450fb0408506085c0cfcb3",
+          "tag_name": "ac-snapshot-61acb1c8ee8769b49d8b4fed",
+          "tag_uid": "6b8d73fa-e130-40ea-b3a6-61f08453f127",
+          "actor_name": "ac-lkv-22c09eabde154c6abf24",
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "d67b349e-47a4-437e-858d-e988045524c1",
+          "snapshot_generation": 7,
+          "state": "COMMITTED",
+          "created_at": "2026-11-11T09:13:10.220720461Z",
+          "committed_at": "2026-11-11T09:13:10.220720461Z",
+          "verified_at": "2026-11-11T09:13:10.246065077Z",
+          "delete_started_at": "0001-01-01T00:00:00Z",
+          "deleted_at": "0001-01-01T00:00:00Z",
+          "retry_after": "0001-01-01T00:00:00Z"
+        },
+        "ac-snapshot-bfb6c04d6897d0d6d3d652c9": {
+          "operation_id": "pair-02-B-suspend",
+          "manifest_id": "f8170372fdd759a85c459da4f05a2398",
+          "tag_name": "ac-snapshot-bfb6c04d6897d0d6d3d652c9",
+          "tag_uid": "a68b83ed-cbfe-49a9-b4c3-eb86d9a2792a",
+          "actor_name": "ac-lkv-22c09eabde154c6abf24",
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "7eab3a75-eef6-469c-9ad2-68cc3c4c9f77",
+          "snapshot_generation": 5,
+          "state": "COMMITTED",
+          "created_at": "2026-11-11T09:12:59.359391809Z",
+          "committed_at": "2026-11-11T09:12:59.359391809Z",
+          "verified_at": "2026-11-11T09:13:04.461627292Z",
+          "delete_state": "DELETED",
+          "delete_attempts": 1,
+          "delete_started_at": "2026-11-11T09:13:10.246065848Z",
+          "deleted_at": "2026-11-11T09:13:10.325579528Z",
+          "retry_after": "0001-01-01T00:00:00Z"
+        },
+        "ac-snapshot-ce036c0e9972822be4b3d8b8": {
+          "operation_id": "pair-02-C-suspend",
+          "manifest_id": "67b5a1cfebdd438ec461d6410561748b",
+          "tag_name": "ac-snapshot-ce036c0e9972822be4b3d8b8",
+          "tag_uid": "eafd03a8-8840-479e-a7f6-9a76301e10ed",
+          "actor_name": "ac-lkv-22c09eabde154c6abf24",
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "ba1a307e-d3c0-4b86-8430-5317112d5e15",
+          "snapshot_generation": 6,
+          "state": "COMMITTED",
+          "created_at": "2026-11-11T09:13:04.443015644Z",
+          "committed_at": "2026-11-11T09:13:04.443015644Z",
+          "verified_at": "2026-11-11T09:13:10.246065478Z",
+          "delete_started_at": "0001-01-01T00:00:00Z",
+          "deleted_at": "0001-01-01T00:00:00Z",
+          "retry_after": "0001-01-01T00:00:00Z"
+        },
+        "ac-snapshot-da7d92797733f26281786a4b": {
+          "operation_id": "pair-01-C-suspend",
+          "manifest_id": "af44b11d8e496bceb9831ed890daec54",
+          "tag_name": "ac-snapshot-da7d92797733f26281786a4b",
+          "tag_uid": "9f05b749-c0ad-4972-b8ec-4f196b8a313c",
+          "actor_name": "ac-lkv-22c09eabde154c6abf24",
+          "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+          "snapshot_uuid": "377d0c43-6ba0-47f7-a689-dde5c2a96f48",
+          "snapshot_generation": 4,
+          "state": "COMMITTED",
+          "created_at": "2026-11-11T09:12:53.929483208Z",
+          "committed_at": "2026-11-11T09:12:53.929483208Z",
+          "verified_at": "2026-11-11T09:12:59.376823541Z",
+          "delete_state": "DELETED",
+          "delete_attempts": 1,
+          "delete_started_at": "2026-11-11T09:13:04.461627402Z",
+          "deleted_at": "2026-11-11T09:13:04.530275104Z",
+          "retry_after": "0001-01-01T00:00:00Z"
+        }
+      }
+    },
+    "created_at": "2026-11-11T09:12:26.963201473Z",
+    "updated_at": "2026-11-11T09:13:10.840451339Z"
+  },
+  "substrate_after": {
+    "action": "inspect",
+    "actor": {
+      "assigned_worker": "bcd59cf1-7bd8-4471-9259-9ccf952fd8b7",
+      "name": "ac-lkv-22c09eabde154c6abf24",
+      "uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+      "version": 38,
+      "state": "RUNNING",
+      "snapshot_uuid": "d67b349e-47a4-437e-858d-e988045524c1",
+      "snapshot_generation": 7,
+      "snapshot_fidelity": "MEMORY",
+      "durable": true,
+      "resumed": false,
+      "cold_started": false,
+      "actual_fidelity": "MEMORY",
+      "restored_snapshot_uuid": "d67b349e-47a4-437e-858d-e988045524c1",
+      "restored_snapshot_generation": 7
+    }
+  },
+  "binding_after": {
+    "protocol_version": 1,
+    "accepted": true,
+    "applied": true,
+    "reconciled": true,
+    "binding": {
+      "source_id": "coordinator-local",
+      "tenant_id": "tenant-a",
+      "workspace_id": "lkv-22c09eabde154c6abf24",
+      "session_id": "lkv-22c09eabde154c6abf24",
+      "actor_uid": "fd98d363-032e-4153-bd1a-343f31b77929",
+      "epoch": 8
+    },
+    "routing_session_id": "ac:2398ef2a2c3c4cf4bd2ffee1a8b21544",
+    "classifier_id": 0,
+    "binding_generation": "89c482bfb76a448da84e03b06f8044e3",
+    "sequence": 72,
+    "received_at": "2026-11-11T09:13:10.873460948Z",
+    "snapshot": {
+      "program_present": true,
+      "admission_history": [],
+      "last_admission_wait_ms": null,
+      "released_acting_tokens": 0,
+      "phase": "Acting",
+      "lifecycle": "Active",
+      "baseline_tokens": 257,
+      "logical_budget_tokens": 257,
+      "execution_multiplier": 1.0,
+      "state": "RUNNING_FAST",
+      "sequence": 72,
+      "fresh": true,
+      "session_waiting_requests": 0,
+      "session_active_requests": 0,
+      "waiting_requests": 0,
+      "paused_programs": 0,
+      "completed_events": 35,
+      "aborted_events": 0,
+      "pause_events": 0,
+      "final_events": 21
+    },
+    "inference_lease_sha256": "167bc86e71fd80bc7afc942e492ce9b8f0f516bed2c1cf16cc96544dd5c9d813"
+  },
+  "old_lease_http_status": 401,
+  "ram_after": {
+    "nonce": "f22bdb86761d426999e6681c0c115583",
+    "pid": 10,
+    "heap_bytes": 1048576,
+    "heap_sha256": "df8814d3d2a4f02475b939320c958bbca51e924fc9ba81ddb39f407ddb7a6052",
+    "ast_identity": 139948380461904,
+    "ast_sha256": "1fc3f15a9a452237262e506c1af5a317a5d69a56e902f80e6cc1e613836702af",
+    "context": {
+      "turns": 0,
+      "workspace_nonce": "f22bdb86761d426999e6681c0c115583"
+    },
+    "max_rss_kib": 39796
+  },
+  "turn2": {
+    "prompt_tokens": 288,
+    "simulated_cached_tokens": 256,
+    "derived_recomputed_prompt_tokens": 32,
+    "indexed_prefix_tokens": 256,
+    "simulated_hit_fraction": 0.8888888888888888,
+    "cache_count_source": "official_mocker_engine_usage",
+    "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+    "worker_id": 959529033414927889,
+    "elapsed_seconds": 0.026757014999930107,
+    "started_monotonic_seconds": 1026.00754284,
+    "routing_control": {
+      "kind": "native_router_selection"
+    },
+    "request_evidence": "growth-B-turn2.json",
+    "client_ttft_seconds": 0.026572998999881747
+  },
+  "same_worker_after_resume": true,
+  "input_kind": "shared_256_prefix_plus_32_tokens",
+  "finished_at": "2026-11-11T09:13:12.362234+00:00"
+}

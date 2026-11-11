@@ -26,6 +26,8 @@ flowchart LR
 
 [P2 原始证据](docs/GPU_VALIDATION.md) · [带采集状态的公开指标汇总](docs/evidence/release-metrics.json)
 
+**跨生命周期 CPU 联合验证：**真实 gVisor MEMORY＋双官方 Dynamo Mocker 完成 **54/54 Trial**，验证跨 Epoch 的 Session 保持、Lease 轮换、旧凭证 401 和 **257 → 0 → 257** 逻辑预算。恢复后保留缓存时模拟命中 **240/256 Token**，确认驱逐后命中 **0/256**；亲和 Off／Hard 两组结果一致。[完整报告与原始回执](docs/LIFECYCLE_KV_VALIDATION.md) · [Actions 42991535195](https://github.com/lilong555/agentcloud/actions/runs/42991535195)
+
 ## 确定性状态与真实恢复
 
 Inference Lease、Model Attempt ID、Actor UID／epoch、工具安全点与 durable manifest 分别约束推理身份、物理发送、执行代次、副作用和快照来源。重复 ID／payload 读取持久回执，冲突身份拒收；结果未知时保存 `OUTCOME_UNKNOWN`、关闭工具 gate，并依赖目标服务的幂等键或结果查询完成对账。

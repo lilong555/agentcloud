@@ -1,0 +1,708 @@
+{
+  "schema_version": 1,
+  "run_id": "lkv-hard-7e5015de594b",
+  "status": "passed",
+  "started_at": "2026-11-11T09:03:44.973046+00:00",
+  "execution_kind": "real-dynamo-two-official-mockers-config",
+  "gpu_execution": false,
+  "actor_lifecycle_integration": false,
+  "in_actor_model_execution": false,
+  "model_request_origin": "external_test_driver",
+  "worker_count": 2,
+  "seed": 7103,
+  "router_configuration": {
+    "classifier": "thunderagent",
+    "selector": "dynamo-default-cost-fn",
+    "affinity": "hard",
+    "session_affinity_ttl_seconds": 300
+  },
+  "source_commit": "c0c766307ec9eaed9b5d8be309680e0f9968087e",
+  "source_sha256": {
+    "experiments/dynamo/lifecycle_kv_mocker.py": "42d3948acd61d0f89770d5c58255e37392c0a78f0556301f2d143d2e51ddd291",
+    "experiments/dynamo/lifecycle_kv.py": "6ef62f1dac87989ae66c52a4009b567a9be12128a23c6f6e741d6b73aa7f0363",
+    "experiments/dynamo/lifecycle_kv_policy.yaml": "21724fafc2b5a8407c5a8a5a6aa9a46e10912811098a8a8f7b1c2262f636ef73",
+    "experiments/dynamo/kv_events.py": "8077d29a4758bbbffcbbf578e9e5068b27bfacde1a39113d18ed574776feaee8",
+    "experiments/dynamo/native_mocker.py": "f1fe7203314b1decb7e3d0dd3722845b596655b7876db40a5bff64dfe1799ade"
+  },
+  "github_run_id": "42991535195",
+  "github_run_attempt": "1",
+  "wheel_run_id": "42776227181",
+  "preflight": {
+    "status": "passed",
+    "native_wheel": {
+      "schema_version": 1,
+      "features": [
+        "custom-policy",
+        "kv-indexer",
+        "kv-indexer-metrics"
+      ],
+      "upstream_commit": "c5680e573b86623df3b6b017a408373aeba93469",
+      "overlay_manifest_sha256": "e6ec9192308a2bfa9ce1f057e4f0b4b032b25cea78f0e64cfbefa0bd14e059e0",
+      "wheel": "ai_dynamo_runtime-1.7.0-cp311-abi3-manylinux_2_35_x86_64.whl",
+      "wheel_sha256": "ab32c1f4809a9775fcdf2167dc355d3396981dbc7704985606e281daa8c67255",
+      "core_sha256": "74863ec032979d0a7e671e4abd20430d71e9f3d5b6dc4d54388068d692008f2b",
+      "gpu_execution": false,
+      "build_command": [
+        "/home/runner/work/agentcloud/agentcloud/artifacts/kv-event-wheel/build-env/bin/maturin",
+        "build",
+        "--locked",
+        "--interpreter",
+        "/home/runner/work/agentcloud/agentcloud/artifacts/kv-event-wheel/build-env/bin/python",
+        "--manifest-path",
+        "lib/bindings/python/Cargo.toml",
+        "--no-default-features",
+        "--features",
+        "custom-policy,kv-indexer,kv-indexer-metrics",
+        "--out",
+        "/home/runner/work/agentcloud/agentcloud/artifacts/kv-event-wheel"
+      ],
+      "protoc_sha256": "319dee0c80d3738a2d5f220ee2e08900fef0a2feba88d88be2c33d8ddfb52691",
+      "build_libc": {
+        "name": "glibc",
+        "version": "2.35"
+      },
+      "project_commit": "b4116cbb6d9eec7c5bac575eb15810057e16be82"
+    },
+    "cpu_count": 4,
+    "kernel": "7.0.0-1017-azure",
+    "system_available_bytes": 15584518144,
+    "disk_free_bytes": 107094671360,
+    "python_version": "3.12.16",
+    "gpu_execution": false,
+    "packages": {
+      "ai-dynamo-runtime": "1.7.0",
+      "tokenizers": "0.23.3",
+      "transformers": "5.22.2",
+      "pyzmq": "27.3.0"
+    }
+  },
+  "measurement_semantics": {
+    "cached_tokens": "official Mocker simulated engine usage",
+    "recomputed_tokens": "derived prompt_tokens minus cached_tokens",
+    "timing": "real CPU orchestration and simulator delays; GPU compute unmeasured",
+    "raw_optional_fields": "upstream nullable fields are retained in raw protocol receipts"
+  },
+  "checks": [
+    {
+      "name": "native-two-worker-discovery",
+      "passed": true,
+      "detail": [
+        {
+          "instance_id": 12283197453741702786,
+          "source": "zmq",
+          "status": "active",
+          "model_name": "agentcloud-tiny",
+          "routing_group": "default",
+          "block_size": 16,
+          "endpoints": {
+            "0": "tcp://127.0.0.1:24357"
+          },
+          "listeners": {
+            "0": {
+              "endpoint": "tcp://127.0.0.1:24357",
+              "engine_owned_mm_identity": false,
+              "status": "active"
+            }
+          }
+        },
+        {
+          "instance_id": 8242391813554935126,
+          "source": "zmq",
+          "status": "active",
+          "model_name": "agentcloud-tiny",
+          "routing_group": "default",
+          "block_size": 16,
+          "endpoints": {
+            "0": "tcp://127.0.0.1:25447"
+          },
+          "listeners": {
+            "0": {
+              "endpoint": "tcp://127.0.0.1:25447",
+              "engine_owned_mm_identity": false,
+              "status": "active"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "a-cold-worker-identity",
+      "passed": true,
+      "detail": {
+        "prompt_tokens": 256,
+        "simulated_cached_tokens": 0,
+        "derived_recomputed_prompt_tokens": 256,
+        "indexed_prefix_tokens": 0,
+        "simulated_hit_fraction": 0.0,
+        "cache_count_source": "official_mocker_engine_usage",
+        "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+        "worker_id": 8242391813554935126,
+        "elapsed_seconds": 0.03118379099998947,
+        "started_monotonic_seconds": 207.679469855,
+        "routing_control": {
+          "kind": "native_router_selection"
+        },
+        "request_evidence": "a-cold.json",
+        "client_ttft_seconds": 0.031015113999984578
+      }
+    },
+    {
+      "name": "a-hot-worker-identity",
+      "passed": true,
+      "detail": {
+        "prompt_tokens": 256,
+        "simulated_cached_tokens": 240,
+        "derived_recomputed_prompt_tokens": 16,
+        "indexed_prefix_tokens": 256,
+        "simulated_hit_fraction": 0.9375,
+        "cache_count_source": "official_mocker_engine_usage",
+        "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+        "worker_id": 8242391813554935126,
+        "elapsed_seconds": 0.02523883499998192,
+        "started_monotonic_seconds": 207.717371842,
+        "routing_control": {
+          "kind": "native_router_selection"
+        },
+        "request_evidence": "a-hot.json",
+        "client_ttft_seconds": 0.025062233999989303
+      }
+    },
+    {
+      "name": "d-new-session-worker-identity",
+      "passed": true,
+      "detail": {
+        "prompt_tokens": 256,
+        "simulated_cached_tokens": 240,
+        "derived_recomputed_prompt_tokens": 16,
+        "indexed_prefix_tokens": 256,
+        "simulated_hit_fraction": 0.9375,
+        "cache_count_source": "official_mocker_engine_usage",
+        "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+        "worker_id": 8242391813554935126,
+        "elapsed_seconds": 0.025211079000001746,
+        "started_monotonic_seconds": 207.74998267,
+        "routing_control": {
+          "kind": "explicit_worker",
+          "worker_id": 8242391813554935126
+        },
+        "request_evidence": "d-new-session.json",
+        "client_ttft_seconds": 0.023934637999985853
+      }
+    },
+    {
+      "name": "e-cold-worker-worker-identity",
+      "passed": true,
+      "detail": {
+        "prompt_tokens": 256,
+        "simulated_cached_tokens": 0,
+        "derived_recomputed_prompt_tokens": 256,
+        "indexed_prefix_tokens": 0,
+        "simulated_hit_fraction": 0.0,
+        "cache_count_source": "official_mocker_engine_usage",
+        "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+        "worker_id": 12283197453741702786,
+        "elapsed_seconds": 0.029749088000016854,
+        "started_monotonic_seconds": 207.782789123,
+        "routing_control": {
+          "kind": "explicit_worker",
+          "worker_id": 12283197453741702786
+        },
+        "request_evidence": "e-cold-worker.json",
+        "client_ttft_seconds": 0.029590691000009883
+      }
+    },
+    {
+      "name": "continuous-hot-and-new-session-controls",
+      "passed": true,
+      "detail": {
+        "A": [
+          {
+            "prompt_tokens": 256,
+            "simulated_cached_tokens": 0,
+            "derived_recomputed_prompt_tokens": 256,
+            "indexed_prefix_tokens": 0,
+            "simulated_hit_fraction": 0.0,
+            "cache_count_source": "official_mocker_engine_usage",
+            "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+            "worker_id": 8242391813554935126,
+            "elapsed_seconds": 0.03118379099998947,
+            "started_monotonic_seconds": 207.679469855,
+            "routing_control": {
+              "kind": "native_router_selection"
+            },
+            "request_evidence": "a-cold.json",
+            "client_ttft_seconds": 0.031015113999984578
+          },
+          {
+            "prompt_tokens": 256,
+            "simulated_cached_tokens": 240,
+            "derived_recomputed_prompt_tokens": 16,
+            "indexed_prefix_tokens": 256,
+            "simulated_hit_fraction": 0.9375,
+            "cache_count_source": "official_mocker_engine_usage",
+            "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+            "worker_id": 8242391813554935126,
+            "elapsed_seconds": 0.02523883499998192,
+            "started_monotonic_seconds": 207.717371842,
+            "routing_control": {
+              "kind": "native_router_selection"
+            },
+            "request_evidence": "a-hot.json",
+            "client_ttft_seconds": 0.025062233999989303
+          }
+        ],
+        "D": {
+          "prompt_tokens": 256,
+          "simulated_cached_tokens": 240,
+          "derived_recomputed_prompt_tokens": 16,
+          "indexed_prefix_tokens": 256,
+          "simulated_hit_fraction": 0.9375,
+          "cache_count_source": "official_mocker_engine_usage",
+          "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+          "worker_id": 8242391813554935126,
+          "elapsed_seconds": 0.025211079000001746,
+          "started_monotonic_seconds": 207.74998267,
+          "routing_control": {
+            "kind": "explicit_worker",
+            "worker_id": 8242391813554935126
+          },
+          "request_evidence": "d-new-session.json",
+          "client_ttft_seconds": 0.023934637999985853
+        },
+        "E": {
+          "prompt_tokens": 256,
+          "simulated_cached_tokens": 0,
+          "derived_recomputed_prompt_tokens": 256,
+          "indexed_prefix_tokens": 0,
+          "simulated_hit_fraction": 0.0,
+          "cache_count_source": "official_mocker_engine_usage",
+          "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+          "worker_id": 12283197453741702786,
+          "elapsed_seconds": 0.029749088000016854,
+          "started_monotonic_seconds": 207.782789123,
+          "routing_control": {
+            "kind": "explicit_worker",
+            "worker_id": 12283197453741702786
+          },
+          "request_evidence": "e-cold-worker.json",
+          "client_ttft_seconds": 0.029590691000009883
+        }
+      }
+    },
+    {
+      "name": "eviction-prime-worker-identity",
+      "passed": true,
+      "detail": {
+        "prompt_tokens": 256,
+        "simulated_cached_tokens": 240,
+        "derived_recomputed_prompt_tokens": 16,
+        "indexed_prefix_tokens": 256,
+        "simulated_hit_fraction": 0.9375,
+        "cache_count_source": "official_mocker_engine_usage",
+        "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+        "worker_id": 8242391813554935126,
+        "elapsed_seconds": 0.025668840000008686,
+        "started_monotonic_seconds": 207.82132156,
+        "routing_control": {
+          "kind": "explicit_worker",
+          "worker_id": 8242391813554935126
+        },
+        "request_evidence": "eviction-prime.json",
+        "client_ttft_seconds": 0.024446468000007826
+      }
+    },
+    {
+      "name": "config-pressure-1-worker-identity",
+      "passed": true,
+      "detail": {
+        "prompt_tokens": 384,
+        "simulated_cached_tokens": 0,
+        "derived_recomputed_prompt_tokens": 384,
+        "indexed_prefix_tokens": 0,
+        "simulated_hit_fraction": 0.0,
+        "cache_count_source": "official_mocker_engine_usage",
+        "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+        "worker_id": 8242391813554935126,
+        "elapsed_seconds": 0.03621761800002332,
+        "started_monotonic_seconds": 207.85761974,
+        "routing_control": {
+          "kind": "explicit_worker",
+          "worker_id": 8242391813554935126
+        },
+        "request_evidence": "config-pressure-1.json",
+        "client_ttft_seconds": 0.03606272800001875
+      }
+    },
+    {
+      "name": "config-pressure-2-worker-identity",
+      "passed": true,
+      "detail": {
+        "prompt_tokens": 384,
+        "simulated_cached_tokens": 0,
+        "derived_recomputed_prompt_tokens": 384,
+        "indexed_prefix_tokens": 0,
+        "simulated_hit_fraction": 0.0,
+        "cache_count_source": "official_mocker_engine_usage",
+        "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+        "worker_id": 8242391813554935126,
+        "elapsed_seconds": 0.030557426000001442,
+        "started_monotonic_seconds": 207.90355575,
+        "routing_control": {
+          "kind": "explicit_worker",
+          "worker_id": 8242391813554935126
+        },
+        "request_evidence": "config-pressure-2.json",
+        "client_ttft_seconds": 0.03036756000000196
+      }
+    },
+    {
+      "name": "config-pressure-3-worker-identity",
+      "passed": true,
+      "detail": {
+        "prompt_tokens": 384,
+        "simulated_cached_tokens": 0,
+        "derived_recomputed_prompt_tokens": 384,
+        "indexed_prefix_tokens": 0,
+        "simulated_hit_fraction": 0.0,
+        "cache_count_source": "official_mocker_engine_usage",
+        "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+        "worker_id": 8242391813554935126,
+        "elapsed_seconds": 0.031049798999987388,
+        "started_monotonic_seconds": 207.944294256,
+        "routing_control": {
+          "kind": "explicit_worker",
+          "worker_id": 8242391813554935126
+        },
+        "request_evidence": "config-pressure-3.json",
+        "client_ttft_seconds": 0.0296417889999816
+      }
+    },
+    {
+      "name": "config-pressure-4-worker-identity",
+      "passed": true,
+      "detail": {
+        "prompt_tokens": 384,
+        "simulated_cached_tokens": 0,
+        "derived_recomputed_prompt_tokens": 384,
+        "indexed_prefix_tokens": 0,
+        "simulated_hit_fraction": 0.0,
+        "cache_count_source": "official_mocker_engine_usage",
+        "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+        "worker_id": 8242391813554935126,
+        "elapsed_seconds": 0.030960090999997192,
+        "started_monotonic_seconds": 207.986351524,
+        "routing_control": {
+          "kind": "explicit_worker",
+          "worker_id": 8242391813554935126
+        },
+        "request_evidence": "config-pressure-4.json",
+        "client_ttft_seconds": 0.030797935999999027
+      }
+    },
+    {
+      "name": "config-pressure-5-worker-identity",
+      "passed": true,
+      "detail": {
+        "prompt_tokens": 384,
+        "simulated_cached_tokens": 0,
+        "derived_recomputed_prompt_tokens": 384,
+        "indexed_prefix_tokens": 0,
+        "simulated_hit_fraction": 0.0,
+        "cache_count_source": "official_mocker_engine_usage",
+        "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+        "worker_id": 8242391813554935126,
+        "elapsed_seconds": 0.031024962000003597,
+        "started_monotonic_seconds": 208.028451512,
+        "routing_control": {
+          "kind": "explicit_worker",
+          "worker_id": 8242391813554935126
+        },
+        "request_evidence": "config-pressure-5.json",
+        "client_ttft_seconds": 0.030868949999984352
+      }
+    },
+    {
+      "name": "config-pressure-6-worker-identity",
+      "passed": true,
+      "detail": {
+        "prompt_tokens": 384,
+        "simulated_cached_tokens": 0,
+        "derived_recomputed_prompt_tokens": 384,
+        "indexed_prefix_tokens": 0,
+        "simulated_hit_fraction": 0.0,
+        "cache_count_source": "official_mocker_engine_usage",
+        "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+        "worker_id": 8242391813554935126,
+        "elapsed_seconds": 0.030597470999992993,
+        "started_monotonic_seconds": 208.070743149,
+        "routing_control": {
+          "kind": "explicit_worker",
+          "worker_id": 8242391813554935126
+        },
+        "request_evidence": "config-pressure-6.json",
+        "client_ttft_seconds": 0.030411442000001898
+      }
+    },
+    {
+      "name": "config-confirmed-eviction",
+      "passed": true,
+      "detail": {
+        "pressure_requests": 6,
+        "removed_events_delta": 2,
+        "query": {
+          "scores": {
+            "12283197453741702786": {
+              "0": 256
+            }
+          },
+          "frequencies": [],
+          "instances": {
+            "12283197453741702786": {
+              "longest_matched": 256,
+              "gpu": 256,
+              "dp": {
+                "0": 256
+              },
+              "cpu": 256,
+              "disk": 256
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "worker-0-event-stream",
+      "passed": true,
+      "detail": {
+        "counts": {
+          "BlockStored": 1
+        },
+        "errors": [],
+        "sequence_gaps": []
+      }
+    },
+    {
+      "name": "worker-1-event-stream",
+      "passed": true,
+      "detail": {
+        "counts": {
+          "BlockStored": 7,
+          "BlockRemoved": 2
+        },
+        "errors": [],
+        "sequence_gaps": []
+      }
+    }
+  ],
+  "trials": [],
+  "worker_ids": [
+    12283197453741702786,
+    8242391813554935126
+  ],
+  "tokenizer_sha256": "7a18c84084733ccbc3969a2fe0ac0b8f8086fb6d958e45867a9b95be006d90c6",
+  "controls": {
+    "A": {
+      "cold": {
+        "prompt_tokens": 256,
+        "simulated_cached_tokens": 0,
+        "derived_recomputed_prompt_tokens": 256,
+        "indexed_prefix_tokens": 0,
+        "simulated_hit_fraction": 0.0,
+        "cache_count_source": "official_mocker_engine_usage",
+        "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+        "worker_id": 8242391813554935126,
+        "elapsed_seconds": 0.03118379099998947,
+        "started_monotonic_seconds": 207.679469855,
+        "routing_control": {
+          "kind": "native_router_selection"
+        },
+        "request_evidence": "a-cold.json",
+        "client_ttft_seconds": 0.031015113999984578
+      },
+      "hot": {
+        "prompt_tokens": 256,
+        "simulated_cached_tokens": 240,
+        "derived_recomputed_prompt_tokens": 16,
+        "indexed_prefix_tokens": 256,
+        "simulated_hit_fraction": 0.9375,
+        "cache_count_source": "official_mocker_engine_usage",
+        "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+        "worker_id": 8242391813554935126,
+        "elapsed_seconds": 0.02523883499998192,
+        "started_monotonic_seconds": 207.717371842,
+        "routing_control": {
+          "kind": "native_router_selection"
+        },
+        "request_evidence": "a-hot.json",
+        "client_ttft_seconds": 0.025062233999989303
+      }
+    },
+    "D_new_session_same_worker": {
+      "prompt_tokens": 256,
+      "simulated_cached_tokens": 240,
+      "derived_recomputed_prompt_tokens": 16,
+      "indexed_prefix_tokens": 256,
+      "simulated_hit_fraction": 0.9375,
+      "cache_count_source": "official_mocker_engine_usage",
+      "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+      "worker_id": 8242391813554935126,
+      "elapsed_seconds": 0.025211079000001746,
+      "started_monotonic_seconds": 207.74998267,
+      "routing_control": {
+        "kind": "explicit_worker",
+        "worker_id": 8242391813554935126
+      },
+      "request_evidence": "d-new-session.json",
+      "client_ttft_seconds": 0.023934637999985853
+    },
+    "E_explicit_cold_worker": {
+      "prompt_tokens": 256,
+      "simulated_cached_tokens": 0,
+      "derived_recomputed_prompt_tokens": 256,
+      "indexed_prefix_tokens": 0,
+      "simulated_hit_fraction": 0.0,
+      "cache_count_source": "official_mocker_engine_usage",
+      "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+      "worker_id": 12283197453741702786,
+      "elapsed_seconds": 0.029749088000016854,
+      "started_monotonic_seconds": 207.782789123,
+      "routing_control": {
+        "kind": "explicit_worker",
+        "worker_id": 12283197453741702786
+      },
+      "request_evidence": "e-cold-worker.json",
+      "client_ttft_seconds": 0.029590691000009883
+    }
+  },
+  "cleanup": {
+    "process_exit_codes": [
+      -15,
+      0,
+      0,
+      0
+    ],
+    "remaining_group_rss_bytes": 0,
+    "peak_owned_rss_bytes": 939864064,
+    "peak_owned_pss_bytes": 411638784,
+    "resource_stop_reason": "completed_without_resource_stop",
+    "memory_scope": "Dynamo, indexer, Mocker and coordinator process groups; cluster included in system MemAvailable"
+  },
+  "commands": [
+    {
+      "name": "indexer",
+      "argv": [
+        "/home/runner/work/agentcloud/agentcloud/.venv-dynamo/bin/python",
+        "-m",
+        "dynamo.indexer",
+        "--port",
+        "27022",
+        "--block-size",
+        "16",
+        "--threads",
+        "1"
+      ],
+      "pid": 4277
+    },
+    {
+      "name": "frontend",
+      "argv": [
+        "/home/runner/work/agentcloud/agentcloud/.venv-dynamo/bin/python",
+        "-m",
+        "dynamo.frontend",
+        "--http-host",
+        "127.0.0.1",
+        "--http-port",
+        "29639",
+        "--router-mode",
+        "kv",
+        "--router-policy-config",
+        "/home/runner/work/agentcloud/agentcloud/experiments/dynamo/lifecycle_kv_policy.yaml",
+        "--kv-cache-block-size",
+        "16",
+        "--discovery-backend",
+        "file",
+        "--request-plane",
+        "tcp",
+        "--event-plane",
+        "zmq",
+        "--router-session-affinity-ttl-secs",
+        "300",
+        "--router-session-affinity-mode",
+        "hard"
+      ],
+      "pid": 4278
+    },
+    {
+      "name": "mocker-0",
+      "argv": [
+        "/home/runner/work/agentcloud/agentcloud/.venv-dynamo/bin/python",
+        "-m",
+        "dynamo.mocker",
+        "--model-path",
+        "/home/runner/work/agentcloud/agentcloud/artifacts/lifecycle-kv-mocker/config/hard/private/tokenizer",
+        "--model-name",
+        "agentcloud-tiny",
+        "--num-workers",
+        "1",
+        "--block-size",
+        "16",
+        "--num-gpu-blocks-override",
+        "128",
+        "--max-model-len",
+        "2048",
+        "--kv-bytes-per-token",
+        "512",
+        "--speedup-ratio",
+        "1",
+        "--zmq-kv-events-ports",
+        "24357",
+        "--zmq-replay-ports",
+        "22186",
+        "--discovery-backend",
+        "file",
+        "--request-plane",
+        "tcp",
+        "--event-plane",
+        "zmq"
+      ],
+      "pid": 4286
+    },
+    {
+      "name": "mocker-1",
+      "argv": [
+        "/home/runner/work/agentcloud/agentcloud/.venv-dynamo/bin/python",
+        "-m",
+        "dynamo.mocker",
+        "--model-path",
+        "/home/runner/work/agentcloud/agentcloud/artifacts/lifecycle-kv-mocker/config/hard/private/tokenizer",
+        "--model-name",
+        "agentcloud-tiny",
+        "--num-workers",
+        "1",
+        "--block-size",
+        "16",
+        "--num-gpu-blocks-override",
+        "128",
+        "--max-model-len",
+        "2048",
+        "--kv-bytes-per-token",
+        "512",
+        "--speedup-ratio",
+        "1",
+        "--zmq-kv-events-ports",
+        "25447",
+        "--zmq-replay-ports",
+        "28084",
+        "--discovery-backend",
+        "file",
+        "--request-plane",
+        "tcp",
+        "--event-plane",
+        "zmq"
+      ],
+      "pid": 4353
+    }
+  ],
+  "completed_model_requests": 11,
+  "finished_at": "2026-11-11T09:03:47.569639+00:00"
+}

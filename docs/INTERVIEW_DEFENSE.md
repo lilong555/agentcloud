@@ -10,6 +10,8 @@
 
 **GPU 给出物理收益的适用条件。** RTX 4070 上完成 30 组真实 CUDA 测量，释放 KV 并计入全部重建后，16 会话总耗时增加 44.5%，64 会话下降 22.5%，反转位于 48～64 两个实测点之间。独立 vLLM 实验接通官方 KVEvent、KVIndexer 与默认 CACHE Selector，六请求的新增 Prefill token 预测误差从 120 降至 0；Prefill 中位数差约 0.221 ms，交付定位为物理缓存对账观测。
 
+**真实执行恢复与模拟推理已完成联合验收。** 标准 Actions runner 上的 gVisor MEMORY＋双官方 Mocker 通过 54/54 Trial，跨 Epoch 保持 Session、轮换 Lease，旧凭证均返回 401，预算为 257 → 0 → 257。缓存保留时模拟命中 240/256 Token，驱逐后为 0/256。Off／Hard 亲和结果一致：ThunderAgent 的现有 Program 分配已将请求送回仍在线的 Worker，Hard 开关在本矩阵中的额外命中收益为零。模型请求来自外部驱动，物理 GPU 缓存采用前述独立测量。[联合原始回执与源码归因](LIFECYCLE_KV_VALIDATION.md)
+
 [最终 Checklist、三条简历与 Top 12 速查卡](FINAL_RELEASE_CHECKLIST.md) · [验收索引](STATUS.md) · [调度归因](SCHEDULER_DIAGNOSIS.md) · [v2 配对协议](V2_EVALUATION.md) · [GPU 原始数据](GPU_VALIDATION.md)
 
 ## 状态围栏与 16 类故障

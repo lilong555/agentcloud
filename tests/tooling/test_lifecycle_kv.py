@@ -1,7 +1,11 @@
 """Reject false lifecycle and cache evidence before running the real stack."""
 import copy
+import gzip
+import json
+from pathlib import Path
 import unittest
 
+from bench.analysis.lifecycle_kv import analyze, validate_trial
 from experiments.dynamo.lifecycle_kv import public, validate_lifecycle
 from experiments.dynamo.lifecycle_kv_mocker import arguments, cache_observation, mocker_event_record
 
@@ -111,6 +115,30 @@ class CacheEvidenceTests(unittest.TestCase):
         self.assertEqual(bytes.fromhex(row["wire_payload_hex"]), b"payload")
         with self.assertRaises(ValueError):
             mocker_event_record([b"unexpected", b"12345678", b"payload"], lambda _: [])
+
+
+class ArchivedLifecycleTests(unittest.TestCase):
+    root = Path(__file__).resolve().parents[2]
+
+    def test_rebuild_real_actions_smoke_from_raw_receipts(self):
+        report = analyze(self.root / "docs/evidence/lifecycle-kv")
+        smoke = next(r for r in report["runs"] if r["github_run_id"] == "42989396451")
+        self.assertEqual(smoke["status"], "passed")
+        self.assertEqual(smoke["passed_trials"], 6)
+        self.assertTrue(all(r["old_lease_http_status"] == 401 for r in smoke["trials"]))
+
+    def test_reject_summary_claim_that_differs_from_raw_engine_response(self):
+        base = self.root / "docs/evidence/lifecycle-kv/42989396451/13841337897/experiment/lifecycle/off"
+        def read(name):
+            path = base / name
+            if path.exists():
+                return json.loads(path.read_text())
+            with gzip.open(str(path) + ".gz", "rt") as handle:
+                return json.load(handle)
+        trial = read("pair-00-C-trial.json")
+        trial["turn2"]["simulated_cached_tokens"] = 240
+        with self.assertRaisesRegex(ValueError, "differs from its raw request"):
+            validate_trial(trial, "off", read)
 
 
 if __name__ == "__main__":

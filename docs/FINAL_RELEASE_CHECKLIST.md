@@ -60,6 +60,8 @@
 
 **[BOUNDARY_DOCUMENTED]** 稳定会话 ID 为缓存亲和性提供身份条件，物理命中数据来自独立 GPU 实验。Actor 生命周期与 GPU 成本分段验证，`lifecycle_integration=false` 与采集状态在首页和 [Token 汇总](evidence/gpu/token-cost-summary.json)中可见。
 
+**[PASS] 真实 MEMORY 与双 Mocker 联合验收：**[Actions 42991535195](https://github.com/lilong555/agentcloud/actions/runs/42991535195)完成 **54/54 Trial**，预算 **257 → 0 → 257**、54 次旧 Lease 401；缓存保留／驱逐后的模拟命中为 **240/256／0/256 Token**，Off／Hard 两组均保留原 Worker。[完整报告](LIFECYCLE_KV_VALIDATION.md)与[逐 Trial 原始证据映射](evidence/lifecycle-kv-summary.json)可复核；`ArchivedLifecycleTests` 从原始请求重建并拒绝与 Mocker usage 不符的汇总。该批 `actor_lifecycle_integration=true`、`gpu_execution=false`，请求来源为外部测试驱动。
+
 <a id="resume-evidence-map"></a>
 
 ## Checklist 5：简历—源码—实验证据映射
@@ -128,7 +130,7 @@ N32 简历收益的全部原始配对，统一 Run **42815241918**；表中目�
 
 ### 5. GPU 与 Actor 生命周期为什么分段验证？
 
-**一分钟回答：**“CPU Mocker 配合真实 Substrate 用于固定请求条件下验证生命周期正确性和调度；CUDA 实验测量实际 KV 张量、释放和完整重建；独立 vLLM 实验测量官方事件、缓存命中与 Prefill 守恒。三层分别控制成本、恢复和物理执行变量。稳定 Session ID 与 93.75% 热命中分别有证据，跨 Suspend 的 GPU 命中消融明确未采集，lifecycle_integration=false。”
+**一分钟回答：**“真实 Substrate/gVisor 与双官方 Mocker 已完成 54 次跨生命周期联合测试，覆盖 MEMORY 恢复、Session 保持、Lease 轮换、预算归零与模拟缓存复用。CUDA 实验测量实际 KV 张量、释放和完整重建；独立 vLLM 实验测量官方事件、缓存命中与 Prefill。三类证据分别标注执行环境和测量来源。CPU 联合测试使用外部模型驱动，真实 vLLM 跨 Suspend 的 GPU 命中采集仍保留 not_collected 标识。”
 
 **代码锚点：**[Experiment.trial](../bench/cuda_kv.py#L199)、[observed_prefill_tokens](../experiments/dynamo/kv_events.py#L109)、[Rust register](../integrations/dynamo/files/lib/router-plugins/builtin/src/thunderagent/execution_control.rs#L332)。
 

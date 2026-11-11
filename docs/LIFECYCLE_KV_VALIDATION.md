@@ -2,6 +2,34 @@
 
 本实验在标准 GitHub-hosted Ubuntu runner 上运行真实 AgentCloud Coordinator、PostgreSQL、Substrate/gVisor、Dynamo Frontend、ThunderAgent 分类器、默认 CACHE Selector 和两个官方 CPU Mocker Worker。模型请求由外部测试驱动发起，Actor 的工具操作、休眠、快照提交和恢复经过真实 Coordinator。
 
+## 实测结果
+
+**完整矩阵 54/54 Trial 通过，全部恢复保真度为 MEMORY。** [完整 Actions 42991535195](https://github.com/lilong555/agentcloud/actions/runs/42991535195) 使用源码 `c0c766307ec9eaed9b5d8be309680e0f9968087e`，覆盖三个种子、两种亲和配置，共 252 次成功模型请求和 54 次旧 Lease 拒收请求，501 项运行时检查通过。此前 [冒烟 42989396451](https://github.com/lilong555/agentcloud/actions/runs/42989396451) 的 6/6 Trial 独立保留。
+
+| 完整矩阵场景 | 每种亲和配置的 Trial 数 | 输入 Token | Affinity Off：模拟命中 / 推导重算 | Hard Affinity：模拟命中 / 推导重算 |
+|---|---:|---:|---:|---:|
+| B：缓存保留后真实恢复 | 9 | 256 | 240 / 16 | 240 / 16 |
+| C：休眠期间确认驱逐 | 9 | 256 | 0 / 256 | 0 / 256 |
+| Growth：追加上下文 | 3 | 288 | 256 / 32 | 256 / 32 |
+| Loaded：原 Worker 有背景请求 | 3 | 256 | 240 / 16 | 240 / 16 |
+| Conflict：另一 Worker 持有更长前缀 | 3 | 288 | 256 / 32 | 256 / 32 |
+
+54 次恢复均保持 Session ID、轮换 Lease，旧 Lease 均返回 401；逻辑准入预算均为 **257 → 0 → 257**。全部 Trial 的恢复请求选择原 Worker。各组独立 PostgreSQL 数据库、Actor/Tag、服务进程与三个 runner 的 Kind 容器均完成清理。服务进程组峰值 RSS 为 **934.0～942.4 MiB**；包含集群影响的系统可用内存采样最低为 **12,656.6 MiB**。
+
+**本矩阵中 Hard Affinity 的额外命中收益为零。** ThunderAgent 的 [`admit_request`](../integrations/dynamo/files/lib/router-plugins/builtin/src/thunderagent/request_classifier/scheduler.rs#L631)在已分配 Worker 仍在线时沿用该 Worker；SUSPENDED 反馈通过预算倍率归零释放逻辑配额，同时保留 Program 分配。原生 Hard Affinity 开关因此未改变这些样本的目的 Worker。Conflict 组中，索引确认两 Worker 分别持有 256/288 Token 前缀，两种配置仍选择原 Worker；这一结果显示现有 Program 准入绑定对路由选择的约束。
+
+可引用表述为：**“在真实 gVisor MEMORY 恢复与双官方 Dynamo Mocker 的 54 次联合测试中，验证跨 Epoch 身份连续、旧 Lease 拒收和模拟 Prefix Cache 复用；保留缓存时命中 240/256 Token。”** 真实 vLLM 跨 MEMORY 生命周期的物理缓存采集使用独立 GPU 验收口径。
+
+[逐 Trial 汇总](evidence/lifecycle-kv-summary.json)包含原始 JSON 路径；[Actions 完成回执](evidence/lifecycle-kv/42991535195/run.json)和三个 [7101](evidence/lifecycle-kv/42991535195/13842841284/artifact.json)、[7102](evidence/lifecycle-kv/42991535195/13841889965/artifact.json)、[7103](evidence/lifecycle-kv/42991535195/13843356096/artifact.json)归档清单记录文件 SHA-256。工作流源码按运行 commit 与原始清单哈希核验归档，来源记录在清单的 `origin` 字段。
+
+```bash
+python3 -m bench.analysis.lifecycle_kv
+python3 -m unittest tests.tooling.test_lifecycle_kv
+make evidence-audit
+```
+
+结果重建入口 [`validate_trial`](../bench/analysis/lifecycle_kv.py#L18)逐一核对实际请求身份、Mocker usage、请求前 KVIndexer、Lease 拒收、预算恢复和负载重叠。联合执行入口为 [`RealLifecycle.cycle`](../experiments/dynamo/lifecycle_kv_mocker.py#L400)，MEMORY 证明校验见 [`validate_lifecycle`](../experiments/dynamo/lifecycle_kv.py#L91)。
+
 ## 环境与运行入口
 
 - Ubuntu 24.04 x86_64，公开仓库标准 runner 的 4 vCPU、16 GB RAM；运行期间保留至少 1,536 MiB 可用内存和 6 GiB 可用磁盘。

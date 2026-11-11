@@ -69,6 +69,8 @@ python3 -m bench.analysis.cuda_kv \
 
 [原生 CPU Mocker 回执](evidence/dynamo-native-mocker.json)记录 acting 逻辑配额 **708 → 0 → 708**：SUSPENDED 释放 708 个配额 Token，RESUMING 恢复预算。它度量 Program 准入可用量；CUDA 张量、vLLM block 与物理 Prefill 使用各自观测。
 
+[跨 MEMORY 生命周期的 CPU 联合验证](LIFECYCLE_KV_VALIDATION.md)完成 **54/54 Trial**：真实 Substrate/gVisor 恢复、双官方 Mocker、身份连续与旧 Lease 401 共同验收，逻辑预算为 **257 → 0 → 257**，保留缓存时模拟命中 **240/256 Token**。该批证据记录 `actor_lifecycle_integration=true`、`gpu_execution=false`，模型请求来自外部驱动；本节 GPU 实验保留各自原始运行口径。
+
 ## 官方 Dynamo KV 事件与真实 vLLM
 
 源码 `6512813` 在同一台 RTX 4070 Laptop 上完成官方事件链路与三轮 Prefill 对账。环境为 vLLM 0.33.0、PyTorch 2.14.0+cu130、Dynamo runtime 1.7.0；Dynamo 源码固定为 `c5680e573b86623df3b6b017a408373aeba93469`。本节使用真实分页 KV 引擎，前述 30 组压力曲线使用独立 Transformers CUDA 后端。
