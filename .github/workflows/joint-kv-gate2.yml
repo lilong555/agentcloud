@@ -199,6 +199,8 @@ jobs:
           from experiments.dynamo.lifecycle_kv_mocker import verify_wheel
           verify_wheel('artifacts/kv-event-wheel', installed=True)
           PY
+      - name: Verify real ZeroMQ subscriber startup and sequence coverage
+        run: .venv-dynamo/bin/python -m unittest tests.dynamo.test_event_transport -v
       - name: Observe cache reselection and native affinity on two Mockers
         if: inputs.suite == 'smoke'
         timeout-minutes: 20

@@ -176,7 +176,8 @@ def run_one(args, item, ready):
         if item["load_probe"]:
             experiment.conflict("cache-conflict-under-load", load=True)
         for index, observer in enumerate(stack.observers):
-            events = observer.snapshot()
+            events, _ = stack.wait(observer.snapshot, lambda events:
+                bool(events['counts'].get('BlockStored')) or events['errors'] or events['sequence_gaps'], 5)
             experiment.require(f"worker-{index}-native-events", bool(events["counts"].get("BlockStored"))
                 and not events["errors"] and not events["sequence_gaps"], events)
         report["status"] = "passed"

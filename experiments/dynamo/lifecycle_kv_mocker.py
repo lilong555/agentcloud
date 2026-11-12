@@ -19,6 +19,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import threading
 import time
 import traceback
 from types import SimpleNamespace
@@ -93,25 +94,58 @@ def verify_wheel(directory, installed=True):
 
 class Observer(kv.Observer):
     """Observe the official Mocker's empty-topic native vLLM-format event stream."""
+    def __init__(self, endpoint):
+        super().__init__(endpoint)
+        self.connected = threading.Event()
+        self.transport_events = []
+
     def listen(self):
         try:
             import msgspec
             import zmq
+            from zmq.utils.monitor import recv_monitor_message
             with zmq.Context() as context, context.socket(zmq.SUB) as sock:
                 sock.setsockopt(zmq.LINGER, 0)
                 sock.setsockopt(zmq.SUBSCRIBE, b"")
-                sock.connect(self.endpoint)
-                self.ready.set()
-                while not self.done.is_set():
-                    if sock.poll(100):
-                        row = mocker_event_record(sock.recv_multipart(), msgspec.msgpack.decode)
-                        with self.lock:
-                            self.records.append(row)
-                            if len(self.records) > 20000:
-                                raise RuntimeError("bounded event log limit exceeded")
+                with sock.get_monitor_socket(events=zmq.EVENT_HANDSHAKE_SUCCEEDED | zmq.EVENT_DISCONNECTED) as monitor:
+                    poller = zmq.Poller()
+                    poller.register(monitor, zmq.POLLIN)
+                    poller.register(sock, zmq.POLLIN)
+                    sock.connect(self.endpoint)
+                    self.ready.set()
+                    while not self.done.is_set():
+                        available = dict(poller.poll(100))
+                        if monitor in available:
+                            event = recv_monitor_message(monitor)
+                            with self.lock:
+                                self.transport_events.append(dict(event=int(event['event']), observed_at=kv.utc()))
+                            if event['event'] == zmq.EVENT_HANDSHAKE_SUCCEEDED:
+                                self.connected.set()
+                            elif event['event'] == zmq.EVENT_DISCONNECTED:
+                                self.connected.clear()
+                        if sock in available:
+                            row = mocker_event_record(sock.recv_multipart(), msgspec.msgpack.decode)
+                            with self.lock:
+                                self.records.append(row)
+                                if len(self.records) > 20000:
+                                    raise RuntimeError("bounded event log limit exceeded")
         except Exception as exc:
             self.errors.append(str(exc))
             self.ready.set()
+        finally:
+            self.connected.clear()
+
+    def snapshot(self):
+        result = super().snapshot()
+        if result['batches']:
+            result['first_sequence'] = result['batches'][0]['sequence']
+            # Each observer attaches before its fresh Mocker publisher starts at sequence zero.
+            if result['first_sequence'] != 0:
+                result['sequence_gaps'].insert(0, (-1, result['first_sequence']))
+        with self.lock:
+            result['transport_events'] = list(self.transport_events)
+        result['transport_connected'] = self.connected.is_set()
+        return result
 
 
 class Stack(ControlStack):
@@ -218,6 +252,9 @@ class Stack(ControlStack):
             ids, _ = self.wait(self.discovered, lambda ids: len(ids) == index + 1, 90)
             worker = next(iter(ids - set(self.worker_ids)))
             self.worker_ids.append(worker)
+            self.wait(observer.connected.is_set, lambda connected: connected or bool(observer.errors), 10)
+            if observer.errors:
+                raise RuntimeError('Mocker event observer startup failed: ' + '; '.join(observer.errors))
             self.http(self.indexer, "/register", {"instance_id": worker, "dp_rank": 0,
                 "model_name": MODEL, "block_size": 16, "endpoint": f"tcp://127.0.0.1:{event}",
                 "replay_endpoint": f"tcp://127.0.0.1:{replay}"})
