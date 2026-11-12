@@ -37,7 +37,7 @@ jobs:
     with:
       suite: ${{ inputs.scope == 'joint-full' && 'full' || 'smoke' }}
       source_ref: ${{ inputs.source_ref }}
-      max_parallel: ${{ inputs.max_parallel || 8 }}
+      max_parallel: ${{ fromJSON(format('{0}', inputs.max_parallel || 8)) }}
       smoke_run_id: ${{ inputs.smoke_run_id }}
   plan:
     if: inputs.scope != 'joint-smoke' && inputs.scope != 'joint-full'
