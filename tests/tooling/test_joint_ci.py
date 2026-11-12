@@ -19,6 +19,19 @@ COMMIT = "a" * 40
 
 
 class JointPlanTests(unittest.TestCase):
+    def test_regression_selects_complete_frozen_group_without_changing_policy_order(self):
+        complete = joint_plan.matrix('full')['include']
+        selected = joint_plan.matrix('full', trial_filter='[{"n":64,"seed":7303}]')['include']
+        self.assertEqual(selected, [row for row in complete if (row['n'], row['seed']) == (64, 7303)])
+        self.assertEqual(selected[0]['policies'].split(','), list(joint_plan.POLICIES))
+
+    def test_regression_rejects_partial_duplicate_and_unfrozen_groups(self):
+        for value in ([], {}, [{'n': 64}], [{'n': 64, 'seed': 7303, 'policy': 'agentcloud-v2-joint'}],
+                      [{'n': 64, 'seed': 7303}] * 2, [{'n': 64, 'seed': 9999}],
+                      [{'n': '64', 'seed': 7303}], [{'n': True, 'seed': 7303}]):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                joint_plan.matrix('full', trial_filter=json.dumps(value))
+
     def test_frozen_smoke_and_full_pairing(self):
         smoke = joint_plan.matrix("smoke")["include"]
         full = joint_plan.matrix("full")["include"]

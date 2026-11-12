@@ -74,13 +74,27 @@ def validate_workload(config):
     return manifest
 
 
-def matrix(suite, validate=False):
+def matrix(suite, validate=False, trial_filter=''):
     config = frozen_config(suite)
     if validate:
         validate_workload(config)
-    return {"include": [dict(n=n, seed=seed, suite=suite, config=CONFIGS[suite],
-                              policies=",".join(POLICIES), timeout_minutes=180)
-                        for n, seed in itertools.product(config["concurrency"], config["paired_seeds"])]}
+    cases = [dict(n=n, seed=seed, suite=suite, config=CONFIGS[suite],
+                  policies=",".join(POLICIES), timeout_minutes=180)
+             for n, seed in itertools.product(config["concurrency"], config["paired_seeds"])]
+    if trial_filter:
+        selected = json.loads(trial_filter)
+        if not isinstance(selected, list) or not selected:
+            raise ValueError('joint filter requires complete n/seed paired groups')
+        for row in selected:
+            if (not isinstance(row, dict) or set(row) != {'n', 'seed'}
+                    or type(row['n']) is not int or type(row['seed']) is not int):
+                raise ValueError('joint filter requires complete n/seed paired groups')
+        identities = [(row['n'], row['seed']) for row in selected]
+        frozen = {(row['n'], row['seed']) for row in cases}
+        if len(set(identities)) != len(identities) or not set(identities) <= frozen:
+            raise ValueError('duplicate or unfrozen joint paired coordinates')
+        cases = [row for row in cases if (row['n'], row['seed']) in set(identities)]
+    return {"include": cases}
 
 
 def verify_smoke(directory, source_commit, run_id):
@@ -129,13 +143,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--suite", choices=CONFIGS, default="smoke")
     parser.add_argument("--validate-workload", action="store_true")
+    parser.add_argument("--trial-filter", default='', help='Complete n/seed groups; every group retains all five policies')
     parser.add_argument("--verify-smoke", type=Path)
     parser.add_argument("--source-commit")
     parser.add_argument("--smoke-run-id")
     args = parser.parse_args()
     if args.verify_smoke:
         verify_smoke(args.verify_smoke, args.source_commit, args.smoke_run_id)
-    print(json.dumps(matrix(args.suite, args.validate_workload)))
+    print(json.dumps(matrix(args.suite, args.validate_workload, args.trial_filter)))
 
 
 if __name__ == "__main__":

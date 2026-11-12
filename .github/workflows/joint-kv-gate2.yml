@@ -1,5 +1,5 @@
 name: Joint KV Gate2
-run-name: Joint KV Gate2 ${{ inputs.suite }}
+run-name: Joint KV Gate2 ${{ inputs.suite }} ${{ inputs.trial_filter && 'selected paired groups' || 'all paired groups' }}
 
 on:
   workflow_call:
@@ -14,6 +14,9 @@ on:
         type: number
         default: 10
       smoke_run_id:
+        type: string
+        default: ''
+      trial_filter:
         type: string
         default: ''
   workflow_dispatch:
@@ -33,6 +36,10 @@ on:
         default: 10
       smoke_run_id:
         description: Successful same-source five-policy smoke run required by full Gate2
+        type: string
+        default: ''
+      trial_filter:
+        description: Optional JSON n/seed groups for an independent paired regression; all five policies are retained
         type: string
         default: ''
 
@@ -81,11 +88,12 @@ jobs:
         name: Validate frozen workload and paired runner matrix
         env:
           SUITE: ${{ inputs.suite }}
+          TRIAL_FILTER: ${{ inputs.trial_filter }}
         run: |
           python3 - <<'PY'
           import json, os
           from bench.joint_plan import matrix
-          selected = matrix(os.environ['SUITE'], validate=True)
+          selected = matrix(os.environ['SUITE'], validate=True, trial_filter=os.environ['TRIAL_FILTER'])
           with open(os.environ['GITHUB_OUTPUT'], 'a') as handle:
               handle.write('matrix=' + json.dumps(selected) + '\n')
           print(json.dumps(selected), flush=True)

@@ -342,13 +342,53 @@ class Trial:
             return result['snapshot']
         except CloudError as exc:
             self.event('native_snapshot_unavailable',session_id=entry['id'],label=label,error=str(exc));return {}
-    def tool(self,entry,operation,command):
-        before=time.time();state=entry['state']
-        receipt=self.client(entry).tool(entry['id'],state['epoch'],operation,'shell',command=command,timeout_ms=max(1,int(self.remaining(60)*1000)))
-        self.tools.append(dict(uid=state['actor']['uid'],start=before,end=time.time()))
+    def admit(self,entry,operation,kind,send,row=None):
+        """Recover only an explicit refusal issued before a new operation exists."""
+        deadline=self.phase_deadline(self.config['request_deadline_seconds'])
+        for attempt in range(4):
+            self.guard()
+            if time.monotonic()>=deadline: raise TimeoutError('operation admission deadline')
+            try:
+                return send()
+            except CloudError as exc:
+                if exc.status!=423 or exc.code!='admission_closed': raise
+                observation=dict(operation_kind=kind,operation_id=operation,attempt=attempt+1,
+                    rejected_at=time.time(),epoch=entry['state']['epoch'],status=exc.status,code=exc.code)
+                if row is not None: row.setdefault('admission_rejections',[]).append(observation)
+                self.event('admission_rejected',session_id=entry['id'],**observation)
+                if attempt==3: raise
+                begin=time.monotonic()
+                # A fresh demand avoids replaying a completed return receipt from an earlier turn.
+                demand=f'admission-{kind}-{operation}-{attempt+1}'
+                queue=self.resume(entry,demand,deadline=deadline)
+                observation.update(return_operation_id=demand,result_epoch=entry['state']['epoch'],
+                    recovery_seconds=time.monotonic()-begin,gateway_queue_seconds=queue)
+                if row is not None:
+                    row['gateway_queue_seconds']=row.get('gateway_queue_seconds',0.)+queue
+                    row['admission_recovery_seconds']=row.get('admission_recovery_seconds',0.)+observation['recovery_seconds']
+                self.event('admission_recovered',session_id=entry['id'],**observation)
+    def tool(self,entry,operation,command,row=None):
+        timeout=max(1,int(self.remaining(60)*1000))
+        def send():
+            state=entry['state'];before=time.time()
+            receipt=self.client(entry).tool(entry['id'],state['epoch'],operation,'shell',command=command,timeout_ms=timeout)
+            self.tools.append(dict(uid=state['actor']['uid'],start=before,end=time.time()))
+            return receipt
+        receipt=self.admit(entry,operation,'tool',send,row)
         self.event('tool_receipt',session_id=entry['id'],tenant=entry['tenant'],receipt=receipt)
         if receipt['status']!='COMPLETED' or receipt.get('result',{}).get('exit_code')!=0: raise RuntimeError('Actor tool failed: '+operation)
         return json.loads(receipt['result']['stdout'])
+    def submit_model(self,entry,row,payload,tokens):
+        body=dict(logical_request_id=row['logical_request_id'],payload=payload,terminal_turn=row['terminal_turn'])
+        def send():
+            if self.cache_observer: self.cache_observer.before_request(entry,tokens,row)
+            row.update(submitted_at=time.time(),execution_epoch=entry['state']['epoch'])
+            self.event('model_admission_attempt',**row)
+            return self.client(entry).call('POST',self.client(entry).path(entry['id'])+'/requests',body)
+        receipt=self.admit(entry,row['logical_request_id'],'model',send,row)
+        if self.cache_observer: self.cache_observer.request_accepted(entry)
+        self.event('model_submit',**row)
+        return receipt
     def suspend(self,entry,operation):
         state=self.refresh(entry)
         deadline=self.phase_deadline(180);epoch=state['epoch']
@@ -382,24 +422,34 @@ class Trial:
             remaining=deadline-time.monotonic()
             if remaining<=0: raise TimeoutError('in-flight lifecycle deadline')
             time.sleep(min(.1,remaining));state=self.refresh(entry)
-    def resume(self,entry,operation):
+    def resume(self,entry,operation,deadline=None):
         state=self.refresh(entry);queue=0.
         if state['state']=='RUNNING' and state['gate']=='OPEN': return queue
+        expected_epoch=state['epoch']
+        acquired=False
         if not entry['resident']:
-            queue=self.slots.acquire(entry['id'],self.remaining(self.config['request_deadline_seconds']));entry['resident']=True
+            timeout=self.remaining(self.config['request_deadline_seconds'])
+            if deadline is not None:
+                timeout=min(timeout,deadline-time.monotonic())
+                if timeout<=0: raise TimeoutError('operation admission deadline')
+            queue=self.slots.acquire(entry['id'],timeout);entry['resident']=True;acquired=True
         begin=time.time();entry['return_pending']=True
         try:
-            if self.policy in AUTONOMOUS_POLICIES:
+            if acquired: state=self.refresh(entry)
+            if state['state']=='RUNNING' and state.get('gate')=='OPEN':
+                pass
+            elif self.policy in AUTONOMOUS_POLICIES:
                 body=dict(operation_id=operation,expected_epoch=state['epoch'])
                 demand=self.client(entry).call('POST',self.client(entry).path(entry['id'])+'/return-demand',body)
-                deadline=self.phase_deadline(self.config['request_deadline_seconds'])
+                deadline=min(deadline if deadline is not None else float('inf'),self.phase_deadline(self.config['request_deadline_seconds']))
                 while demand['status']!='COMPLETED':
                     if time.monotonic()>deadline: raise TimeoutError('managed return demand deadline')
                     time.sleep(self.config['poll_seconds']);state=self.refresh(entry)
                     demand=state.get('return_demands',{}).get(operation,demand)
+                    if state['state']=='RUNNING' and state.get('gate')=='OPEN' and state['epoch']==expected_epoch: break
                 state=self.client(entry).session(entry['id'])
             else:
-                deadline=self.phase_deadline(self.config['request_deadline_seconds'])
+                deadline=min(deadline if deadline is not None else float('inf'),self.phase_deadline(self.config['request_deadline_seconds']))
                 while True:
                     try:
                         state=self.client(entry).lifecycle(entry['id'],'resume',state['epoch'],operation)
@@ -412,7 +462,11 @@ class Trial:
                         if remaining<=0: raise TimeoutError('Worker capacity return deadline') from exc
                         time.sleep(min(1.,remaining))
             entry['state']=state
-            if state['state']!='RUNNING' or state['actual_fidelity']!='MEMORY': raise RuntimeError('MEMORY restore was not observed')
+            if state['state']!='RUNNING' or state.get('gate')!='OPEN': raise RuntimeError('open session admission was not observed')
+            if state['epoch']==expected_epoch:
+                self.event('admission_reopened',session_id=entry['id'],epoch=state['epoch'],seconds=time.time()-begin,queue_seconds=queue)
+                return queue
+            if state['epoch']!=expected_epoch+1 or state['actual_fidelity']!='MEMORY': raise RuntimeError('MEMORY restore was not observed')
             self.resumes.append(dict(session_id=entry['id'],seconds=time.time()-begin,gateway_queue_seconds=queue))
             self.event('resume',session_id=entry['id'],epoch=state['epoch'],seconds=time.time()-begin,queue_seconds=queue,actual_fidelity=state['actual_fidelity'])
             return queue
@@ -452,7 +506,7 @@ class Trial:
                     raise TimeoutError('scheduled arrival expired in the serial workspace queue')
                 row['gateway_queue_seconds']=self.resume(entry,f'return-{turn}')
                 if previous: self.client(entry).claim(entry['id'],previous,entry['state']['epoch'])
-                proof=self.tool(entry,f'work-{turn}',f'python3 actor_mix.py work --kind {entry["kind"]} --seed {self.seed+entry["index"]} --turn {turn}')
+                proof=self.tool(entry,f'work-{turn}',f'python3 actor_mix.py work --kind {entry["kind"]} --seed {self.seed+entry["index"]} --turn {turn}',row)
                 for key in ('nonce','pid','heap_bytes','heap_sha256','ast_identity','ast_sha256'):
                     if proof['ram'][key]!=entry['proof'][key]: raise RuntimeError('Actor RAM continuity failed: '+key)
                 if proof['ram']['context']['turns']!=turn+1: raise RuntimeError('Actor context turn counter was replayed')
@@ -468,12 +522,9 @@ class Trial:
                 payload=dict(model='agentcloud-tiny',messages=[dict(role='user',content=prompt)],max_tokens=output_tokens,
                     min_tokens=output_tokens,ignore_eos=True,temperature=0,stream=True,stream_options=dict(include_usage=True))
                 if self.cache_observer:
-                    self.cache_observer.before_request(entry,tokens,row)
                     payload['nvext']=dict(extra_fields=['worker_id','timing'])
-                row.update(prompt_sha256=hashlib.sha256(prompt.encode()).hexdigest(),submitted_at=time.time(),
-                    terminal_turn=turn==len(rows)-1,execution_epoch=entry['state']['epoch'])
-                self.event('model_submit',**row)
-                self.client(entry).call('POST',self.client(entry).path(entry['id'])+'/requests',dict(logical_request_id=row['logical_request_id'],payload=payload,terminal_turn=turn==len(rows)-1))
+                row.update(prompt_sha256=hashlib.sha256(prompt.encode()).hexdigest(),terminal_turn=turn==len(rows)-1)
+                self.submit_model(entry,row,payload,tokens)
                 idle=dict(uid=entry['state']['actor']['uid'],start=row['submitted_at'],end=None);self.idle.append(idle)
                 deadline=self.phase_deadline(self.config['request_deadline_seconds']);result=None;window=None;ttl_applied=False
                 while True:

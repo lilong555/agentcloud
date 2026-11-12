@@ -182,13 +182,15 @@ class CacheObserver:
                                   separators=(",", ":"), allow_nan=False) + "\n")
         self.log.flush()
 
-    def before_request(self, entry, tokens, row):
+    def request_accepted(self, entry):
         with self.lock:
             previous = self.tracked.pop(entry["id"], None)
             if previous:
                 self.cohorts.end(previous["cohort_id"])
                 self.emit("cohort_closed", cohort_id=previous["cohort_id"],
                           reason="next_request_submitted")
+
+    def before_request(self, entry, tokens, row):
         query = self.native.query(tokens)
         row["kv_before"] = {"observed_at": kv.utc(), "query": query,
                             "source_kind": "live_kvindexer_observation", "backend_kind": "mocker"}

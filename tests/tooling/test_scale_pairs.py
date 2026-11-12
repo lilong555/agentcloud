@@ -107,7 +107,7 @@ class ScalePairsTests(unittest.TestCase):
         trial=object.__new__(Trial);trial.policy='static-2-shadow';trial.config={'request_deadline_seconds':10}
         trial.resumes=[];trial.slots=Mock();trial.event=Mock()
         trial.refresh=Mock(return_value=dict(state='SUSPENDED',epoch=3))
-        client=Mock();client.lifecycle.return_value=dict(state='RUNNING',epoch=4,actual_fidelity='MEMORY')
+        client=Mock();client.lifecycle.return_value=dict(state='RUNNING',gate='OPEN',epoch=4,actual_fidelity='MEMORY')
         trial.client=Mock(return_value=client)
         trial.resume(dict(id='shadow',resident=True),'return')
         client.lifecycle.assert_called_once_with('shadow','resume',3,'return')

@@ -21,7 +21,7 @@ class ScaleCapacityTests(unittest.TestCase):
 
     @patch('bench.scale.time.sleep')
     def test_verified_capacity_wait_reuses_epoch_and_operation(self, sleep):
-        running = dict(state='RUNNING', epoch=4, actual_fidelity='MEMORY')
+        running = dict(state='RUNNING', gate='OPEN', epoch=4, actual_fidelity='MEMORY')
         trial, client, entry = self.trial([CloudError('resume_capacity_wait', 'capacity', 409), running])
         trial.resume(entry, 'same-return')
         self.assertEqual(client.lifecycle.call_count, 2)
