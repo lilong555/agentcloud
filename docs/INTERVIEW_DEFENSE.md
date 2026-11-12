@@ -12,7 +12,7 @@
 
 **历史真实执行恢复与模拟推理联合验收。** 标准 Actions runner 上的 gVisor MEMORY＋双官方 Mocker 通过 54/54 Trial，跨 Epoch 保持 Session、轮换 Lease，旧凭证均返回 401，预算为 257 → 0 → 257。缓存保留时模拟命中 240/256 Token，驱逐后为 0/256。Off／Hard 亲和结果一致：该矩阵中的 Program 分配已将请求送回仍在线的 Worker，Hard 的额外命中收益为零。模型请求来自外部驱动，物理 GPU 缓存采用前述独立测量。[联合原始回执与源码归因](LIFECYCLE_KV_VALIDATION.md)
 
-**当前 KV 联合决策采用动作差额。** `agentcloud-v2-joint` 从官方 KVIndexer 读取当前前缀驻留和首次损失统计，以 SUSPEND 与 KEEP 的条件重算期望差额调整切换成本；共同风险和已经缺失的前缀成本相消。原生 `cache_reselect` 将缓存、负载和原子容量预留接入后续请求选择，Hard 保持 pin，Off／Soft 提供候选空间。未知等待保留两秒期限，陈旧／低支持观察回退基础成本，额外 KEEP 有固定上限。当前本地 Go 契约 152 项通过；已归档 CI 源码 `293e19f` 的 161 项与原生 wheel 78 passed／2 ignored 各自保留验收身份。两次联合冒烟均为 failure：首轮工作流输入校验失败，第二轮会话及前序清理失败、请求级产物缺失；全量性能仍待验收。[测试身份与失败原文](EXPERIMENTS.md#在线-kv-与沙箱生命周期联合策略) · [联合机制](JOINT_KV_SCHEDULING.md)
+**当前 KV 联合决策采用动作差额。** `agentcloud-v2-joint` 从官方 KVIndexer 读取当前前缀驻留和首次损失统计，以 SUSPEND 与 KEEP 的条件重算期望差额调整切换成本；共同风险和已经缺失的前缀成本相消。原生 `cache_reselect` 将缓存、负载和原子容量预留接入后续请求选择，Hard 保持 pin，Off／Soft 提供候选空间。未知等待保留两秒期限，陈旧／低支持观察回退基础成本，额外 KEEP 有固定上限。源码 `55120d52` 的 [CI 43161047688](evidence/ci-run-43161047688.json)通过 162 个 Go 顶层测试、零跳过，含 11 个真实 PostgreSQL 测试；独立 DeerFlow 为 20/20、零跳过。该 CI tooling 为 236 项，最新本地为 246 项；原生 wheel 保留 78 passed／2 ignored 的独立身份。联合冒烟 43161092995 正在执行五策略，全量性能待验收。前两次失败继续保留：首轮工作流输入校验失败，第二轮会话及前序清理失败、请求级产物缺失。[测试身份与失败原文](EXPERIMENTS.md#在线-kv-与沙箱生命周期联合策略) · [联合机制](JOINT_KV_SCHEDULING.md)
 
 [最终 Checklist、三条简历与 Top 12 速查卡](FINAL_RELEASE_CHECKLIST.md) · [验收索引](STATUS.md) · [调度归因](SCHEDULER_DIAGNOSIS.md) · [v2 配对协议](V2_EVALUATION.md) · [GPU 原始数据](GPU_VALIDATION.md)
 
@@ -64,7 +64,7 @@ PENDING 上传由 [WaitActorSnapshotDurable](../integrations/substrate/files/cmd
 
 上游交付为 **Substrate 38 个文件、2 组补丁；Dynamo 16 个文件、3 组补丁**。Substrate 将 UID／version 检查放入同一 Actor lease，提供指定快照 durable、Tag 来源核验和实际恢复回执。Dynamo 将认证执行状态接入 ThunderAgent Program 准入，在终结时共同回收绑定、feedback 和 inference lease，以有界 generation 墓碑保护旧身份。Go 协调器消费两侧回执，决定工具 gate 和模型结果的交付时刻。
 
-[历史原生验收](evidence/native-run-42769316617.json)包含 **1,336 项测试、16 项真实进程检查**。`max_sessions=2` 下连续完成 64 轮创建／终结、128 次模型请求，终态 active bindings 为 0、墓碑为 2；64 次旧 lease 返回 401，64 次旧 generation 返回 409。当前 [完整文件还原](evidence/source-reproduction.json)与[标准补丁还原](evidence/upstream-patches-reproduction.json)核验 38＋16 个文件及相同 Git tree。Go 契约 [43155952398／contracts](https://github.com/lilong555/agentcloud/actions/runs/43155952398/job/130975803254)与原生 wheel [43012181604](https://github.com/lilong555/agentcloud/actions/runs/43012181604)各自记录当前接口验收。
+[历史原生验收](evidence/native-run-42769316617.json)包含 **1,336 项测试、16 项真实进程检查**。`max_sessions=2` 下连续完成 64 轮创建／终结、128 次模型请求，终态 active bindings 为 0、墓碑为 2；64 次旧 lease 返回 401，64 次旧 generation 返回 409。当前 [完整文件还原](evidence/source-reproduction.json)与[标准补丁还原](evidence/upstream-patches-reproduction.json)核验 38＋16 个文件及相同 Git tree。Go 契约 [43161047688／contracts](https://github.com/lilong555/agentcloud/actions/runs/43161047688/job/130992040365)与原生 wheel [43012181604](https://github.com/lilong555/agentcloud/actions/runs/43012181604)各自记录当前接口验收。
 
 | 当前 KV 机制 | 精确入口与具名测试 |
 | --- | --- |

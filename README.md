@@ -6,7 +6,7 @@ Go 协调器通过 PostgreSQL 保存请求、回执和恢复 manifest；Substrat
 
 **在线 KV 联合策略：**`agentcloud-v2-joint` 读取官方 KVIndexer 的当前前缀驻留与首次损失统计，将 SUSPEND 和 KEEP 的预期重算成本差额计入生命周期切换成本；`cache_reselect` 将前缀命中、prefill／decode 负载和原子容量预留共同用于 Worker 选择。Hard affinity 保持目标，Off／Soft 提供候选空间。观测过期、事件缺口或支持不足时回退到基础成本；未知等待保留两秒释放期限。[机制、动作条件与实验身份](docs/JOINT_KV_SCHEDULING.md) · [原生缓存路由合同](integrations/dynamo/CACHE_ROUTING.md)
 
-当前本地契约记录 **152 个 Go 顶层测试、236 个 tooling 测试通过**；runtime 为 58 项通过、四个模块跳过。联合冒烟 [43157107777](docs/evidence/joint-kv/43157107777/summary.json) 与 [43157987378](docs/evidence/joint-kv/43157987378/summary.json) 均失败，完整五策略配对与全量性能仍待验收。[测试身份与失败原文](docs/EXPERIMENTS.md#在线-kv-与沙箱生命周期联合策略)
+当前 [CI 43161047688](docs/evidence/ci-run-43161047688.json)记录 **162 个 Go 顶层测试通过、零跳过，含 11 个真实 PostgreSQL 测试**；独立 DeerFlow 为 **20/20、零跳过**，CI tooling 为 236 项。最新本地契约为 152 个 Go 顶层、246 个 tooling 通过，runtime 为 58 通过／四个模块跳过。联合冒烟 [43161092995](https://github.com/lilong555/agentcloud/actions/runs/43161092995)正在执行五策略，配对结果与全量性能待验收；[43157107777](docs/evidence/joint-kv/43157107777/summary.json) 与 [43157987378](docs/evidence/joint-kv/43157987378/summary.json)保留历史失败状态。[测试身份与失败原文](docs/EXPERIMENTS.md#在线-kv-与沙箱生命周期联合策略)
 
 ```mermaid
 flowchart LR

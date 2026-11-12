@@ -169,6 +169,77 @@ def archive_file(source, destination, compress):
                 stored_bytes=destination.stat().st_size, compression="gzip" if compress else "none")
 
 
+def verify_fallback(source, run_id):
+    raw = json.loads(safe_file(source, "fallback.json").read_text())
+    if (raw.get("source_kind") != "github_actions_public_raw_fallback" or raw.get("gpu_execution") is not False
+            or str(raw.get("github_run_id")) != str(run_id)
+            or not re.fullmatch(r"[1-9][0-9]*", str(raw.get("github_run_attempt")))
+            or raw.get("suite") not in ("smoke", "full")):
+        raise ValueError("raw fallback identity or CPU declaration differs")
+    names, size = set(), 0
+    for entry in raw.get("files", []):
+        name = entry["path"]
+        if name in names or name == "fallback.json":
+            raise ValueError("duplicate raw fallback path")
+        path = safe_file(source, name)
+        if (type(entry.get("bytes")) is not int or entry["bytes"] < 0 or path.suffix == ".whl"
+                or path.stat().st_size != entry["bytes"] or digest(path) != entry.get("sha256")):
+            raise ValueError("raw fallback checksum or size differs: " + name)
+        names.add(name)
+        size += entry["bytes"]
+        if size > 2 * 2**30:
+            raise ValueError("raw fallback exceeds 2 GiB")
+    if {str(path.relative_to(source)) for path in source.rglob("*") if path.is_file()} != names | {"fallback.json"}:
+        raise ValueError("raw fallback contains files outside its verified inventory")
+    issues = ["raw_fallback_source_snapshot_missing", "raw_fallback_wheel_provenance_missing",
+              "raw_fallback_hosted_cleanup_missing"]
+    identity = {"github_run_id": str(run_id), "github_run_attempt": str(raw["github_run_attempt"])}
+    schedule_name = "provenance/joint-kv-schedule.json"
+    schedule = json.loads((source / schedule_name).read_text()) if schedule_name in names else {}
+    reports = [json.loads((source / name).read_text()) for name in sorted(names)
+               if re.fullmatch(r"experiment/[a-zA-Z0-9_-]+/result.json", name)]
+    for item in ([schedule] if schedule else []) + reports:
+        if any(str(item.get(key)) != value for key, value in identity.items()):
+            raise ValueError("raw fallback report or schedule belongs to another run or attempt")
+    source_values = {item.get("source_commit") for item in ([schedule] if schedule else []) + reports
+                     if item.get("source_commit")}
+    runners = {item.get("paired_runner_id") for item in ([schedule] if schedule else []) + reports
+               if item.get("paired_runner_id")}
+    if len(source_values) > 1 or any(not re.fullmatch(r"[0-9a-f]{40}", str(value)) for value in source_values):
+        raise ValueError("raw fallback source commits differ")
+    if len(runners) > 1:
+        raise ValueError("raw fallback paired runners differ")
+    commit = next(iter(source_values), None)
+    runner = next(iter(runners), None)
+    if not commit:
+        issues.append("raw_fallback_source_commit_missing")
+    if not runner:
+        issues.append("raw_fallback_paired_runner_missing")
+    if not schedule:
+        issues.append("raw_fallback_schedule_missing")
+    for report in reports:
+        if report.get("gpu_execution") is not False:
+            issues.append("raw_fallback_trial_cpu_provenance_missing")
+    run_name, jobs_name = "provenance/joint-kv-run.json", "provenance/joint-kv-jobs.json"
+    run = json.loads((source / run_name).read_text()) if run_name in names else {}
+    jobs = json.loads((source / jobs_name).read_text()).get("jobs", []) if jobs_name in names else []
+    if run and (str(run.get("id")) != str(run_id)
+                or "run_attempt" in run and str(run["run_attempt"]) != identity["github_run_attempt"]):
+        raise ValueError("raw fallback GitHub run identity differs")
+    if any(str(job.get("run_id")) != str(run_id) or not re.fullmatch(r"[1-9][0-9]*", str(job.get("id")))
+           or "run_attempt" in job and str(job["run_attempt"]) != identity["github_run_attempt"] for job in jobs):
+        raise ValueError("raw fallback GitHub job identity differs")
+    if not run or not jobs:
+        issues.append("raw_fallback_github_metadata_missing")
+    inventory = dict(raw, source_commit=commit, paired_runner_id=runner, wheel_run_id=None,
+        expected_wheel_run_id=WHEEL_RUN_ID, workflow_commit=run.get("head_sha"),
+        workload_sha256=schedule.get("config", {}).get("agent_trace_workload", {}).get("sha256"),
+        trials=schedule.get("order", []) or [{key: report.get(key) for key in
+            ("trial_id", "policy", "seed", "concurrency")} for report in reports])
+    return inventory, dict(status="incomplete", issues=sorted(set(issues)), github_jobs=jobs,
+                           wheel_github_jobs=[], verified_files=len(names), verified_bytes=size)
+
+
 def import_artifact(source, run_id, artifact_id, archive_sha256, repository="lilong555/agentcloud", zip_path=None):
     source = Path(source).resolve()
     if not source.is_dir() or not source.is_relative_to((ROOT / "artifacts").resolve()):
@@ -179,12 +250,14 @@ def import_artifact(source, run_id, artifact_id, archive_sha256, repository="lil
         raise ValueError("positive GitHub identities, SHA256 and repository are required")
     if zip_path and digest(Path(zip_path)) != archive_sha256:
         raise ValueError("downloaded artifact ZIP differs from its declared SHA256")
-    inventory, validation = verify_inventory(source, run_id)
+    raw_fallback = not (source / "inventory.json").exists() and (source / "fallback.json").is_file()
+    manifest_name = "fallback.json" if raw_fallback else "inventory.json"
+    inventory, validation = (verify_fallback if raw_fallback else verify_inventory)(source, run_id)
     if zip_path:
         with zipfile.ZipFile(zip_path) as incoming:
             members = {item.filename: item for item in incoming.infolist() if not item.is_dir()}
-            expected = {item["path"] for item in inventory["files"]} | {"inventory.json"}
-            if set(members) != expected:
+            expected = {item["path"] for item in inventory["files"]} | {manifest_name}
+            if len(members) != sum(not item.is_dir() for item in incoming.infolist()) or set(members) != expected:
                 raise ValueError("artifact ZIP members differ from the extracted inventory")
             for name in expected:
                 with incoming.open(members[name]) as stream:
@@ -192,7 +265,7 @@ def import_artifact(source, run_id, artifact_id, archive_sha256, repository="lil
                         raise ValueError("artifact ZIP content differs from extracted evidence: " + name)
     directory = ROOT / "docs/evidence/joint-kv" / str(run_id) / str(artifact_id)
     files, wheels = [], []
-    for entry in inventory["files"] + [dict(path="inventory.json", sha256=digest(source / "inventory.json"))]:
+    for entry in inventory["files"] + [dict(path=manifest_name, sha256=digest(source / manifest_name))]:
         name = entry["path"]
         original = source / name
         if original.suffix == ".whl":
@@ -211,8 +284,11 @@ def import_artifact(source, run_id, artifact_id, archive_sha256, repository="lil
         archive_sha256=archive_sha256, artifact_url=f"https://github.com/{repository}/actions/runs/{run_id}",
         download_url=f"https://api.github.com/repos/{repository}/actions/artifacts/{artifact_id}/zip",
         source_commit=inventory["source_commit"], paired_runner_id=inventory.get("paired_runner_id"),
-        suite=inventory.get("suite"), wheel_run_id=WHEEL_RUN_ID, workload_sha256=inventory.get("workload_sha256"),
+        suite=inventory.get("suite"), wheel_run_id=inventory.get("wheel_run_id"), workload_sha256=inventory.get("workload_sha256"),
         provenance_validation=validation, trials=inventory.get("trials", []), files=files, external_wheels=wheels)
+    if raw_fallback:
+        metadata.update(archive_kind="raw_fallback", expected_wheel_run_id=WHEEL_RUN_ID,
+                        workflow_commit=inventory.get("workflow_commit"), full_gate_admissible=False)
     destination = directory / "artifact.json"
     serialized = json.dumps(metadata, indent=2, allow_nan=False) + "\n"
     if destination.exists() and destination.read_text() != serialized:

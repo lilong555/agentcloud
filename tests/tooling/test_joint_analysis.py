@@ -6,6 +6,7 @@ import gzip
 import hashlib
 import json
 from pathlib import Path
+import shutil
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -179,6 +180,35 @@ class JointAnalysisTests(unittest.TestCase):
 
 
 class JointImportTests(unittest.TestCase):
+    def fallback_artifact(self, root, primary, missing_identity=False):
+        source = root / "artifacts/raw-fallback"
+        source.mkdir()
+        for path in primary.rglob("*"):
+            if not path.is_file():
+                continue
+            name = str(path.relative_to(primary))
+            if name == "schedule.json":
+                name = "provenance/joint-kv-schedule.json"
+            elif not (name.startswith("experiment/") or name in
+                      ("provenance/joint-kv-run.json", "provenance/joint-kv-jobs.json")):
+                continue
+            target = source / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(path, target)
+            if missing_identity and (name.endswith("result.json") or name.endswith("schedule.json")):
+                data = json.loads(target.read_text())
+                data.pop("source_commit", None)
+                data.pop("paired_runner_id", None)
+                target.write_text(json.dumps(data))
+        def refresh():
+            report = dict(source_kind="github_actions_public_raw_fallback", gpu_execution=False,
+                          github_run_id="20", github_run_attempt="2", suite="smoke", status="raw_only", rejected=[],
+                          files=[dict(path=str(path.relative_to(source)), sha256=raw_hash(path), bytes=path.stat().st_size)
+                                 for path in sorted(source.rglob("*")) if path.is_file() and path.name != "fallback.json"])
+            (source / "fallback.json").write_text(json.dumps(report))
+        refresh()
+        return source, refresh
+
     def artifact(self, root):
         source = root / "artifacts/extracted"
         source.mkdir(parents=True)
@@ -261,6 +291,148 @@ class JointImportTests(unittest.TestCase):
                 with patch.object(importer, "ROOT", root), self.assertRaises(ValueError):
                     importer.import_artifact(source, 20, 30, "f" * 64, zip_path=package if mutation == "zip" else None)
                 self.assertFalse((root / "docs/evidence/joint-kv/20/30/artifact.json").exists())
+
+    def test_raw_fallback_missing_source_and_wheel_remains_incomplete_with_full_plan(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            primary, _ = self.artifact(root)
+            source, _ = self.fallback_artifact(root, primary, missing_identity=True)
+            package = root / "artifacts/raw.zip"
+            with zipfile.ZipFile(package, "w") as outgoing:
+                for path in source.rglob("*"):
+                    if path.is_file():
+                        outgoing.write(path, str(path.relative_to(source)))
+            with patch.object(importer, "ROOT", root):
+                record = importer.import_artifact(source, 20, 31, raw_hash(package), zip_path=package)
+            self.assertEqual(record["archive_kind"], "raw_fallback")
+            self.assertEqual(record["provenance_validation"]["status"], "incomplete")
+            self.assertIsNone(record["source_commit"])
+            self.assertIsNone(record["wheel_run_id"])
+            self.assertFalse(record["full_gate_admissible"])
+            output = root / "docs/evidence/joint-kv/20/31"
+            self.assertEqual((output / "fallback.json").read_bytes(), (source / "fallback.json").read_bytes())
+            with self.assertRaises((FileNotFoundError, ValueError)):
+                joint_plan.verify_smoke(source, COMMIT, "20")
+            with patch.object(analysis, "ROOT", root):
+                trials, artifacts = analysis.load_archives([output / "artifact.json"])
+            summary = analysis.summarize(trials, joint_plan.frozen_config("smoke"), samples=1, launches=artifacts)
+            self.assertEqual(summary["status"], "incomplete")
+            self.assertEqual(summary["matrix"]["planned_requests"], 120)
+            self.assertEqual(summary["matrix"]["observed_unambiguous_trials"], 5)
+            self.assertTrue(all(row["status"] == "incomplete" for row in summary["trials"]))
+
+    def test_primary_and_fallback_byte_identical_trials_are_counted_once(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            primary, _ = self.artifact(root)
+            raw, _ = self.fallback_artifact(root, primary)
+            with patch.object(importer, "ROOT", root):
+                importer.import_artifact(primary, 20, 30, "f" * 64)
+                importer.import_artifact(raw, 20, 31, "e" * 64)
+            paths = [root / "docs/evidence/joint-kv/20" / str(artifact) / "artifact.json" for artifact in (30, 31)]
+            with patch.object(analysis, "ROOT", root):
+                trials, artifacts = analysis.load_archives(paths)
+            self.assertEqual(len(trials), 5)
+            self.assertTrue(all(trial["_archive"]["artifact_id"] == "30" for trial in trials))
+            fallback = next(item for item in artifacts if item["artifact_id"] == "31")
+            self.assertFalse(fallback["statistical_input"])
+            self.assertEqual(fallback["supplementary_trial_records"], 5)
+            summary = analysis.summarize(trials, joint_plan.frozen_config("smoke"), samples=1, launches=artifacts)
+            self.assertEqual(summary["matrix"]["planned_trials"], 5)
+            self.assertEqual(summary["matrix"]["planned_requests"], 120)
+            self.assertEqual(summary["matrix"]["duplicate_trials"], [])
+
+    def test_complete_primary_keeps_passed_status_with_incomplete_supplementary_raw(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            primary, refresh = self.artifact(root)
+            config = joint_plan.frozen_config("smoke")
+            planned, arrival_hash = analysis.planned_trace(config, 7101, 4)
+            for path in primary.glob("experiment/*/result.json"):
+                report = json.loads(path.read_text())
+                rows = []
+                for plan in planned:
+                    row = dict(plan, status="COMPLETED", ram_continuity=True, token_trace_validated=True,
+                               ttft_seconds=1.0, arrival_at=1000.0, completed_at=1001.0 + plan["round"],
+                               gateway_queue_seconds=.04, trajectory_queue_seconds=.02,
+                               cached_tokens=0, recomputed_tokens=plan["context_tokens"])
+                    rows.append(row)
+                report.update(status="passed", trial_execution_status="COMPLETED", cleanup_success=True,
+                              requests=rows, arrival_trace_sha256=arrival_hash, comparison_protocol="symmetric-program-v1",
+                              source_sha256={"fixture/source.py": "b" * 64},
+                              metrics=dict(resource_coverage_fraction=1.0, actor_reserved_gb_s=100.0, stranded_worker_gb_s=0.0))
+                path.write_text(json.dumps(report))
+            cleanup = primary / "diagnostics/ci-live-cleanup.json"
+            cleanup.parent.mkdir()
+            cleanup.write_text(json.dumps(dict(status="passed", cluster_release_exit_code=0, errors=[], remaining_containers=[])))
+            # The fixture inventory refresh tracks only its original members.
+            refresh()
+            inventory_path = primary / "inventory.json"
+            inventory = json.loads(inventory_path.read_text())
+            inventory["files"].append(dict(path="diagnostics/ci-live-cleanup.json", sha256=raw_hash(cleanup), bytes=cleanup.stat().st_size))
+            inventory_path.write_text(json.dumps(inventory))
+            raw, _ = self.fallback_artifact(root, primary)
+            with patch.object(importer, "ROOT", root):
+                importer.import_artifact(primary, 20, 30, "f" * 64)
+                importer.import_artifact(raw, 20, 31, "e" * 64)
+            with patch.object(analysis, "ROOT", root):
+                trials, artifacts = analysis.load_archives([root / "docs/evidence/joint-kv/20/30/artifact.json",
+                                                            root / "docs/evidence/joint-kv/20/31/artifact.json"])
+            summary = analysis.summarize(trials, config, samples=1, launches=artifacts)
+            self.assertEqual(summary["status"], "complete")
+            self.assertEqual(summary["matrix"]["passed_trials"], 5)
+            self.assertEqual(summary["matrix"]["completed_requests"], 120)
+            self.assertFalse(summary["raw_fallback_archives"][0]["statistical_input"])
+            self.assertEqual(summary["raw_fallback_archives"][0]["provenance_validation"]["status"], "incomplete")
+
+    def test_raw_fallback_integrity_and_primary_conflict_are_rejected(self):
+        for mutation in ("checksum", "private", "job", "conflict"):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                primary, _ = self.artifact(root)
+                raw, refresh = self.fallback_artifact(root, primary)
+                if mutation == "checksum":
+                    (raw / "experiment/fixture-static-2/events.jsonl").write_text("changed")
+                elif mutation == "private":
+                    target = raw / "routing/private/token.json"
+                    target.parent.mkdir(parents=True)
+                    target.write_text("{}")
+                    refresh()
+                elif mutation == "job":
+                    (raw / "provenance/joint-kv-jobs.json").write_text('{"jobs":[{"id":43,"run_id":21}]}')
+                    refresh()
+                else:
+                    target = raw / "experiment/fixture-static-2/result.json"
+                    report = json.loads(target.read_text())
+                    report["error"] = "conflicting original result"
+                    target.write_text(json.dumps(report))
+                    refresh()
+                with patch.object(importer, "ROOT", root):
+                    if mutation != "conflict":
+                        with self.assertRaises(ValueError):
+                            importer.import_artifact(raw, 20, 31, "e" * 64)
+                    else:
+                        importer.import_artifact(primary, 20, 30, "f" * 64)
+                        importer.import_artifact(raw, 20, 31, "e" * 64)
+                        with patch.object(analysis, "ROOT", root), self.assertRaisesRegex(ValueError, "differs from its primary"):
+                            analysis.load_archives([root / "docs/evidence/joint-kv/20/30/artifact.json",
+                                                    root / "docs/evidence/joint-kv/20/31/artifact.json"])
+
+    def test_empty_raw_fallback_keeps_registered_plan_and_unknown_completion_count(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "artifacts/raw-empty"
+            source.mkdir(parents=True)
+            (source / "fallback.json").write_text(json.dumps(dict(source_kind="github_actions_public_raw_fallback",
+                gpu_execution=False, github_run_id="20", github_run_attempt="2", suite="smoke", files=[])))
+            with patch.object(importer, "ROOT", root):
+                importer.import_artifact(source, 20, 31, "e" * 64)
+            with patch.object(analysis, "ROOT", root):
+                trials, artifacts = analysis.load_archives([root / "docs/evidence/joint-kv/20/31/artifact.json"])
+            summary = analysis.summarize(trials, joint_plan.frozen_config("smoke"), samples=1, launches=artifacts)
+            self.assertEqual(summary["github_run_id"], "20")
+            self.assertEqual(summary["matrix"]["planned_requests"], 120)
+            self.assertIsNone(summary["matrix"]["completed_requests"])
 
     def test_existing_archive_is_immutable_after_valid_source_changes(self):
         with tempfile.TemporaryDirectory() as directory:

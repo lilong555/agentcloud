@@ -63,13 +63,34 @@ class JointEvidenceAuditTests(unittest.TestCase):
         _, archives = joint_kv.load_archives(paths)
         units = sorted({audit.joint_identity(item) for item in archives})
         runs = [dict(source_kind="run_scoped_joint_kv_analysis", gpu_execution=False, status="incomplete",
-                     github_run_id=run, github_run_attempt=attempt, audit=[], trials=[])
+                     github_run_id=run, github_run_attempt=attempt, audit=[], trials=[],
+                     raw_fallback_archives=[item for item in archives if item.get("archive_kind") == "raw_fallback"
+                                            and audit.joint_identity(item) == (run, attempt)])
                 for run, attempt in units]
         result = runs[0] if len(runs) == 1 else dict(source_kind="independent_run_joint_kv_analyses", gpu_execution=False, runs=runs)
         result["artifacts"] = archives
         path = self.directory / "joint-kv-summary.json" if per_run is None else self.directory / "joint-kv" / per_run / "summary.json"
         path.write_text(json.dumps(result))
         return path, result
+
+    def primary_and_raw(self):
+        primary, report = self.archive()
+        for record in report["files"]:
+            record["artifact_path"] = record["artifact_path"].replace("experiment/fixture/", "experiment/fixture-30/")
+        primary.write_text(json.dumps(report))
+        parent = primary.parent.parent / "31"
+        parent.mkdir()
+        raw = dict(report, artifact_id="31", archive_kind="raw_fallback", full_gate_admissible=False,
+                   wheel_run_id=None, provenance_validation={"status": "incomplete"})
+        raw["files"] = []
+        for record in report["files"]:
+            path = self.root / record["path"]
+            compressed = record["compression"] == "gzip"
+            data = gzip.decompress(path.read_bytes()) if compressed else path.read_bytes()
+            raw["files"].append(self.member(parent, record["artifact_path"], data, compressed))
+        manifest = parent / "artifact.json"
+        manifest.write_text(json.dumps(raw))
+        return primary, manifest, raw
 
     def inspect(self):
         errors = []
@@ -157,6 +178,68 @@ class JointEvidenceAuditTests(unittest.TestCase):
                      lambda r: r["audit"][0].update(trial_id="unobserved-trial")):
             changed = copy.deepcopy(result); edit(changed); path.write_text(json.dumps(changed))
             self.assertTrue(self.inspect())
+
+    def test_primary_and_raw_are_loaded_together_once_and_audited_read_only(self):
+        primary, raw, _ = self.primary_and_raw()
+        summary, result = self.summary([primary, raw])
+        result["source_commits"] = ["a" * 40]
+        result["audit"] = [dict(trial_id="fixture-30", source_commit="a" * 40,
+                                artifact=result["artifacts"][0])]
+        summary.write_text(json.dumps(result))
+        self.assertFalse(result["raw_fallback_archives"][0]["statistical_input"])
+        self.assertEqual(result["raw_fallback_archives"][0]["supplementary_trial_records"], 1)
+        before = {p: p.read_bytes() for p in self.directory.rglob("*") if p.is_file()}
+        with patch.object(joint_kv, "load_archives", wraps=joint_kv.load_archives) as loader:
+            self.assertEqual(self.inspect(), [])
+        self.assertEqual(loader.call_count, 1)
+        self.assertEqual(set(loader.call_args.args[0]), {primary, raw})
+        self.assertEqual(before, {p: p.read_bytes() for p in before})
+
+    def test_rehashed_raw_overlap_conflicts_with_primary_are_rejected(self):
+        primary, raw, report = self.primary_and_raw()
+        self.summary([primary, raw])
+        report["files"][-1] = self.member(raw.parent, "experiment/fixture-30/events.jsonl",
+                                         b'{"kind":"other"}\n', compressed=True)
+        raw.write_text(json.dumps(report))
+        self.assertIn("fallback raw trial evidence differs", " ".join(self.inspect()))
+
+    def test_raw_selection_and_reference_claims_match_joint_archive_loading(self):
+        primary, raw, _ = self.primary_and_raw()
+        path, original = self.summary([primary, raw])
+        changes = (
+            lambda r: r["artifacts"][1].update(statistical_input=True),
+            lambda r: r["raw_fallback_archives"][0].update(supplementary_trial_records=0),
+            lambda r: r["raw_fallback_archives"][0].update(selection_reason="raw_records_without_primary_measurements"),
+            lambda r: r["raw_fallback_archives"][0].update(full_gate_admissible=True),
+            lambda r: r.update(raw_fallback_archives=[]),
+            lambda r: r["raw_fallback_archives"].append(copy.deepcopy(r["raw_fallback_archives"][0])),
+        )
+        for change in changes:
+            with self.subTest(change=change):
+                changed = copy.deepcopy(original); change(changed); path.write_text(json.dumps(changed))
+                self.assertTrue(self.inspect())
+
+    def test_supplementary_raw_trial_is_excluded_from_summary_audit_input(self):
+        primary, raw, _ = self.primary_and_raw()
+        path, result = self.summary([primary, raw])
+        result["source_commits"] = ["a" * 40]
+        result["audit"] = [dict(trial_id="fixture-30", source_commit="a" * 40,
+                                artifact=result["raw_fallback_archives"][0])]
+        path.write_text(json.dumps(result))
+        self.assertIn("trial archive identity", " ".join(self.inspect()))
+
+    def test_raw_without_primary_remains_a_statistical_input(self):
+        primary, raw, report = self.primary_and_raw()
+        primary.unlink()
+        report.update(source_commit=None, paired_runner_id=None)
+        raw.write_text(json.dumps(report))
+        path, result = self.summary([raw])
+        result["source_commits"] = ["a" * 40]
+        result["audit"] = [dict(trial_id="fixture-30", source_commit="a" * 40,
+                                artifact=result["raw_fallback_archives"][0])]
+        path.write_text(json.dumps(result))
+        self.assertTrue(result["raw_fallback_archives"][0]["statistical_input"])
+        self.assertEqual(self.inspect(), [])
 
 
 if __name__ == "__main__":

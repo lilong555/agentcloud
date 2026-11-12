@@ -18,7 +18,19 @@ def joint_identity(value):
 
 JOINT_REFERENCE_KEYS = ("artifact_id", "github_run_id", "github_run_attempt", "source_commit",
                         "paired_runner_id", "source_kind", "workflow_commit", "planned_source_commit",
-                        "source_execution_status")
+                        "source_execution_status", "archive_kind", "full_gate_admissible",
+                        "wheel_run_id", "provenance_validation")
+JOINT_SELECTION_KEYS = ("statistical_input", "supplementary_trial_records", "selection_reason")
+
+
+def inspect_joint_reference(item, expected):
+    for key in JOINT_REFERENCE_KEYS:
+        if item.get(key) != expected.get(key):
+            raise ValueError("joint summary archive identity differs: " + key)
+    for key in JOINT_SELECTION_KEYS:
+        if (expected.get("archive_kind") == "raw_fallback" or key in item) and (
+                item.get(key) != expected.get(key) or type(item.get(key)) is not type(expected.get(key))):
+            raise ValueError("joint summary archive selection differs: " + key)
 
 
 def inspect_joint_summary(summary, archives, trials, run_id=None):
@@ -31,9 +43,7 @@ def inspect_joint_summary(summary, archives, trials, run_id=None):
         expected = archives.get(name)
         if expected is None or name in references:
             raise ValueError("joint summary archive reference is absent or duplicated")
-        for key in JOINT_REFERENCE_KEYS:
-            if item.get(key) != expected.get(key):
-                raise ValueError("joint summary archive identity differs: " + key)
+        inspect_joint_reference(item, expected)
         references[name] = expected
     available = {joint_identity(item) for item in references.values()}
     runs = summary.get("runs", [summary])
@@ -52,19 +62,30 @@ def inspect_joint_summary(summary, archives, trials, run_id=None):
                 raise ValueError("unobserved joint summary contains execution claims")
         elif unit not in available:
             raise ValueError("joint summary run or attempt has no referenced archive")
+        expected_raw = {name for name, item in references.items()
+                        if item.get("archive_kind") == "raw_fallback" and joint_identity(item) == unit}
+        raw_seen = set()
+        for item in run.get("raw_fallback_archives", []):
+            name = item.get("manifest_path")
+            if name not in expected_raw or name in raw_seen:
+                raise ValueError("joint summary raw fallback reference is absent or duplicated")
+            inspect_joint_reference(item, references[name])
+            raw_seen.add(name)
+        if raw_seen != expected_raw:
+            raise ValueError("joint summary raw fallback references differ from its archives")
         observed = [trial for trial in trials if joint_identity(trial) == unit
                     and trial.get("_archive", {}).get("manifest_path") in references]
         if ("source_commits" in run
                 and run["source_commits"] != sorted({str(trial.get("source_commit")) for trial in observed})):
             raise ValueError("joint summary source commits differ from its archived trials")
-        observed_ids = {(trial["_archive"]["manifest_path"], trial.get("trial_id")) for trial in observed}
+        observed_records = {(trial["_archive"]["manifest_path"], trial.get("trial_id")): trial for trial in observed}
         for row in run.get("audit", []):
             item = row.get("artifact") or {}
             expected = references.get(item.get("manifest_path"))
+            observed_trial = observed_records.get((item.get("manifest_path"), row.get("trial_id")))
             if (expected is None or joint_identity(expected) != unit
                     or item.get("artifact_id") != expected.get("artifact_id")
-                    or row.get("source_commit") != expected.get("source_commit")
-                    or (item.get("manifest_path"), row.get("trial_id")) not in observed_ids):
+                    or observed_trial is None or row.get("source_commit") != observed_trial.get("source_commit")):
                 raise ValueError("joint summary trial archive identity differs")
         for item in run.get("launch_failures", []):
             expected = references.get(item.get("manifest_path"))
@@ -89,14 +110,13 @@ def inspect_joint_evidence(directory, errors):
         sys.path.insert(0, import_root)
     from bench.analysis import joint_kv
 
-    archives, trials = {}, []
+    valid_manifests = []
     for path in manifests:
         label = str(path.relative_to(directory))
         try:
             if (path.is_symlink() or not path.resolve().is_relative_to(directory.resolve())
                     or any(parent.is_symlink() for parent in path.parents if parent.is_relative_to(directory))):
                 raise ValueError("joint archive manifest path is unsafe")
-            loaded, items = joint_kv.load_archives([path])
             report = json.loads(path.read_text())
             run_id, attempt = joint_identity(report)
             if (not re.fullmatch(r"[1-9][0-9]*", run_id) or not re.fullmatch(r"[1-9][0-9]*", attempt)
@@ -122,10 +142,16 @@ def inspect_joint_evidence(directory, errors):
                             raise ValueError("archived GitHub job identity differs")
                 elif launch:
                     raise ValueError("joint launch has no archived job metadata")
-            archives[items[0]["manifest_path"]] = items[0]
-            trials.extend(loaded)
+            valid_manifests.append(path)
         except (OSError, ValueError, KeyError, TypeError, AttributeError, EOFError) as exc:
             errors.append(f"{label}: {exc}")
+    archives, trials = {}, []
+    if valid_manifests:
+        try:
+            trials, items = joint_kv.load_archives(valid_manifests)
+            archives = {item["manifest_path"]: item for item in items}
+        except (OSError, ValueError, KeyError, TypeError, AttributeError, EOFError) as exc:
+            errors.append(f"joint-kv archives: {exc}")
     for summary in summaries:
         try:
             run_id = summary.parent.name if summary.name == "summary.json" else None

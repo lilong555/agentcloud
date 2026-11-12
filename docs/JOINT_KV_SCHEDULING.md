@@ -88,7 +88,9 @@ gh workflow run live-scale.yml --ref experiment/joint-kv-gate2 \
 
 完整矩阵通过同源码 N=4 五策略和四组原生路由微实验后运行。源码校验、校准、清理、失败样本与每个配对计划均可独立审计。
 
-**当前验收状态：两次联合冒烟均失败，全量联合性能待验收。** [43157107777 摘要](evidence/joint-kv/43157107777/summary.json)保留工作流输入校验失败：计划源码 `19c5f98659794f03237791a1443e38215aadbb2c` 的联合 job 未创建，五个 trial／120 个请求均未执行。[43157987378 摘要](evidence/joint-kv/43157987378/summary.json)与[job 执行观察](evidence/joint-kv/43157987378/launch-1/diagnostics/job-log-observations.json)确认源码 `848a3f232347475e850053b2fe92679d47f7c2e4` 已执行，首个 `static-15` 报会话失败，后四策略由前序清理失败阻断。原生路由步骤为 success；公开证据 staging 的相对路径 `ValueError` 导致请求级与路由产物缺失，120 个计划请求继续保留，完成请求计数为 `null`。两个 Run 的统计摘要均为 `incomplete`，TTFT、资源、命中及配对收益保留缺测状态。详细原始身份见 [EXPERIMENTS](EXPERIMENTS.md#在线-kv-与沙箱生命周期联合策略)。
+**当前验收状态：联合冒烟 43161092995 正在运行，全量联合性能待验收。** [当前 Actions](https://github.com/lilong555/agentcloud/actions/runs/43161092995)已通过四组原生路由步骤与 Kind／gVisor 准备，五策略正在执行；配对结果、清理与原始产物待验收。源码 `55120d52e1be0fef3ab443af66f81baa046cc320` 的 [CI 43161047688](evidence/ci-run-43161047688.json)通过 162 个 Go 顶层测试／零跳过、11 个真实 PostgreSQL 测试，独立 DeerFlow 20/20／零跳过；CI tooling 为 236 项，最新本地为 246 项。
+
+两次历史联合冒烟保留失败状态。 [43157107777 摘要](evidence/joint-kv/43157107777/summary.json)保留工作流输入校验失败：计划源码 `19c5f98659794f03237791a1443e38215aadbb2c` 的联合 job 未创建，五个 trial／120 个请求均未执行。[43157987378 摘要](evidence/joint-kv/43157987378/summary.json)与[job 执行观察](evidence/joint-kv/43157987378/launch-1/diagnostics/job-log-observations.json)确认源码 `848a3f232347475e850053b2fe92679d47f7c2e4` 已执行，首个 `static-15` 报会话失败，后四策略由前序清理失败阻断。原生路由步骤为 success；公开证据 staging 的相对路径 `ValueError` 导致请求级与路由产物缺失，120 个计划请求继续保留，完成请求计数为 `null`。两个 Run 的统计摘要均为 `incomplete`，TTFT、资源、命中及配对收益保留缺测状态。详细原始身份见 [EXPERIMENTS](EXPERIMENTS.md#在线-kv-与沙箱生命周期联合策略)。
 
 ## 设计依据
 

@@ -91,7 +91,7 @@ def read_events(path):
 
 
 def load_archives(manifests):
-    trials, artifacts = [], []
+    trials, artifacts, loaded_archives = [], [], []
     for manifest_path in sorted(set(Path(path).resolve() for path in manifests)):
         archive = read_json(manifest_path)
         if archive.get("gpu_execution") is not False:
@@ -118,22 +118,28 @@ def load_archives(manifests):
                 raise ValueError("duplicate archived artifact path")
             index[name] = path
         archive["manifest_path"] = str(manifest_path.relative_to(ROOT))
+        archive["_raw_hashes"] = {record["artifact_path"]: record["uncompressed_sha256"] for record in archive["files"]}
+        loaded_archives.append(archive)
         artifacts.append({key: archive.get(key) for key in ("artifact_id", "github_run_id", "github_run_attempt",
             "suite", "source_commit", "paired_runner_id", "wheel_run_id", "provenance_validation", "manifest_path",
             "source_kind", "no_jobs", "no_joint_jobs", "no_trials", "total_workflow_jobs", "issues",
             "workflow_commit", "planned_source_commit", "source_resolution", "source_execution_status",
-            "trial_execution_observed", "no_trial_records", "run_status", "run_conclusion", "expected_wheel_run_id")})
+            "trial_execution_observed", "no_trial_records", "run_status", "run_conclusion", "expected_wheel_run_id",
+            "archive_kind", "full_gate_admissible")})
         for name, path in sorted(index.items()):
             if not re.fullmatch(r"experiment/[a-zA-Z0-9_-]+/result.json", name):
                 continue
             trial = read_json(path)
-            if any(str(trial.get(key)) != str(archive.get(key)) for key in
-                   ("github_run_id", "github_run_attempt", "source_commit", "paired_runner_id")):
+            identity_keys = ("github_run_id", "github_run_attempt", "source_commit", "paired_runner_id")
+            if any(str(trial.get(key)) != str(archive.get(key)) for key in identity_keys
+                   if not (archive.get("archive_kind") == "raw_fallback" and key in ("source_commit", "paired_runner_id")
+                           and (trial.get(key) is None or archive.get(key) is None))):
                 raise ValueError("trial identity differs from its verified archive")
             prefix = name.rsplit("/", 1)[0]
             trial["_event_path"] = index.get(prefix + "/events.jsonl")
             trial["_archive"] = {key: archive.get(key) for key in
-                ("artifact_id", "wheel_run_id", "provenance_validation", "manifest_path")}
+                ("artifact_id", "wheel_run_id", "provenance_validation", "manifest_path", "archive_kind")}
+            trial["_result_sha256"] = archive["_raw_hashes"][name]
             workload = trial["config"]["agent_trace_workload"]["manifest"]
             trial["_manifest_path"] = index.get("source/" + workload)
             cleanup = index.get("diagnostics/ci-live-cleanup.json")
@@ -145,6 +151,33 @@ def load_archives(manifests):
             else:
                 trial["_hosted_cleanup_error"] = "hosted_cleanup_evidence_missing"
             trials.append(trial)
+    supplementary = set()
+    for archive, reference in zip(loaded_archives, artifacts):
+        reference["statistical_input"] = True
+        if archive.get("archive_kind") != "raw_fallback":
+            continue
+        unit = (str(archive.get("github_run_id")), str(archive.get("github_run_attempt")))
+        primaries = [item for item in loaded_archives if item.get("archive_kind") != "raw_fallback"
+                     and item.get("source_kind") == "github_actions_public_evidence_archive"
+                     and (str(item.get("github_run_id")), str(item.get("github_run_attempt"))) == unit
+                     and (not archive.get("paired_runner_id") or item.get("paired_runner_id") == archive["paired_runner_id"])]
+        raw_trials = [trial for trial in trials if trial["_archive"]["manifest_path"] == archive["manifest_path"]]
+        matched = 0
+        for primary in primaries:
+            overlapping = set(archive["_raw_hashes"]) & set(primary["_raw_hashes"])
+            for name in overlapping:
+                if name.startswith("experiment/") and archive["_raw_hashes"][name] != primary["_raw_hashes"][name]:
+                    raise ValueError("fallback raw trial evidence differs from its primary artifact: " + name)
+        for trial in raw_trials:
+            name = "experiment/" + trial["trial_id"] + "/result.json"
+            if any(name in primary["_raw_hashes"] for primary in primaries):
+                supplementary.add((archive["manifest_path"], trial["trial_id"]))
+                matched += 1
+        reference["supplementary_trial_records"] = matched
+        reference["statistical_input"] = bool(len(raw_trials) - matched) or not primaries
+        reference["selection_reason"] = ("verified_primary_records_present" if not reference["statistical_input"]
+                                         else "raw_records_without_primary_measurements")
+    trials = [trial for trial in trials if (trial["_archive"]["manifest_path"], trial["trial_id"]) not in supplementary]
     return trials, artifacts
 
 
@@ -479,9 +512,11 @@ def summarize(trials, config, run_id=None, attempt=None, samples=2000, bootstrap
     selected = [trial for trial in trials if (run_id is None or str(trial.get("github_run_id")) == str(run_id))
                 and (attempt is None or str(trial.get("github_run_attempt")) == str(attempt))]
     units = {(str(trial.get("github_run_id")), str(trial.get("github_run_attempt"))) for trial in selected}
-    launches = [item for item in launches if item.get("source_kind") == "github_actions_launch_evidence"
-                and (run_id is None or str(item.get("github_run_id")) == str(run_id))
+    archives = [item for item in launches
+                if (run_id is None or str(item.get("github_run_id")) == str(run_id))
                 and (attempt is None or str(item.get("github_run_attempt")) == str(attempt))]
+    launches = [item for item in archives if item.get("source_kind") == "github_actions_launch_evidence"]
+    units.update((str(item["github_run_id"]), str(item["github_run_attempt"])) for item in archives)
     units.update((str(item["github_run_id"]), str(item["github_run_attempt"])) for item in launches)
     if not units:
         units = {(str(run_id or "unobserved"), str(attempt or "unobserved"))}
@@ -489,6 +524,14 @@ def summarize(trials, config, run_id=None, attempt=None, samples=2000, bootstrap
                           (str(trial.get("github_run_id")), str(trial.get("github_run_attempt"))) == unit],
                          config, *unit, samples=samples, bootstrap_seed=bootstrap_seed) for unit in sorted(units)]
     for run in runs:
+        run["raw_fallback_archives"] = [item for item in archives if item.get("archive_kind") == "raw_fallback"
+            and (str(item["github_run_id"]), str(item["github_run_attempt"])) == (run["github_run_id"], run["github_run_attempt"])]
+        if run["raw_fallback_archives"] and not run["trials"] and any(item.get("statistical_input") is True for item in run["raw_fallback_archives"]):
+            run["matrix"]["observed_completed_requests"] = 0
+            run["matrix"]["completed_requests"] = None
+            run["matrix"]["failed_or_unoffered_requests"] = None
+            run["matrix"]["completion_count_null_reason"] = "trial_measurement_records_missing"
+            run["no_trial_records"] = True
         run["launch_failures"] = [item for item in launches if
             (str(item["github_run_id"]), str(item["github_run_attempt"])) == (run["github_run_id"], run["github_run_attempt"])]
         if run["launch_failures"]:
