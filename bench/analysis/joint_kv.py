@@ -90,6 +90,38 @@ def read_events(path):
                 yield json.loads(line)
 
 
+def routing_diagnostics(index):
+    summary_path = index.get("routing/summary.json")
+    if not summary_path:
+        return None
+    summary = read_json(summary_path)
+    cases = []
+    for case in summary.get("cases", []):
+        prefix = "routing/" + case["case_id"] + "/"
+        result_path = index.get(prefix + "cache-conflict-result.json")
+        route_path = index.get(prefix + "cache-conflict-continuation-routing.json")
+        result = read_json(result_path) if result_path else {}
+        route = read_json(route_path) if route_path else {}
+        sent, response = route.get("native_sent_worker_id"), route.get("actual_response_worker_id")
+        selected = result.get("selected_worker_id")
+        cases.append(tagged("native_two_worker_routing_configuration_probe", case_id=case["case_id"],
+            status=case.get("status"), affinity=case.get("affinity"), cache_reselect=case.get("cache_reselect"),
+            previous_worker_id=result.get("previous_worker_id"), selected_worker_id=selected,
+            native_sent_worker_id=sent, actual_response_worker_id=response,
+            sent_response_selected_match=sent == response == selected if all(value is not None for value in (sent, response, selected)) else None,
+            selected_alternative=result.get("selected_alternative"), preserved_previous_worker=result.get("preserved_previous_worker"),
+            continuation_cached_tokens=result.get("continuation", {}).get("simulated_cached_tokens"),
+            candidate_device_overlap_tokens=[{key: row.get(key) for key in ("worker_id", "dp_rank", "device_overlap_tokens")}
+                for row in (route.get("native_candidates") or {}).get("candidates", [])],
+            result_path=str(result_path.relative_to(ROOT)) if result_path else None,
+            routing_path=str(route_path.relative_to(ROOT)) if route_path else None))
+    return tagged("verified_native_routing_probe_summary", github_run_id=summary.get("github_run_id"),
+        github_run_attempt=summary.get("github_run_attempt"), status=summary.get("status"),
+        summary_sha256=sha(summary_path), summary_path=str(summary_path.relative_to(ROOT)),
+        cases=cases, passed_cases=sum(case["status"] == "passed" for case in cases),
+        source_commit=summary.get("source_commit"), wheel_run_id=summary.get("wheel_run_id"))
+
+
 def load_archives(manifests):
     trials, artifacts, loaded_archives = [], [], []
     for manifest_path in sorted(set(Path(path).resolve() for path in manifests)):
@@ -118,6 +150,8 @@ def load_archives(manifests):
                 raise ValueError("duplicate archived artifact path")
             index[name] = path
         archive["manifest_path"] = str(manifest_path.relative_to(ROOT))
+        if not archive.get("workflow_commit") and "provenance/joint-kv-run.json" in index:
+            archive["workflow_commit"] = read_json(index["provenance/joint-kv-run.json"]).get("head_sha")
         archive["_raw_hashes"] = {record["artifact_path"]: record["uncompressed_sha256"] for record in archive["files"]}
         loaded_archives.append(archive)
         artifacts.append({key: archive.get(key) for key in ("artifact_id", "github_run_id", "github_run_attempt",
@@ -126,6 +160,9 @@ def load_archives(manifests):
             "workflow_commit", "planned_source_commit", "source_resolution", "source_execution_status",
             "trial_execution_observed", "no_trial_records", "run_status", "run_conclusion", "expected_wheel_run_id",
             "archive_kind", "full_gate_admissible")})
+        routing = routing_diagnostics(index)
+        if routing:
+            artifacts[-1]["routing_diagnostics"] = routing
         for name, path in sorted(index.items()):
             if not re.fullmatch(r"experiment/[a-zA-Z0-9_-]+/result.json", name):
                 continue
@@ -166,7 +203,7 @@ def load_archives(manifests):
         for primary in primaries:
             overlapping = set(archive["_raw_hashes"]) & set(primary["_raw_hashes"])
             for name in overlapping:
-                if name.startswith("experiment/") and archive["_raw_hashes"][name] != primary["_raw_hashes"][name]:
+                if name.startswith(("experiment/", "routing/")) and archive["_raw_hashes"][name] != primary["_raw_hashes"][name]:
                     raise ValueError("fallback raw trial evidence differs from its primary artifact: " + name)
         for trial in raw_trials:
             name = "experiment/" + trial["trial_id"] + "/result.json"
@@ -524,6 +561,17 @@ def summarize(trials, config, run_id=None, attempt=None, samples=2000, bootstrap
                           (str(trial.get("github_run_id")), str(trial.get("github_run_attempt"))) == unit],
                          config, *unit, samples=samples, bootstrap_seed=bootstrap_seed) for unit in sorted(units)]
     for run in runs:
+        run["workflow_commits"] = sorted({item["workflow_commit"] for item in archives if item.get("workflow_commit")
+            and (str(item["github_run_id"]), str(item["github_run_attempt"])) == (run["github_run_id"], run["github_run_attempt"])})
+        routing = {}
+        for item in sorted(archives, key=lambda item: item.get("archive_kind") == "raw_fallback"):
+            if (str(item["github_run_id"]), str(item["github_run_attempt"])) != (run["github_run_id"], run["github_run_attempt"]):
+                continue
+            proof = item.get("routing_diagnostics")
+            if proof:
+                key = (str(proof.get("github_run_id")), str(proof.get("github_run_attempt")), proof["summary_sha256"])
+                routing.setdefault(key, proof)
+        run["routing_probes"] = list(routing.values())
         run["raw_fallback_archives"] = [item for item in archives if item.get("archive_kind") == "raw_fallback"
             and (str(item["github_run_id"]), str(item["github_run_attempt"])) == (run["github_run_id"], run["github_run_attempt"])]
         if run["raw_fallback_archives"] and not run["trials"] and any(item.get("statistical_input") is True for item in run["raw_fallback_archives"]):

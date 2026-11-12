@@ -16,9 +16,22 @@
 | 原生 wheel | [43012181604](https://github.com/lilong555/agentcloud/actions/runs/43012181604)，78 passed、2 ignored；缓存选择、迁移预留、取消和 `Sent` 提交的测试名见 [test-map.json](../integrations/dynamo/test-map.json)。 |
 | 成本参考 | [provenance.json](evidence/joint-kv-calibration/provenance.json)锁定 `aisimulate-core` 包／源码 SHA 与 `polynomial_prefill_time:206`，类型为 `mocker_simulation`；真实 CPU 编排 TTFT 和模拟引擎 Prefill 分列。 |
 | 真实请求结构 | [joint-workload.json](evidence/agent-traces/joint-workload.json)冻结 432 条轨迹、150 个任务组；[SOURCE_AUDIT](evidence/agent-traces/SOURCE_AUDIT.json)与 [VALIDATION](evidence/agent-traces/VALIDATION.json)记录来源、摘要与确定性选择。每任务选择一个 attempt，60.88% 非末轮等待为缺测模型 3s，时间代表性按该构造报告。 |
-| 当前联合冒烟 43161092995 | [Actions](https://github.com/lilong555/agentcloud/actions/runs/43161092995)已通过四组原生路由步骤与 Kind／gVisor 准备，五策略正在运行；配对结果、清理和原始产物待验收。 |
+| 当前联合冒烟 43161092995 | 源码 `55120d52e1be0fef3ab443af66f81baa046cc320`；[摘要](evidence/joint-kv/43161092995/summary.json)为 `complete`，5/5 策略、120/120 请求、55 次 MEMORY 恢复，全部 trial 清理通过；四组原生路由案例全部通过。[完整产物 manifest](evidence/joint-kv/43161092995/13918507753/artifact.json)。 |
+| 当前全量联合 43163231106 | [Actions](https://github.com/lilong555/agentcloud/actions/runs/43163231106)已通过同源码冒烟门禁、十个 N×seed 配对 Runner 已启动；执行源码 `55120d52e1be0fef3ab443af66f81baa046cc320`，工作流源码 `a7c0bbff006cfbaf4308b834988689a56fae97ed`。五策略配对性能、完整请求分母及清理待验收。 |
 | 联合冒烟 43157107777 | [Actions](https://github.com/lilong555/agentcloud/actions/runs/43157107777)为 `failure`；计划源码 `19c5f98659794f03237791a1443e38215aadbb2c`。工作流输入校验报告 `live-scale.yml:40` 的 `Unexpected value '1'`，联合 job 未创建，源码与 trial 未执行；五个计划 trial、120 个计划请求保留，完成请求为 0。[摘要](evidence/joint-kv/43157107777/summary.json)／[原始注解](evidence/joint-kv/43157107777/launch-1/diagnostics/workflow-annotations.json)。 |
 | 联合冒烟 43157987378 | [Actions](https://github.com/lilong555/agentcloud/actions/runs/43157987378)为 `failure`；日志确认执行源码 `848a3f232347475e850053b2fe92679d47f7c2e4`。首个 `static-15` trial 报 `session failure`，其余四策略报前序清理失败；公开证据 staging 随后出现相对路径 `ValueError`，请求级／路由 artifact 缺失。五个计划 trial、120 个计划请求保留，完成与失败请求计数为 `null`，原生路由步骤为 success、逐请求验收待原始产物。[摘要](evidence/joint-kv/43157987378/summary.json)／[执行观察](evidence/joint-kv/43157987378/launch-1/diagnostics/job-log-observations.json)／[job 原始日志](evidence/joint-kv/43157987378/launch-1/diagnostics/job-130982580550.log.gz)。 |
+
+N=4／seed 7101 的冒烟结果如下，五策略各完成 24 个计划请求。Token 对账来自官方 Mocker 引擎响应，恢复次数按 trial 原文汇总。
+
+| 策略 | 完成请求 | 恢复次数 | 命中／重算 Token |
+| --- | ---: | ---: | ---: |
+| `static-2` | 24/24 | 14 | 19,936／6,722 |
+| `static-15` | 24/24 | 4 | 19,936／6,722 |
+| `agentcloud-v2` | 24/24 | 13 | 19,936／6,722 |
+| `agentcloud-v2-cache` | 24/24 | 12 | 19,152／7,506 |
+| `agentcloud-v2-joint` | 24/24 | 12 | 19,200／7,458 |
+
+路由原文分别为 [off-assigned](evidence/joint-kv/43161092995/13918507753/routing/off-assigned/result.json)、[off-reselect](evidence/joint-kv/43161092995/13918507753/routing/off-reselect/result.json)、[hard-reselect](evidence/joint-kv/43161092995/13918507753/routing/hard-reselect/result.json)、[soft-reselect](evidence/joint-kv/43161092995/13918507753/routing/soft-reselect/result.json)，四项均为 `passed`。joint 诊断按 Session／Epoch／预测时间去重后为 115 个预测：82 个有效、33 个无效、23 次应用、有效非零应用 0 次；115 个成本差额全部为 0 ms。无效原因计数为 `no_cache_observation=20`、`low_support=12`、`worker_changed=1`。55/55 次原始恢复记录为 MEMORY；两 Worker 的连续原生事件记录零 BlockRemoved，分别存储 177／291 个块、容量各 1,024 块。该冒烟实测覆盖请求、恢复、缓存路由与小缓存负载下的零差额路径。[观测时序与身份对账](JOINT_KV_SCHEDULING.md#运行)。
 
 全量联合性能仍待验收。完整配对包含 TTL2、TTL15、v2、v2-cache、v2-joint，分别隔离缓存重选和 KV 成本增量；N=32／64、五种子、动态调用数及失败分母由冻结计划确定。主要比较为 joint 对 cache 的交互 P95，同时保留资源积分、轨迹完成时间、恢复次数、命中／重算、最坏种子与来源分层。机制和执行入口见 [JOINT_KV_SCHEDULING](JOINT_KV_SCHEDULING.md)。以下历史 Gate 1／2、TraceLab 和 GPU 结果保持各自源码与运行身份。
 

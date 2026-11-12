@@ -178,6 +178,29 @@ class JointAnalysisTests(unittest.TestCase):
         self.assertEqual(result["fallback_reasons"], {"observation_expired": 1})
         self.assertFalse(result["gpu_execution"])
 
+    def test_routing_summary_uses_actual_continuation_worker_and_preserves_probe_source_run(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            summary = root / "summary.json"
+            result = root / "result.json"
+            route = root / "route.json"
+            summary.write_text(json.dumps(dict(status="passed", github_run_id="10", github_run_attempt="1",
+                cases=[dict(case_id="off-reselect", status="passed", affinity="off", cache_reselect=True)])))
+            result.write_text(json.dumps(dict(previous_worker_id=100, selected_worker_id=200, selected_alternative=True,
+                                             continuation={"simulated_cached_tokens": 1008})))
+            route.write_text(json.dumps(dict(native_sent_worker_id=200, actual_response_worker_id=200,
+                native_candidates={"candidates": [{"worker_id": 100, "device_overlap_tokens": 256},
+                                                     {"worker_id": 200, "device_overlap_tokens": 1024}]})))
+            index = {"routing/summary.json": summary, "routing/off-reselect/cache-conflict-result.json": result,
+                     "routing/off-reselect/cache-conflict-continuation-routing.json": route}
+            with patch.object(analysis, "ROOT", root):
+                proof = analysis.routing_diagnostics(index)
+            self.assertEqual(proof["github_run_id"], "10")
+            self.assertEqual(proof["passed_cases"], 1)
+            self.assertTrue(proof["cases"][0]["sent_response_selected_match"])
+            self.assertEqual(proof["cases"][0]["native_sent_worker_id"], 200)
+            self.assertEqual(proof["cases"][0]["candidate_device_overlap_tokens"][1]["device_overlap_tokens"], 1024)
+
 
 class JointImportTests(unittest.TestCase):
     def fallback_artifact(self, root, primary, missing_identity=False):
@@ -291,6 +314,27 @@ class JointImportTests(unittest.TestCase):
                 with patch.object(importer, "ROOT", root), self.assertRaises(ValueError):
                     importer.import_artifact(source, 20, 30, "f" * 64, zip_path=package if mutation == "zip" else None)
                 self.assertFalse((root / "docs/evidence/joint-kv/20/30/artifact.json").exists())
+
+    def test_workflow_sha_and_runtime_source_sha_remain_separate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, refresh = self.artifact(root)
+            path = source / "provenance/joint-kv-run.json"
+            run = json.loads(path.read_text())
+            run["head_sha"] = "b" * 40
+            path.write_text(json.dumps(run))
+            refresh()
+            path = source / "inventory.json"
+            inventory = json.loads(path.read_text())
+            inventory["workflow_commit"] = "b" * 40
+            path.write_text(json.dumps(inventory))
+            with patch.object(importer, "ROOT", root):
+                importer.import_artifact(source, 20, 30, "f" * 64)
+            with patch.object(analysis, "ROOT", root):
+                trials, artifacts = analysis.load_archives([root / "docs/evidence/joint-kv/20/30/artifact.json"])
+            summary = analysis.summarize(trials, joint_plan.frozen_config("smoke"), samples=1, launches=artifacts)
+            self.assertEqual(summary["source_commits"], [COMMIT])
+            self.assertEqual(summary["workflow_commits"], ["b" * 40])
 
     def test_raw_fallback_missing_source_and_wheel_remains_incomplete_with_full_plan(self):
         with tempfile.TemporaryDirectory() as directory:
