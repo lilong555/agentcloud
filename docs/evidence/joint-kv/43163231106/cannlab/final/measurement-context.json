@@ -1,0 +1,3579 @@
+{
+  "source_kind": "joint_kv_full_measurement_context",
+  "gpu_execution": false,
+  "github_run_id": "43163231106",
+  "github_run_attempt": "1",
+  "summary_sha256": "b8d05b1c0b1667b36fe847f01c91c35fc39a02ccc2491f4f25f24a42e2f200ec",
+  "definitions": {
+    "resource_transition_uncertainty_estimate_gb_s": "Sampling reference from transitions and polling intervals, measured in GB seconds. Interpret resource differences together with this scale and coverage. This reference describes sampling uncertainty rather than a probabilistic interval.",
+    "transition_uncertainty_reference_sum_gb_s": "Sum of treatment and baseline transition sampling references for the paired trial.",
+    "combined_wait_p95_seconds": "P95 of each request gateway_queue_seconds plus trajectory_queue_seconds; the sum is formed before quantile calculation.",
+    "first_round_gateway_wait": "Gateway actor-slot wait is included in first-round latency. Phase timing separately records TTFT, gateway wait, trajectory wait and their combined wait.",
+    "storage_null_and_zero_semantics": "See docs/evidence/joint-kv/43163231106/storage-observation-semantics.json.",
+    "phase_timing_null": "No valid completed request was observed for the corresponding phase.",
+    "resource_sampling_null": "The original raw trial did not supply this resource sampling observation.",
+    "effectful_applied": "Counts valid native predictions with applied_to_decision=true and finite nonzero delta_ms. The runtime observes the cost term and resulting action; a decision-changed counterfactual remains unobserved.",
+    "native_kv_observation_scope": "The registered analysis and this context use scheduler_decision entries in events.jsonl. The independent Go review separately reports the union with final-state server-evidence receipts.",
+    "native_kv_delta_scale_null": "No deduplicated applied prediction supplied a corresponding finite native cost value. Event references are absent when the artifact supplied no scheduler event record.",
+    "decision_changed_status": "The runtime did not execute a matched counterfactual decision with the KV delta removed. Independent Go replay evidence records the action comparison separately.",
+    "performance_attribution": "Paired performance differences describe the complete policy execution; the native delta scale and action diagnostics accompany causal interpretation.",
+    "analysis_receipt_reference_null": "The ARM analysis receipt has reference_summary_sha256 and byte_identical_to_reference=null when no local reference full summary was transferred. Input hashes and output hashes are independently recorded."
+  },
+  "trials": [
+    {
+      "trial_id": "scale-7305-32-static-2-b6e963c2ccd8",
+      "policy": "static-2",
+      "concurrency": 32,
+      "seed": 7305,
+      "result_path": "docs/evidence/joint-kv/43163231106/13920537805/experiment/scale-7305-32-static-2-b6e963c2ccd8/result.json",
+      "result_sha256": "808cdf5404c2eb9f6d6644705cbe20e6880a8be718f9df325dc9cfe9798febba",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13920537805/experiment/scale-7305-32-static-2-b6e963c2ccd8/events.jsonl.gz",
+        "event_sha256": "5fcee743c35509e7cb588105280d24eb19f689c2651b86e3ea6712c8d6a402bd"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9976100528308413,
+        "resource_uncovered_worker_seconds": 1.4085137844085693,
+        "resource_sample_max_gap_seconds": 0.5379538536071777,
+        "resource_transition_uncertainty_estimate_gb_s": 12.299198400000012,
+        "actor_reserved_gb_s": 211.8754423679996,
+        "stranded_worker_gb_s": 99.18591648000037
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 55.626727712154384,
+          "gateway_wait_p95_seconds": 53.45117610850005,
+          "trajectory_wait_p95_seconds": 0.02625056505203247,
+          "combined_wait_p95_seconds": 53.4711470381227
+        },
+        "later_rounds": {
+          "completed_requests": 160,
+          "ttft_p95_seconds": 54.676918709278105,
+          "gateway_wait_p95_seconds": 50.91213726205,
+          "trajectory_wait_p95_seconds": 2.5066604852676386,
+          "combined_wait_p95_seconds": 52.599046449699145
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7305-32-agentcloud-v2-b62a2ec67613",
+      "policy": "agentcloud-v2",
+      "concurrency": 32,
+      "seed": 7305,
+      "result_path": "docs/evidence/joint-kv/43163231106/13920537805/experiment/scale-7305-32-agentcloud-v2-b62a2ec67613/result.json",
+      "result_sha256": "91cb2ae4d817f13afbab87ed51033a592d0d033b69681b871cfbfc529f39596e",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13920537805/experiment/scale-7305-32-agentcloud-v2-b62a2ec67613/events.jsonl.gz",
+        "event_sha256": "ebafab9786f04d46f4792f851f9c950319096a46aad184a42119b838fbd242d0"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9983080312470576,
+        "resource_uncovered_worker_seconds": 0.8752806186676025,
+        "resource_sample_max_gap_seconds": 0.5470070838928223,
+        "resource_transition_uncertainty_estimate_gb_s": 7.761722624,
+        "actor_reserved_gb_s": 211.4598817279997,
+        "stranded_worker_gb_s": 108.94170540800008
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 226.46877179145812,
+          "gateway_wait_p95_seconds": 224.1401440449,
+          "trajectory_wait_p95_seconds": 0.04992833137512207,
+          "combined_wait_p95_seconds": 224.18956437780864
+        },
+        "later_rounds": {
+          "completed_requests": 160,
+          "ttft_p95_seconds": 5.0465586304664605,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.11016310453414911,
+          "combined_wait_p95_seconds": 0.11830536127090434
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7305-32-agentcloud-v2-cache-0b24f4a1ee0b",
+      "policy": "agentcloud-v2-cache",
+      "concurrency": 32,
+      "seed": 7305,
+      "result_path": "docs/evidence/joint-kv/43163231106/13920537805/experiment/scale-7305-32-agentcloud-v2-cache-0b24f4a1ee0b/result.json",
+      "result_sha256": "33e493a4f57c153b075cd1abf56f94bd701e4cddef896a691239b9946a3f2ae4",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13920537805/experiment/scale-7305-32-agentcloud-v2-cache-0b24f4a1ee0b/events.jsonl.gz",
+        "event_sha256": "e15d52d4803e684c43724fb97936b0fe96accc91076c69eb2ee14008f02f83fd"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9974317572093993,
+        "resource_uncovered_worker_seconds": 1.3381321430206299,
+        "resource_sample_max_gap_seconds": 0.6467099189758301,
+        "resource_transition_uncertainty_estimate_gb_s": 7.610232896000005,
+        "actor_reserved_gb_s": 214.48186944000028,
+        "stranded_worker_gb_s": 109.72192415999997
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 232.89896025657654,
+          "gateway_wait_p95_seconds": 230.54025293759992,
+          "trajectory_wait_p95_seconds": 0.0264615535736084,
+          "combined_wait_p95_seconds": 230.56528793744732
+        },
+        "later_rounds": {
+          "completed_requests": 160,
+          "ttft_p95_seconds": 4.824698591232298,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.12562720775604236,
+          "combined_wait_p95_seconds": 0.13257077932357778
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7305-32-agentcloud-v2-joint-a451205cf707",
+      "policy": "agentcloud-v2-joint",
+      "concurrency": 32,
+      "seed": 7305,
+      "result_path": "docs/evidence/joint-kv/43163231106/13920537805/experiment/scale-7305-32-agentcloud-v2-joint-a451205cf707/result.json",
+      "result_sha256": "bf70419d3dff2e3f41659be41547acf29043ce903a1225dc440efe59497a4234",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 1566,
+        "applied": 838,
+        "nonzero_applied_delta_ms": {
+          "observed": 678,
+          "p50": 0.000496795755966388,
+          "p95": 0.0008133111329639037,
+          "maximum": 0.0008653381190350529
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 838,
+          "p50": 3303.0,
+          "p95": 3494.15
+        },
+        "applied_action_counts": {
+          "KEEP": 838
+        },
+        "all_action_counts": {
+          "KEEP": 1495,
+          "SUSPEND": 71
+        },
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13920537805/experiment/scale-7305-32-agentcloud-v2-joint-a451205cf707/events.jsonl.gz",
+        "event_sha256": "f421009d7becfca732e29c53acda145af938c9df76d09b0c37f8d3585bc48259"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9990434338395656,
+        "resource_uncovered_worker_seconds": 0.5182738304138184,
+        "resource_sample_max_gap_seconds": 0.4647679328918457,
+        "resource_transition_uncertainty_estimate_gb_s": 7.315126847999999,
+        "actor_reserved_gb_s": 215.54279008000017,
+        "stranded_worker_gb_s": 109.96413312000013
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 232.0073103070259,
+          "gateway_wait_p95_seconds": 229.46737031600009,
+          "trajectory_wait_p95_seconds": 0.02657351493835449,
+          "combined_wait_p95_seconds": 229.49152418038378
+        },
+        "later_rounds": {
+          "completed_requests": 160,
+          "ttft_p95_seconds": 5.176219141483306,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.14593719244003295,
+          "combined_wait_p95_seconds": 0.1473191261291501
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7305-32-static-15-5a594135d220",
+      "policy": "static-15",
+      "concurrency": 32,
+      "seed": 7305,
+      "result_path": "docs/evidence/joint-kv/43163231106/13920537805/experiment/scale-7305-32-static-15-5a594135d220/result.json",
+      "result_sha256": "e704cecb4d059b9b1e1ff71d8bcd85a57ce2f537d8164cc424653c221451a208",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13920537805/experiment/scale-7305-32-static-15-5a594135d220/events.jsonl.gz",
+        "event_sha256": "3298737e9189085850d17f63676d6c4d84f0991b03d6fda67a94cee806414549"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9997510360823798,
+        "resource_uncovered_worker_seconds": 0.10361504554748535,
+        "resource_sample_max_gap_seconds": 0.40361499786376953,
+        "resource_transition_uncertainty_estimate_gb_s": 2.46301664,
+        "actor_reserved_gb_s": 202.22727148799936,
+        "stranded_worker_gb_s": 117.96547795200009
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 178.83004622459413,
+          "gateway_wait_p95_seconds": 176.49736279975005,
+          "trajectory_wait_p95_seconds": 0.03942736387252807,
+          "combined_wait_p95_seconds": 176.53724799882002
+        },
+        "later_rounds": {
+          "completed_requests": 160,
+          "ttft_p95_seconds": 2.063831794261932,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.10333005189895629,
+          "combined_wait_p95_seconds": 0.10333005189895629
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7303-32-agentcloud-v2-6b2c9c1a7c69",
+      "policy": "agentcloud-v2",
+      "concurrency": 32,
+      "seed": 7303,
+      "result_path": "docs/evidence/joint-kv/43163231106/13920694260/experiment/scale-7303-32-agentcloud-v2-6b2c9c1a7c69/result.json",
+      "result_sha256": "d69a206d196388e05fc1399db9d097e98e8c2523323d8195f95163bbf4fc3544",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13920694260/experiment/scale-7303-32-agentcloud-v2-6b2c9c1a7c69/events.jsonl.gz",
+        "event_sha256": "e15b759b87cde6bad2e4ee47ad9fc4e2c91f4a1605533496303a7272a62f7621"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.983246397912401,
+        "resource_uncovered_worker_seconds": 11.459033250808716,
+        "resource_sample_max_gap_seconds": 0.7621059417724609,
+        "resource_transition_uncertainty_estimate_gb_s": 8.448401727999997,
+        "actor_reserved_gb_s": 273.03293587200034,
+        "stranded_worker_gb_s": 104.24297171200026
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 290.359812951088,
+          "gateway_wait_p95_seconds": 286.43011951650004,
+          "trajectory_wait_p95_seconds": 0.04360483884811401,
+          "combined_wait_p95_seconds": 286.47222048247676
+        },
+        "later_rounds": {
+          "completed_requests": 157,
+          "ttft_p95_seconds": 7.455874013900757,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.1273993968963623,
+          "combined_wait_p95_seconds": 0.12966547012329094
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7303-32-agentcloud-v2-joint-4a77d7e06d9b",
+      "policy": "agentcloud-v2-joint",
+      "concurrency": 32,
+      "seed": 7303,
+      "result_path": "docs/evidence/joint-kv/43163231106/13920694260/experiment/scale-7303-32-agentcloud-v2-joint-4a77d7e06d9b/result.json",
+      "result_sha256": "a068697b58d00a4b9d5a61b6a47a8810baad6d1b07652756d04a29eb688aa55b",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 1412,
+        "applied": 668,
+        "nonzero_applied_delta_ms": {
+          "observed": 294,
+          "p50": 0.016582387856420952,
+          "p95": 0.021084630302996673,
+          "maximum": 0.022527744581072345
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 668,
+          "p50": 4616.0,
+          "p95": 4864.0
+        },
+        "applied_action_counts": {
+          "KEEP": 668
+        },
+        "all_action_counts": {
+          "KEEP": 1340,
+          "SUSPEND": 72
+        },
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13920694260/experiment/scale-7303-32-agentcloud-v2-joint-4a77d7e06d9b/events.jsonl.gz",
+        "event_sha256": "265f0bf1a0c59a595a7857ec05c79ff05b58fd19ace9b8435468ef902be85c22"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9864169892200796,
+        "resource_uncovered_worker_seconds": 9.98302936553955,
+        "resource_sample_max_gap_seconds": 0.830172061920166,
+        "resource_transition_uncertainty_estimate_gb_s": 8.836326080000001,
+        "actor_reserved_gb_s": 288.4965151360011,
+        "stranded_worker_gb_s": 107.51599308800029
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 311.2942317962646,
+          "gateway_wait_p95_seconds": 306.45398431595,
+          "trajectory_wait_p95_seconds": 0.0470751166343689,
+          "combined_wait_p95_seconds": 306.5010594325843
+        },
+        "later_rounds": {
+          "completed_requests": 157,
+          "ttft_p95_seconds": 8.045038843154908,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.22735400199890132,
+          "combined_wait_p95_seconds": 0.22779574394226068
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7303-32-agentcloud-v2-cache-93386b60a514",
+      "policy": "agentcloud-v2-cache",
+      "concurrency": 32,
+      "seed": 7303,
+      "result_path": "docs/evidence/joint-kv/43163231106/13920694260/experiment/scale-7303-32-agentcloud-v2-cache-93386b60a514/result.json",
+      "result_sha256": "265e8c6dadab536e785b0202551a624a6ad7d6d13931c28b59f254c25edd65b3",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13920694260/experiment/scale-7303-32-agentcloud-v2-cache-93386b60a514/events.jsonl.gz",
+        "event_sha256": "0a760740ac5b5933c56321e5ff7f14e5486332f33b95214401b6ca2a2edf1d70"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9830364484227806,
+        "resource_uncovered_worker_seconds": 11.872832775115967,
+        "resource_sample_max_gap_seconds": 0.785358190536499,
+        "resource_transition_uncertainty_estimate_gb_s": 8.356763327999992,
+        "actor_reserved_gb_s": 274.5175497600004,
+        "stranded_worker_gb_s": 103.23115712000006
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 305.2066036581993,
+          "gateway_wait_p95_seconds": 300.5456971683498,
+          "trajectory_wait_p95_seconds": 0.043856799602508545,
+          "combined_wait_p95_seconds": 300.5895539679523
+        },
+        "later_rounds": {
+          "completed_requests": 157,
+          "ttft_p95_seconds": 7.836396789550781,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.13723740577697746,
+          "combined_wait_p95_seconds": 0.14669485092163062
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7303-32-static-2-a9b08b7189f1",
+      "policy": "static-2",
+      "concurrency": 32,
+      "seed": 7303,
+      "result_path": "docs/evidence/joint-kv/43163231106/13920694260/experiment/scale-7303-32-static-2-a9b08b7189f1/result.json",
+      "result_sha256": "226ac9d526d29ab5354f375f5ab006aa00e99c4c27ba703edfbeef178cf19727",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13920694260/experiment/scale-7303-32-static-2-a9b08b7189f1/events.jsonl.gz",
+        "event_sha256": "3cd0b25a967428c5c0c02bb6a2ecc6b059aeb039773b7a471fea9a67869b6d1c"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9755714235076103,
+        "resource_uncovered_worker_seconds": 19.240617036819458,
+        "resource_sample_max_gap_seconds": 0.8360950946807861,
+        "resource_transition_uncertainty_estimate_gb_s": 15.587446463999989,
+        "actor_reserved_gb_s": 280.81191641599986,
+        "stranded_worker_gb_s": 98.98203321599989
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 83.23717970848082,
+          "gateway_wait_p95_seconds": 79.33647190950005,
+          "trajectory_wait_p95_seconds": 0.03249325752258301,
+          "combined_wait_p95_seconds": 79.35426207206336
+        },
+        "later_rounds": {
+          "completed_requests": 157,
+          "ttft_p95_seconds": 85.85933876037598,
+          "gateway_wait_p95_seconds": 79.92025257400027,
+          "trajectory_wait_p95_seconds": 3.3733961105346677,
+          "combined_wait_p95_seconds": 81.9116711077987
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7303-32-static-15-796499e9cf8c",
+      "policy": "static-15",
+      "concurrency": 32,
+      "seed": 7303,
+      "result_path": "docs/evidence/joint-kv/43163231106/13920694260/experiment/scale-7303-32-static-15-796499e9cf8c/result.json",
+      "result_sha256": "be5ba2dac888196dc3ed91a136f71a17a9bd1bbbee79d8bdbda915553997411a",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13920694260/experiment/scale-7303-32-static-15-796499e9cf8c/events.jsonl.gz",
+        "event_sha256": "a84489ba145948d3cb72322fa20b6a9bb7996904cb1d431f61977f480e2fc6a0"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9969090323558714,
+        "resource_uncovered_worker_seconds": 1.5908010005950928,
+        "resource_sample_max_gap_seconds": 0.4805901050567627,
+        "resource_transition_uncertainty_estimate_gb_s": 2.334078016,
+        "actor_reserved_gb_s": 252.2104471039985,
+        "stranded_worker_gb_s": 109.82377260799981
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 227.30784018039702,
+          "gateway_wait_p95_seconds": 223.67093288554995,
+          "trajectory_wait_p95_seconds": 0.05776965618133545,
+          "combined_wait_p95_seconds": 223.73256246700137
+        },
+        "later_rounds": {
+          "completed_requests": 157,
+          "ttft_p95_seconds": 3.701601123809814,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.10781507492065429,
+          "combined_wait_p95_seconds": 0.10781507492065429
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7301-32-agentcloud-v2-00649a650517",
+      "policy": "agentcloud-v2",
+      "concurrency": 32,
+      "seed": 7301,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921192095/experiment/scale-7301-32-agentcloud-v2-00649a650517/result.json",
+      "result_sha256": "34bfa80afb49d968f1fc80d2c56e7d0a338048d6d04e450680a1c3d66a6bd2e4",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921192095/experiment/scale-7301-32-agentcloud-v2-00649a650517/events.jsonl.gz",
+        "event_sha256": "dd83187199277c78713aa7ece3d8c2cd1a713dcf9372bb5e6f3dc96acaae131e"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9955071889190158,
+        "resource_uncovered_worker_seconds": 2.6961913108825684,
+        "resource_sample_max_gap_seconds": 0.5123960971832275,
+        "resource_transition_uncertainty_estimate_gb_s": 7.9517902719999976,
+        "actor_reserved_gb_s": 235.42865779200042,
+        "stranded_worker_gb_s": 103.97745491200033
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 262.15273097753527,
+          "gateway_wait_p95_seconds": 258.09189766774995,
+          "trajectory_wait_p95_seconds": 0.03753632307052612,
+          "combined_wait_p95_seconds": 258.1273270619951
+        },
+        "later_rounds": {
+          "completed_requests": 157,
+          "ttft_p95_seconds": 6.70963897705078,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.19794521331787107,
+          "combined_wait_p95_seconds": 0.19794521331787107
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93",
+      "policy": "agentcloud-v2-joint",
+      "concurrency": 32,
+      "seed": 7301,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921192095/experiment/scale-7301-32-agentcloud-v2-joint-f4625371da93/result.json",
+      "result_sha256": "22aa4a111cab4025c5fd18781f4e45282b3020b7182ae72cdcd0d778e749b2a4",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 1425,
+        "applied": 704,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 704,
+          "p50": 4026.0,
+          "p95": 4631.0
+        },
+        "applied_action_counts": {
+          "KEEP": 704
+        },
+        "all_action_counts": {
+          "KEEP": 1355,
+          "SUSPEND": 70
+        },
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921192095/experiment/scale-7301-32-agentcloud-v2-joint-f4625371da93/events.jsonl.gz",
+        "event_sha256": "567224a57f5ac656f3aaf966dc9e8a3641ebbaaeebd1c29ea1a15d26d1da4f8a"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9955189321412794,
+        "resource_uncovered_worker_seconds": 2.7968647480010986,
+        "resource_sample_max_gap_seconds": 0.5518679618835449,
+        "resource_transition_uncertainty_estimate_gb_s": 7.526924671999996,
+        "actor_reserved_gb_s": 245.9177418240001,
+        "stranded_worker_gb_s": 106.22792511999972
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 267.67022708654406,
+          "gateway_wait_p95_seconds": 264.04276438819994,
+          "trajectory_wait_p95_seconds": 0.03661421537399292,
+          "combined_wait_p95_seconds": 264.06425063478576
+        },
+        "later_rounds": {
+          "completed_requests": 157,
+          "ttft_p95_seconds": 6.8831107139587395,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.3076154708862301,
+          "combined_wait_p95_seconds": 0.3076154708862301
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7301-32-agentcloud-v2-cache-80864c108a7a",
+      "policy": "agentcloud-v2-cache",
+      "concurrency": 32,
+      "seed": 7301,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921192095/experiment/scale-7301-32-agentcloud-v2-cache-80864c108a7a/result.json",
+      "result_sha256": "7a0ce95230b5a7f0f50e6a9ba0dd4b118c05ee9f6f9c89c293dc43089d27b936",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921192095/experiment/scale-7301-32-agentcloud-v2-cache-80864c108a7a/events.jsonl.gz",
+        "event_sha256": "17fc275ec6ed68b964d613d75510340ac0cd5a82ba0217896fe5a0d7364a4241"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9928816588930128,
+        "resource_uncovered_worker_seconds": 4.243131637573242,
+        "resource_sample_max_gap_seconds": 0.840156078338623,
+        "resource_transition_uncertainty_estimate_gb_s": 8.441501888,
+        "actor_reserved_gb_s": 234.68226419200096,
+        "stranded_worker_gb_s": 103.70623616000012
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 261.4535509109497,
+          "gateway_wait_p95_seconds": 257.5451161352,
+          "trajectory_wait_p95_seconds": 0.037271881103515626,
+          "combined_wait_p95_seconds": 257.581690403541
+        },
+        "later_rounds": {
+          "completed_requests": 157,
+          "ttft_p95_seconds": 6.40276379585266,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.21277627944946273,
+          "combined_wait_p95_seconds": 0.21277627944946273
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7301-32-static-2-3ec3c1035623",
+      "policy": "static-2",
+      "concurrency": 32,
+      "seed": 7301,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921192095/experiment/scale-7301-32-static-2-3ec3c1035623/result.json",
+      "result_sha256": "26b86f6d28c258e3c930e35f46064ffb0bcc625f0e26273ae174b82e6e030215",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921192095/experiment/scale-7301-32-static-2-3ec3c1035623/events.jsonl.gz",
+        "event_sha256": "a12bdaa30b94850398af62abd16c0e77c543b33c833020500808fff40e341ddc"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9886396167384414,
+        "resource_uncovered_worker_seconds": 7.853064775466919,
+        "resource_sample_max_gap_seconds": 0.8088388442993164,
+        "resource_transition_uncertainty_estimate_gb_s": 12.169433407999989,
+        "actor_reserved_gb_s": 241.80513952000013,
+        "stranded_worker_gb_s": 96.68957856000004
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 68.21904340982437,
+          "gateway_wait_p95_seconds": 64.72423788069997,
+          "trajectory_wait_p95_seconds": 0.027832722663879393,
+          "combined_wait_p95_seconds": 64.75244171380315
+        },
+        "later_rounds": {
+          "completed_requests": 157,
+          "ttft_p95_seconds": 74.44414644241333,
+          "gateway_wait_p95_seconds": 69.41842607480011,
+          "trajectory_wait_p95_seconds": 3.346165370941162,
+          "combined_wait_p95_seconds": 71.29576828957015
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7301-32-static-15-d511c23ce348",
+      "policy": "static-15",
+      "concurrency": 32,
+      "seed": 7301,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921192095/experiment/scale-7301-32-static-15-d511c23ce348/result.json",
+      "result_sha256": "9f4cf546502a4200ac797f162afae4bd06aea9f478e957a62f9fa9e84347feb8",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921192095/experiment/scale-7301-32-static-15-d511c23ce348/events.jsonl.gz",
+        "event_sha256": "e9932850923582a734a35c0bdf11195c29b74b8c5a74757e1b5f239794ef5791"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9987737528414747,
+        "resource_uncovered_worker_seconds": 0.5695784091949463,
+        "resource_sample_max_gap_seconds": 0.5608079433441162,
+        "resource_transition_uncertainty_estimate_gb_s": 2.6815667200000006,
+        "actor_reserved_gb_s": 223.32095980799969,
+        "stranded_worker_gb_s": 109.08045248000026
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 194.4288540363312,
+          "gateway_wait_p95_seconds": 191.43212963054992,
+          "trajectory_wait_p95_seconds": 0.023770463466644288,
+          "combined_wait_p95_seconds": 191.44994339655256
+        },
+        "later_rounds": {
+          "completed_requests": 157,
+          "ttft_p95_seconds": 2.909717750549316,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.19623413085937436,
+          "combined_wait_p95_seconds": 0.19623413085937436
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7302-32-agentcloud-v2-cache-d03f84445150",
+      "policy": "agentcloud-v2-cache",
+      "concurrency": 32,
+      "seed": 7302,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921400301/experiment/scale-7302-32-agentcloud-v2-cache-d03f84445150/result.json",
+      "result_sha256": "a58838f1941b0ae0fea864af7eb859a7fd302ad7e248c103b7f4f181481e78d3",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921400301/experiment/scale-7302-32-agentcloud-v2-cache-d03f84445150/events.jsonl.gz",
+        "event_sha256": "7bf6828f0140c5838f4838ec86d7000c2ecac6630335901a5d322d0555f4c586"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9994656556734622,
+        "resource_uncovered_worker_seconds": 0.2910470962524414,
+        "resource_sample_max_gap_seconds": 0.43058204650878906,
+        "resource_transition_uncertainty_estimate_gb_s": 7.433014783999997,
+        "actor_reserved_gb_s": 210.9431822720002,
+        "stranded_worker_gb_s": 112.40812729599969
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 230.56101142168043,
+          "gateway_wait_p95_seconds": 228.19380516835005,
+          "trajectory_wait_p95_seconds": 0.0276796817779541,
+          "combined_wait_p95_seconds": 228.22135575838834
+        },
+        "later_rounds": {
+          "completed_requests": 157,
+          "ttft_p95_seconds": 4.7946858406066895,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.12947158813476556,
+          "combined_wait_p95_seconds": 0.12947158813476556
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7302-32-agentcloud-v2-joint-fa1c7ec84320",
+      "policy": "agentcloud-v2-joint",
+      "concurrency": 32,
+      "seed": 7302,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921400301/experiment/scale-7302-32-agentcloud-v2-joint-fa1c7ec84320/result.json",
+      "result_sha256": "445452c2f4af42b3c0077e79357e085fc3d526018ad074e09fd5e11b61d96692",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 1573,
+        "applied": 818,
+        "nonzero_applied_delta_ms": {
+          "observed": 398,
+          "p50": 0.006173829269571177,
+          "p95": 0.007875425050599152,
+          "maximum": 0.008243541646771546
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 818,
+          "p50": 3445.0,
+          "p95": 3495.0
+        },
+        "applied_action_counts": {
+          "KEEP": 817,
+          "SUSPEND": 1
+        },
+        "all_action_counts": {
+          "KEEP": 1497,
+          "SUSPEND": 76
+        },
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921400301/experiment/scale-7302-32-agentcloud-v2-joint-fa1c7ec84320/events.jsonl.gz",
+        "event_sha256": "79a92e2ea8c06f6a85c24fa8cc2d747e1b3e3c2532dc88b4b2914d84a171bceb"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9985644904078371,
+        "resource_uncovered_worker_seconds": 0.8316986560821533,
+        "resource_sample_max_gap_seconds": 0.4690701961517334,
+        "resource_transition_uncertainty_estimate_gb_s": 8.428792192000003,
+        "actor_reserved_gb_s": 226.38981644799975,
+        "stranded_worker_gb_s": 112.82286944000033
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 241.06294745206833,
+          "gateway_wait_p95_seconds": 238.1251889455,
+          "trajectory_wait_p95_seconds": 0.10404384136199951,
+          "combined_wait_p95_seconds": 238.2293183791319
+        },
+        "later_rounds": {
+          "completed_requests": 157,
+          "ttft_p95_seconds": 5.341982889175414,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.15531454086303703,
+          "combined_wait_p95_seconds": 0.15531454086303703
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7302-32-static-15-5e9f3882a62c",
+      "policy": "static-15",
+      "concurrency": 32,
+      "seed": 7302,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921400301/experiment/scale-7302-32-static-15-5e9f3882a62c/result.json",
+      "result_sha256": "cdb16eeaf345419782f77f06924e23eafc66ae9f0be5e2b4e1b56226b6e31473",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921400301/experiment/scale-7302-32-static-15-5e9f3882a62c/events.jsonl.gz",
+        "event_sha256": "197fc85bd5fd605426db5ff59ea6d4cfdcb88104274a39206549db0c97ea0dd2"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9995496987123162,
+        "resource_uncovered_worker_seconds": 0.20208430290222168,
+        "resource_sample_max_gap_seconds": 0.4722268581390381,
+        "resource_transition_uncertainty_estimate_gb_s": 2.69562368,
+        "actor_reserved_gb_s": 213.99668678400008,
+        "stranded_worker_gb_s": 119.66751641599949
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 189.23557442426682,
+          "gateway_wait_p95_seconds": 186.90766049444994,
+          "trajectory_wait_p95_seconds": 0.02069847583770752,
+          "combined_wait_p95_seconds": 186.92234223902543
+        },
+        "later_rounds": {
+          "completed_requests": 157,
+          "ttft_p95_seconds": 2.3981414318084715,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.10261740684509277,
+          "combined_wait_p95_seconds": 0.10261740684509277
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7302-32-static-2-e283b6052bea",
+      "policy": "static-2",
+      "concurrency": 32,
+      "seed": 7302,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921400301/experiment/scale-7302-32-static-2-e283b6052bea/result.json",
+      "result_sha256": "eb93b7c322a4cd30b6ba6c5304d27d068cce2ee98d3967ac59ebf76d7a728cd6",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921400301/experiment/scale-7302-32-static-2-e283b6052bea/events.jsonl.gz",
+        "event_sha256": "ae9b3d0d6c03637ce5722c61067a30eddc7fd180da96c27a928dbe0ac46db7da"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9973112028524932,
+        "resource_uncovered_worker_seconds": 1.6766202449798584,
+        "resource_sample_max_gap_seconds": 0.5608768463134766,
+        "resource_transition_uncertainty_estimate_gb_s": 13.649582784,
+        "actor_reserved_gb_s": 225.79716582399982,
+        "stranded_worker_gb_s": 104.05473913599988
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 65.17635009288787,
+          "gateway_wait_p95_seconds": 62.30160395800005,
+          "trajectory_wait_p95_seconds": 0.025812101364135743,
+          "combined_wait_p95_seconds": 62.3229433506621
+        },
+        "later_rounds": {
+          "completed_requests": 157,
+          "ttft_p95_seconds": 66.41218070983886,
+          "gateway_wait_p95_seconds": 62.2142096644,
+          "trajectory_wait_p95_seconds": 2.341192960739135,
+          "combined_wait_p95_seconds": 63.66916353075112
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7302-32-agentcloud-v2-b22601070d80",
+      "policy": "agentcloud-v2",
+      "concurrency": 32,
+      "seed": 7302,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921400301/experiment/scale-7302-32-agentcloud-v2-b22601070d80/result.json",
+      "result_sha256": "0717c30e05ff65bc9d8f535f0b973471c24704632f0398e8dc0230df097bede1",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921400301/experiment/scale-7302-32-agentcloud-v2-b22601070d80/events.jsonl.gz",
+        "event_sha256": "a35b14a945aa59b69eb35ee7c92b78d6e57ac3d69252695299f0de6549869259"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9994376451788233,
+        "resource_uncovered_worker_seconds": 0.2942180633544922,
+        "resource_sample_max_gap_seconds": 0.3771698474884033,
+        "resource_transition_uncertainty_estimate_gb_s": 7.636671359999999,
+        "actor_reserved_gb_s": 214.78684313599933,
+        "stranded_worker_gb_s": 112.4683002240002
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 224.3365166902542,
+          "gateway_wait_p95_seconds": 222.09613618054985,
+          "trajectory_wait_p95_seconds": 0.027195990085601807,
+          "combined_wait_p95_seconds": 222.12299070754648
+        },
+        "later_rounds": {
+          "completed_requests": 157,
+          "ttft_p95_seconds": 5.110263490676878,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.11477026939392088,
+          "combined_wait_p95_seconds": 0.11662945747375487
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7304-32-agentcloud-v2-bdceb7d4375d",
+      "policy": "agentcloud-v2",
+      "concurrency": 32,
+      "seed": 7304,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921671456/experiment/scale-7304-32-agentcloud-v2-bdceb7d4375d/result.json",
+      "result_sha256": "2364a56294c265de929f69b1dd3b48a55fafee5943dfdad3bd7089f23c682514",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921671456/experiment/scale-7304-32-agentcloud-v2-bdceb7d4375d/events.jsonl.gz",
+        "event_sha256": "2256f76647157d21e860646b51033c987a015c819d27e6480b0d135a18df26d6"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.982047546138379,
+        "resource_uncovered_worker_seconds": 14.037395000457764,
+        "resource_sample_max_gap_seconds": 0.7836878299713135,
+        "resource_transition_uncertainty_estimate_gb_s": 9.327930687999997,
+        "actor_reserved_gb_s": 306.75856153600023,
+        "stranded_worker_gb_s": 117.14356960000038
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 326.8668427109718,
+          "gateway_wait_p95_seconds": 322.44814327265,
+          "trajectory_wait_p95_seconds": 0.06700478792190552,
+          "combined_wait_p95_seconds": 322.51803455854633
+        },
+        "later_rounds": {
+          "completed_requests": 160,
+          "ttft_p95_seconds": 8.395767068862915,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.1635398745536803,
+          "combined_wait_p95_seconds": 0.1635398745536803
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7304-32-agentcloud-v2-joint-29f45d5d5c5d",
+      "policy": "agentcloud-v2-joint",
+      "concurrency": 32,
+      "seed": 7304,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921671456/experiment/scale-7304-32-agentcloud-v2-joint-29f45d5d5c5d/result.json",
+      "result_sha256": "3403f16277e687c42235848df1128aa223b3c2098778d0d29ed60cddd0420dc0",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 1532,
+        "applied": 781,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 781,
+          "p50": 4828.0,
+          "p95": 5530.0
+        },
+        "applied_action_counts": {
+          "KEEP": 781
+        },
+        "all_action_counts": {
+          "KEEP": 1455,
+          "SUSPEND": 77
+        },
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921671456/experiment/scale-7304-32-agentcloud-v2-joint-29f45d5d5c5d/events.jsonl.gz",
+        "event_sha256": "b9e1d0dd90978987d323ae76f6cc8096601645e0175069d7f88dec72c0014cda"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9849024382312279,
+        "resource_uncovered_worker_seconds": 12.395076751708984,
+        "resource_sample_max_gap_seconds": 0.8589310646057129,
+        "resource_transition_uncertainty_estimate_gb_s": 8.920065984,
+        "actor_reserved_gb_s": 319.1732509440007,
+        "stranded_worker_gb_s": 120.69949849600027
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 352.2446119785309,
+          "gateway_wait_p95_seconds": 347.9179005816,
+          "trajectory_wait_p95_seconds": 0.06373785734176636,
+          "combined_wait_p95_seconds": 347.98060016179255
+        },
+        "later_rounds": {
+          "completed_requests": 160,
+          "ttft_p95_seconds": 8.785263872146604,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.30385062694549525,
+          "combined_wait_p95_seconds": 0.30385062694549525
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7304-32-static-2-b710c96696f2",
+      "policy": "static-2",
+      "concurrency": 32,
+      "seed": 7304,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921671456/experiment/scale-7304-32-static-2-b710c96696f2/result.json",
+      "result_sha256": "d7a772f3b14b8c5fb863bc3235d1fa3702c0728b3fbc43b69f0efc2678929134",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921671456/experiment/scale-7304-32-static-2-b710c96696f2/events.jsonl.gz",
+        "event_sha256": "29f58f5a10045e23b0f72b4187013792013f3ff0b64dfa39dcf12b113dd8c916"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9684920119784435,
+        "resource_uncovered_worker_seconds": 28.281482934951782,
+        "resource_sample_max_gap_seconds": 0.8120789527893066,
+        "resource_transition_uncertainty_estimate_gb_s": 15.728246015999998,
+        "actor_reserved_gb_s": 310.7277952639992,
+        "stranded_worker_gb_s": 110.15900812800038
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 81.15995910167693,
+          "gateway_wait_p95_seconds": 76.60581630990016,
+          "trajectory_wait_p95_seconds": 0.04430509805679321,
+          "combined_wait_p95_seconds": 76.65085322186458
+        },
+        "later_rounds": {
+          "completed_requests": 160,
+          "ttft_p95_seconds": 83.11976759433746,
+          "gateway_wait_p95_seconds": 76.62700340340014,
+          "trajectory_wait_p95_seconds": 3.909366607666015,
+          "combined_wait_p95_seconds": 78.526726468069
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7304-32-agentcloud-v2-cache-4dfbf2fef9d3",
+      "policy": "agentcloud-v2-cache",
+      "concurrency": 32,
+      "seed": 7304,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921671456/experiment/scale-7304-32-agentcloud-v2-cache-4dfbf2fef9d3/result.json",
+      "result_sha256": "0e54a6ac21cf345ee13ffba1b36d22c91827564d84f9a6c1df2cf082a8ee78bf",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921671456/experiment/scale-7304-32-agentcloud-v2-cache-4dfbf2fef9d3/events.jsonl.gz",
+        "event_sha256": "d5c13c7bfa5e35ad9d2b3bce31d8da9a5226e4dad2c3f2f6869eee16dbb2daac"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9859489303714339,
+        "resource_uncovered_worker_seconds": 10.643803834915161,
+        "resource_sample_max_gap_seconds": 0.6827402114868164,
+        "resource_transition_uncertainty_estimate_gb_s": 8.138871488,
+        "actor_reserved_gb_s": 300.9519140479996,
+        "stranded_worker_gb_s": 117.15349299200025
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 323.5353304028511,
+          "gateway_wait_p95_seconds": 319.72706571249995,
+          "trajectory_wait_p95_seconds": 0.048176467418670654,
+          "combined_wait_p95_seconds": 319.77561618714367
+        },
+        "later_rounds": {
+          "completed_requests": 160,
+          "ttft_p95_seconds": 7.937458729743955,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.16224775314331039,
+          "combined_wait_p95_seconds": 0.16224775314331039
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7304-32-static-15-37be4aba6278",
+      "policy": "static-15",
+      "concurrency": 32,
+      "seed": 7304,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921671456/experiment/scale-7304-32-static-15-37be4aba6278/result.json",
+      "result_sha256": "c73f64ab85ce6aa1a025e912f238d49e917f1dadefacb4f911093cf1b7151454",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921671456/experiment/scale-7304-32-static-15-37be4aba6278/events.jsonl.gz",
+        "event_sha256": "077218f2b46fe03a51d8d63add42e6fcac23d7f2ab6fbfa441f7056c581ba47e"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.997484401378229,
+        "resource_uncovered_worker_seconds": 1.4624321460723877,
+        "resource_sample_max_gap_seconds": 0.5207610130310059,
+        "resource_transition_uncertainty_estimate_gb_s": 2.686713024,
+        "actor_reserved_gb_s": 282.40880627199857,
+        "stranded_worker_gb_s": 121.2121400960003
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 252.24888508319853,
+          "gateway_wait_p95_seconds": 248.06079904439983,
+          "trajectory_wait_p95_seconds": 0.06981593370437622,
+          "combined_wait_p95_seconds": 248.11138870122966
+        },
+        "later_rounds": {
+          "completed_requests": 160,
+          "ttft_p95_seconds": 4.084026324748992,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.10303223133087158,
+          "combined_wait_p95_seconds": 0.10303223133087158
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7304-64-static-2-ef720cb9da87",
+      "policy": "static-2",
+      "concurrency": 64,
+      "seed": 7304,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921909823/experiment/scale-7304-64-static-2-ef720cb9da87/result.json",
+      "result_sha256": "8c3378d82f4103a88338ea4458bb33fcf9771117e13db30ec7e5181756b42108",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921909823/experiment/scale-7304-64-static-2-ef720cb9da87/events.jsonl.gz",
+        "event_sha256": "b3bee28a48252c1f621d760e47e3172ca012fc9c63991d54152837f35854c893"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9900179991774172,
+        "resource_uncovered_worker_seconds": 15.148839473724365,
+        "resource_sample_max_gap_seconds": 0.7018759250640869,
+        "resource_transition_uncertainty_estimate_gb_s": 23.962469120000033,
+        "actor_reserved_gb_s": 521.2321147519999,
+        "stranded_worker_gb_s": 218.8944007040007
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 131.09435124397277,
+          "gateway_wait_p95_seconds": 128.40238109605008,
+          "trajectory_wait_p95_seconds": 0.2556697130203247,
+          "combined_wait_p95_seconds": 128.6583120323866
+        },
+        "later_rounds": {
+          "completed_requests": 315,
+          "ttft_p95_seconds": 130.32529907226564,
+          "gateway_wait_p95_seconds": 125.48217506740006,
+          "trajectory_wait_p95_seconds": 3.6571603536605837,
+          "combined_wait_p95_seconds": 127.58517299029741
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7304-64-agentcloud-v2-cache-2cf095ecfec0",
+      "policy": "agentcloud-v2-cache",
+      "concurrency": 64,
+      "seed": 7304,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921909823/experiment/scale-7304-64-agentcloud-v2-cache-2cf095ecfec0/result.json",
+      "result_sha256": "0535cbd36001d7391c8bbbab8798fcb61629b03f3ae9d67d90fd3a8930fbee89",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921909823/experiment/scale-7304-64-agentcloud-v2-cache-2cf095ecfec0/events.jsonl.gz",
+        "event_sha256": "e6fa8d0cd10c63e0b93f60a93b867d08198660ab2b057f543ccbb044027dcb33"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9976660653097942,
+        "resource_uncovered_worker_seconds": 2.636770248413086,
+        "resource_sample_max_gap_seconds": 0.5074188709259033,
+        "resource_transition_uncertainty_estimate_gb_s": 10.765895359999996,
+        "actor_reserved_gb_s": 490.22113472000166,
+        "stranded_worker_gb_s": 236.8956095359996
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 502.5603852272033,
+          "gateway_wait_p95_seconds": 498.8446788696998,
+          "trajectory_wait_p95_seconds": 0.07660458087921143,
+          "combined_wait_p95_seconds": 498.9216977743858
+        },
+        "later_rounds": {
+          "completed_requests": 315,
+          "ttft_p95_seconds": 5.947155332565307,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.2614885807037354,
+          "combined_wait_p95_seconds": 0.2614885807037354
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7304-64-agentcloud-v2-joint-df741fd76e8b",
+      "policy": "agentcloud-v2-joint",
+      "concurrency": 64,
+      "seed": 7304,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921909823/experiment/scale-7304-64-agentcloud-v2-joint-df741fd76e8b/result.json",
+      "result_sha256": "484fafc5f8759c900c9198c365654475468a930d75409070e04cbcb164712b47",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 3425,
+        "applied": 2221,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 2221,
+          "p50": 3351.0,
+          "p95": 3761.0
+        },
+        "applied_action_counts": {
+          "KEEP": 2221
+        },
+        "all_action_counts": {
+          "KEEP": 3353,
+          "SUSPEND": 72
+        },
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921909823/experiment/scale-7304-64-agentcloud-v2-joint-df741fd76e8b/events.jsonl.gz",
+        "event_sha256": "2fa21dda52580113a9a4b8e9bf14583ab4fb8d0ef58b1120c547999e9a7f7974"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9985120171170067,
+        "resource_uncovered_worker_seconds": 1.7097654342651367,
+        "resource_sample_max_gap_seconds": 0.5048692226409912,
+        "resource_transition_uncertainty_estimate_gb_s": 10.900986304000007,
+        "actor_reserved_gb_s": 503.5367793919999,
+        "stranded_worker_gb_s": 242.08513196799888
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 507.48106039762496,
+          "gateway_wait_p95_seconds": 503.64121940409984,
+          "trajectory_wait_p95_seconds": 0.06671557426452636,
+          "combined_wait_p95_seconds": 503.71053805625286
+        },
+        "later_rounds": {
+          "completed_requests": 315,
+          "ttft_p95_seconds": 5.552581763267518,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.3242575883865357,
+          "combined_wait_p95_seconds": 0.3242575883865357
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7304-64-static-15-b38facdffe59",
+      "policy": "static-15",
+      "concurrency": 64,
+      "seed": 7304,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921909823/experiment/scale-7304-64-static-15-b38facdffe59/result.json",
+      "result_sha256": "1f39c6b0a4171b14ffa272390f401a141c642e5c01608690940317bfb43018a9",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921909823/experiment/scale-7304-64-static-15-b38facdffe59/events.jsonl.gz",
+        "event_sha256": "b767c991f2303db3ee7eab3a385a33f30bdb3c3b8d21e677d9b03b22715189da"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9993840669710571,
+        "resource_uncovered_worker_seconds": 0.5669608116149902,
+        "resource_sample_max_gap_seconds": 0.45657992362976074,
+        "resource_transition_uncertainty_estimate_gb_s": 5.458250368,
+        "actor_reserved_gb_s": 442.62950732800374,
+        "stranded_worker_gb_s": 234.44162041600086
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 401.0291211366653,
+          "gateway_wait_p95_seconds": 398.39157481074983,
+          "trajectory_wait_p95_seconds": 0.22412803173065185,
+          "combined_wait_p95_seconds": 398.61461964727096
+        },
+        "later_rounds": {
+          "completed_requests": 315,
+          "ttft_p95_seconds": 2.579976296424866,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.15030024051666263,
+          "combined_wait_p95_seconds": 0.15030024051666263
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7304-64-agentcloud-v2-c8adb32949fb",
+      "policy": "agentcloud-v2",
+      "concurrency": 64,
+      "seed": 7304,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921909823/experiment/scale-7304-64-agentcloud-v2-c8adb32949fb/result.json",
+      "result_sha256": "27266d558c22be06efc21401a0ee773d18e78e6ce3ad96a1d8e9fa43e0030703",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921909823/experiment/scale-7304-64-agentcloud-v2-c8adb32949fb/events.jsonl.gz",
+        "event_sha256": "841f445d4db1f005fb3d2ba60ac97a4cca71d3e8ca5d9f11f3d7f909de7ec833"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9964967328151776,
+        "resource_uncovered_worker_seconds": 4.121570110321045,
+        "resource_sample_max_gap_seconds": 0.5117809772491455,
+        "resource_transition_uncertainty_estimate_gb_s": 12.187640384000002,
+        "actor_reserved_gb_s": 508.6852026239963,
+        "stranded_worker_gb_s": 238.79247513599958
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 529.4183803915977,
+          "gateway_wait_p95_seconds": 525.6922507468,
+          "trajectory_wait_p95_seconds": 0.09409039020538329,
+          "combined_wait_p95_seconds": 525.7838006797567
+        },
+        "later_rounds": {
+          "completed_requests": 315,
+          "ttft_p95_seconds": 6.568625473976136,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.25508840084075945,
+          "combined_wait_p95_seconds": 0.25508840084075945
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7302-64-agentcloud-v2-cache-d7f432de0ebb",
+      "policy": "agentcloud-v2-cache",
+      "concurrency": 64,
+      "seed": 7302,
+      "result_path": "docs/evidence/joint-kv/43163231106/13922293108/experiment/scale-7302-64-agentcloud-v2-cache-d7f432de0ebb/result.json",
+      "result_sha256": "b068fda86c4b23a84b68dcac8e0caee145b7a334f7f68be5a8b38619de1b337a",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13922293108/experiment/scale-7302-64-agentcloud-v2-cache-d7f432de0ebb/events.jsonl.gz",
+        "event_sha256": "297cb1f5021b372ec0c7af1c758ae50d5c49e1777ad0f4b8495204cad9a1740d"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9976362829552641,
+        "resource_uncovered_worker_seconds": 2.5016536712646484,
+        "resource_sample_max_gap_seconds": 0.661693811416626,
+        "resource_transition_uncertainty_estimate_gb_s": 10.708575680000004,
+        "actor_reserved_gb_s": 462.0437366399989,
+        "stranded_worker_gb_s": 230.76511059200024
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 477.8416647076606,
+          "gateway_wait_p95_seconds": 474.70250123669996,
+          "trajectory_wait_p95_seconds": 0.06499053239822387,
+          "combined_wait_p95_seconds": 474.76698603560817
+        },
+        "later_rounds": {
+          "completed_requests": 317,
+          "ttft_p95_seconds": 5.600825262069702,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.21891517639160155,
+          "combined_wait_p95_seconds": 0.21891517639160155
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7302-64-static-15-81d464ac0faf",
+      "policy": "static-15",
+      "concurrency": 64,
+      "seed": 7302,
+      "result_path": "docs/evidence/joint-kv/43163231106/13922293108/experiment/scale-7302-64-static-15-81d464ac0faf/result.json",
+      "result_sha256": "3f76786bd171b1fd7e2168b105b1be5adcab2427ee1de40a3422d65dcc65934a",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13922293108/experiment/scale-7302-64-static-15-81d464ac0faf/events.jsonl.gz",
+        "event_sha256": "1ea03f14e29c25e0d2900a6b6ef97c82a79be7f91cf62728e91aeb2b27a35bfb"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9991502541974698,
+        "resource_uncovered_worker_seconds": 0.7633538246154785,
+        "resource_sample_max_gap_seconds": 0.456801176071167,
+        "resource_transition_uncertainty_estimate_gb_s": 5.399374784000002,
+        "actor_reserved_gb_s": 439.14137804799907,
+        "stranded_worker_gb_s": 234.45366246399956
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 402.4718987345695,
+          "gateway_wait_p95_seconds": 399.3144518796499,
+          "trajectory_wait_p95_seconds": 0.0853958487510681,
+          "combined_wait_p95_seconds": 399.39800331035207
+        },
+        "later_rounds": {
+          "completed_requests": 317,
+          "ttft_p95_seconds": 2.641493034362793,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.168363618850708,
+          "combined_wait_p95_seconds": 0.168363618850708
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7302-64-agentcloud-v2-joint-a93d36a8f47e",
+      "policy": "agentcloud-v2-joint",
+      "concurrency": 64,
+      "seed": 7302,
+      "result_path": "docs/evidence/joint-kv/43163231106/13922293108/experiment/scale-7302-64-agentcloud-v2-joint-a93d36a8f47e/result.json",
+      "result_sha256": "1bae118ca8998e9a51acce1afc486ead29f451a902e21a631078a029b46637bb",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 3446,
+        "applied": 2255,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 2255,
+          "p50": 3334.0,
+          "p95": 3635.0
+        },
+        "applied_action_counts": {
+          "KEEP": 2255
+        },
+        "all_action_counts": {
+          "KEEP": 3370,
+          "SUSPEND": 76
+        },
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13922293108/experiment/scale-7302-64-agentcloud-v2-joint-a93d36a8f47e/events.jsonl.gz",
+        "event_sha256": "2af42daa245a4e25c61eaa9cdff4069de7f408b1d4d74260eda06c31c32e6477"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9990607339609088,
+        "resource_uncovered_worker_seconds": 1.037595272064209,
+        "resource_sample_max_gap_seconds": 0.48696208000183105,
+        "resource_transition_uncertainty_estimate_gb_s": 10.870342847999993,
+        "actor_reserved_gb_s": 490.3108672640006,
+        "stranded_worker_gb_s": 238.5966434560001
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 500.0164040923117,
+          "gateway_wait_p95_seconds": 496.2978729993,
+          "trajectory_wait_p95_seconds": 0.07080025672912597,
+          "combined_wait_p95_seconds": 496.3686732560292
+        },
+        "later_rounds": {
+          "completed_requests": 317,
+          "ttft_p95_seconds": 5.450029087066651,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.33120241165161124,
+          "combined_wait_p95_seconds": 0.33120241165161124
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7302-64-static-2-36772ddb05e0",
+      "policy": "static-2",
+      "concurrency": 64,
+      "seed": 7302,
+      "result_path": "docs/evidence/joint-kv/43163231106/13922293108/experiment/scale-7302-64-static-2-36772ddb05e0/result.json",
+      "result_sha256": "f2b7ec47a219668ab6e347cbc399af3b251d4e5622ba980fdb02c078f5368ca0",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13922293108/experiment/scale-7302-64-static-2-36772ddb05e0/events.jsonl.gz",
+        "event_sha256": "b24f371c2f0d2a3602ef42f112554afe831b574630aeeb084114973d7952373a"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9936603120368186,
+        "resource_uncovered_worker_seconds": 8.455168724060059,
+        "resource_sample_max_gap_seconds": 0.7752408981323242,
+        "resource_transition_uncertainty_estimate_gb_s": 25.000140096000006,
+        "actor_reserved_gb_s": 464.08624179200183,
+        "stranded_worker_gb_s": 206.12015840000055
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 131.45318095684053,
+          "gateway_wait_p95_seconds": 128.64672134490007,
+          "trajectory_wait_p95_seconds": 0.07863965034484863,
+          "combined_wait_p95_seconds": 128.7265094456195
+        },
+        "later_rounds": {
+          "completed_requests": 317,
+          "ttft_p95_seconds": 134.75976428985595,
+          "gateway_wait_p95_seconds": 131.0219599940001,
+          "trajectory_wait_p95_seconds": 3.0256966114044186,
+          "combined_wait_p95_seconds": 132.11566200860952
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7302-64-agentcloud-v2-4c2d41e2a71c",
+      "policy": "agentcloud-v2",
+      "concurrency": 64,
+      "seed": 7302,
+      "result_path": "docs/evidence/joint-kv/43163231106/13922293108/experiment/scale-7302-64-agentcloud-v2-4c2d41e2a71c/result.json",
+      "result_sha256": "842cc5f5b963bd0c84b7c059093435485cdc6c500cd93397ba4a1bbf23d2cecb",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13922293108/experiment/scale-7302-64-agentcloud-v2-4c2d41e2a71c/events.jsonl.gz",
+        "event_sha256": "52edeeccfb0d3d2f6f4756f9f95db640e14c25a2be714e17fffa972b10935a27"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9982361503220667,
+        "resource_uncovered_worker_seconds": 1.835888385772705,
+        "resource_sample_max_gap_seconds": 0.6099469661712646,
+        "resource_transition_uncertainty_estimate_gb_s": 11.717009152,
+        "actor_reserved_gb_s": 451.7478503039997,
+        "stranded_worker_gb_s": 229.35861299199905
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 470.01475170850745,
+          "gateway_wait_p95_seconds": 467.4755606299499,
+          "trajectory_wait_p95_seconds": 0.06969251632690429,
+          "combined_wait_p95_seconds": 467.54525314627676
+        },
+        "later_rounds": {
+          "completed_requests": 317,
+          "ttft_p95_seconds": 5.3721921920776365,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.19610033035278315,
+          "combined_wait_p95_seconds": 0.19610033035278315
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7301-64-agentcloud-v2-joint-72e98f6e58a4",
+      "policy": "agentcloud-v2-joint",
+      "concurrency": 64,
+      "seed": 7301,
+      "result_path": "docs/evidence/joint-kv/43163231106/13922642233/experiment/scale-7301-64-agentcloud-v2-joint-72e98f6e58a4/result.json",
+      "result_sha256": "4638cd7f3141a522984310fcddf1d1292d8e21c654190dd20fc975532c8c1b5c",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 3324,
+        "applied": 2102,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 2102,
+          "p50": 3675.0,
+          "p95": 4072.0
+        },
+        "applied_action_counts": {
+          "KEEP": 2101,
+          "SUSPEND": 1
+        },
+        "all_action_counts": {
+          "KEEP": 3243,
+          "SUSPEND": 81
+        },
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13922642233/experiment/scale-7301-64-agentcloud-v2-joint-72e98f6e58a4/events.jsonl.gz",
+        "event_sha256": "03e2511b3d897f43fef3adadd9b03c4dfbef163ed63904fcaa2bdd77332b25b6"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9918363483279715,
+        "resource_uncovered_worker_seconds": 9.457635641098022,
+        "resource_sample_max_gap_seconds": 0.6827659606933594,
+        "resource_transition_uncertainty_estimate_gb_s": 12.143397055999994,
+        "actor_reserved_gb_s": 497.5685906560023,
+        "stranded_worker_gb_s": 239.44846297600085
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 527.9091936469077,
+          "gateway_wait_p95_seconds": 523.88333564835,
+          "trajectory_wait_p95_seconds": 0.09494066238403319,
+          "combined_wait_p95_seconds": 523.978276310734
+        },
+        "later_rounds": {
+          "completed_requests": 316,
+          "ttft_p95_seconds": 6.050827383995056,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.3950074315071106,
+          "combined_wait_p95_seconds": 0.3950074315071106
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7301-64-agentcloud-v2-e1b31697004c",
+      "policy": "agentcloud-v2",
+      "concurrency": 64,
+      "seed": 7301,
+      "result_path": "docs/evidence/joint-kv/43163231106/13922642233/experiment/scale-7301-64-agentcloud-v2-e1b31697004c/result.json",
+      "result_sha256": "8d728d57650798a795a55aaf7e6adb532b3aa59529d51bb472494f5746b00364",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13922642233/experiment/scale-7301-64-agentcloud-v2-e1b31697004c/events.jsonl.gz",
+        "event_sha256": "dc8a8eef5ac4d66db5cda401fdd0921874f2f98c80b99195aa75a69826b3805c"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9925115954942626,
+        "resource_uncovered_worker_seconds": 8.179142951965332,
+        "resource_sample_max_gap_seconds": 0.6993741989135742,
+        "resource_transition_uncertainty_estimate_gb_s": 12.125792831999993,
+        "actor_reserved_gb_s": 464.7835651199996,
+        "stranded_worker_gb_s": 231.6177946240007
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 489.7081449508667,
+          "gateway_wait_p95_seconds": 486.20645340000016,
+          "trajectory_wait_p95_seconds": 0.08778175115585327,
+          "combined_wait_p95_seconds": 486.29436675821165
+        },
+        "later_rounds": {
+          "completed_requests": 316,
+          "ttft_p95_seconds": 5.565865457057953,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.2822992205619812,
+          "combined_wait_p95_seconds": 0.2822992205619812
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7301-64-static-15-bd3908ff88ec",
+      "policy": "static-15",
+      "concurrency": 64,
+      "seed": 7301,
+      "result_path": "docs/evidence/joint-kv/43163231106/13922642233/experiment/scale-7301-64-static-15-bd3908ff88ec/result.json",
+      "result_sha256": "a55b9121503710eb41493b3b0ca0a2245d00e1858d2c10c9a4978b74443be5c9",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13922642233/experiment/scale-7301-64-static-15-bd3908ff88ec/events.jsonl.gz",
+        "event_sha256": "d12ef3c5c63e9c8ebb72410836c77db9a9734aa4451e4bf2e1978511886999e2"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9981132895572007,
+        "resource_uncovered_worker_seconds": 1.6758501529693604,
+        "resource_sample_max_gap_seconds": 0.45105814933776855,
+        "resource_transition_uncertainty_estimate_gb_s": 5.826509952000001,
+        "actor_reserved_gb_s": 434.9524932480004,
+        "stranded_worker_gb_s": 232.06340435200147
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 407.4365630984306,
+          "gateway_wait_p95_seconds": 404.42167223634993,
+          "trajectory_wait_p95_seconds": 0.07921262979507446,
+          "combined_wait_p95_seconds": 404.5033135408429
+        },
+        "later_rounds": {
+          "completed_requests": 316,
+          "ttft_p95_seconds": 2.566381335258484,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.15120196342468262,
+          "combined_wait_p95_seconds": 0.15120196342468262
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7301-64-static-2-d6368c20c7a6",
+      "policy": "static-2",
+      "concurrency": 64,
+      "seed": 7301,
+      "result_path": "docs/evidence/joint-kv/43163231106/13922642233/experiment/scale-7301-64-static-2-d6368c20c7a6/result.json",
+      "result_sha256": "a051556efe60fa185406a331f3c5bb987bb6a9b4053b892175157a64a956a32b",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13922642233/experiment/scale-7301-64-static-2-d6368c20c7a6/events.jsonl.gz",
+        "event_sha256": "37f0fc2841233754a73444548bf741dfc103168078893369ffceeff593849a89"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9712952319060996,
+        "resource_uncovered_worker_seconds": 40.7142436504364,
+        "resource_sample_max_gap_seconds": 0.7811939716339111,
+        "resource_transition_uncertainty_estimate_gb_s": 25.77903820800001,
+        "actor_reserved_gb_s": 455.85277267200496,
+        "stranded_worker_gb_s": 199.45310144000015
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 135.18314512968064,
+          "gateway_wait_p95_seconds": 132.2649883783502,
+          "trajectory_wait_p95_seconds": 0.29211026430130005,
+          "combined_wait_p95_seconds": 132.5563917792482
+        },
+        "later_rounds": {
+          "completed_requests": 316,
+          "ttft_p95_seconds": 142.69538885354996,
+          "gateway_wait_p95_seconds": 138.3423325965,
+          "trajectory_wait_p95_seconds": 3.6046977639198303,
+          "combined_wait_p95_seconds": 139.94987937553333
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7301-64-agentcloud-v2-cache-3676aedbac27",
+      "policy": "agentcloud-v2-cache",
+      "concurrency": 64,
+      "seed": 7301,
+      "result_path": "docs/evidence/joint-kv/43163231106/13922642233/experiment/scale-7301-64-agentcloud-v2-cache-3676aedbac27/result.json",
+      "result_sha256": "07c27fce4c8f6c0d0190ff61338ef05da5824fd3be8b0ce1da75b2424e8dc83c",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13922642233/experiment/scale-7301-64-agentcloud-v2-cache-3676aedbac27/events.jsonl.gz",
+        "event_sha256": "b60c52d3df149ece4c2b6f09dbcb80d1acc770e42de42814e83bb12f92420ad3"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9899584274778417,
+        "resource_uncovered_worker_seconds": 11.054369449615479,
+        "resource_sample_max_gap_seconds": 0.7926380634307861,
+        "resource_transition_uncertainty_estimate_gb_s": 11.021216575999995,
+        "actor_reserved_gb_s": 462.9923309439993,
+        "stranded_worker_gb_s": 230.03310297599904
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 489.5530536651611,
+          "gateway_wait_p95_seconds": 486.1508554731001,
+          "trajectory_wait_p95_seconds": 0.0838987112045288,
+          "combined_wait_p95_seconds": 486.23409962993753
+        },
+        "later_rounds": {
+          "completed_requests": 316,
+          "ttft_p95_seconds": 5.681289076805115,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.23786628246307373,
+          "combined_wait_p95_seconds": 0.23786628246307373
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7305-64-agentcloud-v2-cache-9acdb6a228da",
+      "policy": "agentcloud-v2-cache",
+      "concurrency": 64,
+      "seed": 7305,
+      "result_path": "docs/evidence/joint-kv/43163231106/13922691023/experiment/scale-7305-64-agentcloud-v2-cache-9acdb6a228da/result.json",
+      "result_sha256": "6b289b9a59c68b0141322a27aec35decd94105194b5cf2f52c2c3eb67a1cad0c",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13922691023/experiment/scale-7305-64-agentcloud-v2-cache-9acdb6a228da/events.jsonl.gz",
+        "event_sha256": "d6a7ff98068084a6b9cb9de6e096ca91f2097d20428841d041a309d10bef36ba"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9989331610185341,
+        "resource_uncovered_worker_seconds": 1.0913054943084717,
+        "resource_sample_max_gap_seconds": 0.4241759777069092,
+        "resource_transition_uncertainty_estimate_gb_s": 10.864286847999999,
+        "actor_reserved_gb_s": 450.2548753919952,
+        "stranded_worker_gb_s": 234.37509868800163
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 460.4508193135261,
+          "gateway_wait_p95_seconds": 457.24443149909985,
+          "trajectory_wait_p95_seconds": 0.06455408334732056,
+          "combined_wait_p95_seconds": 457.302930751896
+        },
+        "later_rounds": {
+          "completed_requests": 320,
+          "ttft_p95_seconds": 5.219331991672516,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.17921837568283086,
+          "combined_wait_p95_seconds": 0.18832426071167
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7305-64-static-15-030322f8e85c",
+      "policy": "static-15",
+      "concurrency": 64,
+      "seed": 7305,
+      "result_path": "docs/evidence/joint-kv/43163231106/13922691023/experiment/scale-7305-64-static-15-030322f8e85c/result.json",
+      "result_sha256": "52024399a44e89d45a08b2e51a88826665e3050b51526cc1b0a619ee17a93d57",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13922691023/experiment/scale-7305-64-static-15-030322f8e85c/events.jsonl.gz",
+        "event_sha256": "af9351536f8f4233c53d895c2c615417aeb87665dc14da37058ff1220d5177dc"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9991905449775883,
+        "resource_uncovered_worker_seconds": 0.714862585067749,
+        "resource_sample_max_gap_seconds": 0.5455560684204102,
+        "resource_transition_uncertainty_estimate_gb_s": 5.4796348800000025,
+        "actor_reserved_gb_s": 425.38786975999994,
+        "stranded_worker_gb_s": 240.5429703680001
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 392.3061953306198,
+          "gateway_wait_p95_seconds": 389.76986155200007,
+          "trajectory_wait_p95_seconds": 0.08214441537857055,
+          "combined_wait_p95_seconds": 389.8531057446003
+        },
+        "later_rounds": {
+          "completed_requests": 320,
+          "ttft_p95_seconds": 2.3002230882644654,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.12131121158599856,
+          "combined_wait_p95_seconds": 0.12131121158599856
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7305-64-agentcloud-v2-joint-3f3dc2de8982",
+      "policy": "agentcloud-v2-joint",
+      "concurrency": 64,
+      "seed": 7305,
+      "result_path": "docs/evidence/joint-kv/43163231106/13922691023/experiment/scale-7305-64-agentcloud-v2-joint-3f3dc2de8982/result.json",
+      "result_sha256": "a0854619c9a4f36b94e8eb50b1b948b4191d8e6bdb7121345ad25b3f5e2d1ae6",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 3455,
+        "applied": 2333,
+        "nonzero_applied_delta_ms": {
+          "observed": 503,
+          "p50": 0.007783853426726606,
+          "p95": 0.013367352086817696,
+          "maximum": 0.01419462377203451
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 2333,
+          "p50": 3354.0,
+          "p95": 3590.8
+        },
+        "applied_action_counts": {
+          "KEEP": 2331,
+          "SUSPEND": 2
+        },
+        "all_action_counts": {
+          "KEEP": 3371,
+          "SUSPEND": 84
+        },
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13922691023/experiment/scale-7305-64-agentcloud-v2-joint-3f3dc2de8982/events.jsonl.gz",
+        "event_sha256": "7902e4e27750bb71bfa954e31cb6391069e4fcb031f03f98164b2dfdcde2a93f"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9978388672310331,
+        "resource_uncovered_worker_seconds": 2.331146001815796,
+        "resource_sample_max_gap_seconds": 0.6624898910522461,
+        "resource_transition_uncertainty_estimate_gb_s": 11.704018368000002,
+        "actor_reserved_gb_s": 471.8862432640014,
+        "stranded_worker_gb_s": 239.42202752000006
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 485.99291747808456,
+          "gateway_wait_p95_seconds": 482.78516339665,
+          "trajectory_wait_p95_seconds": 0.07105951309204102,
+          "combined_wait_p95_seconds": 482.85622290974203
+        },
+        "later_rounds": {
+          "completed_requests": 320,
+          "ttft_p95_seconds": 5.5260722875595105,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.2577471256256104,
+          "combined_wait_p95_seconds": 0.26722198724746704
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7305-64-agentcloud-v2-c11a7e10aa41",
+      "policy": "agentcloud-v2",
+      "concurrency": 64,
+      "seed": 7305,
+      "result_path": "docs/evidence/joint-kv/43163231106/13922691023/experiment/scale-7305-64-agentcloud-v2-c11a7e10aa41/result.json",
+      "result_sha256": "3422bd6b4e2c11fae0c0d9cd179573bb3f370b9c0b96c5f298b84d28727732d8",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13922691023/experiment/scale-7305-64-agentcloud-v2-c11a7e10aa41/events.jsonl.gz",
+        "event_sha256": "d55c79662f0eb877cac0380ac41cc765ec14af633e4c20a25ebfa5bd369b05ed"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9990507924350177,
+        "resource_uncovered_worker_seconds": 0.9847590923309326,
+        "resource_sample_max_gap_seconds": 0.43788599967956543,
+        "resource_transition_uncertainty_estimate_gb_s": 10.722045504000004,
+        "actor_reserved_gb_s": 453.5621743359936,
+        "stranded_worker_gb_s": 235.56574713600006
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 470.5930500507354,
+          "gateway_wait_p95_seconds": 467.6725611338998,
+          "trajectory_wait_p95_seconds": 0.06524411439895629,
+          "combined_wait_p95_seconds": 467.7375423202897
+        },
+        "later_rounds": {
+          "completed_requests": 320,
+          "ttft_p95_seconds": 5.560406374931337,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.2028046369552613,
+          "combined_wait_p95_seconds": 0.20928050279617327
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7305-64-static-2-90a9397da79d",
+      "policy": "static-2",
+      "concurrency": 64,
+      "seed": 7305,
+      "result_path": "docs/evidence/joint-kv/43163231106/13922691023/experiment/scale-7305-64-static-2-90a9397da79d/result.json",
+      "result_sha256": "5a2c41090c3f5ec9a369e0ab97fb7e306d3701128da23e5947e11b84c97cccb4",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13922691023/experiment/scale-7305-64-static-2-90a9397da79d/events.jsonl.gz",
+        "event_sha256": "672cbefa5eef75ef9fa09c28d2d26b8a50d2b5a4d61024124b4407be3ec0a974"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9917202509072629,
+        "resource_uncovered_worker_seconds": 11.173821210861206,
+        "resource_sample_max_gap_seconds": 0.7874619960784912,
+        "resource_transition_uncertainty_estimate_gb_s": 23.609245567999988,
+        "actor_reserved_gb_s": 463.139978112002,
+        "stranded_worker_gb_s": 208.27373049600067
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 122.37541769742964,
+          "gateway_wait_p95_seconds": 119.79932937179979,
+          "trajectory_wait_p95_seconds": 0.13692837953567505,
+          "combined_wait_p95_seconds": 119.93503553425249
+        },
+        "later_rounds": {
+          "completed_requests": 320,
+          "ttft_p95_seconds": 127.13212760686875,
+          "gateway_wait_p95_seconds": 122.83344379674993,
+          "trajectory_wait_p95_seconds": 3.143275308609009,
+          "combined_wait_p95_seconds": 124.12258395032735
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7303-64-agentcloud-v2-joint-d3c00707998b",
+      "policy": "agentcloud-v2-joint",
+      "concurrency": 64,
+      "seed": 7303,
+      "result_path": "docs/evidence/joint-kv/43163231106/13923370097/experiment/scale-7303-64-agentcloud-v2-joint-d3c00707998b/result.json",
+      "result_sha256": "d42ab630efbbfe09f7cfd056782fe0cd030478c39a269149909979eb839a3eb7",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 2965,
+        "applied": 1718,
+        "nonzero_applied_delta_ms": {
+          "observed": 703,
+          "p50": 0.0028548239488943583,
+          "p95": 0.004121588760018593,
+          "maximum": 0.0047339041998130105
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 1718,
+          "p50": 4197.0,
+          "p95": 4408.0
+        },
+        "applied_action_counts": {
+          "KEEP": 1718
+        },
+        "all_action_counts": {
+          "KEEP": 2882,
+          "SUSPEND": 83
+        },
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13923370097/experiment/scale-7303-64-agentcloud-v2-joint-d3c00707998b/events.jsonl.gz",
+        "event_sha256": "a8042e6f711ec72e1835c022ea984647146a90173f0e33798637fccaf01751b4"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9968941416896521,
+        "resource_uncovered_worker_seconds": 4.261943578720093,
+        "resource_sample_max_gap_seconds": 0.6706700325012207,
+        "resource_transition_uncertainty_estimate_gb_s": 11.554407296,
+        "actor_reserved_gb_s": 631.8513140480035,
+        "stranded_worker_gb_s": 226.605329216
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 594.5757621526718,
+          "gateway_wait_p95_seconds": 587.75673259845,
+          "trajectory_wait_p95_seconds": 0.12473189830780029,
+          "combined_wait_p95_seconds": 587.8808948313258
+        },
+        "later_rounds": {
+          "completed_requests": 315,
+          "ttft_p95_seconds": 8.101703429222114,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.48042633533477797,
+          "combined_wait_p95_seconds": 0.48042633533477797
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7303-64-static-2-0ac9e5895ec2",
+      "policy": "static-2",
+      "concurrency": 64,
+      "seed": 7303,
+      "result_path": "docs/evidence/joint-kv/43163231106/13923370097/experiment/scale-7303-64-static-2-0ac9e5895ec2/result.json",
+      "result_sha256": "7f37889b539627098633fdc1a15b2d047cd7f946035498c70cae887eebf707e6",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13923370097/experiment/scale-7303-64-static-2-0ac9e5895ec2/events.jsonl.gz",
+        "event_sha256": "5794d7d422bc9d9538fe38abb655ad2fb0ae6dbd64bc7c8045973039bbd3e237"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9882949166648358,
+        "resource_uncovered_worker_seconds": 17.780036449432373,
+        "resource_sample_max_gap_seconds": 0.7106609344482422,
+        "resource_transition_uncertainty_estimate_gb_s": 22.148910208000032,
+        "actor_reserved_gb_s": 512.1771262080028,
+        "stranded_worker_gb_s": 199.51037478399968
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 166.6208354115486,
+          "gateway_wait_p95_seconds": 163.52206093934998,
+          "trajectory_wait_p95_seconds": 0.08755594491958618,
+          "combined_wait_p95_seconds": 163.61079492238986
+        },
+        "later_rounds": {
+          "completed_requests": 317,
+          "ttft_p95_seconds": 152.48180375099176,
+          "gateway_wait_p95_seconds": 146.71449829700015,
+          "trajectory_wait_p95_seconds": 4.295459604263305,
+          "combined_wait_p95_seconds": 148.9696065406859
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7303-64-agentcloud-v2-cache-6973ff4a44d2",
+      "policy": "agentcloud-v2-cache",
+      "concurrency": 64,
+      "seed": 7303,
+      "result_path": "docs/evidence/joint-kv/43163231106/13923370097/experiment/scale-7303-64-agentcloud-v2-cache-6973ff4a44d2/result.json",
+      "result_sha256": "01b7b1a1618c3f49618ddbf7ea91ecb5cc9373e17462a635b140699d2efbdea3",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13923370097/experiment/scale-7303-64-agentcloud-v2-cache-6973ff4a44d2/events.jsonl.gz",
+        "event_sha256": "97a834c34c8d8f3a144a35757408a143b696c74a3335dd1abfc0bfcafab0e63c"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9959073977271313,
+        "resource_uncovered_worker_seconds": 4.780680894851685,
+        "resource_sample_max_gap_seconds": 0.7599771022796631,
+        "resource_transition_uncertainty_estimate_gb_s": 12.281908416000002,
+        "actor_reserved_gb_s": 501.49915481599953,
+        "stranded_worker_gb_s": 219.80564864000064
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 527.749868929386,
+          "gateway_wait_p95_seconds": 523.7718473920997,
+          "trajectory_wait_p95_seconds": 0.08119595050811768,
+          "combined_wait_p95_seconds": 523.852868629473
+        },
+        "later_rounds": {
+          "completed_requests": 317,
+          "ttft_p95_seconds": 6.787937450408935,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.36395215988159163,
+          "combined_wait_p95_seconds": 0.37767138481140133
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7303-64-agentcloud-v2-720f08aa94bb",
+      "policy": "agentcloud-v2",
+      "concurrency": 64,
+      "seed": 7303,
+      "result_path": "docs/evidence/joint-kv/43163231106/13923370097/experiment/scale-7303-64-agentcloud-v2-720f08aa94bb/result.json",
+      "result_sha256": "33565a198b83cd75ea9a361564e2811590591e4aa29dc0e1eef0c44e62902d11",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13923370097/experiment/scale-7303-64-agentcloud-v2-720f08aa94bb/events.jsonl.gz",
+        "event_sha256": "b31e20f26cdc37545fcfbd39804c70f70f4e080c7f7429a4bbc604298a83db99"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9961421193940639,
+        "resource_uncovered_worker_seconds": 4.398992538452148,
+        "resource_sample_max_gap_seconds": 0.6701030731201172,
+        "resource_transition_uncertainty_estimate_gb_s": 11.623870335999994,
+        "actor_reserved_gb_s": 492.2477108480014,
+        "stranded_worker_gb_s": 217.66643353599972
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 510.38521230220783,
+          "gateway_wait_p95_seconds": 506.14355479705,
+          "trajectory_wait_p95_seconds": 0.0744208574295044,
+          "combined_wait_p95_seconds": 506.2196796439853
+        },
+        "later_rounds": {
+          "completed_requests": 317,
+          "ttft_p95_seconds": 6.470064544677735,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.30251836776733376,
+          "combined_wait_p95_seconds": 0.30251836776733376
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7303-64-static-15-affe63ef9247",
+      "policy": "static-15",
+      "concurrency": 64,
+      "seed": 7303,
+      "result_path": "docs/evidence/joint-kv/43163231106/13923370097/experiment/scale-7303-64-static-15-affe63ef9247/result.json",
+      "result_sha256": "38b542cfffcfb0a7b2a75257d77b2b05a5a4c608293cb5b541cca21fb427bd72",
+      "native_kv_delta_scale": {
+        "observation_scope": "scheduler_decision_events_only",
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13923370097/experiment/scale-7303-64-static-15-affe63ef9247/events.jsonl.gz",
+        "event_sha256": "ff2f5366b9bca508a4f390cdede2828f11bcdc5089f4b99c5ece7a1cc97e9064"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.998325704254006,
+        "resource_uncovered_worker_seconds": 1.5449426174163818,
+        "resource_sample_max_gap_seconds": 0.5718419551849365,
+        "resource_transition_uncertainty_estimate_gb_s": 5.802883903999997,
+        "actor_reserved_gb_s": 447.45402707199963,
+        "stranded_worker_gb_s": 215.51862316800046
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 64,
+          "ttft_p95_seconds": 410.7029711723327,
+          "gateway_wait_p95_seconds": 406.77077590475005,
+          "trajectory_wait_p95_seconds": 0.18842025995254513,
+          "combined_wait_p95_seconds": 406.9601886535637
+        },
+        "later_rounds": {
+          "completed_requests": 317,
+          "ttft_p95_seconds": 3.0263466835021973,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.1839932441711424,
+          "combined_wait_p95_seconds": 0.1839932441711424
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    }
+  ],
+  "paired_resource_sampling": [
+    {
+      "concurrency": 32,
+      "seed": 7301,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "agentcloud-v2-cache",
+      "actor_reserved_gb_s_difference": 11.235477631999146,
+      "transition_uncertainty_reference_sum_gb_s": 15.968426559999996,
+      "treatment_coverage_fraction": 0.9955189321412794,
+      "baseline_coverage_fraction": 0.9928816588930128
+    },
+    {
+      "concurrency": 32,
+      "seed": 7301,
+      "treatment": "agentcloud-v2-cache",
+      "baseline": "agentcloud-v2",
+      "actor_reserved_gb_s_difference": -0.7463935999994646,
+      "transition_uncertainty_reference_sum_gb_s": 16.393292159999998,
+      "treatment_coverage_fraction": 0.9928816588930128,
+      "baseline_coverage_fraction": 0.9955071889190158
+    },
+    {
+      "concurrency": 32,
+      "seed": 7301,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "static-2",
+      "actor_reserved_gb_s_difference": 4.112602303999978,
+      "transition_uncertainty_reference_sum_gb_s": 19.696358079999985,
+      "treatment_coverage_fraction": 0.9955189321412794,
+      "baseline_coverage_fraction": 0.9886396167384414
+    },
+    {
+      "concurrency": 32,
+      "seed": 7301,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "static-15",
+      "actor_reserved_gb_s_difference": 22.596782016000418,
+      "transition_uncertainty_reference_sum_gb_s": 10.208491391999997,
+      "treatment_coverage_fraction": 0.9955189321412794,
+      "baseline_coverage_fraction": 0.9987737528414747
+    },
+    {
+      "concurrency": 32,
+      "seed": 7302,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "agentcloud-v2-cache",
+      "actor_reserved_gb_s_difference": 15.446634175999549,
+      "transition_uncertainty_reference_sum_gb_s": 15.861806976,
+      "treatment_coverage_fraction": 0.9985644904078371,
+      "baseline_coverage_fraction": 0.9994656556734622
+    },
+    {
+      "concurrency": 32,
+      "seed": 7302,
+      "treatment": "agentcloud-v2-cache",
+      "baseline": "agentcloud-v2",
+      "actor_reserved_gb_s_difference": -3.8436608639991334,
+      "transition_uncertainty_reference_sum_gb_s": 15.069686143999997,
+      "treatment_coverage_fraction": 0.9994656556734622,
+      "baseline_coverage_fraction": 0.9994376451788233
+    },
+    {
+      "concurrency": 32,
+      "seed": 7302,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "static-2",
+      "actor_reserved_gb_s_difference": 0.5926506239999298,
+      "transition_uncertainty_reference_sum_gb_s": 22.078374976000003,
+      "treatment_coverage_fraction": 0.9985644904078371,
+      "baseline_coverage_fraction": 0.9973112028524932
+    },
+    {
+      "concurrency": 32,
+      "seed": 7302,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "static-15",
+      "actor_reserved_gb_s_difference": 12.393129663999673,
+      "transition_uncertainty_reference_sum_gb_s": 11.124415872000004,
+      "treatment_coverage_fraction": 0.9985644904078371,
+      "baseline_coverage_fraction": 0.9995496987123162
+    },
+    {
+      "concurrency": 32,
+      "seed": 7303,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "agentcloud-v2-cache",
+      "actor_reserved_gb_s_difference": 13.978965376000701,
+      "transition_uncertainty_reference_sum_gb_s": 17.19308940799999,
+      "treatment_coverage_fraction": 0.9864169892200796,
+      "baseline_coverage_fraction": 0.9830364484227806
+    },
+    {
+      "concurrency": 32,
+      "seed": 7303,
+      "treatment": "agentcloud-v2-cache",
+      "baseline": "agentcloud-v2",
+      "actor_reserved_gb_s_difference": 1.4846138880000694,
+      "transition_uncertainty_reference_sum_gb_s": 16.80516505599999,
+      "treatment_coverage_fraction": 0.9830364484227806,
+      "baseline_coverage_fraction": 0.983246397912401
+    },
+    {
+      "concurrency": 32,
+      "seed": 7303,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "static-2",
+      "actor_reserved_gb_s_difference": 7.684598720001247,
+      "transition_uncertainty_reference_sum_gb_s": 24.423772543999988,
+      "treatment_coverage_fraction": 0.9864169892200796,
+      "baseline_coverage_fraction": 0.9755714235076103
+    },
+    {
+      "concurrency": 32,
+      "seed": 7303,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "static-15",
+      "actor_reserved_gb_s_difference": 36.28606803200262,
+      "transition_uncertainty_reference_sum_gb_s": 11.170404096,
+      "treatment_coverage_fraction": 0.9864169892200796,
+      "baseline_coverage_fraction": 0.9969090323558714
+    },
+    {
+      "concurrency": 32,
+      "seed": 7304,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "agentcloud-v2-cache",
+      "actor_reserved_gb_s_difference": 18.221336896001105,
+      "transition_uncertainty_reference_sum_gb_s": 17.058937472,
+      "treatment_coverage_fraction": 0.9849024382312279,
+      "baseline_coverage_fraction": 0.9859489303714339
+    },
+    {
+      "concurrency": 32,
+      "seed": 7304,
+      "treatment": "agentcloud-v2-cache",
+      "baseline": "agentcloud-v2",
+      "actor_reserved_gb_s_difference": -5.806647488000635,
+      "transition_uncertainty_reference_sum_gb_s": 17.466802175999995,
+      "treatment_coverage_fraction": 0.9859489303714339,
+      "baseline_coverage_fraction": 0.982047546138379
+    },
+    {
+      "concurrency": 32,
+      "seed": 7304,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "static-2",
+      "actor_reserved_gb_s_difference": 8.445455680001487,
+      "transition_uncertainty_reference_sum_gb_s": 24.648311999999997,
+      "treatment_coverage_fraction": 0.9849024382312279,
+      "baseline_coverage_fraction": 0.9684920119784435
+    },
+    {
+      "concurrency": 32,
+      "seed": 7304,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "static-15",
+      "actor_reserved_gb_s_difference": 36.76444467200213,
+      "transition_uncertainty_reference_sum_gb_s": 11.606779008,
+      "treatment_coverage_fraction": 0.9849024382312279,
+      "baseline_coverage_fraction": 0.997484401378229
+    },
+    {
+      "concurrency": 32,
+      "seed": 7305,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "agentcloud-v2-cache",
+      "actor_reserved_gb_s_difference": 1.0609206399998925,
+      "transition_uncertainty_reference_sum_gb_s": 14.925359744000005,
+      "treatment_coverage_fraction": 0.9990434338395656,
+      "baseline_coverage_fraction": 0.9974317572093993
+    },
+    {
+      "concurrency": 32,
+      "seed": 7305,
+      "treatment": "agentcloud-v2-cache",
+      "baseline": "agentcloud-v2",
+      "actor_reserved_gb_s_difference": 3.0219877120005947,
+      "transition_uncertainty_reference_sum_gb_s": 15.371955520000004,
+      "treatment_coverage_fraction": 0.9974317572093993,
+      "baseline_coverage_fraction": 0.9983080312470576
+    },
+    {
+      "concurrency": 32,
+      "seed": 7305,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "static-2",
+      "actor_reserved_gb_s_difference": 3.667347712000577,
+      "transition_uncertainty_reference_sum_gb_s": 19.61432524800001,
+      "treatment_coverage_fraction": 0.9990434338395656,
+      "baseline_coverage_fraction": 0.9976100528308413
+    },
+    {
+      "concurrency": 32,
+      "seed": 7305,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "static-15",
+      "actor_reserved_gb_s_difference": 13.315518592000814,
+      "transition_uncertainty_reference_sum_gb_s": 9.778143488,
+      "treatment_coverage_fraction": 0.9990434338395656,
+      "baseline_coverage_fraction": 0.9997510360823798
+    },
+    {
+      "concurrency": 64,
+      "seed": 7301,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "agentcloud-v2-cache",
+      "actor_reserved_gb_s_difference": 34.57625971200298,
+      "transition_uncertainty_reference_sum_gb_s": 23.16461363199999,
+      "treatment_coverage_fraction": 0.9918363483279715,
+      "baseline_coverage_fraction": 0.9899584274778417
+    },
+    {
+      "concurrency": 64,
+      "seed": 7301,
+      "treatment": "agentcloud-v2-cache",
+      "baseline": "agentcloud-v2",
+      "actor_reserved_gb_s_difference": -1.7912341760002732,
+      "transition_uncertainty_reference_sum_gb_s": 23.147009407999988,
+      "treatment_coverage_fraction": 0.9899584274778417,
+      "baseline_coverage_fraction": 0.9925115954942626
+    },
+    {
+      "concurrency": 64,
+      "seed": 7301,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "static-2",
+      "actor_reserved_gb_s_difference": 41.71581798399734,
+      "transition_uncertainty_reference_sum_gb_s": 37.922435264,
+      "treatment_coverage_fraction": 0.9918363483279715,
+      "baseline_coverage_fraction": 0.9712952319060996
+    },
+    {
+      "concurrency": 64,
+      "seed": 7301,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "static-15",
+      "actor_reserved_gb_s_difference": 62.616097408001906,
+      "transition_uncertainty_reference_sum_gb_s": 17.969907007999996,
+      "treatment_coverage_fraction": 0.9918363483279715,
+      "baseline_coverage_fraction": 0.9981132895572007
+    },
+    {
+      "concurrency": 64,
+      "seed": 7302,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "agentcloud-v2-cache",
+      "actor_reserved_gb_s_difference": 28.26713062400171,
+      "transition_uncertainty_reference_sum_gb_s": 21.578918527999996,
+      "treatment_coverage_fraction": 0.9990607339609088,
+      "baseline_coverage_fraction": 0.9976362829552641
+    },
+    {
+      "concurrency": 64,
+      "seed": 7302,
+      "treatment": "agentcloud-v2-cache",
+      "baseline": "agentcloud-v2",
+      "actor_reserved_gb_s_difference": 10.295886335999171,
+      "transition_uncertainty_reference_sum_gb_s": 22.425584832000006,
+      "treatment_coverage_fraction": 0.9976362829552641,
+      "baseline_coverage_fraction": 0.9982361503220667
+    },
+    {
+      "concurrency": 64,
+      "seed": 7302,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "static-2",
+      "actor_reserved_gb_s_difference": 26.224625471998763,
+      "transition_uncertainty_reference_sum_gb_s": 35.870482944,
+      "treatment_coverage_fraction": 0.9990607339609088,
+      "baseline_coverage_fraction": 0.9936603120368186
+    },
+    {
+      "concurrency": 64,
+      "seed": 7302,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "static-15",
+      "actor_reserved_gb_s_difference": 51.16948921600152,
+      "transition_uncertainty_reference_sum_gb_s": 16.269717631999995,
+      "treatment_coverage_fraction": 0.9990607339609088,
+      "baseline_coverage_fraction": 0.9991502541974698
+    },
+    {
+      "concurrency": 64,
+      "seed": 7303,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "agentcloud-v2-cache",
+      "actor_reserved_gb_s_difference": 130.35215923200394,
+      "transition_uncertainty_reference_sum_gb_s": 23.836315712,
+      "treatment_coverage_fraction": 0.9968941416896521,
+      "baseline_coverage_fraction": 0.9959073977271313
+    },
+    {
+      "concurrency": 64,
+      "seed": 7303,
+      "treatment": "agentcloud-v2-cache",
+      "baseline": "agentcloud-v2",
+      "actor_reserved_gb_s_difference": 9.251443967998114,
+      "transition_uncertainty_reference_sum_gb_s": 23.905778751999996,
+      "treatment_coverage_fraction": 0.9959073977271313,
+      "baseline_coverage_fraction": 0.9961421193940639
+    },
+    {
+      "concurrency": 64,
+      "seed": 7303,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "static-2",
+      "actor_reserved_gb_s_difference": 119.67418784000063,
+      "transition_uncertainty_reference_sum_gb_s": 33.70331750400003,
+      "treatment_coverage_fraction": 0.9968941416896521,
+      "baseline_coverage_fraction": 0.9882949166648358
+    },
+    {
+      "concurrency": 64,
+      "seed": 7303,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "static-15",
+      "actor_reserved_gb_s_difference": 184.39728697600384,
+      "transition_uncertainty_reference_sum_gb_s": 17.3572912,
+      "treatment_coverage_fraction": 0.9968941416896521,
+      "baseline_coverage_fraction": 0.998325704254006
+    },
+    {
+      "concurrency": 64,
+      "seed": 7304,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "agentcloud-v2-cache",
+      "actor_reserved_gb_s_difference": 13.315644671998257,
+      "transition_uncertainty_reference_sum_gb_s": 21.666881664,
+      "treatment_coverage_fraction": 0.9985120171170067,
+      "baseline_coverage_fraction": 0.9976660653097942
+    },
+    {
+      "concurrency": 64,
+      "seed": 7304,
+      "treatment": "agentcloud-v2-cache",
+      "baseline": "agentcloud-v2",
+      "actor_reserved_gb_s_difference": -18.464067903994646,
+      "transition_uncertainty_reference_sum_gb_s": 22.953535744,
+      "treatment_coverage_fraction": 0.9976660653097942,
+      "baseline_coverage_fraction": 0.9964967328151776
+    },
+    {
+      "concurrency": 64,
+      "seed": 7304,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "static-2",
+      "actor_reserved_gb_s_difference": -17.69533536,
+      "transition_uncertainty_reference_sum_gb_s": 34.86345542400004,
+      "treatment_coverage_fraction": 0.9985120171170067,
+      "baseline_coverage_fraction": 0.9900179991774172
+    },
+    {
+      "concurrency": 64,
+      "seed": 7304,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "static-15",
+      "actor_reserved_gb_s_difference": 60.907272063996174,
+      "transition_uncertainty_reference_sum_gb_s": 16.35923667200001,
+      "treatment_coverage_fraction": 0.9985120171170067,
+      "baseline_coverage_fraction": 0.9993840669710571
+    },
+    {
+      "concurrency": 64,
+      "seed": 7305,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "agentcloud-v2-cache",
+      "actor_reserved_gb_s_difference": 21.631367872006194,
+      "transition_uncertainty_reference_sum_gb_s": 22.568305216,
+      "treatment_coverage_fraction": 0.9978388672310331,
+      "baseline_coverage_fraction": 0.9989331610185341
+    },
+    {
+      "concurrency": 64,
+      "seed": 7305,
+      "treatment": "agentcloud-v2-cache",
+      "baseline": "agentcloud-v2",
+      "actor_reserved_gb_s_difference": -3.3072989439983758,
+      "transition_uncertainty_reference_sum_gb_s": 21.586332352000003,
+      "treatment_coverage_fraction": 0.9989331610185341,
+      "baseline_coverage_fraction": 0.9990507924350177
+    },
+    {
+      "concurrency": 64,
+      "seed": 7305,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "static-2",
+      "actor_reserved_gb_s_difference": 8.74626515199941,
+      "transition_uncertainty_reference_sum_gb_s": 35.31326393599999,
+      "treatment_coverage_fraction": 0.9978388672310331,
+      "baseline_coverage_fraction": 0.9917202509072629
+    },
+    {
+      "concurrency": 64,
+      "seed": 7305,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "static-15",
+      "actor_reserved_gb_s_difference": 46.49837350400145,
+      "transition_uncertainty_reference_sum_gb_s": 17.183653248000006,
+      "treatment_coverage_fraction": 0.9978388672310331,
+      "baseline_coverage_fraction": 0.9991905449775883
+    }
+  ]
+}

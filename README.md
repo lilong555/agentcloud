@@ -6,7 +6,9 @@ Go 协调器通过 PostgreSQL 保存请求、回执和恢复 manifest；Substrat
 
 **在线 KV 联合策略：**`agentcloud-v2-joint` 读取官方 KVIndexer 的当前前缀驻留与首次损失统计，将 SUSPEND 和 KEEP 的预期重算成本差额计入生命周期切换成本；`cache_reselect` 将前缀命中、prefill／decode 负载和原子容量预留共同用于 Worker 选择。Hard affinity 保持目标，Off／Soft 提供候选空间。观测过期、事件缺口或支持不足时回退到基础成本；未知等待保留两秒释放期限。[机制、动作条件与实验身份](docs/JOINT_KV_SCHEDULING.md) · [原生缓存路由合同](integrations/dynamo/CACHE_ROUTING.md)
 
-当前 [CI 43161047688](docs/evidence/ci-run-43161047688.json)记录 **162 个 Go 顶层测试通过、零跳过，含 11 个真实 PostgreSQL 测试**；独立 DeerFlow 为 **20/20、零跳过**，CI tooling 为 236 项。最新本地契约为 152 个 Go 顶层、246 个 tooling 通过，runtime 为 58 通过／四个模块跳过。联合冒烟 [43161092995](docs/evidence/joint-kv/43161092995/summary.json)完成 **5/5 策略、120/120 请求、55 次 MEMORY 恢复，四组路由案例全部通过**；joint 的 115 个唯一预测全部为零成本差额，23 次应用、有效非零应用为 0。全量 [43163231106](https://github.com/lilong555/agentcloud/actions/runs/43163231106)已通过同源码冒烟门禁，十个配对 Runner 已启动，性能收益待验收；[43157107777](docs/evidence/joint-kv/43157107777/summary.json) 与 [43157987378](docs/evidence/joint-kv/43157987378/summary.json)保留历史失败状态。[测试身份与失败原文](docs/EXPERIMENTS.md#在线-kv-与沙箱生命周期联合策略)
+已归档源码 `7d39f654` 的 [CI 43175566019](docs/evidence/ci-run-43175566019.json)记录 **162 个 Go 顶层测试通过、零跳过，含 11 个真实 PostgreSQL 测试**；独立 DeerFlow 为 **20/20、零跳过**，CI tooling 为 262 项。当前源码 `609a58d9` 的最新 [本地契约](docs/evidence/local-contract.json)记录于 `2026-11-12T07:50:37.673775+00:00`：152 个 Go 顶层、262 个 tooling 通过，runtime 为 58 通过／四个模块跳过。
+
+联合冒烟 [43161092995](docs/evidence/joint-kv/43161092995/summary.json)完成 **5/5 策略、120/120 请求、55 次 MEMORY 恢复，四组路由案例全部通过**；joint 的 115 个唯一预测全部为零成本差额，23 次应用、有效非零应用为 0。全量 [43163231106](https://github.com/lilong555/agentcloud/actions/runs/43163231106)的 N32 已完成五种子 **25/25 trial、4,755/4,755 请求，清理全部通过**；joint 相对 cache 的 Actor 预留差为 +11.9887 GB·s，交互 P95 差为 +4.2611 s、探索区间跨零。首轮全量为 **49/50 trial、14,278/14,280 请求完成，全部清理成功**；唯一 N64／7303 joint 失败保留工具准入 423 与后续未投递请求。[准入竞争原文](docs/evidence/joint-kv/43163231106/review/failure-admission-race.json)。N64 的 joint 相关比较采用 7301／7302／7304／7305 四个完整种子对：joint−cache 的 Actor 预留差 +24.4476 GB·s，探索区间 [+17.0535,+31.4217]；交互 P95 差 −0.1492 s，区间 [−18.5614,+11.7871]，首轮 Gateway 等待与轨迹 JCT P95 分别增加 22.4163／26.6813 s。cache−v2 保留五个完整种子对，资源与交互 P95 区间均跨零。[N32／N64 五策略、完整配对与采样参考](docs/EXPERIMENTS.md#n32-五种子完整结果)；[43157107777](docs/evidence/joint-kv/43157107777/summary.json) 与 [43157987378](docs/evidence/joint-kv/43157987378/summary.json)保留历史失败状态。[测试身份与失败原文](docs/EXPERIMENTS.md#在线-kv-与沙箱生命周期联合策略)
 
 ```mermaid
 flowchart LR
@@ -31,6 +33,10 @@ flowchart LR
 [P2 原始证据](docs/GPU_VALIDATION.md) · [带采集状态的公开指标汇总](docs/evidence/release-metrics.json)
 
 **跨生命周期 CPU 联合验证：**真实 gVisor MEMORY＋双官方 Dynamo Mocker 完成 **54/54 Trial**，验证跨 Epoch 的 Session 保持、Lease 轮换、旧凭证 401 和 **257 → 0 → 257** 逻辑预算。恢复后保留缓存时模拟命中 **240/256 Token**，确认驱逐后命中 **0/256**；亲和 Off／Hard 两组结果一致。[完整报告与原始回执](docs/LIFECYCLE_KV_VALIDATION.md) · [Actions 42991535195](https://github.com/lilong555/agentcloud/actions/runs/42991535195)
+
+准入恢复契约已在源码 `7d39f654` 验证：明确 423／`admission_closed` 后保留业务身份，在有限次数与期限内恢复；12 项准入测试与独立源码审查通过。[CI 43175566019](docs/evidence/ci-run-43175566019.json)已通过。已归档冒烟 [43175601451](https://github.com/lilong555/agentcloud/actions/runs/43175601451)在首个 `off-assigned` 原生路由预检报告 `RuntimeError: worker-1-native-events`；后三组路由与五个预创建 trial 均为 `NOT_STARTED`，120 条请求均为 `NOT_OFFERED`，生命周期策略启动数为 0；Kind 准备与串行策略步骤跳过。路由进程全部结束、剩余 RSS 为 0，工作流 `Stop containers` 通过。[执行语义与原文](docs/evidence/joint-kv/43175601451/preflight/execution.json)保留完整分母。失败检查的事件 batch、sequence gaps 与 errors 均为空；[Observer 启动审查](docs/evidence/joint-kv/43175601451/review/observer-startup.json)确认异步重连与订阅就绪竞态最符合现有原文。N64／7303 的完整五策略定向验证采用独立 Run、5 trial／1,905 个计划请求，实机策略尚未开始；首轮 50 trial 保留原身份与失败分母。[实现与失败原文](docs/EXPERIMENTS.md#首轮全量完成率与准入竞争)
+
+当前交付源码 `609a58d9081b3340ab57f99b2c249be24871d376` 的 [Observer](experiments/dynamo/lifecycle_kv_mocker.py#L95)记录 socket 初始化的 `ready` 和真实 `EVENT_HANDSHAKE_SUCCEEDED` 的 `connected`；[Stack](experiments/dynamo/lifecycle_kv_mocker.py#L255)在 Mocker PUB 启动后等待连接握手，再开始推理。快照保留握手历史、连接状态与 `first_sequence`，缺少初始 batch 的序列计入 gap。[真实本地 ZMQ 两项测试](tests/dynamo/test_event_transport.py)在 5.278 s 内通过：20 次晚启动 PUB 均从 sequence 0 观察首事件，另验证初始 gap 与断连清除状态；30 项相关 tooling 通过；[原始失败、源码审查与本地执行记录](docs/evidence/joint-kv/43175601451/review/observer-startup.json)保留各自验证范围。源码 `609a58d9` 的 [CI 43178102644](https://github.com/lilong555/agentcloud/actions/runs/43178102644)与 [冒烟 43178192157](https://github.com/lilong555/agentcloud/actions/runs/43178192157)已启动，结果待验收；新预检分别核验真实首事件与后续策略执行。
 
 ## 确定性状态与真实恢复
 
@@ -156,6 +162,8 @@ make demo
 | 原生 Rust Frontend＋官方 CPU Mocker | [Dynamo 构建与运行](experiments/dynamo/README.md)；`make native-verify` |
 | Kind／gVisor MEMORY 与真实 Agent | [Substrate 部署](deploy/substrate/)，[DeerFlow 接入](adapters/deerflow/)；`make live-suite` |
 | 同 Runner 配对、故障与 GPU | [v2 实验入口](docs/V2_EVALUATION.md#复现)、[实验报告](docs/EXPERIMENTS.md)、[GPU 复现](docs/GPU_VALIDATION.md) |
+
+远端 cannlab 提供 aarch64／Python 3.11.4 CPU 核验环境：契约核验使用 CPU 0–3／RSS 4 GiB，分析使用 CPU 4–5／地址空间 4 GiB，合计预算六核／8 GiB。[ARM Go 核验](docs/evidence/remote-cpu/cannlab-c24b619/final/validation.json)为 152 个顶层通过／10 个 PostgreSQL 顶层跳过，race 零失败、vet 通过；数据库 11 项通过采用当前 CI。已归档的冒烟复算核验 818 份输入 SHA，20 项回归通过，摘要与本机参考逐字一致；十个 Actions Runner 继续执行 Kind／gVisor MEMORY 配对回放。最终全量 ARM 复算核验 8,850 份输入 SHA，118.18 s／233.64 MiB RSS，跨机参考字段为 `null`；[最终回执与归档](docs/evidence/joint-kv/43163231106/cannlab/final/receipt.json)保留输入与输出 SHA。[冒烟远端复算回执](docs/evidence/joint-kv/43161092995/cannlab/receipt.json) · [工作分工与实验身份](docs/JOINT_KV_SCHEDULING.md#运行)
 
 各实验记录源码 SHA、配置、种子、完整请求分母和资源清理。规模与故障运行使用独立 Actions；CPU Mocker 的执行路径与真实 GPU 数据按实验类型分别归档。
 

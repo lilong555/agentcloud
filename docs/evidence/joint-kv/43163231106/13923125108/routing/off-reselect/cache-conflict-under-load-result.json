@@ -1,0 +1,680 @@
+{
+  "case": "cache-conflict-under-load",
+  "first": {
+    "prompt_tokens": 256,
+    "simulated_cached_tokens": 0,
+    "derived_recomputed_prompt_tokens": 256,
+    "indexed_prefix_tokens": 0,
+    "simulated_hit_fraction": 0.0,
+    "cache_count_source": "official_mocker_engine_usage",
+    "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+    "worker_id": 4020803345107541924,
+    "elapsed_seconds": 0.030380857000011474,
+    "started_monotonic_seconds": 284.101471303,
+    "routing_control": {
+      "kind": "native_router_selection"
+    },
+    "request_evidence": "cache-conflict-under-load-cold.json",
+    "client_ttft_seconds": 0.030251849000023867,
+    "routing_evidence": "cache-conflict-under-load-cold-routing.json",
+    "native_sent_worker_id": 4020803345107541924,
+    "calibration": {
+      "computed_prompt_tokens": 256,
+      "cached_tokens": 0,
+      "predicted_single_batch_prefill_ms": 20.4159712239104,
+      "native_prefill_time_ms": 24.668835,
+      "observed_minus_predicted_ms": 4.252863776089601,
+      "native_timing": {
+        "request_received_ms": 1794461221467,
+        "prefill_wait_time_ms": 1.923963,
+        "prefill_time_ms": 24.668835,
+        "ttft_ms": 26.592798000000002,
+        "total_time_ms": 27.395425,
+        "kv_hit_rate": 0.0,
+        "router_queue_depth": 0
+      },
+      "source_kind": "mocker_simulation",
+      "prediction_source": "frozen_official_aisimulate_performance_polynomial",
+      "comparison_kind": "single_request_batch_one_reference"
+    }
+  },
+  "hot": {
+    "prompt_tokens": 256,
+    "simulated_cached_tokens": 240,
+    "derived_recomputed_prompt_tokens": 16,
+    "indexed_prefix_tokens": 256,
+    "simulated_hit_fraction": 0.9375,
+    "cache_count_source": "official_mocker_engine_usage",
+    "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+    "worker_id": 4020803345107541924,
+    "elapsed_seconds": 0.026232124999978623,
+    "started_monotonic_seconds": 284.152364466,
+    "routing_control": {
+      "kind": "native_router_selection"
+    },
+    "request_evidence": "cache-conflict-under-load-hot.json",
+    "client_ttft_seconds": 0.026107217000003402,
+    "routing_evidence": "cache-conflict-under-load-hot-routing.json",
+    "native_sent_worker_id": 4020803345107541924,
+    "calibration": {
+      "computed_prompt_tokens": 16,
+      "cached_tokens": 240,
+      "predicted_single_batch_prefill_ms": 16.7444628157184,
+      "native_prefill_time_ms": 20.515117999999998,
+      "observed_minus_predicted_ms": 3.7706551842815976,
+      "native_timing": {
+        "request_received_ms": 1794461221518,
+        "prefill_wait_time_ms": 2.077861,
+        "prefill_time_ms": 20.515117999999998,
+        "ttft_ms": 22.592979,
+        "total_time_ms": 23.256997000000002,
+        "kv_hit_rate": 1.0,
+        "router_queue_depth": 0
+      },
+      "source_kind": "mocker_simulation",
+      "prediction_source": "frozen_official_aisimulate_performance_polynomial",
+      "comparison_kind": "single_request_batch_one_reference"
+    }
+  },
+  "alternative_prewarm": {
+    "prompt_tokens": 1024,
+    "simulated_cached_tokens": 0,
+    "derived_recomputed_prompt_tokens": 1024,
+    "indexed_prefix_tokens": 0,
+    "simulated_hit_fraction": 0.0,
+    "cache_count_source": "official_mocker_engine_usage",
+    "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+    "worker_id": 18277216569905355499,
+    "elapsed_seconds": 0.04331875900004434,
+    "started_monotonic_seconds": 284.200028414,
+    "routing_control": {
+      "kind": "explicit_worker",
+      "worker_id": 18277216569905355499
+    },
+    "request_evidence": "cache-conflict-under-load-prepare-alternative.json",
+    "client_ttft_seconds": 0.04313181100002339,
+    "routing_evidence": "cache-conflict-under-load-prepare-alternative-routing.json",
+    "native_sent_worker_id": 18277216569905355499,
+    "calibration": {
+      "computed_prompt_tokens": 1024,
+      "cached_tokens": 0,
+      "predicted_single_batch_prefill_ms": 32.4907119025664,
+      "native_prefill_time_ms": 37.139779,
+      "observed_minus_predicted_ms": 4.649067097433594,
+      "native_timing": {
+        "request_received_ms": 1794461221566,
+        "prefill_wait_time_ms": 1.9235,
+        "prefill_time_ms": 37.139779,
+        "ttft_ms": 39.063279,
+        "total_time_ms": 39.874338,
+        "kv_hit_rate": 0.0,
+        "router_queue_depth": 0
+      },
+      "source_kind": "mocker_simulation",
+      "prediction_source": "frozen_official_aisimulate_performance_polynomial",
+      "comparison_kind": "single_request_batch_one_reference"
+    }
+  },
+  "conflict": {
+    "original_worker_id": 4020803345107541924,
+    "alternative_worker_id": 18277216569905355499,
+    "original_overlap_tokens": 256,
+    "alternative_overlap_tokens": 1024,
+    "source_kind": "live_kvindexer_observation",
+    "query": {
+      "scores": {
+        "4020803345107541924": {
+          "0": 256
+        },
+        "18277216569905355499": {
+          "0": 1024
+        }
+      },
+      "frequencies": [],
+      "instances": {
+        "4020803345107541924": {
+          "longest_matched": 256,
+          "gpu": 256,
+          "dp": {
+            "0": 256
+          },
+          "cpu": 256,
+          "disk": 256
+        },
+        "18277216569905355499": {
+          "longest_matched": 1024,
+          "gpu": 1024,
+          "dp": {
+            "0": 1024
+          },
+          "cpu": 1024,
+          "disk": 1024
+        }
+      }
+    }
+  },
+  "native_before_continuation": {
+    "protocol_version": 1,
+    "accepted": true,
+    "applied": true,
+    "reconciled": true,
+    "binding": {
+      "source_id": "coordinator-local",
+      "tenant_id": "tenant-a",
+      "workspace_id": "joint-routing-7101-off-reselect-43161092995-cache-conflict-under-load-3",
+      "session_id": "joint-routing-7101-off-reselect-43161092995-cache-conflict-under-load-3",
+      "actor_uid": "synthetic-configuration-identity",
+      "epoch": 1
+    },
+    "routing_session_id": "ac:2b342b4ed87247c69f6b8dc3ad21edfc",
+    "classifier_id": 0,
+    "binding_generation": "35841127642f406e99144dc59c839a31",
+    "sequence": 0,
+    "received_at": "2026-11-12T05:27:02.123054230Z",
+    "snapshot": {
+      "cache_observation": null,
+      "cache_candidates": {
+        "request_id": "dd8021fb-b0d9-44e5-a493-22a4b73f4241",
+        "observed_at": "2026-11-12T05:27:01.519842106Z",
+        "source_kind": "native_router_candidate_snapshot",
+        "block_size_tokens": 16,
+        "history_tokens": 256,
+        "prefix_digest": "6a5719de9fdf0a7c",
+        "sequence_hashes": [
+          2159941070148058770,
+          18400712427795614445,
+          10018168313912422750,
+          2496735672207708318,
+          14289139549508012093,
+          6565096444629967520,
+          16261814607212784512,
+          2809384776639469458,
+          4436938347711566491,
+          2423952399047005987,
+          17568906236172556770,
+          6642916198398674261,
+          7270173325261026379,
+          2280467618027187993,
+          9676652858575767007,
+          7662621734949816956
+        ],
+        "candidates": [
+          {
+            "worker_id": 18277216569905355499,
+            "dp_rank": 0,
+            "device_overlap_tokens": 0.0,
+            "host_overlap_tokens": 0.0,
+            "disk_overlap_tokens": 0.0,
+            "has_tier_matches": true,
+            "active_prefill_tokens": 0,
+            "active_decode_blocks": 0,
+            "worker_epoch": null,
+            "event_watermark": null,
+            "gap_pending": null
+          },
+          {
+            "worker_id": 4020803345107541924,
+            "dp_rank": 0,
+            "device_overlap_tokens": 256.0,
+            "host_overlap_tokens": 0.0,
+            "disk_overlap_tokens": 0.0,
+            "has_tier_matches": true,
+            "active_prefill_tokens": 0,
+            "active_decode_blocks": 0,
+            "worker_epoch": null,
+            "event_watermark": null,
+            "gap_pending": null
+          }
+        ]
+      },
+      "cache_reselect": true,
+      "worker_budget_tokens": [
+        {
+          "worker_id": 4020803345107541924,
+          "dp_rank": 0,
+          "tokens": 257
+        }
+      ],
+      "selected_worker_id": 4020803345107541924,
+      "selected_dp_rank": 0,
+      "assigned_worker_id": 4020803345107541924,
+      "assigned_dp_rank": 0,
+      "assigned_worker": {
+        "worker_id": 4020803345107541924,
+        "dp_rank": 0
+      },
+      "program_present": true,
+      "admission_history": [
+        {
+          "request_id": "95ffb755-41bf-4e8c-a249-edf9a108a998",
+          "client_request_id": null,
+          "queued_at": "2026-11-12T05:27:01.468616079Z",
+          "admitted_at": "2026-11-12T05:27:01.468834170Z",
+          "wait_ms": 0.218091
+        },
+        {
+          "request_id": "dd8021fb-b0d9-44e5-a493-22a4b73f4241",
+          "client_request_id": null,
+          "queued_at": "2026-11-12T05:27:01.519827015Z",
+          "admitted_at": "2026-11-12T05:27:01.520109971Z",
+          "wait_ms": 0.282956
+        }
+      ],
+      "last_admission_wait_ms": 0.282956,
+      "released_acting_tokens": 0,
+      "phase": "Acting",
+      "lifecycle": "Active",
+      "baseline_tokens": 257,
+      "logical_budget_tokens": 257,
+      "execution_multiplier": 1.0,
+      "state": null,
+      "sequence": 0,
+      "fresh": false,
+      "session_waiting_requests": 0,
+      "session_active_requests": 0,
+      "waiting_requests": 0,
+      "paused_programs": 0,
+      "completed_events": 8,
+      "aborted_events": 0,
+      "pause_events": 0,
+      "final_events": 3
+    }
+  },
+  "native_after_continuation": {
+    "protocol_version": 1,
+    "accepted": true,
+    "applied": true,
+    "reconciled": true,
+    "binding": {
+      "source_id": "coordinator-local",
+      "tenant_id": "tenant-a",
+      "workspace_id": "joint-routing-7101-off-reselect-43161092995-cache-conflict-under-load-3",
+      "session_id": "joint-routing-7101-off-reselect-43161092995-cache-conflict-under-load-3",
+      "actor_uid": "synthetic-configuration-identity",
+      "epoch": 1
+    },
+    "routing_session_id": "ac:2b342b4ed87247c69f6b8dc3ad21edfc",
+    "classifier_id": 0,
+    "binding_generation": "35841127642f406e99144dc59c839a31",
+    "sequence": 0,
+    "received_at": "2026-11-12T05:27:06.788741412Z",
+    "snapshot": {
+      "cache_observation": null,
+      "cache_candidates": {
+        "request_id": "87fa975f-be2c-4b7b-902f-926e92858fd4",
+        "observed_at": "2026-11-12T05:27:02.246896483Z",
+        "source_kind": "native_router_candidate_snapshot",
+        "block_size_tokens": 16,
+        "history_tokens": 1024,
+        "prefix_digest": "64640bf8e90917c2",
+        "sequence_hashes": [
+          2159941070148058770,
+          18400712427795614445,
+          10018168313912422750,
+          2496735672207708318,
+          14289139549508012093,
+          6565096444629967520,
+          16261814607212784512,
+          2809384776639469458,
+          4436938347711566491,
+          2423952399047005987,
+          17568906236172556770,
+          6642916198398674261,
+          7270173325261026379,
+          2280467618027187993,
+          9676652858575767007,
+          7662621734949816956,
+          1717705959495565622,
+          10875786720886281655,
+          2446814119034945523,
+          16124851564751337493,
+          9062442592590214050,
+          3487522016000351591,
+          7198380167707179037,
+          11082516424603205393,
+          16807843905621335769,
+          15589869218076705307,
+          4029018521765027981,
+          13710228400710264173,
+          13770675304052964304,
+          11479022902965865207,
+          3094740469731091385,
+          11917837350108950248,
+          8580399209597304044,
+          9592971547474886276,
+          8548648444033263049,
+          16883590663604185143,
+          1441626053044646322,
+          12230518819979889765,
+          4663671194894964503,
+          10995769796523722953,
+          13217519199043431704,
+          8562143295689604092,
+          11423122889956572389,
+          8233880023324005240,
+          11270038090272214421,
+          7396121703798902070,
+          4701370285101768408,
+          17012317523562365234,
+          12084446534843930166,
+          16848731670376841995,
+          6755116119108404651,
+          18100456857304623277,
+          10780999515751982195,
+          40242501283646120,
+          17591423241829316104,
+          1465758366056231872,
+          17356400210123056773,
+          11099391759297286232,
+          4899210082807430421,
+          16263722447169903124,
+          3244949268272743166,
+          3354788522748950813,
+          6903259907838334951,
+          7233920065153341378
+        ],
+        "candidates": [
+          {
+            "worker_id": 18277216569905355499,
+            "dp_rank": 0,
+            "device_overlap_tokens": 1024.0,
+            "host_overlap_tokens": 0.0,
+            "disk_overlap_tokens": 0.0,
+            "has_tier_matches": true,
+            "active_prefill_tokens": 0,
+            "active_decode_blocks": 48,
+            "worker_epoch": null,
+            "event_watermark": null,
+            "gap_pending": null
+          },
+          {
+            "worker_id": 4020803345107541924,
+            "dp_rank": 0,
+            "device_overlap_tokens": 256.0,
+            "host_overlap_tokens": 0.0,
+            "disk_overlap_tokens": 0.0,
+            "has_tier_matches": true,
+            "active_prefill_tokens": 0,
+            "active_decode_blocks": 0,
+            "worker_epoch": null,
+            "event_watermark": null,
+            "gap_pending": null
+          }
+        ]
+      },
+      "cache_reselect": true,
+      "worker_budget_tokens": [
+        {
+          "worker_id": 4020803345107541924,
+          "dp_rank": 0,
+          "tokens": 1025
+        }
+      ],
+      "selected_worker_id": 4020803345107541924,
+      "selected_dp_rank": 0,
+      "assigned_worker_id": 4020803345107541924,
+      "assigned_dp_rank": 0,
+      "assigned_worker": {
+        "worker_id": 4020803345107541924,
+        "dp_rank": 0
+      },
+      "program_present": true,
+      "admission_history": [
+        {
+          "request_id": "95ffb755-41bf-4e8c-a249-edf9a108a998",
+          "client_request_id": null,
+          "queued_at": "2026-11-12T05:27:01.468616079Z",
+          "admitted_at": "2026-11-12T05:27:01.468834170Z",
+          "wait_ms": 0.218091
+        },
+        {
+          "request_id": "dd8021fb-b0d9-44e5-a493-22a4b73f4241",
+          "client_request_id": null,
+          "queued_at": "2026-11-12T05:27:01.519827015Z",
+          "admitted_at": "2026-11-12T05:27:01.520109971Z",
+          "wait_ms": 0.282956
+        },
+        {
+          "request_id": "87fa975f-be2c-4b7b-902f-926e92858fd4",
+          "client_request_id": null,
+          "queued_at": "2026-11-12T05:27:02.246882796Z",
+          "admitted_at": "2026-11-12T05:27:02.247171597Z",
+          "wait_ms": 0.288801
+        }
+      ],
+      "last_admission_wait_ms": 0.288801,
+      "released_acting_tokens": 0,
+      "phase": "Acting",
+      "lifecycle": "Active",
+      "baseline_tokens": 1025,
+      "logical_budget_tokens": 1025,
+      "execution_multiplier": 1.0,
+      "state": null,
+      "sequence": 0,
+      "fresh": false,
+      "session_waiting_requests": 0,
+      "session_active_requests": 0,
+      "waiting_requests": 0,
+      "paused_programs": 0,
+      "completed_events": 10,
+      "aborted_events": 0,
+      "pause_events": 0,
+      "final_events": 4
+    }
+  },
+  "continuation": {
+    "prompt_tokens": 1024,
+    "simulated_cached_tokens": 256,
+    "derived_recomputed_prompt_tokens": 768,
+    "indexed_prefix_tokens": 256,
+    "simulated_hit_fraction": 0.25,
+    "cache_count_source": "official_mocker_engine_usage",
+    "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+    "worker_id": 4020803345107541924,
+    "elapsed_seconds": 0.03877334100002372,
+    "started_monotonic_seconds": 284.878623723,
+    "routing_control": {
+      "kind": "native_router_selection"
+    },
+    "request_evidence": "cache-conflict-under-load-continuation.json",
+    "client_ttft_seconds": 0.038574988000050325,
+    "routing_evidence": "cache-conflict-under-load-continuation-routing.json",
+    "native_sent_worker_id": 4020803345107541924,
+    "calibration": {
+      "computed_prompt_tokens": 768,
+      "cached_tokens": 256,
+      "predicted_single_batch_prefill_ms": 28.4106171751936,
+      "native_prefill_time_ms": 32.230992,
+      "observed_minus_predicted_ms": 3.8203748248064002,
+      "native_timing": {
+        "request_received_ms": 1794461222246,
+        "prefill_wait_time_ms": 2.006655,
+        "prefill_time_ms": 32.230992,
+        "ttft_ms": 34.237647,
+        "total_time_ms": 34.878611,
+        "kv_hit_rate": 0.25,
+        "router_queue_depth": 0
+      },
+      "source_kind": "mocker_simulation",
+      "prediction_source": "frozen_official_aisimulate_performance_polynomial",
+      "comparison_kind": "single_request_batch_one_reference"
+    }
+  },
+  "previous_worker_id": 4020803345107541924,
+  "selected_worker_id": 4020803345107541924,
+  "selected_alternative": false,
+  "preserved_previous_worker": true,
+  "load": {
+    "active_before_request": {
+      "protocol_version": 1,
+      "accepted": true,
+      "applied": false,
+      "reconciled": true,
+      "binding": {
+        "source_id": "coordinator-local",
+        "tenant_id": "tenant-a",
+        "workspace_id": "joint-routing-7101-off-reselect-43161092995-cache-conflict-under-load-continuation-load-5",
+        "session_id": "joint-routing-7101-off-reselect-43161092995-cache-conflict-under-load-continuation-load-5",
+        "actor_uid": "synthetic-configuration-identity",
+        "epoch": 1
+      },
+      "routing_session_id": "ac:75812b3102b242ba950abb57c4fc7b73",
+      "classifier_id": 0,
+      "binding_generation": "a71b9fcd730c46deb03a9b6bf6299801",
+      "sequence": 0,
+      "received_at": "2026-11-12T05:27:02.228560268Z",
+      "snapshot": {
+        "cache_observation": null,
+        "cache_candidates": {
+          "request_id": "ed03e1e7-1d47-4e4c-a8bb-2adec7e30a96",
+          "observed_at": "2026-11-12T05:27:02.128753482Z",
+          "source_kind": "native_router_candidate_snapshot",
+          "block_size_tokens": 16,
+          "history_tokens": 768,
+          "prefix_digest": "3991e62925d361ad",
+          "sequence_hashes": [
+            1597965746006850301,
+            1975018867147861283,
+            15023232986008097132,
+            514123573163328081,
+            14191483948092720183,
+            14042599447065292692,
+            5763028341209210201,
+            16375551426579309708,
+            803613514609449042,
+            14486713880434242686,
+            16004691243968530758,
+            1006397187868301429,
+            15204513531360998771,
+            6738577121242881807,
+            4339531191922494237,
+            8728266933885500523,
+            8497935666412562139,
+            10159128007631203064,
+            11199561737298634747,
+            13538579861599424261,
+            7894402915146758886,
+            669909663071630596,
+            2950249111743030924,
+            9262901360806024839,
+            16778177564278961467,
+            4742056888996621109,
+            13159338146902094772,
+            16788099560078113513,
+            10856382482855828693,
+            860781233154140549,
+            14972480176010421374,
+            2498113587088838565,
+            16712179113206315910,
+            10405347683801534154,
+            18084713673501672590,
+            8504806572918472628,
+            7357165998006867546,
+            14311114696666905128,
+            2232406046081951317,
+            9437979239131730185,
+            1934179496848740107,
+            14395609196874449983,
+            16890224742470012465,
+            17615424389885815755,
+            3274463364450564304,
+            17853805887262242762,
+            9388635186870274329,
+            4148349796187595181
+          ],
+          "candidates": [
+            {
+              "worker_id": 18277216569905355499,
+              "dp_rank": 0,
+              "device_overlap_tokens": 0.0,
+              "host_overlap_tokens": 0.0,
+              "disk_overlap_tokens": 0.0,
+              "has_tier_matches": false,
+              "active_prefill_tokens": 0,
+              "active_decode_blocks": 0,
+              "worker_epoch": null,
+              "event_watermark": null,
+              "gap_pending": null
+            }
+          ]
+        },
+        "cache_reselect": true,
+        "worker_budget_tokens": [
+          {
+            "worker_id": 4020803345107541924,
+            "dp_rank": 0,
+            "tokens": 257
+          }
+        ],
+        "selected_worker_id": 18277216569905355499,
+        "selected_dp_rank": 0,
+        "assigned_worker_id": null,
+        "assigned_dp_rank": null,
+        "assigned_worker": null,
+        "program_present": false,
+        "admission_history": [
+          {
+            "request_id": "ed03e1e7-1d47-4e4c-a8bb-2adec7e30a96",
+            "client_request_id": null,
+            "queued_at": "2026-11-12T05:27:02.128739488Z",
+            "admitted_at": "2026-11-12T05:27:02.128920733Z",
+            "wait_ms": 0.181245
+          }
+        ],
+        "last_admission_wait_ms": 0.181245,
+        "released_acting_tokens": 0,
+        "phase": null,
+        "lifecycle": null,
+        "baseline_tokens": null,
+        "logical_budget_tokens": null,
+        "execution_multiplier": 1.0,
+        "state": null,
+        "sequence": 0,
+        "fresh": false,
+        "session_waiting_requests": 0,
+        "session_active_requests": 1,
+        "waiting_requests": 0,
+        "paused_programs": 0,
+        "completed_events": 8,
+        "aborted_events": 0,
+        "pause_events": 0,
+        "final_events": 3
+      }
+    },
+    "cache_before_request": {
+      "scores": {
+        "18277216569905355499": {
+          "0": 1024
+        },
+        "4020803345107541924": {
+          "0": 256
+        }
+      },
+      "frequencies": [],
+      "instances": {
+        "18277216569905355499": {
+          "longest_matched": 1024,
+          "gpu": 1024,
+          "dp": {
+            "0": 1024
+          },
+          "cpu": 1024,
+          "disk": 1024
+        },
+        "4020803345107541924": {
+          "longest_matched": 256,
+          "gpu": 256,
+          "dp": {
+            "0": 256
+          },
+          "cpu": 256,
+          "disk": 256
+        }
+      }
+    },
+    "background_request_evidence": "cache-conflict-under-load-continuation-background.json",
+    "background_elapsed_seconds": 4.644221816999959
+  },
+  "routing_expectation": "record_native_assignment_affinity_and_cache_selection",
+  "structural_status": "passed"
+}

@@ -1,0 +1,51 @@
+{
+  "source_kind": "joint_kv_storage_observation_field_semantics",
+  "gpu_execution": false,
+  "github_run_id": "43163231106",
+  "github_run_attempt": "1",
+  "scope": "Archived result.metrics storage counters for the frozen joint-kv full run.",
+  "field_rules": {
+    "snapshot_tag_count": {
+      "null_status": "lifecycle_tag_ids_not_supplied_to_storage_counter",
+      "meaning": "The storage counter received no lifecycle Tag UID input. Real MEMORY recovery counts are measured separately by resumes and request continuity."
+    },
+    "snapshot_write_bytes": {
+      "null_status": "uncollected_in_ci_runner (see 128MiB boundary report)",
+      "meaning": "Whole-trial physical snapshot bytes were uncollected."
+    },
+    "peak_storage_bytes": {
+      "null_status": "uncollected_in_ci_runner (see 128MiB boundary report)",
+      "meaning": "Whole-trial trial-attributed physical peak storage bytes were uncollected."
+    },
+    "snapshot_write_amplification": {
+      "null_status": "uncollected_in_ci_runner (see 128MiB boundary report)",
+      "meaning": "The ratio requires whole-trial physical writes and an explicitly measured logical baseline; these observations were uncollected."
+    },
+    "snapshot_logical_upload_records": {
+      "zero_status": "upload_log_observation_sample_empty",
+      "meaning": "Zero counts uploader log records observed by this metric collector. Recovery and physical storage write volume have separate evidence."
+    },
+    "snapshot_logical_upload_bytes_observed": {
+      "zero_status": "upload_log_observation_sample_empty",
+      "meaning": "Zero is the sum of the empty observed uploader log sample; upload-log byte coverage is uncollected."
+    },
+    "physical_storage_coverage_fraction": {
+      "zero_status": "whole_trial_physical_storage_observation_uncollected",
+      "meaning": "The collector supplied zero whole-trial physical storage coverage."
+    }
+  },
+  "references": [
+    {
+      "path": "bench/analysis/resources.py",
+      "sha256": "bea57ae544ba43794a984d527dacbb567a3328d6390e038979fce710c9dd341e"
+    },
+    {
+      "path": "docs/STORAGE_COSTS.md",
+      "sha256": "f1ec410f0bdb2f3b8632af4e71a9689fe7ea1b5e676efcb2a8b60d6fb1f3ece7"
+    },
+    {
+      "path": "docs/evidence/boundary-confirm-storage-a7e324a.json",
+      "sha256": "d2ef2114935d8ff25f35588e9e28651f03ca7cb0088f249f7a7f9152f369bcc1"
+    }
+  ]
+}

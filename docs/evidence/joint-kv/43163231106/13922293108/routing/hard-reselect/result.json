@@ -1,0 +1,2068 @@
+{
+  "case_id": "hard-reselect",
+  "affinity": "hard",
+  "cache_reselect": true,
+  "seed": 7101,
+  "load_probe": false,
+  "status": "passed",
+  "started_at": "2026-11-12T05:27:08.008070+00:00",
+  "checks": [
+    {
+      "name": "two-official-workers",
+      "passed": true,
+      "detail": [
+        {
+          "instance_id": 15871680165271849379,
+          "source": "zmq",
+          "status": "active",
+          "model_name": "agentcloud-tiny",
+          "routing_group": "default",
+          "block_size": 16,
+          "endpoints": {
+            "0": "tcp://127.0.0.1:22701"
+          },
+          "listeners": {
+            "0": {
+              "endpoint": "tcp://127.0.0.1:22701",
+              "engine_owned_mm_identity": false,
+              "status": "active"
+            }
+          }
+        },
+        {
+          "instance_id": 9467355172039612003,
+          "source": "zmq",
+          "status": "active",
+          "model_name": "agentcloud-tiny",
+          "routing_group": "default",
+          "block_size": 16,
+          "endpoints": {
+            "0": "tcp://127.0.0.1:31857"
+          },
+          "listeners": {
+            "0": {
+              "endpoint": "tcp://127.0.0.1:31857",
+              "engine_owned_mm_identity": false,
+              "status": "active"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "cache-conflict-cold-worker-identity",
+      "passed": true,
+      "detail": {
+        "prompt_tokens": 256,
+        "simulated_cached_tokens": 0,
+        "derived_recomputed_prompt_tokens": 256,
+        "indexed_prefix_tokens": 0,
+        "simulated_hit_fraction": 0.0,
+        "cache_count_source": "official_mocker_engine_usage",
+        "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+        "worker_id": 9467355172039612003,
+        "elapsed_seconds": 0.03508448299999145,
+        "started_monotonic_seconds": 291.514145916,
+        "routing_control": {
+          "kind": "native_router_selection"
+        },
+        "request_evidence": "cache-conflict-cold.json",
+        "client_ttft_seconds": 0.034939040999972804
+      }
+    },
+    {
+      "name": "cache-conflict-cold-native-Sent-matches-response",
+      "passed": true,
+      "detail": {
+        "native_before": {
+          "protocol_version": 1,
+          "accepted": true,
+          "applied": false,
+          "reconciled": true,
+          "binding": {
+            "source_id": "coordinator-local",
+            "tenant_id": "tenant-a",
+            "workspace_id": "joint-routing-7101-hard-reselect-43161092995-cache-conflict-1",
+            "session_id": "joint-routing-7101-hard-reselect-43161092995-cache-conflict-1",
+            "actor_uid": "synthetic-configuration-identity",
+            "epoch": 1
+          },
+          "routing_session_id": "ac:c1693423b77b4f8e952374948c81b946",
+          "classifier_id": 0,
+          "binding_generation": "84f743aee02f4f91a0eae6420d4025f2",
+          "sequence": 0,
+          "received_at": "2026-11-12T05:27:08.875613315Z",
+          "snapshot": {
+            "cache_observation": null,
+            "cache_candidates": null,
+            "cache_reselect": true,
+            "worker_budget_tokens": [],
+            "selected_worker_id": null,
+            "selected_dp_rank": null,
+            "assigned_worker_id": null,
+            "assigned_dp_rank": null,
+            "assigned_worker": null,
+            "program_present": false,
+            "admission_history": [],
+            "last_admission_wait_ms": null,
+            "released_acting_tokens": 0,
+            "phase": null,
+            "lifecycle": null,
+            "baseline_tokens": null,
+            "logical_budget_tokens": null,
+            "execution_multiplier": 1.0,
+            "state": null,
+            "sequence": 0,
+            "fresh": false,
+            "session_waiting_requests": 0,
+            "session_active_requests": 0,
+            "waiting_requests": 0,
+            "paused_programs": 0,
+            "completed_events": 0,
+            "aborted_events": 0,
+            "pause_events": 0,
+            "final_events": 0
+          }
+        },
+        "native_after": {
+          "protocol_version": 1,
+          "accepted": true,
+          "applied": true,
+          "reconciled": true,
+          "binding": {
+            "source_id": "coordinator-local",
+            "tenant_id": "tenant-a",
+            "workspace_id": "joint-routing-7101-hard-reselect-43161092995-cache-conflict-1",
+            "session_id": "joint-routing-7101-hard-reselect-43161092995-cache-conflict-1",
+            "actor_uid": "synthetic-configuration-identity",
+            "epoch": 1
+          },
+          "routing_session_id": "ac:c1693423b77b4f8e952374948c81b946",
+          "classifier_id": 0,
+          "binding_generation": "84f743aee02f4f91a0eae6420d4025f2",
+          "sequence": 0,
+          "received_at": "2026-11-12T05:27:08.919089628Z",
+          "snapshot": {
+            "cache_observation": null,
+            "cache_candidates": {
+              "request_id": "9b8bde79-8f01-4ec9-b521-e7794554ccf6",
+              "observed_at": "2026-11-12T05:27:08.884004819Z",
+              "source_kind": "native_router_candidate_snapshot",
+              "block_size_tokens": 16,
+              "history_tokens": 256,
+              "prefix_digest": "e0dfb2d919718383",
+              "sequence_hashes": [
+                10550889012891597696,
+                7305549090812370813,
+                18414445927045479780,
+                3669355181274394006,
+                4173176203762222601,
+                2155435614800851841,
+                10340811015260892365,
+                17772646875021919507,
+                6644916339206504900,
+                13039912952567697599,
+                17924363379147489144,
+                414602253678602090,
+                8908204671359246460,
+                6352276479484800337,
+                12932366647546433989,
+                16203866629806850947
+              ],
+              "candidates": [
+                {
+                  "worker_id": 15871680165271849379,
+                  "dp_rank": 0,
+                  "device_overlap_tokens": 0.0,
+                  "host_overlap_tokens": 0.0,
+                  "disk_overlap_tokens": 0.0,
+                  "has_tier_matches": false,
+                  "active_prefill_tokens": 0,
+                  "active_decode_blocks": 0,
+                  "worker_epoch": null,
+                  "event_watermark": null,
+                  "gap_pending": null
+                },
+                {
+                  "worker_id": 9467355172039612003,
+                  "dp_rank": 0,
+                  "device_overlap_tokens": 0.0,
+                  "host_overlap_tokens": 0.0,
+                  "disk_overlap_tokens": 0.0,
+                  "has_tier_matches": false,
+                  "active_prefill_tokens": 0,
+                  "active_decode_blocks": 0,
+                  "worker_epoch": null,
+                  "event_watermark": null,
+                  "gap_pending": null
+                }
+              ]
+            },
+            "cache_reselect": true,
+            "worker_budget_tokens": [
+              {
+                "worker_id": 9467355172039612003,
+                "dp_rank": 0,
+                "tokens": 257
+              }
+            ],
+            "selected_worker_id": 9467355172039612003,
+            "selected_dp_rank": 0,
+            "assigned_worker_id": 9467355172039612003,
+            "assigned_dp_rank": 0,
+            "assigned_worker": {
+              "worker_id": 9467355172039612003,
+              "dp_rank": 0
+            },
+            "program_present": true,
+            "admission_history": [
+              {
+                "request_id": "9b8bde79-8f01-4ec9-b521-e7794554ccf6",
+                "client_request_id": null,
+                "queued_at": "2026-11-12T05:27:08.883907108Z",
+                "admitted_at": "2026-11-12T05:27:08.884376540Z",
+                "wait_ms": 0.46943199999999996
+              }
+            ],
+            "last_admission_wait_ms": 0.46943199999999996,
+            "released_acting_tokens": 0,
+            "phase": "Acting",
+            "lifecycle": "Active",
+            "baseline_tokens": 257,
+            "logical_budget_tokens": 257,
+            "execution_multiplier": 1.0,
+            "state": null,
+            "sequence": 0,
+            "fresh": false,
+            "session_waiting_requests": 0,
+            "session_active_requests": 0,
+            "waiting_requests": 0,
+            "paused_programs": 0,
+            "completed_events": 1,
+            "aborted_events": 0,
+            "pause_events": 0,
+            "final_events": 0
+          }
+        },
+        "native_candidates": {
+          "request_id": "9b8bde79-8f01-4ec9-b521-e7794554ccf6",
+          "observed_at": "2026-11-12T05:27:08.884004819Z",
+          "source_kind": "native_router_candidate_snapshot",
+          "block_size_tokens": 16,
+          "history_tokens": 256,
+          "prefix_digest": "e0dfb2d919718383",
+          "sequence_hashes": [
+            10550889012891597696,
+            7305549090812370813,
+            18414445927045479780,
+            3669355181274394006,
+            4173176203762222601,
+            2155435614800851841,
+            10340811015260892365,
+            17772646875021919507,
+            6644916339206504900,
+            13039912952567697599,
+            17924363379147489144,
+            414602253678602090,
+            8908204671359246460,
+            6352276479484800337,
+            12932366647546433989,
+            16203866629806850947
+          ],
+          "candidates": [
+            {
+              "worker_id": 15871680165271849379,
+              "dp_rank": 0,
+              "device_overlap_tokens": 0.0,
+              "host_overlap_tokens": 0.0,
+              "disk_overlap_tokens": 0.0,
+              "has_tier_matches": false,
+              "active_prefill_tokens": 0,
+              "active_decode_blocks": 0,
+              "worker_epoch": null,
+              "event_watermark": null,
+              "gap_pending": null
+            },
+            {
+              "worker_id": 9467355172039612003,
+              "dp_rank": 0,
+              "device_overlap_tokens": 0.0,
+              "host_overlap_tokens": 0.0,
+              "disk_overlap_tokens": 0.0,
+              "has_tier_matches": false,
+              "active_prefill_tokens": 0,
+              "active_decode_blocks": 0,
+              "worker_epoch": null,
+              "event_watermark": null,
+              "gap_pending": null
+            }
+          ]
+        },
+        "native_sent_worker_id": 9467355172039612003,
+        "actual_response_worker_id": 9467355172039612003,
+        "affinity_mode": "hard",
+        "pin_and_selection_log_interval": [
+          "2026-11-12T05:27:08.885707Z  INFO http-request:completions:completions_single:kv_router.select_worker:kv_router.schedule: dynamo_kv_router::scheduling::selector: Selected worker router_mode=\"kv\" request_id=\"9b8bde79-8f01-4ec9-b521-e7794554ccf6\" worker_id=9467355172039612003 worker_type=aggregated dp_rank=0 logit=512.0 effective_cached_blocks=0.0 host_pinned_blocks=0 disk_blocks=0 total_kv_blocks=Some(1024) selection=\"kv\" method=POST uri=/v1/completions version=HTTP/1.1 request_id=6532292b-814e-488d-8d28-a6b01de80c59",
+          "2026-11-12T05:27:08.885858Z DEBUG http-request:completions:completions_single:kv_router.select_worker: dynamo_llm::kv_router::routing_host::kv_selection: [ROUTING] Best: worker_9467355172039612003 dp_rank=0 with 0/16 blocks overlap request_id=9b8bde79-8f01-4ec9-b521-e7794554ccf6 worker_id=9467355172039612003 dp_rank=0 overlap_blocks=0 total_blocks=16 method=POST uri=/v1/completions version=HTTP/1.1 request_id=6532292b-814e-488d-8d28-a6b01de80c59"
+        ],
+        "pin_log_source": "native_frontend_debug_Routing_to_specified_worker",
+        "explicit_worker_override": null,
+        "calibration": {
+          "computed_prompt_tokens": 256,
+          "cached_tokens": 0,
+          "predicted_single_batch_prefill_ms": 20.4159712239104,
+          "native_prefill_time_ms": 25.431465,
+          "observed_minus_predicted_ms": 5.015493776089599,
+          "native_timing": {
+            "request_received_ms": 1794461228881,
+            "prefill_wait_time_ms": 4.585406,
+            "prefill_time_ms": 25.431465,
+            "ttft_ms": 30.016871000000002,
+            "total_time_ms": 30.851722000000002,
+            "kv_hit_rate": 0.0,
+            "router_queue_depth": 0
+          },
+          "source_kind": "mocker_simulation",
+          "prediction_source": "frozen_official_aisimulate_performance_polynomial",
+          "comparison_kind": "single_request_batch_one_reference"
+        }
+      }
+    },
+    {
+      "name": "cache-conflict-cold-native-candidate-snapshot",
+      "passed": true,
+      "detail": {
+        "request_id": "9b8bde79-8f01-4ec9-b521-e7794554ccf6",
+        "observed_at": "2026-11-12T05:27:08.884004819Z",
+        "source_kind": "native_router_candidate_snapshot",
+        "block_size_tokens": 16,
+        "history_tokens": 256,
+        "prefix_digest": "e0dfb2d919718383",
+        "sequence_hashes": [
+          10550889012891597696,
+          7305549090812370813,
+          18414445927045479780,
+          3669355181274394006,
+          4173176203762222601,
+          2155435614800851841,
+          10340811015260892365,
+          17772646875021919507,
+          6644916339206504900,
+          13039912952567697599,
+          17924363379147489144,
+          414602253678602090,
+          8908204671359246460,
+          6352276479484800337,
+          12932366647546433989,
+          16203866629806850947
+        ],
+        "candidates": [
+          {
+            "worker_id": 15871680165271849379,
+            "dp_rank": 0,
+            "device_overlap_tokens": 0.0,
+            "host_overlap_tokens": 0.0,
+            "disk_overlap_tokens": 0.0,
+            "has_tier_matches": false,
+            "active_prefill_tokens": 0,
+            "active_decode_blocks": 0,
+            "worker_epoch": null,
+            "event_watermark": null,
+            "gap_pending": null
+          },
+          {
+            "worker_id": 9467355172039612003,
+            "dp_rank": 0,
+            "device_overlap_tokens": 0.0,
+            "host_overlap_tokens": 0.0,
+            "disk_overlap_tokens": 0.0,
+            "has_tier_matches": false,
+            "active_prefill_tokens": 0,
+            "active_decode_blocks": 0,
+            "worker_epoch": null,
+            "event_watermark": null,
+            "gap_pending": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "cache-conflict-hot-worker-identity",
+      "passed": true,
+      "detail": {
+        "prompt_tokens": 256,
+        "simulated_cached_tokens": 240,
+        "derived_recomputed_prompt_tokens": 16,
+        "indexed_prefix_tokens": 256,
+        "simulated_hit_fraction": 0.9375,
+        "cache_count_source": "official_mocker_engine_usage",
+        "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+        "worker_id": 9467355172039612003,
+        "elapsed_seconds": 0.027743325000017194,
+        "started_monotonic_seconds": 291.56153033,
+        "routing_control": {
+          "kind": "native_router_selection"
+        },
+        "request_evidence": "cache-conflict-hot.json",
+        "client_ttft_seconds": 0.027581998000016483
+      }
+    },
+    {
+      "name": "cache-conflict-hot-native-Sent-matches-response",
+      "passed": true,
+      "detail": {
+        "native_before": {
+          "protocol_version": 1,
+          "accepted": true,
+          "applied": true,
+          "reconciled": true,
+          "binding": {
+            "source_id": "coordinator-local",
+            "tenant_id": "tenant-a",
+            "workspace_id": "joint-routing-7101-hard-reselect-43161092995-cache-conflict-1",
+            "session_id": "joint-routing-7101-hard-reselect-43161092995-cache-conflict-1",
+            "actor_uid": "synthetic-configuration-identity",
+            "epoch": 1
+          },
+          "routing_session_id": "ac:c1693423b77b4f8e952374948c81b946",
+          "classifier_id": 0,
+          "binding_generation": "84f743aee02f4f91a0eae6420d4025f2",
+          "sequence": 0,
+          "received_at": "2026-11-12T05:27:08.922354469Z",
+          "snapshot": {
+            "cache_observation": null,
+            "cache_candidates": {
+              "request_id": "9b8bde79-8f01-4ec9-b521-e7794554ccf6",
+              "observed_at": "2026-11-12T05:27:08.884004819Z",
+              "source_kind": "native_router_candidate_snapshot",
+              "block_size_tokens": 16,
+              "history_tokens": 256,
+              "prefix_digest": "e0dfb2d919718383",
+              "sequence_hashes": [
+                10550889012891597696,
+                7305549090812370813,
+                18414445927045479780,
+                3669355181274394006,
+                4173176203762222601,
+                2155435614800851841,
+                10340811015260892365,
+                17772646875021919507,
+                6644916339206504900,
+                13039912952567697599,
+                17924363379147489144,
+                414602253678602090,
+                8908204671359246460,
+                6352276479484800337,
+                12932366647546433989,
+                16203866629806850947
+              ],
+              "candidates": [
+                {
+                  "worker_id": 15871680165271849379,
+                  "dp_rank": 0,
+                  "device_overlap_tokens": 0.0,
+                  "host_overlap_tokens": 0.0,
+                  "disk_overlap_tokens": 0.0,
+                  "has_tier_matches": false,
+                  "active_prefill_tokens": 0,
+                  "active_decode_blocks": 0,
+                  "worker_epoch": null,
+                  "event_watermark": null,
+                  "gap_pending": null
+                },
+                {
+                  "worker_id": 9467355172039612003,
+                  "dp_rank": 0,
+                  "device_overlap_tokens": 0.0,
+                  "host_overlap_tokens": 0.0,
+                  "disk_overlap_tokens": 0.0,
+                  "has_tier_matches": false,
+                  "active_prefill_tokens": 0,
+                  "active_decode_blocks": 0,
+                  "worker_epoch": null,
+                  "event_watermark": null,
+                  "gap_pending": null
+                }
+              ]
+            },
+            "cache_reselect": true,
+            "worker_budget_tokens": [
+              {
+                "worker_id": 9467355172039612003,
+                "dp_rank": 0,
+                "tokens": 257
+              }
+            ],
+            "selected_worker_id": 9467355172039612003,
+            "selected_dp_rank": 0,
+            "assigned_worker_id": 9467355172039612003,
+            "assigned_dp_rank": 0,
+            "assigned_worker": {
+              "worker_id": 9467355172039612003,
+              "dp_rank": 0
+            },
+            "program_present": true,
+            "admission_history": [
+              {
+                "request_id": "9b8bde79-8f01-4ec9-b521-e7794554ccf6",
+                "client_request_id": null,
+                "queued_at": "2026-11-12T05:27:08.883907108Z",
+                "admitted_at": "2026-11-12T05:27:08.884376540Z",
+                "wait_ms": 0.46943199999999996
+              }
+            ],
+            "last_admission_wait_ms": 0.46943199999999996,
+            "released_acting_tokens": 0,
+            "phase": "Acting",
+            "lifecycle": "Active",
+            "baseline_tokens": 257,
+            "logical_budget_tokens": 257,
+            "execution_multiplier": 1.0,
+            "state": null,
+            "sequence": 0,
+            "fresh": false,
+            "session_waiting_requests": 0,
+            "session_active_requests": 0,
+            "waiting_requests": 0,
+            "paused_programs": 0,
+            "completed_events": 1,
+            "aborted_events": 0,
+            "pause_events": 0,
+            "final_events": 0
+          }
+        },
+        "native_after": {
+          "protocol_version": 1,
+          "accepted": true,
+          "applied": true,
+          "reconciled": true,
+          "binding": {
+            "source_id": "coordinator-local",
+            "tenant_id": "tenant-a",
+            "workspace_id": "joint-routing-7101-hard-reselect-43161092995-cache-conflict-1",
+            "session_id": "joint-routing-7101-hard-reselect-43161092995-cache-conflict-1",
+            "actor_uid": "synthetic-configuration-identity",
+            "epoch": 1
+          },
+          "routing_session_id": "ac:c1693423b77b4f8e952374948c81b946",
+          "classifier_id": 0,
+          "binding_generation": "84f743aee02f4f91a0eae6420d4025f2",
+          "sequence": 0,
+          "received_at": "2026-11-12T05:27:08.960162410Z",
+          "snapshot": {
+            "cache_observation": null,
+            "cache_candidates": {
+              "request_id": "89158b80-9e53-40f3-8e65-52e4cddf2630",
+              "observed_at": "2026-11-12T05:27:08.929282431Z",
+              "source_kind": "native_router_candidate_snapshot",
+              "block_size_tokens": 16,
+              "history_tokens": 256,
+              "prefix_digest": "e0dfb2d919718383",
+              "sequence_hashes": [
+                10550889012891597696,
+                7305549090812370813,
+                18414445927045479780,
+                3669355181274394006,
+                4173176203762222601,
+                2155435614800851841,
+                10340811015260892365,
+                17772646875021919507,
+                6644916339206504900,
+                13039912952567697599,
+                17924363379147489144,
+                414602253678602090,
+                8908204671359246460,
+                6352276479484800337,
+                12932366647546433989,
+                16203866629806850947
+              ],
+              "candidates": [
+                {
+                  "worker_id": 9467355172039612003,
+                  "dp_rank": 0,
+                  "device_overlap_tokens": 256.0,
+                  "host_overlap_tokens": 0.0,
+                  "disk_overlap_tokens": 0.0,
+                  "has_tier_matches": true,
+                  "active_prefill_tokens": 0,
+                  "active_decode_blocks": 0,
+                  "worker_epoch": null,
+                  "event_watermark": null,
+                  "gap_pending": null
+                }
+              ]
+            },
+            "cache_reselect": true,
+            "worker_budget_tokens": [
+              {
+                "worker_id": 9467355172039612003,
+                "dp_rank": 0,
+                "tokens": 257
+              }
+            ],
+            "selected_worker_id": 9467355172039612003,
+            "selected_dp_rank": 0,
+            "assigned_worker_id": 9467355172039612003,
+            "assigned_dp_rank": 0,
+            "assigned_worker": {
+              "worker_id": 9467355172039612003,
+              "dp_rank": 0
+            },
+            "program_present": true,
+            "admission_history": [
+              {
+                "request_id": "9b8bde79-8f01-4ec9-b521-e7794554ccf6",
+                "client_request_id": null,
+                "queued_at": "2026-11-12T05:27:08.883907108Z",
+                "admitted_at": "2026-11-12T05:27:08.884376540Z",
+                "wait_ms": 0.46943199999999996
+              },
+              {
+                "request_id": "89158b80-9e53-40f3-8e65-52e4cddf2630",
+                "client_request_id": null,
+                "queued_at": "2026-11-12T05:27:08.929255145Z",
+                "admitted_at": "2026-11-12T05:27:08.929486762Z",
+                "wait_ms": 0.231617
+              }
+            ],
+            "last_admission_wait_ms": 0.231617,
+            "released_acting_tokens": 0,
+            "phase": "Acting",
+            "lifecycle": "Active",
+            "baseline_tokens": 257,
+            "logical_budget_tokens": 257,
+            "execution_multiplier": 1.0,
+            "state": null,
+            "sequence": 0,
+            "fresh": false,
+            "session_waiting_requests": 0,
+            "session_active_requests": 0,
+            "waiting_requests": 0,
+            "paused_programs": 0,
+            "completed_events": 2,
+            "aborted_events": 0,
+            "pause_events": 0,
+            "final_events": 0
+          }
+        },
+        "native_candidates": {
+          "request_id": "89158b80-9e53-40f3-8e65-52e4cddf2630",
+          "observed_at": "2026-11-12T05:27:08.929282431Z",
+          "source_kind": "native_router_candidate_snapshot",
+          "block_size_tokens": 16,
+          "history_tokens": 256,
+          "prefix_digest": "e0dfb2d919718383",
+          "sequence_hashes": [
+            10550889012891597696,
+            7305549090812370813,
+            18414445927045479780,
+            3669355181274394006,
+            4173176203762222601,
+            2155435614800851841,
+            10340811015260892365,
+            17772646875021919507,
+            6644916339206504900,
+            13039912952567697599,
+            17924363379147489144,
+            414602253678602090,
+            8908204671359246460,
+            6352276479484800337,
+            12932366647546433989,
+            16203866629806850947
+          ],
+          "candidates": [
+            {
+              "worker_id": 9467355172039612003,
+              "dp_rank": 0,
+              "device_overlap_tokens": 256.0,
+              "host_overlap_tokens": 0.0,
+              "disk_overlap_tokens": 0.0,
+              "has_tier_matches": true,
+              "active_prefill_tokens": 0,
+              "active_decode_blocks": 0,
+              "worker_epoch": null,
+              "event_watermark": null,
+              "gap_pending": null
+            }
+          ]
+        },
+        "native_sent_worker_id": 9467355172039612003,
+        "actual_response_worker_id": 9467355172039612003,
+        "affinity_mode": "hard",
+        "pin_and_selection_log_interval": [
+          "2026-11-12T05:27:08.928720Z DEBUG http-request:completions:completions_single:kv_router.select_worker: dynamo_llm::kv_router::routing_host::kv_selection: Routing to specified worker worker_id=9467355172039612003 dp_rank=0 phase=Aggregated method=POST uri=/v1/completions version=HTTP/1.1 request_id=930bbaf5-ea24-44a0-8f49-5570a0d3bd9a",
+          "2026-11-12T05:27:08.930148Z  INFO http-request:completions:completions_single:kv_router.select_worker:kv_router.schedule: dynamo_kv_router::scheduling::selector: Selected worker router_mode=\"kv\" request_id=\"89158b80-9e53-40f3-8e65-52e4cddf2630\" worker_id=9467355172039612003 worker_type=aggregated dp_rank=0 logit=256.0 effective_cached_blocks=16.0 host_pinned_blocks=0 disk_blocks=0 total_kv_blocks=Some(1024) selection=\"session_affinity\" method=POST uri=/v1/completions version=HTTP/1.1 request_id=930bbaf5-ea24-44a0-8f49-5570a0d3bd9a"
+        ],
+        "pin_log_source": "native_frontend_debug_Routing_to_specified_worker",
+        "explicit_worker_override": null,
+        "calibration": {
+          "computed_prompt_tokens": 16,
+          "cached_tokens": 240,
+          "predicted_single_batch_prefill_ms": 16.7444628157184,
+          "native_prefill_time_ms": 21.158922999999998,
+          "observed_minus_predicted_ms": 4.414460184281598,
+          "native_timing": {
+            "request_received_ms": 1794461228928,
+            "prefill_wait_time_ms": 2.2608110000000003,
+            "prefill_time_ms": 21.158922999999998,
+            "ttft_ms": 23.419734000000002,
+            "total_time_ms": 24.260998999999998,
+            "kv_hit_rate": 1.0,
+            "router_queue_depth": 0
+          },
+          "source_kind": "mocker_simulation",
+          "prediction_source": "frozen_official_aisimulate_performance_polynomial",
+          "comparison_kind": "single_request_batch_one_reference"
+        }
+      }
+    },
+    {
+      "name": "cache-conflict-hot-native-candidate-snapshot",
+      "passed": true,
+      "detail": {
+        "request_id": "89158b80-9e53-40f3-8e65-52e4cddf2630",
+        "observed_at": "2026-11-12T05:27:08.929282431Z",
+        "source_kind": "native_router_candidate_snapshot",
+        "block_size_tokens": 16,
+        "history_tokens": 256,
+        "prefix_digest": "e0dfb2d919718383",
+        "sequence_hashes": [
+          10550889012891597696,
+          7305549090812370813,
+          18414445927045479780,
+          3669355181274394006,
+          4173176203762222601,
+          2155435614800851841,
+          10340811015260892365,
+          17772646875021919507,
+          6644916339206504900,
+          13039912952567697599,
+          17924363379147489144,
+          414602253678602090,
+          8908204671359246460,
+          6352276479484800337,
+          12932366647546433989,
+          16203866629806850947
+        ],
+        "candidates": [
+          {
+            "worker_id": 9467355172039612003,
+            "dp_rank": 0,
+            "device_overlap_tokens": 256.0,
+            "host_overlap_tokens": 0.0,
+            "disk_overlap_tokens": 0.0,
+            "has_tier_matches": true,
+            "active_prefill_tokens": 0,
+            "active_decode_blocks": 0,
+            "worker_epoch": null,
+            "event_watermark": null,
+            "gap_pending": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "cache-conflict-prepare-alternative-worker-identity",
+      "passed": true,
+      "detail": {
+        "prompt_tokens": 1024,
+        "simulated_cached_tokens": 0,
+        "derived_recomputed_prompt_tokens": 1024,
+        "indexed_prefix_tokens": 0,
+        "simulated_hit_fraction": 0.0,
+        "cache_count_source": "official_mocker_engine_usage",
+        "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+        "worker_id": 15871680165271849379,
+        "elapsed_seconds": 0.043822847000001275,
+        "started_monotonic_seconds": 291.605859011,
+        "routing_control": {
+          "kind": "explicit_worker",
+          "worker_id": 15871680165271849379
+        },
+        "request_evidence": "cache-conflict-prepare-alternative.json",
+        "client_ttft_seconds": 0.04368478700001788
+      }
+    },
+    {
+      "name": "cache-conflict-continuation-worker-identity",
+      "passed": true,
+      "detail": {
+        "prompt_tokens": 1024,
+        "simulated_cached_tokens": 256,
+        "derived_recomputed_prompt_tokens": 768,
+        "indexed_prefix_tokens": 256,
+        "simulated_hit_fraction": 0.25,
+        "cache_count_source": "official_mocker_engine_usage",
+        "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+        "worker_id": 9467355172039612003,
+        "elapsed_seconds": 0.03868478399999731,
+        "started_monotonic_seconds": 292.16705108,
+        "routing_control": {
+          "kind": "native_router_selection"
+        },
+        "request_evidence": "cache-conflict-continuation.json",
+        "client_ttft_seconds": 0.03854003699996156
+      }
+    },
+    {
+      "name": "cache-conflict-continuation-native-Sent-matches-response",
+      "passed": true,
+      "detail": {
+        "native_before": {
+          "protocol_version": 1,
+          "accepted": true,
+          "applied": true,
+          "reconciled": true,
+          "binding": {
+            "source_id": "coordinator-local",
+            "tenant_id": "tenant-a",
+            "workspace_id": "joint-routing-7101-hard-reselect-43161092995-cache-conflict-1",
+            "session_id": "joint-routing-7101-hard-reselect-43161092995-cache-conflict-1",
+            "actor_uid": "synthetic-configuration-identity",
+            "epoch": 1
+          },
+          "routing_session_id": "ac:c1693423b77b4f8e952374948c81b946",
+          "classifier_id": 0,
+          "binding_generation": "84f743aee02f4f91a0eae6420d4025f2",
+          "sequence": 0,
+          "received_at": "2026-11-12T05:27:09.525712843Z",
+          "snapshot": {
+            "cache_observation": null,
+            "cache_candidates": {
+              "request_id": "89158b80-9e53-40f3-8e65-52e4cddf2630",
+              "observed_at": "2026-11-12T05:27:08.929282431Z",
+              "source_kind": "native_router_candidate_snapshot",
+              "block_size_tokens": 16,
+              "history_tokens": 256,
+              "prefix_digest": "e0dfb2d919718383",
+              "sequence_hashes": [
+                10550889012891597696,
+                7305549090812370813,
+                18414445927045479780,
+                3669355181274394006,
+                4173176203762222601,
+                2155435614800851841,
+                10340811015260892365,
+                17772646875021919507,
+                6644916339206504900,
+                13039912952567697599,
+                17924363379147489144,
+                414602253678602090,
+                8908204671359246460,
+                6352276479484800337,
+                12932366647546433989,
+                16203866629806850947
+              ],
+              "candidates": [
+                {
+                  "worker_id": 9467355172039612003,
+                  "dp_rank": 0,
+                  "device_overlap_tokens": 256.0,
+                  "host_overlap_tokens": 0.0,
+                  "disk_overlap_tokens": 0.0,
+                  "has_tier_matches": true,
+                  "active_prefill_tokens": 0,
+                  "active_decode_blocks": 0,
+                  "worker_epoch": null,
+                  "event_watermark": null,
+                  "gap_pending": null
+                }
+              ]
+            },
+            "cache_reselect": true,
+            "worker_budget_tokens": [
+              {
+                "worker_id": 9467355172039612003,
+                "dp_rank": 0,
+                "tokens": 257
+              }
+            ],
+            "selected_worker_id": 9467355172039612003,
+            "selected_dp_rank": 0,
+            "assigned_worker_id": 9467355172039612003,
+            "assigned_dp_rank": 0,
+            "assigned_worker": {
+              "worker_id": 9467355172039612003,
+              "dp_rank": 0
+            },
+            "program_present": true,
+            "admission_history": [
+              {
+                "request_id": "9b8bde79-8f01-4ec9-b521-e7794554ccf6",
+                "client_request_id": null,
+                "queued_at": "2026-11-12T05:27:08.883907108Z",
+                "admitted_at": "2026-11-12T05:27:08.884376540Z",
+                "wait_ms": 0.46943199999999996
+              },
+              {
+                "request_id": "89158b80-9e53-40f3-8e65-52e4cddf2630",
+                "client_request_id": null,
+                "queued_at": "2026-11-12T05:27:08.929255145Z",
+                "admitted_at": "2026-11-12T05:27:08.929486762Z",
+                "wait_ms": 0.231617
+              }
+            ],
+            "last_admission_wait_ms": 0.231617,
+            "released_acting_tokens": 0,
+            "phase": "Acting",
+            "lifecycle": "Active",
+            "baseline_tokens": 257,
+            "logical_budget_tokens": 257,
+            "execution_multiplier": 1.0,
+            "state": null,
+            "sequence": 0,
+            "fresh": false,
+            "session_waiting_requests": 0,
+            "session_active_requests": 0,
+            "waiting_requests": 0,
+            "paused_programs": 0,
+            "completed_events": 3,
+            "aborted_events": 0,
+            "pause_events": 0,
+            "final_events": 1
+          }
+        },
+        "native_after": {
+          "protocol_version": 1,
+          "accepted": true,
+          "applied": true,
+          "reconciled": true,
+          "binding": {
+            "source_id": "coordinator-local",
+            "tenant_id": "tenant-a",
+            "workspace_id": "joint-routing-7101-hard-reselect-43161092995-cache-conflict-1",
+            "session_id": "joint-routing-7101-hard-reselect-43161092995-cache-conflict-1",
+            "actor_uid": "synthetic-configuration-identity",
+            "epoch": 1
+          },
+          "routing_session_id": "ac:c1693423b77b4f8e952374948c81b946",
+          "classifier_id": 0,
+          "binding_generation": "84f743aee02f4f91a0eae6420d4025f2",
+          "sequence": 0,
+          "received_at": "2026-11-12T05:27:09.577051652Z",
+          "snapshot": {
+            "cache_observation": null,
+            "cache_candidates": {
+              "request_id": "1d78fca1-52a7-4c12-8239-c73a792c8179",
+              "observed_at": "2026-11-12T05:27:09.534849923Z",
+              "source_kind": "native_router_candidate_snapshot",
+              "block_size_tokens": 16,
+              "history_tokens": 1024,
+              "prefix_digest": "923e53cce9c12b18",
+              "sequence_hashes": [
+                10550889012891597696,
+                7305549090812370813,
+                18414445927045479780,
+                3669355181274394006,
+                4173176203762222601,
+                2155435614800851841,
+                10340811015260892365,
+                17772646875021919507,
+                6644916339206504900,
+                13039912952567697599,
+                17924363379147489144,
+                414602253678602090,
+                8908204671359246460,
+                6352276479484800337,
+                12932366647546433989,
+                16203866629806850947,
+                3326015086617872544,
+                6532173065762665460,
+                15566276610929184058,
+                6975295492006717648,
+                17365476122933241921,
+                4419963431853522887,
+                2742324193396240235,
+                6980507450120713577,
+                16202384978652297043,
+                3547256483727073058,
+                47325371529611337,
+                526502208229991562,
+                3732087128909855943,
+                11501348523031879874,
+                1786648984551699693,
+                8620277584225651054,
+                8019020762354838364,
+                16455772935977592838,
+                3384060032769788646,
+                14120814145699078051,
+                9069355455740716443,
+                16083258806479736765,
+                10912931294809625290,
+                8881001892516849014,
+                17717642996973333644,
+                3059957174162325551,
+                12507724684387667597,
+                10643975088907996322,
+                14665577091465533664,
+                639090571042645135,
+                9201573076888970742,
+                16419876140913651197,
+                3823628123316422906,
+                4184244526572467545,
+                18030703051219037163,
+                9841659767803972152,
+                9445738373444892611,
+                16528368344240524745,
+                15510958996843869578,
+                6314991234277779970,
+                1605640926833625346,
+                17475743119112141048,
+                11295104444228284407,
+                9944277721981355811,
+                1134372652073830311,
+                5443611579384527507,
+                15338180568690361649,
+                10537952317653723928
+              ],
+              "candidates": [
+                {
+                  "worker_id": 9467355172039612003,
+                  "dp_rank": 0,
+                  "device_overlap_tokens": 256.0,
+                  "host_overlap_tokens": 0.0,
+                  "disk_overlap_tokens": 0.0,
+                  "has_tier_matches": true,
+                  "active_prefill_tokens": 0,
+                  "active_decode_blocks": 0,
+                  "worker_epoch": null,
+                  "event_watermark": null,
+                  "gap_pending": null
+                }
+              ]
+            },
+            "cache_reselect": true,
+            "worker_budget_tokens": [
+              {
+                "worker_id": 9467355172039612003,
+                "dp_rank": 0,
+                "tokens": 1025
+              }
+            ],
+            "selected_worker_id": 9467355172039612003,
+            "selected_dp_rank": 0,
+            "assigned_worker_id": 9467355172039612003,
+            "assigned_dp_rank": 0,
+            "assigned_worker": {
+              "worker_id": 9467355172039612003,
+              "dp_rank": 0
+            },
+            "program_present": true,
+            "admission_history": [
+              {
+                "request_id": "9b8bde79-8f01-4ec9-b521-e7794554ccf6",
+                "client_request_id": null,
+                "queued_at": "2026-11-12T05:27:08.883907108Z",
+                "admitted_at": "2026-11-12T05:27:08.884376540Z",
+                "wait_ms": 0.46943199999999996
+              },
+              {
+                "request_id": "89158b80-9e53-40f3-8e65-52e4cddf2630",
+                "client_request_id": null,
+                "queued_at": "2026-11-12T05:27:08.929255145Z",
+                "admitted_at": "2026-11-12T05:27:08.929486762Z",
+                "wait_ms": 0.231617
+              },
+              {
+                "request_id": "1d78fca1-52a7-4c12-8239-c73a792c8179",
+                "client_request_id": null,
+                "queued_at": "2026-11-12T05:27:09.534836154Z",
+                "admitted_at": "2026-11-12T05:27:09.535073167Z",
+                "wait_ms": 0.237013
+              }
+            ],
+            "last_admission_wait_ms": 0.237013,
+            "released_acting_tokens": 0,
+            "phase": "Acting",
+            "lifecycle": "Active",
+            "baseline_tokens": 1025,
+            "logical_budget_tokens": 1025,
+            "execution_multiplier": 1.0,
+            "state": null,
+            "sequence": 0,
+            "fresh": false,
+            "session_waiting_requests": 0,
+            "session_active_requests": 0,
+            "waiting_requests": 0,
+            "paused_programs": 0,
+            "completed_events": 4,
+            "aborted_events": 0,
+            "pause_events": 0,
+            "final_events": 1
+          }
+        },
+        "native_candidates": {
+          "request_id": "1d78fca1-52a7-4c12-8239-c73a792c8179",
+          "observed_at": "2026-11-12T05:27:09.534849923Z",
+          "source_kind": "native_router_candidate_snapshot",
+          "block_size_tokens": 16,
+          "history_tokens": 1024,
+          "prefix_digest": "923e53cce9c12b18",
+          "sequence_hashes": [
+            10550889012891597696,
+            7305549090812370813,
+            18414445927045479780,
+            3669355181274394006,
+            4173176203762222601,
+            2155435614800851841,
+            10340811015260892365,
+            17772646875021919507,
+            6644916339206504900,
+            13039912952567697599,
+            17924363379147489144,
+            414602253678602090,
+            8908204671359246460,
+            6352276479484800337,
+            12932366647546433989,
+            16203866629806850947,
+            3326015086617872544,
+            6532173065762665460,
+            15566276610929184058,
+            6975295492006717648,
+            17365476122933241921,
+            4419963431853522887,
+            2742324193396240235,
+            6980507450120713577,
+            16202384978652297043,
+            3547256483727073058,
+            47325371529611337,
+            526502208229991562,
+            3732087128909855943,
+            11501348523031879874,
+            1786648984551699693,
+            8620277584225651054,
+            8019020762354838364,
+            16455772935977592838,
+            3384060032769788646,
+            14120814145699078051,
+            9069355455740716443,
+            16083258806479736765,
+            10912931294809625290,
+            8881001892516849014,
+            17717642996973333644,
+            3059957174162325551,
+            12507724684387667597,
+            10643975088907996322,
+            14665577091465533664,
+            639090571042645135,
+            9201573076888970742,
+            16419876140913651197,
+            3823628123316422906,
+            4184244526572467545,
+            18030703051219037163,
+            9841659767803972152,
+            9445738373444892611,
+            16528368344240524745,
+            15510958996843869578,
+            6314991234277779970,
+            1605640926833625346,
+            17475743119112141048,
+            11295104444228284407,
+            9944277721981355811,
+            1134372652073830311,
+            5443611579384527507,
+            15338180568690361649,
+            10537952317653723928
+          ],
+          "candidates": [
+            {
+              "worker_id": 9467355172039612003,
+              "dp_rank": 0,
+              "device_overlap_tokens": 256.0,
+              "host_overlap_tokens": 0.0,
+              "disk_overlap_tokens": 0.0,
+              "has_tier_matches": true,
+              "active_prefill_tokens": 0,
+              "active_decode_blocks": 0,
+              "worker_epoch": null,
+              "event_watermark": null,
+              "gap_pending": null
+            }
+          ]
+        },
+        "native_sent_worker_id": 9467355172039612003,
+        "actual_response_worker_id": 9467355172039612003,
+        "affinity_mode": "hard",
+        "pin_and_selection_log_interval": [
+          "2026-11-12T05:27:09.534403Z DEBUG http-request:completions:completions_single:kv_router.select_worker: dynamo_llm::kv_router::routing_host::kv_selection: Routing to specified worker worker_id=9467355172039612003 dp_rank=0 phase=Aggregated method=POST uri=/v1/completions version=HTTP/1.1 request_id=8c4a9032-7294-4db3-b805-9214ca38b63a",
+          "2026-11-12T05:27:09.535716Z  INFO http-request:completions:completions_single:kv_router.select_worker:kv_router.schedule: dynamo_kv_router::scheduling::selector: Selected worker router_mode=\"kv\" request_id=\"1d78fca1-52a7-4c12-8239-c73a792c8179\" worker_id=9467355172039612003 worker_type=aggregated dp_rank=0 logit=1792.0 effective_cached_blocks=16.0 host_pinned_blocks=0 disk_blocks=0 total_kv_blocks=Some(1024) selection=\"session_affinity\" method=POST uri=/v1/completions version=HTTP/1.1 request_id=8c4a9032-7294-4db3-b805-9214ca38b63a"
+        ],
+        "pin_log_source": "native_frontend_debug_Routing_to_specified_worker",
+        "explicit_worker_override": null,
+        "calibration": {
+          "computed_prompt_tokens": 768,
+          "cached_tokens": 256,
+          "predicted_single_batch_prefill_ms": 28.4106171751936,
+          "native_prefill_time_ms": 32.59729900000001,
+          "observed_minus_predicted_ms": 4.186681824806406,
+          "native_timing": {
+            "request_received_ms": 1794461229533,
+            "prefill_wait_time_ms": 2.1950469999999997,
+            "prefill_time_ms": 32.59729900000001,
+            "ttft_ms": 34.792346,
+            "total_time_ms": 35.483532999999994,
+            "kv_hit_rate": 0.25,
+            "router_queue_depth": 0
+          },
+          "source_kind": "mocker_simulation",
+          "prediction_source": "frozen_official_aisimulate_performance_polynomial",
+          "comparison_kind": "single_request_batch_one_reference"
+        }
+      }
+    },
+    {
+      "name": "cache-conflict-continuation-native-candidate-snapshot",
+      "passed": true,
+      "detail": {
+        "request_id": "1d78fca1-52a7-4c12-8239-c73a792c8179",
+        "observed_at": "2026-11-12T05:27:09.534849923Z",
+        "source_kind": "native_router_candidate_snapshot",
+        "block_size_tokens": 16,
+        "history_tokens": 1024,
+        "prefix_digest": "923e53cce9c12b18",
+        "sequence_hashes": [
+          10550889012891597696,
+          7305549090812370813,
+          18414445927045479780,
+          3669355181274394006,
+          4173176203762222601,
+          2155435614800851841,
+          10340811015260892365,
+          17772646875021919507,
+          6644916339206504900,
+          13039912952567697599,
+          17924363379147489144,
+          414602253678602090,
+          8908204671359246460,
+          6352276479484800337,
+          12932366647546433989,
+          16203866629806850947,
+          3326015086617872544,
+          6532173065762665460,
+          15566276610929184058,
+          6975295492006717648,
+          17365476122933241921,
+          4419963431853522887,
+          2742324193396240235,
+          6980507450120713577,
+          16202384978652297043,
+          3547256483727073058,
+          47325371529611337,
+          526502208229991562,
+          3732087128909855943,
+          11501348523031879874,
+          1786648984551699693,
+          8620277584225651054,
+          8019020762354838364,
+          16455772935977592838,
+          3384060032769788646,
+          14120814145699078051,
+          9069355455740716443,
+          16083258806479736765,
+          10912931294809625290,
+          8881001892516849014,
+          17717642996973333644,
+          3059957174162325551,
+          12507724684387667597,
+          10643975088907996322,
+          14665577091465533664,
+          639090571042645135,
+          9201573076888970742,
+          16419876140913651197,
+          3823628123316422906,
+          4184244526572467545,
+          18030703051219037163,
+          9841659767803972152,
+          9445738373444892611,
+          16528368344240524745,
+          15510958996843869578,
+          6314991234277779970,
+          1605640926833625346,
+          17475743119112141048,
+          11295104444228284407,
+          9944277721981355811,
+          1134372652073830311,
+          5443611579384527507,
+          15338180568690361649,
+          10537952317653723928
+        ],
+        "candidates": [
+          {
+            "worker_id": 9467355172039612003,
+            "dp_rank": 0,
+            "device_overlap_tokens": 256.0,
+            "host_overlap_tokens": 0.0,
+            "disk_overlap_tokens": 0.0,
+            "has_tier_matches": true,
+            "active_prefill_tokens": 0,
+            "active_decode_blocks": 0,
+            "worker_epoch": null,
+            "event_watermark": null,
+            "gap_pending": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "cache-conflict-final-worker-identity",
+      "passed": true,
+      "detail": {
+        "prompt_tokens": 1024,
+        "simulated_cached_tokens": 1008,
+        "derived_recomputed_prompt_tokens": 16,
+        "indexed_prefix_tokens": 1024,
+        "simulated_hit_fraction": 0.984375,
+        "cache_count_source": "official_mocker_engine_usage",
+        "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+        "worker_id": 9467355172039612003,
+        "elapsed_seconds": 0.026714623999964715,
+        "started_monotonic_seconds": 292.225593134,
+        "routing_control": {
+          "kind": "native_router_selection"
+        },
+        "request_evidence": "cache-conflict-final.json",
+        "client_ttft_seconds": 0.02650955500001828
+      }
+    },
+    {
+      "name": "worker-0-native-events",
+      "passed": true,
+      "detail": {
+        "batches": [
+          {
+            "sequence": 0,
+            "engine_timestamp": 1794461228.9101243,
+            "received_unix_seconds": 1794461228.9105709,
+            "received_monotonic_seconds": 291.545644343,
+            "dp_rank": 0,
+            "types": [
+              "BlockStored"
+            ],
+            "block_counts": [
+              16
+            ],
+            "topic": "",
+            "wire_payload_hex": "93cb41dabd538b3a3f7a9187a474797065ab426c6f636b53746f726564ac626c6f636b5f686173686573dc0010cf926c49a7fdf9bb80cf656286310f0c9f7dcfff8d4101b92f3d64cf32ec2b18a6996d96cf39ea19a59a5c4609cf1de9a5458c6e3381cf8f81f0d496126ccdcff6a5202b58234513cf5c377c344897c1c4cfb4f713bdefd010bfcff8c02186a71b3f78cf05c0f68d9596e76acf7ba04cf36ed7e07ccf5827d1cd62c2ad51cfb378fef2841d51c5cfe0dfb2d919718383b1706172656e745f626c6f636b5f68617368c0a9746f6b656e5f696473dc0100cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94aa626c6f636b5f73697a6510a967726f75705f69647800aa73657373696f6e5f6964d92361633a633136393334323362373762346638653935323337343934386338316239343600"
+          },
+          {
+            "sequence": 1,
+            "engine_timestamp": 1794461229.567197,
+            "received_unix_seconds": 1794461229.5686255,
+            "received_monotonic_seconds": 292.203698596,
+            "dp_rank": 0,
+            "types": [
+              "BlockStored"
+            ],
+            "block_counts": [
+              48
+            ],
+            "topic": "",
+            "wire_payload_hex": "93cb41dabd538b644cf59187a474797065ab426c6f636b53746f726564ac626c6f636b5f686173686573dc0030cf2e2861196b72c8a0cf5aa6f0cb5c2873f4cfd806861a9de7cd3acf60cd3a4b1471a8d0cff0fe90870ef6a841cf3d56dd52c3d87fc7cf260eb1530e57af6bcf60dfbe8aa469b569cfe0da6f4b4eb1f753cf313a62fa4fc0df22cf00a8222cb6e2c849cf074e82f80701e48acf33cb0978657abcc7cf9f9cff8b814760c2cf18cb73c90e8434edcf77a160ca6908496ecf6f4948e592a46b5ccfe45ea64c816e6806cf2ef698ab97d70ae6cfc3f735a675b45fa3cf7ddcd2bc492d259bcfdf3336abf6e5cfbdcf97728531855f12cacf7b3fa82aed09e576cff5e1b66f03c86c8ccf2a7726d669da802fcfad945d54e94fce8dcf93b6fef2fc77cca2cfcb8698a9c2e8d8e0cf08de817d024c648fcf7fb28df61ec3e5f6cfe3df1e5a9b11edfdcf351041850b7808facf3a116c3a53b97559cffa39ece4f2766bebcf8894996a5c358a38cf83160101467577c3cfe5608f7023448dc9cfd741ff06ec87358acf57a35b11bed52a02cf164861ea78bf4902cff2864fc6c0a7f8f8cf9cc045a5e329aff7cf8a012be6ae878723cf0fbe19eab9c747a7cf4b8b97e3d46afa93cfd4dc29f649968531cf923e53cce9c12b18b1706172656e745f626c6f636b5f68617368cfe0dfb2d919718383a9746f6b656e5f696473dc0300ccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacaa626c6f636b5f73697a6510a967726f75705f69647800aa73657373696f6e5f6964d92361633a633136393334323362373762346638653935323337343934386338316239343600"
+          }
+        ],
+        "sequence_gaps": [],
+        "errors": [],
+        "counts": {
+          "BlockStored": 2
+        }
+      }
+    },
+    {
+      "name": "worker-1-native-events",
+      "passed": true,
+      "detail": {
+        "batches": [
+          {
+            "sequence": 0,
+            "engine_timestamp": 1794461229.010728,
+            "received_unix_seconds": 1794461229.0114324,
+            "received_monotonic_seconds": 291.646505545,
+            "dp_rank": 0,
+            "types": [
+              "BlockStored"
+            ],
+            "block_counts": [
+              64
+            ],
+            "topic": "",
+            "wire_payload_hex": "93cb41dabd538b40afc49187a474797065ab426c6f636b53746f726564ac626c6f636b5f686173686573dc0040cf926c49a7fdf9bb80cf656286310f0c9f7dcfff8d4101b92f3d64cf32ec2b18a6996d96cf39ea19a59a5c4609cf1de9a5458c6e3381cf8f81f0d496126ccdcff6a5202b58234513cf5c377c344897c1c4cfb4f713bdefd010bfcff8c02186a71b3f78cf05c0f68d9596e76acf7ba04cf36ed7e07ccf5827d1cd62c2ad51cfb378fef2841d51c5cfe0dfb2d919718383cf2e2861196b72c8a0cf5aa6f0cb5c2873f4cfd806861a9de7cd3acf60cd3a4b1471a8d0cff0fe90870ef6a841cf3d56dd52c3d87fc7cf260eb1530e57af6bcf60dfbe8aa469b569cfe0da6f4b4eb1f753cf313a62fa4fc0df22cf00a8222cb6e2c849cf074e82f80701e48acf33cb0978657abcc7cf9f9cff8b814760c2cf18cb73c90e8434edcf77a160ca6908496ecf6f4948e592a46b5ccfe45ea64c816e6806cf2ef698ab97d70ae6cfc3f735a675b45fa3cf7ddcd2bc492d259bcfdf3336abf6e5cfbdcf97728531855f12cacf7b3fa82aed09e576cff5e1b66f03c86c8ccf2a7726d669da802fcfad945d54e94fce8dcf93b6fef2fc77cca2cfcb8698a9c2e8d8e0cf08de817d024c648fcf7fb28df61ec3e5f6cfe3df1e5a9b11edfdcf351041850b7808facf3a116c3a53b97559cffa39ece4f2766bebcf8894996a5c358a38cf83160101467577c3cfe5608f7023448dc9cfd741ff06ec87358acf57a35b11bed52a02cf164861ea78bf4902cff2864fc6c0a7f8f8cf9cc045a5e329aff7cf8a012be6ae878723cf0fbe19eab9c747a7cf4b8b97e3d46afa93cfd4dc29f649968531cf923e53cce9c12b18b1706172656e745f626c6f636b5f68617368c0a9746f6b656e5f696473dc0400cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94cc95cc96cc97cc98cc8ccc8dcc8ecc8fcc90cc91cc92cc93cc94ccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacccadccaeccafccb0ccb1ccb2ccb3ccb4ccb5ccb6ccb7ccb8ccb9ccbaccaaccabccacaa626c6f636b5f73697a6510a967726f75705f69647800aa73657373696f6e5f6964d92361633a313835656666343731316436343430656161316231363733366537666461353400"
+          }
+        ],
+        "sequence_gaps": [],
+        "errors": [],
+        "counts": {
+          "BlockStored": 1
+        }
+      }
+    }
+  ],
+  "probes": [
+    {
+      "case": "cache-conflict",
+      "first": {
+        "prompt_tokens": 256,
+        "simulated_cached_tokens": 0,
+        "derived_recomputed_prompt_tokens": 256,
+        "indexed_prefix_tokens": 0,
+        "simulated_hit_fraction": 0.0,
+        "cache_count_source": "official_mocker_engine_usage",
+        "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+        "worker_id": 9467355172039612003,
+        "elapsed_seconds": 0.03508448299999145,
+        "started_monotonic_seconds": 291.514145916,
+        "routing_control": {
+          "kind": "native_router_selection"
+        },
+        "request_evidence": "cache-conflict-cold.json",
+        "client_ttft_seconds": 0.034939040999972804,
+        "routing_evidence": "cache-conflict-cold-routing.json",
+        "native_sent_worker_id": 9467355172039612003,
+        "calibration": {
+          "computed_prompt_tokens": 256,
+          "cached_tokens": 0,
+          "predicted_single_batch_prefill_ms": 20.4159712239104,
+          "native_prefill_time_ms": 25.431465,
+          "observed_minus_predicted_ms": 5.015493776089599,
+          "native_timing": {
+            "request_received_ms": 1794461228881,
+            "prefill_wait_time_ms": 4.585406,
+            "prefill_time_ms": 25.431465,
+            "ttft_ms": 30.016871000000002,
+            "total_time_ms": 30.851722000000002,
+            "kv_hit_rate": 0.0,
+            "router_queue_depth": 0
+          },
+          "source_kind": "mocker_simulation",
+          "prediction_source": "frozen_official_aisimulate_performance_polynomial",
+          "comparison_kind": "single_request_batch_one_reference"
+        }
+      },
+      "hot": {
+        "prompt_tokens": 256,
+        "simulated_cached_tokens": 240,
+        "derived_recomputed_prompt_tokens": 16,
+        "indexed_prefix_tokens": 256,
+        "simulated_hit_fraction": 0.9375,
+        "cache_count_source": "official_mocker_engine_usage",
+        "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+        "worker_id": 9467355172039612003,
+        "elapsed_seconds": 0.027743325000017194,
+        "started_monotonic_seconds": 291.56153033,
+        "routing_control": {
+          "kind": "native_router_selection"
+        },
+        "request_evidence": "cache-conflict-hot.json",
+        "client_ttft_seconds": 0.027581998000016483,
+        "routing_evidence": "cache-conflict-hot-routing.json",
+        "native_sent_worker_id": 9467355172039612003,
+        "calibration": {
+          "computed_prompt_tokens": 16,
+          "cached_tokens": 240,
+          "predicted_single_batch_prefill_ms": 16.7444628157184,
+          "native_prefill_time_ms": 21.158922999999998,
+          "observed_minus_predicted_ms": 4.414460184281598,
+          "native_timing": {
+            "request_received_ms": 1794461228928,
+            "prefill_wait_time_ms": 2.2608110000000003,
+            "prefill_time_ms": 21.158922999999998,
+            "ttft_ms": 23.419734000000002,
+            "total_time_ms": 24.260998999999998,
+            "kv_hit_rate": 1.0,
+            "router_queue_depth": 0
+          },
+          "source_kind": "mocker_simulation",
+          "prediction_source": "frozen_official_aisimulate_performance_polynomial",
+          "comparison_kind": "single_request_batch_one_reference"
+        }
+      },
+      "alternative_prewarm": {
+        "prompt_tokens": 1024,
+        "simulated_cached_tokens": 0,
+        "derived_recomputed_prompt_tokens": 1024,
+        "indexed_prefix_tokens": 0,
+        "simulated_hit_fraction": 0.0,
+        "cache_count_source": "official_mocker_engine_usage",
+        "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+        "worker_id": 15871680165271849379,
+        "elapsed_seconds": 0.043822847000001275,
+        "started_monotonic_seconds": 291.605859011,
+        "routing_control": {
+          "kind": "explicit_worker",
+          "worker_id": 15871680165271849379
+        },
+        "request_evidence": "cache-conflict-prepare-alternative.json",
+        "client_ttft_seconds": 0.04368478700001788,
+        "routing_evidence": "cache-conflict-prepare-alternative-routing.json",
+        "native_sent_worker_id": 15871680165271849379,
+        "calibration": {
+          "computed_prompt_tokens": 1024,
+          "cached_tokens": 0,
+          "predicted_single_batch_prefill_ms": 32.4907119025664,
+          "native_prefill_time_ms": 37.607454999999995,
+          "observed_minus_predicted_ms": 5.1167430974335915,
+          "native_timing": {
+            "request_received_ms": 1794461228972,
+            "prefill_wait_time_ms": 1.948977,
+            "prefill_time_ms": 37.607454999999995,
+            "ttft_ms": 39.556432,
+            "total_time_ms": 40.558678,
+            "kv_hit_rate": 0.0,
+            "router_queue_depth": 0
+          },
+          "source_kind": "mocker_simulation",
+          "prediction_source": "frozen_official_aisimulate_performance_polynomial",
+          "comparison_kind": "single_request_batch_one_reference"
+        }
+      },
+      "conflict": {
+        "original_worker_id": 9467355172039612003,
+        "alternative_worker_id": 15871680165271849379,
+        "original_overlap_tokens": 256,
+        "alternative_overlap_tokens": 1024,
+        "source_kind": "live_kvindexer_observation",
+        "query": {
+          "scores": {
+            "15871680165271849379": {
+              "0": 1024
+            },
+            "9467355172039612003": {
+              "0": 256
+            }
+          },
+          "frequencies": [],
+          "instances": {
+            "9467355172039612003": {
+              "longest_matched": 256,
+              "gpu": 256,
+              "dp": {
+                "0": 256
+              },
+              "cpu": 256,
+              "disk": 256
+            },
+            "15871680165271849379": {
+              "longest_matched": 1024,
+              "gpu": 1024,
+              "dp": {
+                "0": 1024
+              },
+              "cpu": 1024,
+              "disk": 1024
+            }
+          }
+        }
+      },
+      "native_before_continuation": {
+        "protocol_version": 1,
+        "accepted": true,
+        "applied": true,
+        "reconciled": true,
+        "binding": {
+          "source_id": "coordinator-local",
+          "tenant_id": "tenant-a",
+          "workspace_id": "joint-routing-7101-hard-reselect-43161092995-cache-conflict-1",
+          "session_id": "joint-routing-7101-hard-reselect-43161092995-cache-conflict-1",
+          "actor_uid": "synthetic-configuration-identity",
+          "epoch": 1
+        },
+        "routing_session_id": "ac:c1693423b77b4f8e952374948c81b946",
+        "classifier_id": 0,
+        "binding_generation": "84f743aee02f4f91a0eae6420d4025f2",
+        "sequence": 0,
+        "received_at": "2026-11-12T05:27:09.524310746Z",
+        "snapshot": {
+          "cache_observation": null,
+          "cache_candidates": {
+            "request_id": "89158b80-9e53-40f3-8e65-52e4cddf2630",
+            "observed_at": "2026-11-12T05:27:08.929282431Z",
+            "source_kind": "native_router_candidate_snapshot",
+            "block_size_tokens": 16,
+            "history_tokens": 256,
+            "prefix_digest": "e0dfb2d919718383",
+            "sequence_hashes": [
+              10550889012891597696,
+              7305549090812370813,
+              18414445927045479780,
+              3669355181274394006,
+              4173176203762222601,
+              2155435614800851841,
+              10340811015260892365,
+              17772646875021919507,
+              6644916339206504900,
+              13039912952567697599,
+              17924363379147489144,
+              414602253678602090,
+              8908204671359246460,
+              6352276479484800337,
+              12932366647546433989,
+              16203866629806850947
+            ],
+            "candidates": [
+              {
+                "worker_id": 9467355172039612003,
+                "dp_rank": 0,
+                "device_overlap_tokens": 256.0,
+                "host_overlap_tokens": 0.0,
+                "disk_overlap_tokens": 0.0,
+                "has_tier_matches": true,
+                "active_prefill_tokens": 0,
+                "active_decode_blocks": 0,
+                "worker_epoch": null,
+                "event_watermark": null,
+                "gap_pending": null
+              }
+            ]
+          },
+          "cache_reselect": true,
+          "worker_budget_tokens": [
+            {
+              "worker_id": 9467355172039612003,
+              "dp_rank": 0,
+              "tokens": 257
+            }
+          ],
+          "selected_worker_id": 9467355172039612003,
+          "selected_dp_rank": 0,
+          "assigned_worker_id": 9467355172039612003,
+          "assigned_dp_rank": 0,
+          "assigned_worker": {
+            "worker_id": 9467355172039612003,
+            "dp_rank": 0
+          },
+          "program_present": true,
+          "admission_history": [
+            {
+              "request_id": "9b8bde79-8f01-4ec9-b521-e7794554ccf6",
+              "client_request_id": null,
+              "queued_at": "2026-11-12T05:27:08.883907108Z",
+              "admitted_at": "2026-11-12T05:27:08.884376540Z",
+              "wait_ms": 0.46943199999999996
+            },
+            {
+              "request_id": "89158b80-9e53-40f3-8e65-52e4cddf2630",
+              "client_request_id": null,
+              "queued_at": "2026-11-12T05:27:08.929255145Z",
+              "admitted_at": "2026-11-12T05:27:08.929486762Z",
+              "wait_ms": 0.231617
+            }
+          ],
+          "last_admission_wait_ms": 0.231617,
+          "released_acting_tokens": 0,
+          "phase": "Acting",
+          "lifecycle": "Active",
+          "baseline_tokens": 257,
+          "logical_budget_tokens": 257,
+          "execution_multiplier": 1.0,
+          "state": null,
+          "sequence": 0,
+          "fresh": false,
+          "session_waiting_requests": 0,
+          "session_active_requests": 0,
+          "waiting_requests": 0,
+          "paused_programs": 0,
+          "completed_events": 3,
+          "aborted_events": 0,
+          "pause_events": 0,
+          "final_events": 1
+        }
+      },
+      "native_after_continuation": {
+        "protocol_version": 1,
+        "accepted": true,
+        "applied": true,
+        "reconciled": true,
+        "binding": {
+          "source_id": "coordinator-local",
+          "tenant_id": "tenant-a",
+          "workspace_id": "joint-routing-7101-hard-reselect-43161092995-cache-conflict-1",
+          "session_id": "joint-routing-7101-hard-reselect-43161092995-cache-conflict-1",
+          "actor_uid": "synthetic-configuration-identity",
+          "epoch": 1
+        },
+        "routing_session_id": "ac:c1693423b77b4f8e952374948c81b946",
+        "classifier_id": 0,
+        "binding_generation": "84f743aee02f4f91a0eae6420d4025f2",
+        "sequence": 0,
+        "received_at": "2026-11-12T05:27:09.582319044Z",
+        "snapshot": {
+          "cache_observation": null,
+          "cache_candidates": {
+            "request_id": "1d78fca1-52a7-4c12-8239-c73a792c8179",
+            "observed_at": "2026-11-12T05:27:09.534849923Z",
+            "source_kind": "native_router_candidate_snapshot",
+            "block_size_tokens": 16,
+            "history_tokens": 1024,
+            "prefix_digest": "923e53cce9c12b18",
+            "sequence_hashes": [
+              10550889012891597696,
+              7305549090812370813,
+              18414445927045479780,
+              3669355181274394006,
+              4173176203762222601,
+              2155435614800851841,
+              10340811015260892365,
+              17772646875021919507,
+              6644916339206504900,
+              13039912952567697599,
+              17924363379147489144,
+              414602253678602090,
+              8908204671359246460,
+              6352276479484800337,
+              12932366647546433989,
+              16203866629806850947,
+              3326015086617872544,
+              6532173065762665460,
+              15566276610929184058,
+              6975295492006717648,
+              17365476122933241921,
+              4419963431853522887,
+              2742324193396240235,
+              6980507450120713577,
+              16202384978652297043,
+              3547256483727073058,
+              47325371529611337,
+              526502208229991562,
+              3732087128909855943,
+              11501348523031879874,
+              1786648984551699693,
+              8620277584225651054,
+              8019020762354838364,
+              16455772935977592838,
+              3384060032769788646,
+              14120814145699078051,
+              9069355455740716443,
+              16083258806479736765,
+              10912931294809625290,
+              8881001892516849014,
+              17717642996973333644,
+              3059957174162325551,
+              12507724684387667597,
+              10643975088907996322,
+              14665577091465533664,
+              639090571042645135,
+              9201573076888970742,
+              16419876140913651197,
+              3823628123316422906,
+              4184244526572467545,
+              18030703051219037163,
+              9841659767803972152,
+              9445738373444892611,
+              16528368344240524745,
+              15510958996843869578,
+              6314991234277779970,
+              1605640926833625346,
+              17475743119112141048,
+              11295104444228284407,
+              9944277721981355811,
+              1134372652073830311,
+              5443611579384527507,
+              15338180568690361649,
+              10537952317653723928
+            ],
+            "candidates": [
+              {
+                "worker_id": 9467355172039612003,
+                "dp_rank": 0,
+                "device_overlap_tokens": 256.0,
+                "host_overlap_tokens": 0.0,
+                "disk_overlap_tokens": 0.0,
+                "has_tier_matches": true,
+                "active_prefill_tokens": 0,
+                "active_decode_blocks": 0,
+                "worker_epoch": null,
+                "event_watermark": null,
+                "gap_pending": null
+              }
+            ]
+          },
+          "cache_reselect": true,
+          "worker_budget_tokens": [
+            {
+              "worker_id": 9467355172039612003,
+              "dp_rank": 0,
+              "tokens": 1025
+            }
+          ],
+          "selected_worker_id": 9467355172039612003,
+          "selected_dp_rank": 0,
+          "assigned_worker_id": 9467355172039612003,
+          "assigned_dp_rank": 0,
+          "assigned_worker": {
+            "worker_id": 9467355172039612003,
+            "dp_rank": 0
+          },
+          "program_present": true,
+          "admission_history": [
+            {
+              "request_id": "9b8bde79-8f01-4ec9-b521-e7794554ccf6",
+              "client_request_id": null,
+              "queued_at": "2026-11-12T05:27:08.883907108Z",
+              "admitted_at": "2026-11-12T05:27:08.884376540Z",
+              "wait_ms": 0.46943199999999996
+            },
+            {
+              "request_id": "89158b80-9e53-40f3-8e65-52e4cddf2630",
+              "client_request_id": null,
+              "queued_at": "2026-11-12T05:27:08.929255145Z",
+              "admitted_at": "2026-11-12T05:27:08.929486762Z",
+              "wait_ms": 0.231617
+            },
+            {
+              "request_id": "1d78fca1-52a7-4c12-8239-c73a792c8179",
+              "client_request_id": null,
+              "queued_at": "2026-11-12T05:27:09.534836154Z",
+              "admitted_at": "2026-11-12T05:27:09.535073167Z",
+              "wait_ms": 0.237013
+            }
+          ],
+          "last_admission_wait_ms": 0.237013,
+          "released_acting_tokens": 0,
+          "phase": "Acting",
+          "lifecycle": "Active",
+          "baseline_tokens": 1025,
+          "logical_budget_tokens": 1025,
+          "execution_multiplier": 1.0,
+          "state": null,
+          "sequence": 0,
+          "fresh": false,
+          "session_waiting_requests": 0,
+          "session_active_requests": 0,
+          "waiting_requests": 0,
+          "paused_programs": 0,
+          "completed_events": 4,
+          "aborted_events": 0,
+          "pause_events": 0,
+          "final_events": 1
+        }
+      },
+      "continuation": {
+        "prompt_tokens": 1024,
+        "simulated_cached_tokens": 256,
+        "derived_recomputed_prompt_tokens": 768,
+        "indexed_prefix_tokens": 256,
+        "simulated_hit_fraction": 0.25,
+        "cache_count_source": "official_mocker_engine_usage",
+        "recompute_count_source": "prompt_tokens_minus_engine_cached_tokens",
+        "worker_id": 9467355172039612003,
+        "elapsed_seconds": 0.03868478399999731,
+        "started_monotonic_seconds": 292.16705108,
+        "routing_control": {
+          "kind": "native_router_selection"
+        },
+        "request_evidence": "cache-conflict-continuation.json",
+        "client_ttft_seconds": 0.03854003699996156,
+        "routing_evidence": "cache-conflict-continuation-routing.json",
+        "native_sent_worker_id": 9467355172039612003,
+        "calibration": {
+          "computed_prompt_tokens": 768,
+          "cached_tokens": 256,
+          "predicted_single_batch_prefill_ms": 28.4106171751936,
+          "native_prefill_time_ms": 32.59729900000001,
+          "observed_minus_predicted_ms": 4.186681824806406,
+          "native_timing": {
+            "request_received_ms": 1794461229533,
+            "prefill_wait_time_ms": 2.1950469999999997,
+            "prefill_time_ms": 32.59729900000001,
+            "ttft_ms": 34.792346,
+            "total_time_ms": 35.483532999999994,
+            "kv_hit_rate": 0.25,
+            "router_queue_depth": 0
+          },
+          "source_kind": "mocker_simulation",
+          "prediction_source": "frozen_official_aisimulate_performance_polynomial",
+          "comparison_kind": "single_request_batch_one_reference"
+        }
+      },
+      "previous_worker_id": 9467355172039612003,
+      "selected_worker_id": 9467355172039612003,
+      "selected_alternative": false,
+      "preserved_previous_worker": true,
+      "load": null,
+      "routing_expectation": "record_native_assignment_affinity_and_cache_selection",
+      "structural_status": "passed"
+    }
+  ],
+  "preflight": {
+    "schema_version": 1,
+    "features": [
+      "custom-policy",
+      "kv-indexer",
+      "kv-indexer-metrics"
+    ],
+    "upstream_commit": "c5680e573b86623df3b6b017a408373aeba93469",
+    "overlay_manifest_sha256": "9f8ab83fee291835fb5a75b0e30ab9607ad65d82a97c0502f1701f04dfb2ecdc",
+    "wheel": "ai_dynamo_runtime-1.7.0-cp311-abi3-manylinux_2_35_x86_64.whl",
+    "wheel_sha256": "a94dbc7a6b9b5c7b88f54fc2e1317e0f00ea4302007dd4714b3b0393bf4c081b",
+    "core_sha256": "940a67a0b22598baa21e91c96af1945e833547c35c050d475c88e980a3c15d25",
+    "gpu_execution": false,
+    "build_command": [
+      "/home/runner/work/agentcloud/agentcloud/artifacts/kv-event-wheel/build-env/bin/maturin",
+      "build",
+      "--locked",
+      "--interpreter",
+      "/home/runner/work/agentcloud/agentcloud/artifacts/kv-event-wheel/build-env/bin/python",
+      "--manifest-path",
+      "lib/bindings/python/Cargo.toml",
+      "--no-default-features",
+      "--features",
+      "custom-policy,kv-indexer,kv-indexer-metrics",
+      "--out",
+      "/home/runner/work/agentcloud/agentcloud/artifacts/kv-event-wheel"
+    ],
+    "protoc_sha256": "319dee0c80d3738a2d5f220ee2e08900fef0a2feba88d88be2c33d8ddfb52691",
+    "build_libc": {
+      "name": "glibc",
+      "version": "2.35"
+    },
+    "project_commit": "9555c267929af2f4e32f1d8139e4536e8eaca090"
+  },
+  "gpu_execution": false,
+  "actor_lifecycle_integration": false,
+  "execution_kind": "native-two-official-mockers-configuration-probe",
+  "source_commit": "55120d52e1be0fef3ab443af66f81baa046cc320",
+  "github_run_id": "43161092995",
+  "github_run_attempt": "1",
+  "wheel_run_id": "43012181604",
+  "source_sha256": {
+    "experiments/dynamo/joint_routing.py": "8d180cf78c607e0016ce9a4d19778be65f0c3cca487c8c6d740c74b05b11a90f",
+    "bench/joint_kv_runtime.py": "50af1e04f7c10118d6e235ddec9c5d14716c8ec3542aaa372b454abb2d986b3f",
+    "experiments/dynamo/joint_calibration.py": "a81bed81e0c78707b37899287416b04f4b1dc929d7daf41b46cb0ae304e0553d",
+    "bench/configs/joint-kv-calibration.json": "6f3821ddce2f7fbf413fd3659c60dd2a4aa5170f6ab76342a10e6f14b0e2355c",
+    "integrations/dynamo/manifest.json": "9f8ab83fee291835fb5a75b0e30ab9607ad65d82a97c0502f1701f04dfb2ecdc"
+  },
+  "worker_ids": [
+    9467355172039612003,
+    15871680165271849379
+  ],
+  "tokenizer_sha256": "7a18c84084733ccbc3969a2fe0ac0b8f8086fb6d958e45867a9b95be006d90c6",
+  "cleanup": {
+    "process_exit_codes": [
+      -15,
+      0,
+      0,
+      0
+    ],
+    "remaining_group_rss_bytes": 0,
+    "peak_owned_rss_bytes": 955392000,
+    "peak_owned_pss_bytes": 418114560,
+    "resource_stop_reason": "completed_without_resource_stop",
+    "memory_scope": "Dynamo, indexer, Mocker and coordinator process groups; cluster included in system MemAvailable"
+  },
+  "commands": [
+    {
+      "name": "indexer",
+      "argv": [
+        "/home/runner/work/agentcloud/agentcloud/.venv-dynamo/bin/python",
+        "-m",
+        "dynamo.indexer",
+        "--port",
+        "27823",
+        "--block-size",
+        "16",
+        "--threads",
+        "1"
+      ],
+      "pid": 3665
+    },
+    {
+      "name": "frontend",
+      "argv": [
+        "/home/runner/work/agentcloud/agentcloud/.venv-dynamo/bin/python",
+        "-m",
+        "dynamo.frontend",
+        "--http-host",
+        "127.0.0.1",
+        "--http-port",
+        "26610",
+        "--router-mode",
+        "kv",
+        "--router-policy-config",
+        "/home/runner/work/agentcloud/agentcloud/artifacts/joint-kv-routing/hard-reselect/policy.yaml",
+        "--kv-cache-block-size",
+        "16",
+        "--discovery-backend",
+        "file",
+        "--request-plane",
+        "tcp",
+        "--event-plane",
+        "zmq",
+        "--router-session-affinity-ttl-secs",
+        "300",
+        "--router-session-affinity-mode",
+        "hard"
+      ],
+      "pid": 3666
+    },
+    {
+      "name": "mocker-0",
+      "argv": [
+        "/home/runner/work/agentcloud/agentcloud/.venv-dynamo/bin/python",
+        "-m",
+        "dynamo.mocker",
+        "--model-path",
+        "/home/runner/work/agentcloud/agentcloud/artifacts/joint-kv-routing/hard-reselect/private/tokenizer",
+        "--model-name",
+        "agentcloud-tiny",
+        "--num-workers",
+        "1",
+        "--block-size",
+        "16",
+        "--num-gpu-blocks-override",
+        "1024",
+        "--max-model-len",
+        "16384",
+        "--kv-bytes-per-token",
+        "512",
+        "--speedup-ratio",
+        "1",
+        "--zmq-kv-events-ports",
+        "31857",
+        "--zmq-replay-ports",
+        "24205",
+        "--discovery-backend",
+        "file",
+        "--request-plane",
+        "tcp",
+        "--event-plane",
+        "zmq"
+      ],
+      "pid": 3674
+    },
+    {
+      "name": "mocker-1",
+      "argv": [
+        "/home/runner/work/agentcloud/agentcloud/.venv-dynamo/bin/python",
+        "-m",
+        "dynamo.mocker",
+        "--model-path",
+        "/home/runner/work/agentcloud/agentcloud/artifacts/joint-kv-routing/hard-reselect/private/tokenizer",
+        "--model-name",
+        "agentcloud-tiny",
+        "--num-workers",
+        "1",
+        "--block-size",
+        "16",
+        "--num-gpu-blocks-override",
+        "1024",
+        "--max-model-len",
+        "16384",
+        "--kv-bytes-per-token",
+        "512",
+        "--speedup-ratio",
+        "1",
+        "--zmq-kv-events-ports",
+        "22701",
+        "--zmq-replay-ports",
+        "18362",
+        "--discovery-backend",
+        "file",
+        "--request-plane",
+        "tcp",
+        "--event-plane",
+        "zmq"
+      ],
+      "pid": 3734
+    }
+  ],
+  "finished_at": "2026-11-12T05:27:10.716479+00:00"
+}

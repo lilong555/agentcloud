@@ -1,0 +1,29 @@
+Standalone KV cache indexer
+
+Usage: python -m dynamo.indexer [OPTIONS]
+
+Options:
+      --block-size <BLOCK_SIZE>
+          KV cache block size for initial workers registered via --workers
+      --port <PORT>
+          HTTP server port [default: 8090]
+      --threads <THREADS>
+          Number of indexer threads (1 = single-threaded KvIndexer, >1 = ThreadPoolIndexer) [default: 4]
+      --workers <WORKERS>
+          Initial workers as "worker_id[:dp_rank]=zmq_address,..." (e.g. "1=tcp://host:5557,1:1=tcp://host:5558")
+      --model-name <MODEL_NAME>
+          Model name for initial workers registered via --workers [default: default]
+      --routing-group <ROUTING_GROUP>
+          Routing group for initial workers registered via --workers [default: default]
+      --engine-owned-mm-identity
+          Initial workers registered via --workers derive multimodal pad values from engine identities (SGLang after sgl-project/sglang#43043)
+      --peers <PEERS>
+          Comma-separated peer URLs for P2P recovery (e.g. "http://host1:8090,http://host2:8091")
+      --access-log <ACCESS_LOG>
+          Write access log (JSON lines) to this file
+      --trace-id-header <TRACE_ID_HEADER>
+          HTTP header name to extract trace-id from [default: x-trace-id]
+      --access-log-local-time
+          Use local timezone for access log timestamps (default: UTC)
+  -h, --help
+          Print help

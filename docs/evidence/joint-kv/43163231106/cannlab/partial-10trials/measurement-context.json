@@ -1,0 +1,726 @@
+{
+  "source_kind": "joint_kv_full_measurement_context",
+  "gpu_execution": false,
+  "github_run_id": "43163231106",
+  "github_run_attempt": "1",
+  "summary_sha256": "6b0f0584e20092e406c6ccaef829f1a1670d860049a4c4b68445e91e3fb371e0",
+  "definitions": {
+    "resource_transition_uncertainty_estimate_gb_s": "Sampling reference from transitions and polling intervals, measured in GB seconds. Interpret resource differences together with this scale and coverage. This reference describes sampling uncertainty rather than a probabilistic interval.",
+    "transition_uncertainty_reference_sum_gb_s": "Sum of treatment and baseline transition sampling references for the paired trial.",
+    "combined_wait_p95_seconds": "P95 of each request gateway_queue_seconds plus trajectory_queue_seconds; the sum is formed before quantile calculation.",
+    "first_round_gateway_wait": "Gateway actor-slot wait is included in first-round latency. Phase timing separately records TTFT, gateway wait, trajectory wait and their combined wait.",
+    "storage_null_and_zero_semantics": "See docs/evidence/joint-kv/43163231106/storage-observation-semantics.json.",
+    "phase_timing_null": "No valid completed request was observed for the corresponding phase.",
+    "resource_sampling_null": "The original raw trial did not supply this resource sampling observation.",
+    "effectful_applied": "Counts valid native predictions with applied_to_decision=true and finite nonzero delta_ms. The runtime observes the cost term and resulting action; a decision-changed counterfactual remains unobserved.",
+    "native_kv_delta_scale_null": "No deduplicated applied prediction supplied a corresponding finite native cost value. Event references are absent when the artifact supplied no scheduler event record.",
+    "decision_changed_status": "The runtime did not execute a matched counterfactual decision with the KV delta removed. Independent Go replay evidence records the action comparison separately.",
+    "performance_attribution": "Paired performance differences describe the complete policy execution; the native delta scale and action diagnostics accompany causal interpretation.",
+    "analysis_receipt_reference_null": "The ARM analysis receipt has reference_summary_sha256 and byte_identical_to_reference=null when no local reference full summary was transferred. Input hashes and output hashes are independently recorded."
+  },
+  "trials": [
+    {
+      "trial_id": "scale-7305-32-static-2-b6e963c2ccd8",
+      "policy": "static-2",
+      "concurrency": 32,
+      "seed": 7305,
+      "result_path": "docs/evidence/joint-kv/43163231106/13920537805/experiment/scale-7305-32-static-2-b6e963c2ccd8/result.json",
+      "result_sha256": "808cdf5404c2eb9f6d6644705cbe20e6880a8be718f9df325dc9cfe9798febba",
+      "native_kv_delta_scale": {
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13920537805/experiment/scale-7305-32-static-2-b6e963c2ccd8/events.jsonl.gz",
+        "event_sha256": "5fcee743c35509e7cb588105280d24eb19f689c2651b86e3ea6712c8d6a402bd"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9976100528308413,
+        "resource_uncovered_worker_seconds": 1.4085137844085693,
+        "resource_sample_max_gap_seconds": 0.5379538536071777,
+        "resource_transition_uncertainty_estimate_gb_s": 12.299198400000012,
+        "actor_reserved_gb_s": 211.8754423679996,
+        "stranded_worker_gb_s": 99.18591648000037
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 55.626727712154384,
+          "gateway_wait_p95_seconds": 53.45117610850005,
+          "trajectory_wait_p95_seconds": 0.02625056505203247,
+          "combined_wait_p95_seconds": 53.4711470381227
+        },
+        "later_rounds": {
+          "completed_requests": 160,
+          "ttft_p95_seconds": 54.676918709278105,
+          "gateway_wait_p95_seconds": 50.91213726205,
+          "trajectory_wait_p95_seconds": 2.5066604852676386,
+          "combined_wait_p95_seconds": 52.599046449699145
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7305-32-agentcloud-v2-b62a2ec67613",
+      "policy": "agentcloud-v2",
+      "concurrency": 32,
+      "seed": 7305,
+      "result_path": "docs/evidence/joint-kv/43163231106/13920537805/experiment/scale-7305-32-agentcloud-v2-b62a2ec67613/result.json",
+      "result_sha256": "91cb2ae4d817f13afbab87ed51033a592d0d033b69681b871cfbfc529f39596e",
+      "native_kv_delta_scale": {
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13920537805/experiment/scale-7305-32-agentcloud-v2-b62a2ec67613/events.jsonl.gz",
+        "event_sha256": "ebafab9786f04d46f4792f851f9c950319096a46aad184a42119b838fbd242d0"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9983080312470576,
+        "resource_uncovered_worker_seconds": 0.8752806186676025,
+        "resource_sample_max_gap_seconds": 0.5470070838928223,
+        "resource_transition_uncertainty_estimate_gb_s": 7.761722624,
+        "actor_reserved_gb_s": 211.4598817279997,
+        "stranded_worker_gb_s": 108.94170540800008
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 226.46877179145812,
+          "gateway_wait_p95_seconds": 224.1401440449,
+          "trajectory_wait_p95_seconds": 0.04992833137512207,
+          "combined_wait_p95_seconds": 224.18956437780864
+        },
+        "later_rounds": {
+          "completed_requests": 160,
+          "ttft_p95_seconds": 5.0465586304664605,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.11016310453414911,
+          "combined_wait_p95_seconds": 0.11830536127090434
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7305-32-agentcloud-v2-cache-0b24f4a1ee0b",
+      "policy": "agentcloud-v2-cache",
+      "concurrency": 32,
+      "seed": 7305,
+      "result_path": "docs/evidence/joint-kv/43163231106/13920537805/experiment/scale-7305-32-agentcloud-v2-cache-0b24f4a1ee0b/result.json",
+      "result_sha256": "33e493a4f57c153b075cd1abf56f94bd701e4cddef896a691239b9946a3f2ae4",
+      "native_kv_delta_scale": {
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13920537805/experiment/scale-7305-32-agentcloud-v2-cache-0b24f4a1ee0b/events.jsonl.gz",
+        "event_sha256": "e15d52d4803e684c43724fb97936b0fe96accc91076c69eb2ee14008f02f83fd"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9974317572093993,
+        "resource_uncovered_worker_seconds": 1.3381321430206299,
+        "resource_sample_max_gap_seconds": 0.6467099189758301,
+        "resource_transition_uncertainty_estimate_gb_s": 7.610232896000005,
+        "actor_reserved_gb_s": 214.48186944000028,
+        "stranded_worker_gb_s": 109.72192415999997
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 232.89896025657654,
+          "gateway_wait_p95_seconds": 230.54025293759992,
+          "trajectory_wait_p95_seconds": 0.0264615535736084,
+          "combined_wait_p95_seconds": 230.56528793744732
+        },
+        "later_rounds": {
+          "completed_requests": 160,
+          "ttft_p95_seconds": 4.824698591232298,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.12562720775604236,
+          "combined_wait_p95_seconds": 0.13257077932357778
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7305-32-agentcloud-v2-joint-a451205cf707",
+      "policy": "agentcloud-v2-joint",
+      "concurrency": 32,
+      "seed": 7305,
+      "result_path": "docs/evidence/joint-kv/43163231106/13920537805/experiment/scale-7305-32-agentcloud-v2-joint-a451205cf707/result.json",
+      "result_sha256": "bf70419d3dff2e3f41659be41547acf29043ce903a1225dc440efe59497a4234",
+      "native_kv_delta_scale": {
+        "unique_predictions": 1566,
+        "applied": 838,
+        "nonzero_applied_delta_ms": {
+          "observed": 678,
+          "p50": 0.000496795755966388,
+          "p95": 0.0008133111329639037,
+          "maximum": 0.0008653381190350529
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 838,
+          "p50": 3303.0,
+          "p95": 3494.15
+        },
+        "applied_action_counts": {
+          "KEEP": 838
+        },
+        "all_action_counts": {
+          "KEEP": 1495,
+          "SUSPEND": 71
+        },
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13920537805/experiment/scale-7305-32-agentcloud-v2-joint-a451205cf707/events.jsonl.gz",
+        "event_sha256": "f421009d7becfca732e29c53acda145af938c9df76d09b0c37f8d3585bc48259"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9990434338395656,
+        "resource_uncovered_worker_seconds": 0.5182738304138184,
+        "resource_sample_max_gap_seconds": 0.4647679328918457,
+        "resource_transition_uncertainty_estimate_gb_s": 7.315126847999999,
+        "actor_reserved_gb_s": 215.54279008000017,
+        "stranded_worker_gb_s": 109.96413312000013
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 232.0073103070259,
+          "gateway_wait_p95_seconds": 229.46737031600009,
+          "trajectory_wait_p95_seconds": 0.02657351493835449,
+          "combined_wait_p95_seconds": 229.49152418038378
+        },
+        "later_rounds": {
+          "completed_requests": 160,
+          "ttft_p95_seconds": 5.176219141483306,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.14593719244003295,
+          "combined_wait_p95_seconds": 0.1473191261291501
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7305-32-static-15-5a594135d220",
+      "policy": "static-15",
+      "concurrency": 32,
+      "seed": 7305,
+      "result_path": "docs/evidence/joint-kv/43163231106/13920537805/experiment/scale-7305-32-static-15-5a594135d220/result.json",
+      "result_sha256": "e704cecb4d059b9b1e1ff71d8bcd85a57ce2f537d8164cc424653c221451a208",
+      "native_kv_delta_scale": {
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13920537805/experiment/scale-7305-32-static-15-5a594135d220/events.jsonl.gz",
+        "event_sha256": "3298737e9189085850d17f63676d6c4d84f0991b03d6fda67a94cee806414549"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9997510360823798,
+        "resource_uncovered_worker_seconds": 0.10361504554748535,
+        "resource_sample_max_gap_seconds": 0.40361499786376953,
+        "resource_transition_uncertainty_estimate_gb_s": 2.46301664,
+        "actor_reserved_gb_s": 202.22727148799936,
+        "stranded_worker_gb_s": 117.96547795200009
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 178.83004622459413,
+          "gateway_wait_p95_seconds": 176.49736279975005,
+          "trajectory_wait_p95_seconds": 0.03942736387252807,
+          "combined_wait_p95_seconds": 176.53724799882002
+        },
+        "later_rounds": {
+          "completed_requests": 160,
+          "ttft_p95_seconds": 2.063831794261932,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.10333005189895629,
+          "combined_wait_p95_seconds": 0.10333005189895629
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7302-32-agentcloud-v2-cache-d03f84445150",
+      "policy": "agentcloud-v2-cache",
+      "concurrency": 32,
+      "seed": 7302,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921400301/experiment/scale-7302-32-agentcloud-v2-cache-d03f84445150/result.json",
+      "result_sha256": "a58838f1941b0ae0fea864af7eb859a7fd302ad7e248c103b7f4f181481e78d3",
+      "native_kv_delta_scale": {
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921400301/experiment/scale-7302-32-agentcloud-v2-cache-d03f84445150/events.jsonl.gz",
+        "event_sha256": "7bf6828f0140c5838f4838ec86d7000c2ecac6630335901a5d322d0555f4c586"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9994656556734622,
+        "resource_uncovered_worker_seconds": 0.2910470962524414,
+        "resource_sample_max_gap_seconds": 0.43058204650878906,
+        "resource_transition_uncertainty_estimate_gb_s": 7.433014783999997,
+        "actor_reserved_gb_s": 210.9431822720002,
+        "stranded_worker_gb_s": 112.40812729599969
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 230.56101142168043,
+          "gateway_wait_p95_seconds": 228.19380516835005,
+          "trajectory_wait_p95_seconds": 0.0276796817779541,
+          "combined_wait_p95_seconds": 228.22135575838834
+        },
+        "later_rounds": {
+          "completed_requests": 157,
+          "ttft_p95_seconds": 4.7946858406066895,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.12947158813476556,
+          "combined_wait_p95_seconds": 0.12947158813476556
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7302-32-agentcloud-v2-joint-fa1c7ec84320",
+      "policy": "agentcloud-v2-joint",
+      "concurrency": 32,
+      "seed": 7302,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921400301/experiment/scale-7302-32-agentcloud-v2-joint-fa1c7ec84320/result.json",
+      "result_sha256": "445452c2f4af42b3c0077e79357e085fc3d526018ad074e09fd5e11b61d96692",
+      "native_kv_delta_scale": {
+        "unique_predictions": 1573,
+        "applied": 818,
+        "nonzero_applied_delta_ms": {
+          "observed": 398,
+          "p50": 0.006173829269571177,
+          "p95": 0.007875425050599152,
+          "maximum": 0.008243541646771546
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 818,
+          "p50": 3445.0,
+          "p95": 3495.0
+        },
+        "applied_action_counts": {
+          "KEEP": 817,
+          "SUSPEND": 1
+        },
+        "all_action_counts": {
+          "KEEP": 1497,
+          "SUSPEND": 76
+        },
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921400301/experiment/scale-7302-32-agentcloud-v2-joint-fa1c7ec84320/events.jsonl.gz",
+        "event_sha256": "79a92e2ea8c06f6a85c24fa8cc2d747e1b3e3c2532dc88b4b2914d84a171bceb"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9985644904078371,
+        "resource_uncovered_worker_seconds": 0.8316986560821533,
+        "resource_sample_max_gap_seconds": 0.4690701961517334,
+        "resource_transition_uncertainty_estimate_gb_s": 8.428792192000003,
+        "actor_reserved_gb_s": 226.38981644799975,
+        "stranded_worker_gb_s": 112.82286944000033
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 241.06294745206833,
+          "gateway_wait_p95_seconds": 238.1251889455,
+          "trajectory_wait_p95_seconds": 0.10404384136199951,
+          "combined_wait_p95_seconds": 238.2293183791319
+        },
+        "later_rounds": {
+          "completed_requests": 157,
+          "ttft_p95_seconds": 5.341982889175414,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.15531454086303703,
+          "combined_wait_p95_seconds": 0.15531454086303703
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7302-32-static-15-5e9f3882a62c",
+      "policy": "static-15",
+      "concurrency": 32,
+      "seed": 7302,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921400301/experiment/scale-7302-32-static-15-5e9f3882a62c/result.json",
+      "result_sha256": "cdb16eeaf345419782f77f06924e23eafc66ae9f0be5e2b4e1b56226b6e31473",
+      "native_kv_delta_scale": {
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921400301/experiment/scale-7302-32-static-15-5e9f3882a62c/events.jsonl.gz",
+        "event_sha256": "197fc85bd5fd605426db5ff59ea6d4cfdcb88104274a39206549db0c97ea0dd2"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9995496987123162,
+        "resource_uncovered_worker_seconds": 0.20208430290222168,
+        "resource_sample_max_gap_seconds": 0.4722268581390381,
+        "resource_transition_uncertainty_estimate_gb_s": 2.69562368,
+        "actor_reserved_gb_s": 213.99668678400008,
+        "stranded_worker_gb_s": 119.66751641599949
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 189.23557442426682,
+          "gateway_wait_p95_seconds": 186.90766049444994,
+          "trajectory_wait_p95_seconds": 0.02069847583770752,
+          "combined_wait_p95_seconds": 186.92234223902543
+        },
+        "later_rounds": {
+          "completed_requests": 157,
+          "ttft_p95_seconds": 2.3981414318084715,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.10261740684509277,
+          "combined_wait_p95_seconds": 0.10261740684509277
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7302-32-static-2-e283b6052bea",
+      "policy": "static-2",
+      "concurrency": 32,
+      "seed": 7302,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921400301/experiment/scale-7302-32-static-2-e283b6052bea/result.json",
+      "result_sha256": "eb93b7c322a4cd30b6ba6c5304d27d068cce2ee98d3967ac59ebf76d7a728cd6",
+      "native_kv_delta_scale": {
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921400301/experiment/scale-7302-32-static-2-e283b6052bea/events.jsonl.gz",
+        "event_sha256": "ae9b3d0d6c03637ce5722c61067a30eddc7fd180da96c27a928dbe0ac46db7da"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9973112028524932,
+        "resource_uncovered_worker_seconds": 1.6766202449798584,
+        "resource_sample_max_gap_seconds": 0.5608768463134766,
+        "resource_transition_uncertainty_estimate_gb_s": 13.649582784,
+        "actor_reserved_gb_s": 225.79716582399982,
+        "stranded_worker_gb_s": 104.05473913599988
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 65.17635009288787,
+          "gateway_wait_p95_seconds": 62.30160395800005,
+          "trajectory_wait_p95_seconds": 0.025812101364135743,
+          "combined_wait_p95_seconds": 62.3229433506621
+        },
+        "later_rounds": {
+          "completed_requests": 157,
+          "ttft_p95_seconds": 66.41218070983886,
+          "gateway_wait_p95_seconds": 62.2142096644,
+          "trajectory_wait_p95_seconds": 2.341192960739135,
+          "combined_wait_p95_seconds": 63.66916353075112
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    },
+    {
+      "trial_id": "scale-7302-32-agentcloud-v2-b22601070d80",
+      "policy": "agentcloud-v2",
+      "concurrency": 32,
+      "seed": 7302,
+      "result_path": "docs/evidence/joint-kv/43163231106/13921400301/experiment/scale-7302-32-agentcloud-v2-b22601070d80/result.json",
+      "result_sha256": "0717c30e05ff65bc9d8f535f0b973471c24704632f0398e8dc0230df097bede1",
+      "native_kv_delta_scale": {
+        "unique_predictions": 0,
+        "applied": 0,
+        "nonzero_applied_delta_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "applied_baseline_switch_cost_ms": {
+          "observed": 0,
+          "p50": null,
+          "p95": null
+        },
+        "applied_action_counts": {},
+        "all_action_counts": {},
+        "decision_changed_status": "unobserved_by_runtime_counterfactual",
+        "event_path": "docs/evidence/joint-kv/43163231106/13921400301/experiment/scale-7302-32-agentcloud-v2-b22601070d80/events.jsonl.gz",
+        "event_sha256": "a35b14a945aa59b69eb35ee7c92b78d6e57ac3d69252695299f0de6549869259"
+      },
+      "resource_sampling": {
+        "resource_coverage_fraction": 0.9994376451788233,
+        "resource_uncovered_worker_seconds": 0.2942180633544922,
+        "resource_sample_max_gap_seconds": 0.3771698474884033,
+        "resource_transition_uncertainty_estimate_gb_s": 7.636671359999999,
+        "actor_reserved_gb_s": 214.78684313599933,
+        "stranded_worker_gb_s": 112.4683002240002
+      },
+      "phase_timing": {
+        "first_round": {
+          "completed_requests": 32,
+          "ttft_p95_seconds": 224.3365166902542,
+          "gateway_wait_p95_seconds": 222.09613618054985,
+          "trajectory_wait_p95_seconds": 0.027195990085601807,
+          "combined_wait_p95_seconds": 222.12299070754648
+        },
+        "later_rounds": {
+          "completed_requests": 157,
+          "ttft_p95_seconds": 5.110263490676878,
+          "gateway_wait_p95_seconds": 0.0,
+          "trajectory_wait_p95_seconds": 0.11477026939392088,
+          "combined_wait_p95_seconds": 0.11662945747375487
+        }
+      },
+      "storage_observation": {
+        "snapshot_tag_count": null,
+        "snapshot_write_bytes": null,
+        "peak_storage_bytes": null,
+        "snapshot_write_amplification": null,
+        "snapshot_logical_upload_records": 0,
+        "snapshot_logical_upload_bytes_observed": 0,
+        "physical_storage_coverage_fraction": 0
+      }
+    }
+  ],
+  "paired_resource_sampling": [
+    {
+      "concurrency": 32,
+      "seed": 7302,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "agentcloud-v2-cache",
+      "actor_reserved_gb_s_difference": 15.446634175999549,
+      "transition_uncertainty_reference_sum_gb_s": 15.861806976,
+      "treatment_coverage_fraction": 0.9985644904078371,
+      "baseline_coverage_fraction": 0.9994656556734622
+    },
+    {
+      "concurrency": 32,
+      "seed": 7302,
+      "treatment": "agentcloud-v2-cache",
+      "baseline": "agentcloud-v2",
+      "actor_reserved_gb_s_difference": -3.8436608639991334,
+      "transition_uncertainty_reference_sum_gb_s": 15.069686143999997,
+      "treatment_coverage_fraction": 0.9994656556734622,
+      "baseline_coverage_fraction": 0.9994376451788233
+    },
+    {
+      "concurrency": 32,
+      "seed": 7302,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "static-2",
+      "actor_reserved_gb_s_difference": 0.5926506239999298,
+      "transition_uncertainty_reference_sum_gb_s": 22.078374976000003,
+      "treatment_coverage_fraction": 0.9985644904078371,
+      "baseline_coverage_fraction": 0.9973112028524932
+    },
+    {
+      "concurrency": 32,
+      "seed": 7302,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "static-15",
+      "actor_reserved_gb_s_difference": 12.393129663999673,
+      "transition_uncertainty_reference_sum_gb_s": 11.124415872000004,
+      "treatment_coverage_fraction": 0.9985644904078371,
+      "baseline_coverage_fraction": 0.9995496987123162
+    },
+    {
+      "concurrency": 32,
+      "seed": 7305,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "agentcloud-v2-cache",
+      "actor_reserved_gb_s_difference": 1.0609206399998925,
+      "transition_uncertainty_reference_sum_gb_s": 14.925359744000005,
+      "treatment_coverage_fraction": 0.9990434338395656,
+      "baseline_coverage_fraction": 0.9974317572093993
+    },
+    {
+      "concurrency": 32,
+      "seed": 7305,
+      "treatment": "agentcloud-v2-cache",
+      "baseline": "agentcloud-v2",
+      "actor_reserved_gb_s_difference": 3.0219877120005947,
+      "transition_uncertainty_reference_sum_gb_s": 15.371955520000004,
+      "treatment_coverage_fraction": 0.9974317572093993,
+      "baseline_coverage_fraction": 0.9983080312470576
+    },
+    {
+      "concurrency": 32,
+      "seed": 7305,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "static-2",
+      "actor_reserved_gb_s_difference": 3.667347712000577,
+      "transition_uncertainty_reference_sum_gb_s": 19.61432524800001,
+      "treatment_coverage_fraction": 0.9990434338395656,
+      "baseline_coverage_fraction": 0.9976100528308413
+    },
+    {
+      "concurrency": 32,
+      "seed": 7305,
+      "treatment": "agentcloud-v2-joint",
+      "baseline": "static-15",
+      "actor_reserved_gb_s_difference": 13.315518592000814,
+      "transition_uncertainty_reference_sum_gb_s": 9.778143488,
+      "treatment_coverage_fraction": 0.9990434338395656,
+      "baseline_coverage_fraction": 0.9997510360823798
+    }
+  ]
+}

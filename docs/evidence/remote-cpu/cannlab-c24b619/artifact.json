@@ -1,0 +1,364 @@
+{
+  "schema_version": 1,
+  "execution_kind": "remote-cpu-evidence-archive",
+  "host": "cannlab",
+  "remote_root": "/home/developer/agentcloud-joint-kv-20261112-c24b619-cannlab/validation",
+  "source_commits": [
+    "c24b619dc6bbd0d0d3ff5019a951696f0178b9e6"
+  ],
+  "source_sha256": "2937d38aec9b6b08a6db051dd8ae344df82a4e5f4f5baf450d8a03b4886dffeb",
+  "arch": "aarch64",
+  "go_version": "go version go1.27.3 linux/arm64",
+  "python_version": "Python 3.11.4",
+  "resource_limits": {
+    "cpu_ids": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "GOMAXPROCS": 4,
+    "GOMEMLIMIT": "3GiB",
+    "max_rss_mib": 4096,
+    "min_available_mib": 8192,
+    "contracted_memory_gib": 32,
+    "combined_reserved_cpu_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "combined_rss_budget_mib": 8192
+  },
+  "actual_affinity": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "postgresql_executed": false,
+  "postgresql_admin_configured": false,
+  "validation": {
+    "initial": {
+      "validation": "docs/evidence/remote-cpu/cannlab-c24b619/initial/validation.json",
+      "status": "failed",
+      "started_at": "2026-11-12T06:14:19.089012+00:00",
+      "finished_at": "2026-11-12T06:16:12.122369+00:00",
+      "top_level_tests_passed": 151,
+      "top_level_tests_skipped": [
+        "github.com/lilong555/agentcloud/internal/journal:TestPostgresEntityTransactionRollsBackMetadataAndRowsTogether",
+        "github.com/lilong555/agentcloud/internal/journal:TestPostgresDurableReopenAndAdvisoryOwnership",
+        "github.com/lilong555/agentcloud/internal/journal:TestPostgresRevisionConflictPoisonsWriter",
+        "github.com/lilong555/agentcloud/internal/control:TestPostgresRestartKeepsUnknownAndClosedGate",
+        "github.com/lilong555/agentcloud/internal/control:TestPostgresCostDeadlineSurvivesRestartAndToolReset",
+        "github.com/lilong555/agentcloud/internal/control:TestPostgresIncrementalEntitiesPreserveOtherSessionsAndClaims",
+        "github.com/lilong555/agentcloud/internal/control:TestPostgresCommitGateHidesUncommittedState",
+        "github.com/lilong555/agentcloud/internal/control:TestPostgresFailedRevisionKeepsDurableStateAndFailsClosed",
+        "github.com/lilong555/agentcloud/internal/control:TestPostgresLegacyDocumentMigratesAtomically",
+        "github.com/lilong555/agentcloud/internal/control:TestSnapshotGCPostgresSessionEntityPreservesDeleteTombstones"
+      ],
+      "failed_tests": [
+        {
+          "test": "TestRealPythonRuntimeRecoversLostReceiptsAndFencesLateAttach",
+          "package": "github.com/lilong555/agentcloud/internal/control",
+          "line": 1184
+        }
+      ],
+      "commands": [
+        {
+          "name": "race",
+          "exit_code": 1,
+          "guard": {
+            "status": "failed",
+            "exit_code": 1,
+            "stop_reason": null,
+            "peak_group_rss_bytes": 699138048,
+            "elapsed_seconds": 68.65
+          }
+        },
+        {
+          "name": "vet",
+          "exit_code": 0,
+          "guard": {
+            "status": "passed",
+            "exit_code": 0,
+            "stop_reason": null,
+            "peak_group_rss_bytes": 480104448,
+            "elapsed_seconds": 44.22
+          }
+        }
+      ]
+    },
+    "final": {
+      "validation": "docs/evidence/remote-cpu/cannlab-c24b619/final/validation.json",
+      "status": "passed",
+      "started_at": "2026-11-12T06:18:05.589657+00:00",
+      "finished_at": "2026-11-12T06:18:17.439237+00:00",
+      "top_level_tests_passed": 152,
+      "top_level_tests_skipped": [
+        "github.com/lilong555/agentcloud/internal/journal:TestPostgresEntityTransactionRollsBackMetadataAndRowsTogether",
+        "github.com/lilong555/agentcloud/internal/journal:TestPostgresDurableReopenAndAdvisoryOwnership",
+        "github.com/lilong555/agentcloud/internal/journal:TestPostgresRevisionConflictPoisonsWriter",
+        "github.com/lilong555/agentcloud/internal/control:TestPostgresRestartKeepsUnknownAndClosedGate",
+        "github.com/lilong555/agentcloud/internal/control:TestPostgresCostDeadlineSurvivesRestartAndToolReset",
+        "github.com/lilong555/agentcloud/internal/control:TestPostgresIncrementalEntitiesPreserveOtherSessionsAndClaims",
+        "github.com/lilong555/agentcloud/internal/control:TestPostgresCommitGateHidesUncommittedState",
+        "github.com/lilong555/agentcloud/internal/control:TestPostgresFailedRevisionKeepsDurableStateAndFailsClosed",
+        "github.com/lilong555/agentcloud/internal/control:TestPostgresLegacyDocumentMigratesAtomically",
+        "github.com/lilong555/agentcloud/internal/control:TestSnapshotGCPostgresSessionEntityPreservesDeleteTombstones"
+      ],
+      "failed_tests": [],
+      "commands": [
+        {
+          "name": "race",
+          "exit_code": 0,
+          "guard": {
+            "status": "passed",
+            "exit_code": 0,
+            "stop_reason": null,
+            "peak_group_rss_bytes": 1240276992,
+            "elapsed_seconds": 11.37
+          }
+        },
+        {
+          "name": "vet",
+          "exit_code": 0,
+          "guard": {
+            "status": "passed",
+            "exit_code": 0,
+            "stop_reason": null,
+            "peak_group_rss_bytes": 7352320,
+            "elapsed_seconds": 0.32
+          }
+        }
+      ]
+    }
+  },
+  "initial_failure": {
+    "cause": "Go test source archive omitted runtime Python source required by TestRealPythonRuntimeRecoversLostReceiptsAndFencesLateAttach",
+    "error": "runtime start: EOF",
+    "data_race_detected": false,
+    "runtime_source_members_added": 14,
+    "runtime_source_commit": "c24b619dc6bbd0d0d3ff5019a951696f0178b9e6",
+    "runtime_archive_sha256": "4ebac0ac991977d1d2fc8bea0ee1ba0bddfcd3554a12b7031d5a3548cbeea39e",
+    "revalidation": "Full go test -race -count=1 -p 4 -json ./... and go vet -p 4 ./... using unchanged Go source digest and SHA-verified runtime source"
+  },
+  "reproduction": {
+    "path": "docs/evidence/remote-cpu/cannlab-c24b619/reproduce.sh",
+    "command": "bash docs/evidence/remote-cpu/cannlab-c24b619/reproduce.sh cannlab",
+    "output_directory": "Independent validation-reproduce-<UTC timestamp> directory on cannlab",
+    "uses_verified_source_archives": true
+  },
+  "files": [
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/final/downloads/go-release.json",
+      "sha256": "ad9d548487c8373f4de0949f70fd18287eeaa7216bdbbb7f0e2c60ef4aa7a8dd",
+      "uncompressed_sha256": "ad9d548487c8373f4de0949f70fd18287eeaa7216bdbbb7f0e2c60ef4aa7a8dd",
+      "uncompressed_bytes": 230,
+      "stored_bytes": 230,
+      "compression": "none"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/final/downloads/runtime-manifest.json",
+      "sha256": "558e776c58b7693d6bb4207691a939807972943118385ee7c3ae976948d5ed4b",
+      "uncompressed_sha256": "558e776c58b7693d6bb4207691a939807972943118385ee7c3ae976948d5ed4b",
+      "uncompressed_bytes": 2477,
+      "stored_bytes": 2477,
+      "compression": "none"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/final/downloads/source-manifest.json",
+      "sha256": "a8b89ef34aa170fb548eab86356394b99735ebf3c0e5f2b2e9e76898f9905701",
+      "uncompressed_sha256": "a8b89ef34aa170fb548eab86356394b99735ebf3c0e5f2b2e9e76898f9905701",
+      "uncompressed_bytes": 16218,
+      "stored_bytes": 16218,
+      "compression": "none"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/final/launch-validation.py",
+      "sha256": "040c02b3796c5f38f3626e264d3967fedf94bba48a5e5e317265e200708eb9c9",
+      "uncompressed_sha256": "040c02b3796c5f38f3626e264d3967fedf94bba48a5e5e317265e200708eb9c9",
+      "uncompressed_bytes": 7824,
+      "stored_bytes": 7824,
+      "compression": "none"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/final/logs/go-race-c24b619.log.gz",
+      "sha256": "188e9d9567f7c807a3865d31e64a2ffc67f18545b6e01b8f51d25b25475c79f0",
+      "uncompressed_sha256": "34a368bef1f69a34b566cbab33f29a126e3e1ae8844f5d1aa0eae48fd3d993af",
+      "uncompressed_bytes": 397107,
+      "stored_bytes": 28001,
+      "compression": "gzip"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/final/logs/go-race-guard.stderr.log.gz",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "uncompressed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "uncompressed_bytes": 0,
+      "stored_bytes": 20,
+      "compression": "gzip"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/final/logs/go-race-guard.stdout.log.gz",
+      "sha256": "af81a1a4f4231c9944688ba5c03e403378bf747660d78f544329fa28096d28d3",
+      "uncompressed_sha256": "681e2d73584f876f63c865a650f07d5d507096862a7bc6b54e7573d544e9d854",
+      "uncompressed_bytes": 120,
+      "stored_bytes": 121,
+      "compression": "gzip"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/final/logs/go-validation-c24b619.pid.gz",
+      "sha256": "2432a1e2aa634a2754ceaef7b4e1bcc207b4bc8e7794e1029a54285f7eddad1f",
+      "uncompressed_sha256": "a625808042e1cac0ce7e3e28da82c0a9000961ab963b02354efa4479b5d7b162",
+      "uncompressed_bytes": 6,
+      "stored_bytes": 26,
+      "compression": "gzip"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/final/logs/go-validation-c24b619.wrapper.log.gz",
+      "sha256": "5d01631e0a8de6bffc124a1b754f83928fef44cb66d6066803f3c7461ed5a486",
+      "uncompressed_sha256": "1bdb9ef1a30bb7275f3420106b72b7195593bcee523c5517d47329e2a63c80e8",
+      "uncompressed_bytes": 388,
+      "stored_bytes": 195,
+      "compression": "gzip"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/final/logs/go-vet-c24b619.log.gz",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "uncompressed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "uncompressed_bytes": 0,
+      "stored_bytes": 20,
+      "compression": "gzip"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/final/logs/go-vet-guard.stderr.log.gz",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "uncompressed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "uncompressed_bytes": 0,
+      "stored_bytes": 20,
+      "compression": "gzip"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/final/logs/go-vet-guard.stdout.log.gz",
+      "sha256": "621d8b0e26b86d04183817a178627f9962ccce092cc4dc13e4b471a29382efd0",
+      "uncompressed_sha256": "ec4cb851922ff9935302ce70c644cdd7532ee1756e55dcc482e4378764a8b794",
+      "uncompressed_bytes": 116,
+      "stored_bytes": 117,
+      "compression": "gzip"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/final/validation.json",
+      "sha256": "5cbe75926da1fbb86026172238e9a52f822e88856775f85c05c10e143bf76b58",
+      "uncompressed_sha256": "5cbe75926da1fbb86026172238e9a52f822e88856775f85c05c10e143bf76b58",
+      "uncompressed_bytes": 10280,
+      "stored_bytes": 10280,
+      "compression": "none"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/initial/downloads/go-release.json",
+      "sha256": "ad9d548487c8373f4de0949f70fd18287eeaa7216bdbbb7f0e2c60ef4aa7a8dd",
+      "uncompressed_sha256": "ad9d548487c8373f4de0949f70fd18287eeaa7216bdbbb7f0e2c60ef4aa7a8dd",
+      "uncompressed_bytes": 230,
+      "stored_bytes": 230,
+      "compression": "none"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/initial/downloads/source-manifest.json",
+      "sha256": "a8b89ef34aa170fb548eab86356394b99735ebf3c0e5f2b2e9e76898f9905701",
+      "uncompressed_sha256": "a8b89ef34aa170fb548eab86356394b99735ebf3c0e5f2b2e9e76898f9905701",
+      "uncompressed_bytes": 16218,
+      "stored_bytes": 16218,
+      "compression": "none"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/initial/launch-validation.py",
+      "sha256": "005b5a3218895a6211eac06a620a6b63bedb2e67ea7a2cf5729643f8b90c56d4",
+      "uncompressed_sha256": "005b5a3218895a6211eac06a620a6b63bedb2e67ea7a2cf5729643f8b90c56d4",
+      "uncompressed_bytes": 7105,
+      "stored_bytes": 7105,
+      "compression": "none"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/initial/logs/go-race-c24b619.log.gz",
+      "sha256": "9d2ca6bbddbdcba7f38be7a0d89de5b008a2583496a3ae5036b59759b61ec866",
+      "uncompressed_sha256": "628f91ba3515ca88de660ff455b4cad33451c8c3a76e32db32a278db226fde00",
+      "uncompressed_bytes": 397401,
+      "stored_bytes": 28068,
+      "compression": "gzip"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/initial/logs/go-race-guard.stderr.log.gz",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "uncompressed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "uncompressed_bytes": 0,
+      "stored_bytes": 20,
+      "compression": "gzip"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/initial/logs/go-race-guard.stdout.log.gz",
+      "sha256": "e84744e270bfd257c41f154558a1fb046aa43b49dfe89a70592a835078881989",
+      "uncompressed_sha256": "3e2cda38f6ae3e548e4d9127a3b8bd5967a7b5f42f029d901530d1a9bdaa63a2",
+      "uncompressed_bytes": 119,
+      "stored_bytes": 121,
+      "compression": "gzip"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/initial/logs/go-validation-c24b619.pid.gz",
+      "sha256": "7b60e4ef8d2073f8086453119cc117e035420905af395af05d05f16ba082d5a8",
+      "uncompressed_sha256": "049357b96e69ff3857bc13ac9a1bf6413c67dd97fa12f3f0304f566e648d162b",
+      "uncompressed_bytes": 5,
+      "stored_bytes": 25,
+      "compression": "gzip"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/initial/logs/go-validation-c24b619.wrapper.log.gz",
+      "sha256": "12652c63328902153cb57b60309b741268fe9a36c17c17c25ae53e4e5c2f1bc9",
+      "uncompressed_sha256": "77043d755c45cfb4dd7c78560e5d3edb6fff2fc6cbc36a40b1e12f86c22dfbcc",
+      "uncompressed_bytes": 390,
+      "stored_bytes": 207,
+      "compression": "gzip"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/initial/logs/go-vet-c24b619.log.gz",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "uncompressed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "uncompressed_bytes": 0,
+      "stored_bytes": 20,
+      "compression": "gzip"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/initial/logs/go-vet-guard.stderr.log.gz",
+      "sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64",
+      "uncompressed_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "uncompressed_bytes": 0,
+      "stored_bytes": 20,
+      "compression": "gzip"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/initial/logs/go-vet-guard.stdout.log.gz",
+      "sha256": "17f9790a1ce6569f1aea136557250634e4770fc0d22c412fac1c29bba757b717",
+      "uncompressed_sha256": "42154901c8254e0f84b631176b4c16f4ff2eb098169d0f00e007a6eb0012952b",
+      "uncompressed_bytes": 119,
+      "stored_bytes": 119,
+      "compression": "gzip"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/initial/validation.json",
+      "sha256": "cd2589c55ab54d0cb9380bb6c74c0010e84b601f03309e58d9092bb11c01cdd4",
+      "uncompressed_sha256": "cd2589c55ab54d0cb9380bb6c74c0010e84b601f03309e58d9092bb11c01cdd4",
+      "uncompressed_bytes": 7570,
+      "stored_bytes": 7570,
+      "compression": "none"
+    },
+    {
+      "path": "docs/evidence/remote-cpu/cannlab-c24b619/reproduce.sh",
+      "sha256": "cd9d1d4afd4ddd0a9f0b8da2a5bb2f1f3e57aeaf785e39cbc2526862c0258322",
+      "uncompressed_sha256": "cd9d1d4afd4ddd0a9f0b8da2a5bb2f1f3e57aeaf785e39cbc2526862c0258322",
+      "uncompressed_bytes": 1727,
+      "stored_bytes": 1727,
+      "compression": "none"
+    }
+  ]
+}

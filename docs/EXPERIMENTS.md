@@ -10,16 +10,27 @@
 
 | 验证对象 | 当前事实与原始身份 |
 | --- | --- |
-| 当前本地契约 | [JSON](evidence/local-contract.json)记录源码摘要 `2937d38aec9b6b08a6db051dd8ae344df82a4e5f4f5baf450d8a03b4886dffeb`、152 个 Go 顶层测试通过，六条验证命令退出码均为 0。[Go 日志](evidence/logs/local-20261112T053618610274Z/race-tests.stdout.log)保留 10 个 PostgreSQL 顶层测试和两个子项的数据库缺配跳过；[tooling](evidence/logs/local-20261112T053618610274Z/tooling-tests.stderr.log)为 246 项全部通过，[runtime](evidence/logs/local-20261112T053618610274Z/runtime-tests.stderr.log)为 62 项中 58 通过、四个模块跳过。 |
-| 当前源码 CI | 源码 `55120d52e1be0fef3ab443af66f81baa046cc320`、源码摘要 `2937d38aec9b6b08a6db051dd8ae344df82a4e5f4f5baf450d8a03b4886dffeb`；[43161047688 摘要](evidence/ci-run-43161047688.json)及 [contracts job 130992040365](https://github.com/lilong555/agentcloud/actions/runs/43161047688/job/130992040365)记录 162 个 Go 顶层通过／零跳过、11 个真实 PostgreSQL 测试、236 项 tooling 通过、runtime 58 通过／四个模块跳过；独立 [deerflow-contracts job 130992040002](https://github.com/lilong555/agentcloud/actions/runs/43161047688/job/130992040002)为 20/20／零跳过、实际 PostgreSQL 执行。[API 与原始日志归档](evidence/live-runs/43161047688/api/archive.json)及两个 artifact 摘要保存校验身份。 |
+| 当前本地契约 | [JSON](evidence/local-contract.json)记录于 `2026-11-12T07:50:37.673775+00:00`，Go 源码摘要 `2937d38aec9b6b08a6db051dd8ae344df82a4e5f4f5baf450d8a03b4886dffeb`、152 个 Go 顶层测试通过，六条验证命令退出码均为 0。[Go 日志](evidence/logs/local-20261112T074951159690Z/race-tests.stdout.log)保留 10 个 PostgreSQL 顶层测试和两个子项的数据库缺配跳过；[tooling](evidence/logs/local-20261112T074951159690Z/tooling-tests.stderr.log)为 262 项全部通过，[runtime](evidence/logs/local-20261112T074951159690Z/runtime-tests.stderr.log)为 62 项中 58 通过、四个模块跳过。 |
+| 当前 609a58d9 CI／冒烟 | 源码 `609a58d9` 的 [CI 43178102644](https://github.com/lilong555/agentcloud/actions/runs/43178102644)与 [冒烟 43178192157](https://github.com/lilong555/agentcloud/actions/runs/43178192157)已启动，结果待验收；新预检分别核验真实首事件与后续策略执行。 |
+| 已归档 7d39f654 CI | 源码 `7d39f654c5c9718c9e27b95e311443b8242310aa`、源码摘要 `2937d38aec9b6b08a6db051dd8ae344df82a4e5f4f5baf450d8a03b4886dffeb`；[43175566019 摘要](evidence/ci-run-43175566019.json)及 [contracts job 131038888402](https://github.com/lilong555/agentcloud/actions/runs/43175566019/job/131038888402)记录 162 个 Go 顶层通过／零跳过、11 个真实 PostgreSQL 测试、262 项 tooling 通过、runtime 58 通过／四个模块跳过；独立 [deerflow-contracts job 131038888674](https://github.com/lilong555/agentcloud/actions/runs/43175566019/job/131038888674)为 20/20／零跳过、实际 PostgreSQL 执行。[API 与原始日志归档](evidence/live-runs/43175566019/api/archive.json)及两个 artifact 摘要保存校验身份。 |
+| 已归档 43164478512 CI | 源码 `c24b619dc6bbd0d0d3ff5019a951696f0178b9e6` 的 [摘要](evidence/ci-run-43164478512.json)记录 Go 162／PostgreSQL 11／tooling 248／runtime 58 通过与四模块跳过，独立 DeerFlow 20/20；两 job success。 |
 | 已归档 Go CI | 源码 `293e19f97ee06df90c7b5e9cdd44b8cdb2c742a6` 的 [43155952398／contracts job 130975803254](https://github.com/lilong555/agentcloud/actions/runs/43155952398/job/130975803254)记录 161 项顶层测试通过，PostgreSQL 契约实际执行；该 CI 与当前本地验证各自保留源码身份。 |
 | 原生 wheel | [43012181604](https://github.com/lilong555/agentcloud/actions/runs/43012181604)，78 passed、2 ignored；缓存选择、迁移预留、取消和 `Sent` 提交的测试名见 [test-map.json](../integrations/dynamo/test-map.json)。 |
 | 成本参考 | [provenance.json](evidence/joint-kv-calibration/provenance.json)锁定 `aisimulate-core` 包／源码 SHA 与 `polynomial_prefill_time:206`，类型为 `mocker_simulation`；真实 CPU 编排 TTFT 和模拟引擎 Prefill 分列。 |
 | 真实请求结构 | [joint-workload.json](evidence/agent-traces/joint-workload.json)冻结 432 条轨迹、150 个任务组；[SOURCE_AUDIT](evidence/agent-traces/SOURCE_AUDIT.json)与 [VALIDATION](evidence/agent-traces/VALIDATION.json)记录来源、摘要与确定性选择。每任务选择一个 attempt，60.88% 非末轮等待为缺测模型 3s，时间代表性按该构造报告。 |
+| 远端 ARM Go 契约 | `c24b619`、Go 1.27.3／arm64、Python 3.11.4，CPU 0–3／RSS guard 4 GiB；race 152 个顶层通过、10 个 PostgreSQL 顶层跳过、零失败，数据竞争报告为 0，11.37 s／峰值 RSS 1.16 GiB；vet 退出码 0、0.32 s。实际数据库 11 项通过采用当前 CI。[最终回执](evidence/remote-cpu/cannlab-c24b619/final/validation.json)／[原文与 SHA 归档](evidence/remote-cpu/cannlab-c24b619/artifact.json)／[复现脚本](evidence/remote-cpu/cannlab-c24b619/reproduce.sh)。 |
+| 远端 ARM CPU 复算 | cannlab 的 aarch64／Python 3.11.4 在 CPU 4–5、4 GiB 地址空间上限下核验 818 份输入 SHA，分析耗时 1.48 s、峰值 RSS 42.4 MiB；20 项分析回归全部通过。生成 summary 与本机参考逐字一致，分析代码为 `c24b619`、测量源码仍为 `55120d52`。[三种 Python／两架构对账](evidence/joint-kv/43161092995/cannlab/comparison.json)／[完整分析归档](evidence/joint-kv/43161092995/cannlab/archive.json)／[输入清单](evidence/joint-kv/43161092995/cannlab/inputs.json)／[测试日志](evidence/joint-kv/43161092995/cannlab/unittest.log)。 |
 | 当前联合冒烟 43161092995 | 源码 `55120d52e1be0fef3ab443af66f81baa046cc320`；[摘要](evidence/joint-kv/43161092995/summary.json)为 `complete`，5/5 策略、120/120 请求、55 次 MEMORY 恢复，全部 trial 清理通过；四组原生路由案例全部通过。[完整产物 manifest](evidence/joint-kv/43161092995/13918507753/artifact.json)。 |
-| 当前全量联合 43163231106 | [Actions](https://github.com/lilong555/agentcloud/actions/runs/43163231106)已通过同源码冒烟门禁、十个 N×seed 配对 Runner 已启动；执行源码 `55120d52e1be0fef3ab443af66f81baa046cc320`，工作流源码 `a7c0bbff006cfbaf4308b834988689a56fae97ed`。五策略配对性能、完整请求分母及清理待验收。 |
+| 7d39f654 独立冒烟失败 | 源码 `7d39f654` 的 CI 已通过。已归档冒烟 [43175601451](https://github.com/lilong555/agentcloud/actions/runs/43175601451)在首个 `off-assigned` 原生路由预检报告 `RuntimeError: worker-1-native-events`；后三组路由与五个预创建 trial 均为 `NOT_STARTED`，120 条请求均为 `NOT_OFFERED`，生命周期策略启动数为 0；Kind 准备与串行策略步骤跳过。路由进程全部结束、剩余 RSS 为 0，工作流 `Stop containers` 通过。[执行语义与原文](evidence/joint-kv/43175601451/preflight/execution.json)保留完整分母。失败检查的事件 batch、sequence gaps 与 errors 均为空；[Observer 启动审查](evidence/joint-kv/43175601451/review/observer-startup.json)确认异步重连与订阅就绪竞态最符合现有原文。N64／7303 的完整五策略定向验证采用独立 Run、5 trial／1,905 个计划请求，实机策略尚未开始；首轮 50 trial 保留原身份与失败分母。 |
+| 首轮全量联合 43163231106 | [Actions](https://github.com/lilong555/agentcloud/actions/runs/43163231106)执行结束：49/50 trial 通过、14,278/14,280 请求完成，全部清理成功；N32 25/25、4,755/4,755，唯一失败为 N64／7303 joint 379/381。执行源码 `55120d52e1be0fef3ab443af66f81baa046cc320`，工作流源码 `a7c0bbff006cfbaf4308b834988689a56fae97ed`。原失败保留，N64 的 joint 相关比较采用 7301／7302／7304／7305 四个完整种子对：joint−cache 的 Actor 预留差 +24.4476 GB·s，探索区间 [+17.0535,+31.4217]；交互 P95 差 −0.1492 s，区间 [−18.5614,+11.7871]，首轮 Gateway 等待与轨迹 JCT P95 分别增加 22.4163／26.6813 s。cache−v2 保留五个完整种子对，资源与交互 P95 区间均跨零。[失败时序](evidence/joint-kv/43163231106/review/failure-admission-race.json)。 |
 | 联合冒烟 43157107777 | [Actions](https://github.com/lilong555/agentcloud/actions/runs/43157107777)为 `failure`；计划源码 `19c5f98659794f03237791a1443e38215aadbb2c`。工作流输入校验报告 `live-scale.yml:40` 的 `Unexpected value '1'`，联合 job 未创建，源码与 trial 未执行；五个计划 trial、120 个计划请求保留，完成请求为 0。[摘要](evidence/joint-kv/43157107777/summary.json)／[原始注解](evidence/joint-kv/43157107777/launch-1/diagnostics/workflow-annotations.json)。 |
 | 联合冒烟 43157987378 | [Actions](https://github.com/lilong555/agentcloud/actions/runs/43157987378)为 `failure`；日志确认执行源码 `848a3f232347475e850053b2fe92679d47f7c2e4`。首个 `static-15` trial 报 `session failure`，其余四策略报前序清理失败；公开证据 staging 随后出现相对路径 `ValueError`，请求级／路由 artifact 缺失。五个计划 trial、120 个计划请求保留，完成与失败请求计数为 `null`，原生路由步骤为 success、逐请求验收待原始产物。[摘要](evidence/joint-kv/43157987378/summary.json)／[执行观察](evidence/joint-kv/43157987378/launch-1/diagnostics/job-log-observations.json)／[job 原始日志](evidence/joint-kv/43157987378/launch-1/diagnostics/job-130982580550.log.gz)。 |
+
+新冒烟 [43175601451 摘要](evidence/joint-kv/43175601451/summary.json)为 `incomplete`，完成 0/120；五份预创建 trial 的原始 `raw_status=failed`、`trial_execution_status=NOT_STARTED`、`cleanup_success=false`，各自保留 `archive_provenance_incomplete`。生命周期执行数量由 [execution.json](evidence/joint-kv/43175601451/preflight/execution.json)和 skipped 步骤核验；路由案例的实际进程清理记录为剩余 RSS 0，原文按各自对象保存。[首路由失败与 cleanup](evidence/joint-kv/43175601451/13924327088/routing/off-assigned/result.json)／[六文件预检归档](evidence/joint-kv/43175601451/preflight/archive.json)。
+
+[Observer 启动审查](evidence/joint-kv/43175601451/review/observer-startup.json)对原始 ZIP 路由成员逐字节核验：原预检 13/14 项检查通过，Worker 0 的 PUB 绑定至首请求为 437.431 ms，Worker 1 为 122.913 ms；Worker 0 收到 sequence 0／1，Worker 1 的观察器为空，独立 KVIndexer 已收到 Worker 1 的 1,024 Token 前缀。历史原文的握手与订阅传播时间为未采集，精确首批丢失时点保留该测量范围。
+
+当前交付源码 `609a58d9081b3340ab57f99b2c249be24871d376` 的 [Observer](../experiments/dynamo/lifecycle_kv_mocker.py#L95)记录 socket 初始化的 `ready` 和真实 `EVENT_HANDSHAKE_SUCCEEDED` 的 `connected`；[Stack](../experiments/dynamo/lifecycle_kv_mocker.py#L255)在 Mocker PUB 启动后等待连接握手，再开始推理。快照保留握手历史、连接状态与 `first_sequence`，缺少初始 batch 的序列计入 gap。[真实本地 ZMQ 两项测试](../tests/dynamo/test_event_transport.py)在 5.278 s 内通过：20 次晚启动 PUB 均从 sequence 0 观察首事件，另验证初始 gap 与断连清除状态；30 项相关 tooling 通过；[原始失败、源码审查与本地执行记录](evidence/joint-kv/43175601451/review/observer-startup.json)保留各自验证范围。源码 `609a58d9` 的 [CI 43178102644](https://github.com/lilong555/agentcloud/actions/runs/43178102644)与 [冒烟 43178192157](https://github.com/lilong555/agentcloud/actions/runs/43178192157)已启动，结果待验收；新预检分别核验真实首事件与后续策略执行。
 
 N=4／seed 7101 的冒烟结果如下，五策略各完成 24 个计划请求。Token 对账来自官方 Mocker 引擎响应，恢复次数按 trial 原文汇总。
 
@@ -33,11 +44,127 @@ N=4／seed 7101 的冒烟结果如下，五策略各完成 24 个计划请求。
 
 路由原文分别为 [off-assigned](evidence/joint-kv/43161092995/13918507753/routing/off-assigned/result.json)、[off-reselect](evidence/joint-kv/43161092995/13918507753/routing/off-reselect/result.json)、[hard-reselect](evidence/joint-kv/43161092995/13918507753/routing/hard-reselect/result.json)、[soft-reselect](evidence/joint-kv/43161092995/13918507753/routing/soft-reselect/result.json)，四项均为 `passed`。joint 诊断按 Session／Epoch／预测时间去重后为 115 个预测：82 个有效、33 个无效、23 次应用、有效非零应用 0 次；115 个成本差额全部为 0 ms。无效原因计数为 `no_cache_observation=20`、`low_support=12`、`worker_changed=1`。55/55 次原始恢复记录为 MEMORY；两 Worker 的连续原生事件记录零 BlockRemoved，分别存储 177／291 个块、容量各 1,024 块。该冒烟实测覆盖请求、恢复、缓存路由与小缓存负载下的零差额路径。[观测时序与身份对账](JOINT_KV_SCHEDULING.md#运行)。
 
-全量联合性能仍待验收。完整配对包含 TTL2、TTL15、v2、v2-cache、v2-joint，分别隔离缓存重选和 KV 成本增量；N=32／64、五种子、动态调用数及失败分母由冻结计划确定。主要比较为 joint 对 cache 的交互 P95，同时保留资源积分、轨迹完成时间、恢复次数、命中／重算、最坏种子与来源分层。机制和执行入口见 [JOINT_KV_SCHEDULING](JOINT_KV_SCHEDULING.md)。以下历史 Gate 1／2、TraceLab 和 GPU 结果保持各自源码与运行身份。
+### 首轮全量完成率与准入竞争
+
+首轮全量 43163231106 已执行 50 个 trial，**49/50 通过、14,278/14,280 请求完成，全部清理成功**。唯一失败为 N64／7303／joint，完成 379/381 请求；w31 第五轮 `work-4` 在工具准入前收到 HTTP 423／`admission_closed`，该轮记为 FAILED、下一轮 r5 为 NOT_OFFERED。 [失败 trial 原文](evidence/joint-kv/43163231106/13923370097/experiment/scale-7303-64-agentcloud-v2-joint-d3c00707998b/result.json)保留一个失败与一个未投递请求；[源码与时序核验](evidence/joint-kv/43163231106/review/failure-admission-race.json)定位工具回执创建和 `Backend.Tool` 前的准入拒绝。自动 return demand 随后完成 Epoch 3／MEMORY 恢复，最终会话为 RUNNING／OPEN；Runner 在 423 后结束该会话，原计划分母继续保留。
+
+[调度事件](evidence/joint-kv/43163231106/13923370097/experiment/scale-7303-64-agentcloud-v2-joint-d3c00707998b/events.jsonl.gz)解压第 20214 行的 `06:03:46.641622627Z` SUSPEND 原因为 `v2_unknown_two_second_deadline`，KV 观察陈旧、`applied=false`、差额为 0；第 20221 行记录 `06:03:46.892806Z` 的会话失败。`work-4` 的 return demand 于 `06:03:46.852192510Z` 登记并完成恢复。后续 288-Token 首次损失观察晚于会话失败约 103.895 s，按后续缓存暴露样本归档。工具副作用、持久返回需求与拒绝后的 Runner 结束状态分别核验；原失败永久保留，独立验证采用各自源码、Run ID 与请求分母。
+
+当前准入恢复由 [Trial.admit:345](../bench/scale.py#L345)、[tool:370](../bench/scale.py#L370)、[submit_model:381](../bench/scale.py#L381)与 [resume:425](../bench/scale.py#L425)执行。明确 HTTP 423／`admission_closed` 触发最多四次发送、三次新返回需求及共享期限内恢复；同工具 ID／命令／超时和模型逻辑 ID／payload／终态字段保持一致，当前 Epoch 与每次缓存查询单独更新。已有 RUNNING／OUTCOME_UNKNOWN 回执和传输失败保留原尝试，恢复 FIFO 等待计入 Gateway 排队。模型注册成功后前一 cohort 闭合一次。[12 项准入契约](../tests/tooling/test_scale_admission.py)全部通过，[独立实现审查](evidence/joint-kv/43163231106/review/admission-recovery-implementation-review.json)保存静态控制流与 fixture 核验范围；新实机结果采用上述独立 Run 身份。
+
+### N32 五种子完整结果
+
+[最终五策略表](evidence/joint-kv/43163231106/cannlab/final/full-policy-table.json)与 [全量原始索引](evidence/joint-kv/43163231106/summary.json)覆盖 N32／7301–7305：**25/25 trial、4,755/4,755 请求，全部清理通过**。每策略的逐种子请求分母依次为 189／189／189／192／192，合计 951。N32 五个配对组完整，最终表使用五个种子的指标均值和对应指标的最坏种子；首轮全运行的 `incomplete` 状态保留 N64 原失败。测量源码为 `55120d52`，工作流源码为 `a7c0bbff`。独立 [25 trial 阶段摘要](evidence/joint-kv/43163231106/cannlab/partial-25trials/summary.json)及派生包保持原始身份。
+
+| 策略 | Actor 预留 GB·s | Stranded GB·s | 恢复次数 | 命中率均值／最坏 |
+| --- | ---: | ---: | ---: | ---: |
+| TTL2 | 254.2035 | 101.8143 | 164.0 | 58.22%／39.65% |
+| TTL15 | 234.8328 | 115.5499 | 32.0 | 75.89%／75.15% |
+| v2 | 248.2934 | 109.3548 | 103.6 | 75.52%／74.76% |
+| cache | 247.1154 | 109.2442 | 103.2 | 73.66%／71.93% |
+| joint | 259.1040 | 111.4461 | 104.8 | 73.42%／70.60% |
+
+| 策略 | 交互 P95 均值／最坏 s | 首轮 Gateway 等待 P95 s | 首轮轨迹等待 P95 s | 首轮合并等待 P95 s | 轨迹 JCT P95 s |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| TTL2 | 72.3397／86.6336 | 67.2839 | 0.0313 | 67.3103 | 353.8592 |
+| TTL15 | 119.0004／147.5268 | 205.3138 | 0.0423 | 205.3507 | 233.5826 |
+| v2 | 170.1993／185.8478 | 262.6413 | 0.0451 | 262.6860 | 297.9761 |
+| cache | 177.3937／203.6386 | 267.3104 | 0.0367 | 267.3467 | 297.3125 |
+| joint | 181.6548／224.1885 | 277.2014 | 0.0556 | 277.2534 | 312.9379 |
+
+下表为候选减基线的逐种子配对均值；方括号为五个种子的探索性 95% bootstrap 区间。
+
+| 配对 | 交互 P95 差 s，95% 区间 | Actor 预留差 GB·s，95% 区间 | 首轮 Gateway 等待差 s | 轨迹 JCT P95 差 s |
+| --- | ---: | ---: | ---: | ---: |
+| joint − cache | +4.2611 [-7.6580, +16.8188] | +11.9887 [+5.9730, +16.2692] | +9.8911 | +15.6254 |
+| cache − v2 | +7.1944 [-4.7982, +19.1869] | -1.1780 [-4.0094, +1.6534] | +4.6691 | -0.6636 |
+| joint − TTL2 | +109.3151 [+92.7432, +128.1081] | +4.9005 [+2.5243, +7.2745] | +209.9176 | -40.9213 |
+| joint − TTL15 | +62.6544 [+41.0102, +83.0840] | +24.2712 [+14.8028, +33.7396] | +71.8877 | +79.3553 |
+
+**N32 呈现资源增加与尾延迟种子波动。** joint 相对 cache 的 Actor 预留增加 11.9887 GB·s，交互 P95 增加 4.2611 s、区间跨零；首轮 Gateway 等待增加 9.8911 s，轨迹 JCT P95 增加 15.6254 s、区间 [+7.6534,+23.5988]。cache 相对 v2 的资源与交互 P95 配对区间均跨零。joint 相对 TTL2 的轨迹 JCT P95 减少 40.9213 s，同时交互 P95 增加 109.3151 s；相对 TTL15 的资源和交互 P95 均增加。各结果保留资源、交互与整轨迹的取舍，简历收益继续采用独立历史证据。
+
+| seed | 每策略请求 | joint−cache 交互 P95 s | Actor 预留差 GB·s | 首轮 Gateway 等待差 s | JCT P95 差 s | 配对转变采样参考 GB·s | joint／cache 覆盖率 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 7301 | 189 | -10.9806 | +11.2355 | +6.4976 | +18.7704 | 15.9684 | 99.55%／99.29% |
+| 7302 | 189 | -14.6214 | +15.4466 | +9.9314 | +14.4106 | 15.8618 | 99.86%／99.95% |
+| 7303 | 189 | +16.6366 | +13.9790 | +5.9083 | +13.0843 | 17.1931 | 98.64%／98.30% |
+| 7304 | 192 | +20.5499 | +18.2213 | +28.1908 | +30.1664 | 17.0589 | 98.49%／98.59% |
+| 7305 | 192 | +9.7210 | +1.0609 | -1.0729 | +1.6953 | 14.9254 | 99.90%／99.74% |
+
+[测量上下文](evidence/joint-kv/43163231106/cannlab/final/measurement-context.json)分别保存首轮与后续轮的请求集合、排队与 TTFT。cache／joint 后续轮 TTFT P95 的五种子均值为 6.3592／6.8463 s；首轮 Gateway 等待 P95 为 267.3104／277.2014 s。合并等待先逐请求相加 Gateway 与轨迹等待，再计算 P95。两策略的资源覆盖率范围为 98.30%–99.95%，最大采样间隔为 0.8589 s；配对转变采样参考为两条 trial 参考量之和，14.9254–17.1931 GB·s，与资源差并列解释。种子 bootstrap 描述配对运行波动，转变参考描述轮询对资源积分的采样不确定性。[存储观测口径](evidence/joint-kv/43163231106/storage-observation-semantics.json)保留快照数／写入／峰值／写放大为 `null`、逻辑上传样本数为 0 与采集覆盖；历史 128 MiB 磁盘边界按其独立原文引用。
+
+固定任务池的抽样范围与[离线审计](evidence/joint-kv-workload-audit.json)一致：N32 五种子覆盖 96 个任务、124 条轨迹、72 个仓库，与 N64 同种子任务重叠；N64 的 ReproPatch 任意种子对共享 20／22 个任务。N32 的 83.06% 非末轮工具等待采用固定 3 s 模型，其回放时间份额为 99.80%。探索性区间覆盖该固定任务池、attempt 选择与 Runner 波动，重复任务和缺测时间建模随结论保留。
+
+### N32 KV 成本与时序对账
+
+注册分析固定使用 `events.jsonl` 中的调度决策集合：7,508 个唯一预测、3,809 次应用、1,370 次非零成本应用。[独立 Go 核验](evidence/joint-kv/43163231106/review/n32-summary.json)另将 final-state 回执加入并集，得到 7,876 个预测、3,812 次应用、1,372 次非零成本应用；两集合分别按来源报告。951 个 joint 请求、524 次 MEMORY 恢复及 160 个终态快照已对账，时序、数值和执行身份问题计数为 0。
+
+| seed | 事件预测／应用 | 非零成本应用 | 非零差额 P50／P95／最大 ms |
+| --- | ---: | ---: | ---: |
+| 7301 | 1425／704 | 0 | 缺测（非零样本 0） |
+| 7302 | 1573／818 | 398 | 0.006173829／0.007875425／0.008243542 |
+| 7303 | 1412／668 | 294 | 0.016582388／0.021084630／0.022527745 |
+| 7304 | 1532／781 | 0 | 缺测（非零样本 0） |
+| 7305 | 1566／838 | 678 | 0.000496796／0.000813311／0.000865338 |
+
+非零差额最大值为 0.02253 ms，基础切换成本中位数为约 3.3–4.8 s；成本项量级与整条策略的性能差分列。7301／7304 的活跃 cohort 首次损失数为 0，其全局原生事件分别记录 162／182 次 BlockRemoved；全局驱逐与已观察前缀的首次损失分别计量。[单步复现](evidence/joint-kv/43163231106/review/reproduce.py)在固定时刻与历史状态下回放 2／1,372 个非零应用，两次预算各增加 1 ms、期限变化、动作翻转为 0；另一个零差额 SUSPEND 回放保留相同动作、2,815 ms 预算及期限。历史快照覆盖约束记录在核验 JSON 中，完整策略轨迹的动作翻转反事实为 `null`。[复现一致性原文](evidence/joint-kv/43163231106/review/reproduction-verification.json)随证据保存。
+
+[ARM 25 trial 分析回执](evidence/joint-kv/43163231106/cannlab/partial-25trials/receipt.json)记录 CPU 4–5／地址空间上限 4 GiB，4,835 份输入 SHA 核验通过，耗时 52.07 s、峰值 RSS 103.34 MiB；[分析与派生表归档](evidence/joint-kv/43163231106/cannlab/partial-25trials/archive.json)保存摘要 SHA 和输入身份。
+
+### N64 五种子原始指标与完整配对
+
+**N64 共 24/25 trial、9,523/9,525 请求完成，全部清理通过。** [最终表](evidence/joint-kv/43163231106/cannlab/final/full-policy-table.json)保留每策略 7301–7305 的原始指标。逐种子计划请求数为 380／381／381／379／384，每策略合计 1,905；joint 完成 1,903，其余策略各完成 1,905。下表为五个种子的已观测指标均值；joint 包含 7303 失败 trial 的已观测请求与资源积分。
+
+| 策略 | Actor 预留 GB·s | Stranded GB·s | 恢复次数 | 命中率均值／最坏 |
+| --- | ---: | ---: | ---: | ---: |
+| TTL2 | 483.2976 | 206.4504 | 325.0 | 12.01%／9.07% |
+| TTL15 | 437.9131 | 231.4041 | 64.0 | 75.75%／75.36% |
+| v2 | 474.2053 | 230.6002 | 142.0 | 75.66%／75.23% |
+| cache | 473.4022 | 230.3749 | 141.4 | 73.11%／71.67% |
+| joint | 519.0308 | 237.2315 | 142.2 | 73.28%／71.95% |
+
+| 策略 | 交互 P95 均值／最坏 s | 首轮 Gateway 等待 P95 s | 首轮轨迹等待 P95 s | 首轮合并等待 P95 s | 轨迹 JCT P95 s |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| TTL2 | 138.7334／162.7570 | 134.5271 | 0.1702 | 134.6974 | 705.7999 |
+| TTL15 | 272.8940／302.0618 | 399.7337 | 0.1319 | 399.8658 | 429.0125 |
+| v2 | 347.9589／370.3736 | 490.6381 | 0.0782 | 490.7161 | 523.5215 |
+| cache | 350.1290／360.2395 | 488.1429 | 0.0742 | 488.2157 | 522.2589 |
+| joint | 357.1563／394.6549 | 518.8729 | 0.0856 | 518.9589 | 557.7861 |
+
+joint 相关比较有四个完整种子对，分别为 7301／7302／7304／7305；7303 的 `usable_pair=false`、差值为 `null`。注册五种子配对的 `mean／worst` 为 `null`，下表采用四对的 `observed_mean` 与探索性 95% bootstrap 区间。cache−v2 使用全部五个完整种子对。
+
+| 配对 | 完整种子对 | 交互 P95 差 s，95% 区间 | Actor 预留差 GB·s，95% 区间 | 首轮 Gateway 等待差 s | 轨迹 JCT P95 差 s |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| joint − cache | 4 | -0.1492 [-18.5614, +11.7871] | +24.4476 [+17.0535, +31.4217] | +22.4163 | +26.6813 |
+| cache − v2 | 5 | +2.1701 [-17.5382, +18.4221] | -0.8031 [-9.8896, +7.4607] | -2.4952 | -1.2625 |
+| joint − TTL2 | 4 | +215.0541 [+203.1785, +223.7898] | +14.7478 [-6.7153, +33.9702] | +374.3735 | -156.4681 |
+| joint − TTL15 | 4 | +82.1796 [+69.9079, +94.4514] | +55.2978 [+48.8339, +61.7617] | +103.6775 | +112.3054 |
+
+**四对结果显示 joint 增加资源、首轮排队与轨迹完成时间，交互 P95 随种子波动。** joint−cache 的交互 P95 差 −0.1492 s、区间跨零；Actor 预留增加 24.4476 GB·s，首轮 Gateway 等待增加 22.4163 s、区间 [+9.9826,+33.6982]，首轮合并等待增加 22.4220 s，轨迹 JCT P95 增加 26.6813 s、区间 [+12.8695,+41.4521]。cache−v2 的资源、交互 P95 区间均跨零。joint−TTL2 的轨迹 JCT P95 减少 156.4681 s、交互 P95 增加 215.0541 s；joint−TTL15 的资源和交互 P95 均增加。简历收益继续使用各自独立历史证据。
+
+| seed | joint／cache 完成请求 | joint−cache 交互 P95 s | Actor 预留差 GB·s | 首轮 Gateway 等待差 s | JCT P95 差 s | 配对转变采样参考 GB·s | joint／cache 覆盖率 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 7301 | 380／380 | +3.8664 | +34.5763 | +37.7325 | +47.0307 | 23.1646 | 99.18%／99.00% |
+| 7302 | 381／381 | −28.0372 | +28.2671 | +21.5954 | +24.7163 | 21.5789 | 99.91%／99.76% |
+| 7303 | 379／381（不完整） | `null` | `null` | `null` | `null` | 23.8363 | 99.69%／99.59% |
+| 7304 | 379／379 | +13.7084 | +13.3156 | +4.7965 | +8.2498 | 21.6669 | 99.85%／99.77% |
+| 7305 | 384／384 | +9.8658 | +21.6314 | +25.5407 | +26.7286 | 22.5683 | 99.78%／99.89% |
+
+[测量上下文](evidence/joint-kv/43163231106/cannlab/final/measurement-context.json)保留每个 trial 的资源采样、首轮／后续轮时延与成本量级。7303 的已观测资源差为 +130.3522 GB·s，属于失败 trial 的描述值；四个完整种子对的比较差采用上表。完整对的转变采样参考为 21.5789–23.1646 GB·s，两策略覆盖率为 98.9958%–99.9061%；该参考为两条 trial 轮询转变量之和，与资源差并列。N64 固定池覆盖 136 个任务、200 条轨迹、101 个仓库，ReproPatch 任意种子对共享 20／22 个任务；81.89% 的非末轮等待采用固定 3 s 模型，回放时间份额为 99.76%。探索性区间保留任务重复与缺测建模范围。
+
+### N64 与全量 KV 成本核验
+
+N64 的注册 `events.jsonl` 集合为 16,615 个唯一预测、10,629 次应用、1,206 次非零成本应用；[Go 核验并集](evidence/joint-kv/43163231106/review/n64-summary.json)加入 final-state 回执后为 17,018／10,636／1,207，五个 joint trial 均保留、其中一个失败。非零差额最大 0.01419 ms，基础切换成本中位数约 3.3–4.2 s。7301／7302／7304 的活跃 cohort 首次损失均为 0，全局 BlockRemoved 事件分别为 463／456／437；7303／7305 的首次损失分别为 1／3，原生全局驱逐与前缀首次损失分别核验。
+
+N64 对 1／1,207 个非零应用完成单步反事实，预算增加 1 ms、期限变化、动作翻转 0；另有三个零差额 SUSPEND 回放保持原动作。完整过去状态的覆盖范围按核验 JSON 保存，整条策略轨迹反事实为 `null`。[全量 Go 核验](evidence/joint-kv/43163231106/review/full-summary.json)合计十个 joint trial：注册事件为 24,123 个预测／14,438 次应用／2,576 次非零成本应用，并集为 24,894／14,448／2,579；3／2,579 个非零单步回放各增加 1 ms 预算、期限变化、动作翻转 0，另有四个零差额 SUSPEND 回放。2,854 个完成 joint 请求、1,235 次 MEMORY 恢复、479 个终态快照与 2,375/2,375 个原生活跃绑定已对账，时序／数值／身份问题计数为 0。两集合与单步范围按各自分母报告。
+
+最终 [ARM 分析回执](evidence/joint-kv/43163231106/cannlab/final/receipt.json)记录 aarch64／Python 3.11.4、CPU 4–5／4 GiB 地址空间上限；8,850 份输入 SHA 核验通过，118.18 s／峰值 RSS 233.64 MiB。[16 成员归档](evidence/joint-kv/43163231106/cannlab/final/archive.json)封存最终表、上下文和输入／输出摘要；最终 summary SHA 为 `b8d05b1c0b1667b36fe847f01c91c35fc39a02ccc2491f4f25f24a42e2f200ec`。跨机参考字段 `reference_summary_sha256／byte_identical_to_reference=null`，最终包采用输入与输出 SHA 核验。独立 25 trial 阶段归档继续保留，冒烟的三种 Python／两架构逐字一致结论使用其自身原文。
+
+首轮全量的 TTL2／TTL15／v2／cache／joint 五策略分别记录缓存重选和 KV 成本比较，N32 五对、N64 joint 四对及失败分母保持冻结计划身份。机制与入口见 [JOINT_KV_SCHEDULING](JOINT_KV_SCHEDULING.md)。以下历史 Gate 1／2、TraceLab 和 GPU 结果保持各自源码与运行身份。
 
 ## 三项性能边界与归因
 
-**Gate 2，N64／16 MiB：驻留复用与首次准入公平性。** 64 会话竞争 4 个 Warm 槽位，超额订阅为 16:1。v2 相对 TTL2 的 Actor 预留差为 −3.746 GB·s，95% 区间 [−12.191, +4.699] 跨零；交互 P95 增加 18.836 s，区间 [+9.087, +27.482]。Runner 的 [FairSlots.acquire](../bench/scale.py#L156)先授予槽位，[resume](../bench/scale.py#L385)随后登记 ReturnDemand；[HoldingRate](../internal/control/scheduler_v2.go#L201)使用已经登记的返回需求，首次排队压力尚未完整进入 KEEP 成本。已有会话驻留复用延长后到会话的首次等待。Gate 2 中双方平均恢复次数均为 224，v2 累计恢复耗时另增加 116.221 s；资源均值下降、恢复代价和前置公平性共同解释实测取舍。少恢复的直接证据来自 64 MiB／3 s 边界，该坐标 v2 首轮排队占累计 TTFT 的 98.733%。[正式数据](evidence/gate2-a7e324a-summary.json) · [边界逐轮分解](evidence/boundary-confirm-a7e324a-summary.json)
+**Gate 2，N64／16 MiB：驻留复用与首次准入公平性。** 64 会话竞争 4 个 Warm 槽位，超额订阅为 16:1。v2 相对 TTL2 的 Actor 预留差为 −3.746 GB·s，95% 区间 [−12.191, +4.699] 跨零；交互 P95 增加 18.836 s，区间 [+9.087, +27.482]。Runner 的 [FairSlots.acquire](../bench/scale.py#L156)先授予槽位，[resume](../bench/scale.py#L425)随后登记 ReturnDemand；[HoldingRate](../internal/control/scheduler_v2.go#L201)使用已经登记的返回需求，首次排队压力尚未完整进入 KEEP 成本。已有会话驻留复用延长后到会话的首次等待。Gate 2 中双方平均恢复次数均为 224，v2 累计恢复耗时另增加 116.221 s；资源均值下降、恢复代价和前置公平性共同解释实测取舍。少恢复的直接证据来自 64 MiB／3 s 边界，该坐标 v2 首轮排队占累计 TTFT 的 98.733%。[正式数据](evidence/gate2-a7e324a-summary.json) · [边界逐轮分解](evidence/boundary-confirm-a7e324a-summary.json)
 
 **TTL2，128 MiB／3 s：快照频率与磁盘容量约束。** TTL2 在 16 MiB 的低恢复成本负载中是强基线；128 MiB 下三个 trial 各产生 434／435／436 个 Tag，包含各 64 个初始化恢复点，随后触发 6 GiB 磁盘余量保护。完整尾部样本约为 163～168 MiB/快照，逐 trial 以 Tag 数乘样本范围外推，累计逻辑快照量约 **69.1～71.5 GiB**，体现频繁快照形成的逻辑写入放大。物理写入、压缩峰值及写放大比值的采集状态为 `uncollected_in_ci_runner (see 128MiB boundary report)`。v2 的成本迟滞减少高成本快照频率，K=2 GC 控制恢复点保留量；已发生的累计写入继续单独计量。三个边界坐标合计 **13/18 trial**；其中 128 MiB 坐标为 **1/6** 完整通过、三个 TTL2 失败、两个 v2 被前序清理阻断。[失败账本](evidence/boundary-confirm-storage-a7e324a.json) · [逻辑估算与物理采集状态](STORAGE_COSTS.md)
 

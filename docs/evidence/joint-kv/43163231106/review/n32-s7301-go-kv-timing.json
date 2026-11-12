@@ -1,0 +1,2540 @@
+{
+  "schema_version": 1,
+  "execution_kind": "joint-kv-raw-decision-timing-review",
+  "source_commit": "55120d52e1be0fef3ab443af66f81baa046cc320",
+  "github_run_id": "43163231106",
+  "trial_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93",
+  "concurrency": 32,
+  "seed": 7301,
+  "gpu_execution": false,
+  "backend_kind": "mocker",
+  "prediction_identity": [
+    "session_id",
+    "predicted_at"
+  ],
+  "prediction_holder_counts": {
+    "events.jsonl.gz": 1428,
+    "final-state.json": 933
+  },
+  "prediction_counts": {
+    "total": 1495,
+    "invalid": 291,
+    "applied": 704,
+    "nonzero_delta": 0,
+    "nonzero_applied_cost_input": 0,
+    "valid": 1204
+  },
+  "invalid_reason_counts": {
+    "no_cache_observation": 248,
+    "no_feedback": 2,
+    "low_support": 35,
+    "stale_observation": 2,
+    "worker_changed": 4
+  },
+  "applied_recorded_actions": {
+    "KEEP": 704
+  },
+  "cost_ms": {
+    "applied_delta": {
+      "count": 704,
+      "min": 0,
+      "p50": 0.0,
+      "p95": 0.0,
+      "max": 0
+    },
+    "nonzero_applied_delta": {
+      "count": 0,
+      "min": null,
+      "p50": null,
+      "p95": null,
+      "max": null
+    },
+    "applied_baseline_switch": {
+      "count": 704,
+      "min": 3792,
+      "p50": 4026.0,
+      "p95": 4631.0,
+      "max": 4764
+    }
+  },
+  "evidence_levels": {
+    "nonzero_applied_cost_input": "Nonzero KV delta supplied to the online scheduler; count is separate from action flips",
+    "observed_suspend_receipts": 70,
+    "single_step_replay": "Same-time replay using complete persisted episode and past wait-window evidence; coverage is a subset",
+    "paired_policy_causal_action_effect": "unmeasured"
+  },
+  "single_step_replay": {
+    "target_nonzero_applied": 0,
+    "replayed": 0,
+    "unreplayed": 0,
+    "flips": null,
+    "unreplayed_reason": "Complete past episode release/holding state unavailable in final snapshots",
+    "rows": [],
+    "budget_changed": 0,
+    "deadline_changed": 0,
+    "replayed_nonzero_applied": 0,
+    "applied_suspend_replays": [],
+    "nonzero_applied_action_flips": null,
+    "causal_scope": "Same frozen state and historical observations at one decision time; excludes future trajectory feedback and paired-policy causal action flips"
+  },
+  "timing_checks": {
+    "accepted_cache_echo_identity": {
+      "checked": 1468,
+      "passed": 1468
+    },
+    "accepted_cache_matches_native_selected_worker": {
+      "checked": 1468,
+      "passed": 1468
+    },
+    "active_native_binding_matches_actor_session_epoch": {
+      "checked": 157,
+      "passed": 157
+    },
+    "baseline_plus_delta_matches_total_cost": {
+      "checked": 1204,
+      "passed": 1204
+    },
+    "cache_and_recompute_tokens_balance_prompt": {
+      "checked": 189,
+      "passed": 189
+    },
+    "completed_model_ram_continuity": {
+      "checked": 189,
+      "passed": 189
+    },
+    "completed_request_has_native_sent_snapshot": {
+      "checked": 189,
+      "passed": 189
+    },
+    "conditional_return_distribution_recomputed_from_past_windows": {
+      "checked": 659,
+      "passed": 659
+    },
+    "delta_matches_expected_cost_difference": {
+      "checked": 1204,
+      "passed": 1204
+    },
+    "duplicate_prediction_payload_agrees": {
+      "checked": 2361,
+      "passed": 2361
+    },
+    "feature_age_matches_prediction": {
+      "checked": 1247,
+      "passed": 1247
+    },
+    "feature_observed_before_prediction": {
+      "checked": 1247,
+      "passed": 1247
+    },
+    "final_actor_and_manifest_memory_fidelity": {
+      "checked": 32,
+      "passed": 32
+    },
+    "frozen_calibration_artifact_sha_matches_declared_source": {
+      "checked": 1,
+      "passed": 1
+    },
+    "frozen_calibration_config_sha_matches_trial_source": {
+      "checked": 1,
+      "passed": 1
+    },
+    "native_admission_matches_engine_attempt": {
+      "checked": 189,
+      "passed": 189
+    },
+    "native_public_response_omits_inference_lease": {
+      "checked": 189,
+      "passed": 189
+    },
+    "native_sent_engine_workers_and_ranks_agree": {
+      "checked": 189,
+      "passed": 189
+    },
+    "prediction_cache_epoch_matches_past_lifecycle": {
+      "checked": 1184,
+      "passed": 1184
+    },
+    "prediction_execution_epoch_matches_cache": {
+      "checked": 86,
+      "passed": 86
+    },
+    "prediction_statistics_match_accepted_cache": {
+      "checked": 1204,
+      "passed": 1204
+    },
+    "prediction_worker_epoch_rank_matches_cache": {
+      "checked": 1204,
+      "passed": 1204
+    },
+    "resume_added_once_to_suspend_exposure": {
+      "checked": 1204,
+      "passed": 1204
+    },
+    "resume_receipt_memory_fidelity": {
+      "checked": 102,
+      "passed": 102
+    },
+    "resume_source_before_prediction": {
+      "checked": 1494,
+      "passed": 1494
+    },
+    "return_history_contains_only_past_observations": {
+      "checked": 659,
+      "passed": 659
+    },
+    "sealed_source_bytes_unchanged": {
+      "checked": 1,
+      "passed": 1
+    },
+    "statistics_before_prediction_and_at_or_before_feature": {
+      "checked": 1245,
+      "passed": 1245
+    },
+    "terminal_native_snapshot_preserves_epoch_and_worker": {
+      "checked": 32,
+      "passed": 32
+    },
+    "unavailable_resume_mean_has_truncated_past_measurements": {
+      "checked": 561,
+      "passed": 561
+    },
+    "valid_actions_share_worker_epoch_rank_gpu_policy": {
+      "checked": 1204,
+      "passed": 1204
+    },
+    "valid_feature_and_statistics_fresh": {
+      "checked": 1204,
+      "passed": 1204
+    },
+    "valid_prediction_has_past_accepted_cache_source": {
+      "checked": 1204,
+      "passed": 1204
+    },
+    "worker_event_sequence_contiguous": {
+      "checked": 2,
+      "passed": 2
+    }
+  },
+  "history_coverage": {
+    "predictions_with_historical_resume": 1494,
+    "predictions_with_return_distribution": 704,
+    "resume_mean_recomputed": 933
+  },
+  "history_unavailable_counts": {
+    "resume_mean_recomputation:bounded_final_trace_observation_history": 561,
+    "return_distribution_recomputation:model": 45
+  },
+  "history_unavailable": [
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w4",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 0,
+      "past_resume_completion_events": 1,
+      "predicted_at": [
+        "2026-11-12T06:04:56.797147053Z",
+        "2026-11-12T06:04:57.046018022Z",
+        "2026-11-12T06:04:57.294540976Z",
+        "2026-11-12T06:04:57.54751038Z",
+        "2026-11-12T06:04:57.801619236Z",
+        "2026-11-12T06:04:58.053354036Z",
+        "2026-11-12T06:04:58.296923136Z",
+        "2026-11-12T06:04:58.561151854Z",
+        "2026-11-12T06:04:58.801244865Z",
+        "2026-11-12T06:04:58.823604186Z"
+      ],
+      "count": 10
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w0",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 0,
+      "past_resume_completion_events": 1,
+      "predicted_at": [
+        "2026-11-12T06:04:56.803061819Z",
+        "2026-11-12T06:04:58.554148438Z",
+        "2026-11-12T06:05:01.92840179Z",
+        "2026-11-12T06:05:03.832024195Z",
+        "2026-11-12T06:05:05.543091799Z"
+      ],
+      "count": 5
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w6",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 0,
+      "past_resume_completion_events": 1,
+      "predicted_at": [
+        "2026-11-12T06:04:57.300373638Z",
+        "2026-11-12T06:04:57.543298679Z",
+        "2026-11-12T06:04:57.81463664Z",
+        "2026-11-12T06:04:58.057028133Z",
+        "2026-11-12T06:04:58.291885246Z",
+        "2026-11-12T06:04:58.570043742Z",
+        "2026-11-12T06:04:58.813211648Z",
+        "2026-11-12T06:04:59.086871611Z",
+        "2026-11-12T06:04:59.291526599Z",
+        "2026-11-12T06:04:59.362964662Z"
+      ],
+      "count": 10
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w1",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 0,
+      "past_resume_completion_events": 1,
+      "predicted_at": [
+        "2026-11-12T06:04:57.807094194Z",
+        "2026-11-12T06:04:58.045595744Z",
+        "2026-11-12T06:04:58.300607213Z",
+        "2026-11-12T06:04:58.558458939Z",
+        "2026-11-12T06:04:58.806909479Z",
+        "2026-11-12T06:04:59.091421801Z",
+        "2026-11-12T06:04:59.313203525Z",
+        "2026-11-12T06:04:59.540688317Z",
+        "2026-11-12T06:04:59.789477284Z",
+        "2026-11-12T06:04:59.877522595Z"
+      ],
+      "count": 10
+    },
+    {
+      "metric": "return_distribution_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w0",
+      "reason": "model",
+      "predicted_at": [
+        "2026-11-12T06:05:03.832024195Z"
+      ],
+      "count": 1
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w4",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 0,
+      "past_resume_completion_events": 2,
+      "predicted_at": [
+        "2026-11-12T06:05:04.801494715Z",
+        "2026-11-12T06:05:05.07767663Z",
+        "2026-11-12T06:05:05.298143475Z",
+        "2026-11-12T06:05:05.549301918Z",
+        "2026-11-12T06:05:05.910664622Z",
+        "2026-11-12T06:05:06.047863663Z",
+        "2026-11-12T06:05:06.291599673Z",
+        "2026-11-12T06:05:06.568512258Z",
+        "2026-11-12T06:05:06.811459244Z",
+        "2026-11-12T06:05:06.836314626Z"
+      ],
+      "count": 10
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w6",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 0,
+      "past_resume_completion_events": 2,
+      "predicted_at": [
+        "2026-11-12T06:05:05.293190628Z",
+        "2026-11-12T06:05:05.553623425Z",
+        "2026-11-12T06:05:05.79404561Z",
+        "2026-11-12T06:05:06.043942851Z",
+        "2026-11-12T06:05:06.295568804Z",
+        "2026-11-12T06:05:06.564113099Z",
+        "2026-11-12T06:05:06.802164048Z",
+        "2026-11-12T06:05:07.051591096Z",
+        "2026-11-12T06:05:07.354902374Z",
+        "2026-11-12T06:05:07.366969022Z"
+      ],
+      "count": 10
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w1",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 0,
+      "past_resume_completion_events": 2,
+      "predicted_at": [
+        "2026-11-12T06:05:06.56022177Z",
+        "2026-11-12T06:05:06.818579274Z",
+        "2026-11-12T06:05:07.056800461Z",
+        "2026-11-12T06:05:07.291126394Z",
+        "2026-11-12T06:05:07.541275851Z",
+        "2026-11-12T06:05:07.801706999Z",
+        "2026-11-12T06:05:08.046523433Z",
+        "2026-11-12T06:05:08.295847664Z",
+        "2026-11-12T06:05:08.570219489Z",
+        "2026-11-12T06:05:08.58412413Z"
+      ],
+      "count": 10
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w4",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 0,
+      "past_resume_completion_events": 3,
+      "predicted_at": [
+        "2026-11-12T06:05:12.333120858Z",
+        "2026-11-12T06:05:12.634318114Z",
+        "2026-11-12T06:05:13.061398969Z",
+        "2026-11-12T06:05:13.382702612Z",
+        "2026-11-12T06:05:13.594598296Z",
+        "2026-11-12T06:05:13.819564288Z",
+        "2026-11-12T06:05:14.063380827Z",
+        "2026-11-12T06:05:14.296633741Z",
+        "2026-11-12T06:05:14.308788356Z"
+      ],
+      "count": 9
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w5",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 0,
+      "past_resume_completion_events": 1,
+      "predicted_at": [
+        "2026-11-12T06:05:13.392725031Z",
+        "2026-11-12T06:05:13.552595016Z",
+        "2026-11-12T06:05:13.815927352Z",
+        "2026-11-12T06:05:14.07229964Z",
+        "2026-11-12T06:05:14.304222813Z",
+        "2026-11-12T06:05:14.677378879Z",
+        "2026-11-12T06:05:14.995715034Z",
+        "2026-11-12T06:05:15.068506244Z",
+        "2026-11-12T06:05:15.300481436Z",
+        "2026-11-12T06:05:15.323573535Z"
+      ],
+      "count": 10
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w6",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 0,
+      "past_resume_completion_events": 3,
+      "predicted_at": [
+        "2026-11-12T06:05:14.054273685Z",
+        "2026-11-12T06:05:14.327782719Z",
+        "2026-11-12T06:05:14.681800626Z",
+        "2026-11-12T06:05:15.014302404Z",
+        "2026-11-12T06:05:15.123115382Z",
+        "2026-11-12T06:05:15.304586006Z",
+        "2026-11-12T06:05:15.546222166Z",
+        "2026-11-12T06:05:15.796122068Z",
+        "2026-11-12T06:05:16.045818433Z",
+        "2026-11-12T06:05:16.061599885Z"
+      ],
+      "count": 10
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w1",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 0,
+      "past_resume_completion_events": 3,
+      "predicted_at": [
+        "2026-11-12T06:05:16.051634881Z",
+        "2026-11-12T06:05:16.292038084Z",
+        "2026-11-12T06:05:16.553893722Z",
+        "2026-11-12T06:05:17.02750886Z",
+        "2026-11-12T06:05:17.163259346Z",
+        "2026-11-12T06:05:17.291323278Z",
+        "2026-11-12T06:05:17.564297657Z",
+        "2026-11-12T06:05:17.794479115Z",
+        "2026-11-12T06:05:18.067768288Z",
+        "2026-11-12T06:05:18.081296628Z"
+      ],
+      "count": 10
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w4",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 0,
+      "past_resume_completion_events": 4,
+      "predicted_at": [
+        "2026-11-12T06:05:19.799182362Z",
+        "2026-11-12T06:05:20.060209257Z",
+        "2026-11-12T06:05:20.358460535Z",
+        "2026-11-12T06:05:20.566096166Z",
+        "2026-11-12T06:05:21.062700739Z",
+        "2026-11-12T06:05:21.308005698Z",
+        "2026-11-12T06:05:21.550476559Z",
+        "2026-11-12T06:05:21.792353996Z",
+        "2026-11-12T06:05:21.851810318Z"
+      ],
+      "count": 9
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w6",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 0,
+      "past_resume_completion_events": 4,
+      "predicted_at": [
+        "2026-11-12T06:05:23.547968399Z",
+        "2026-11-12T06:05:23.852918647Z",
+        "2026-11-12T06:05:24.121952137Z",
+        "2026-11-12T06:05:24.302355427Z",
+        "2026-11-12T06:05:24.570406197Z",
+        "2026-11-12T06:05:24.852378658Z",
+        "2026-11-12T06:05:25.049155396Z",
+        "2026-11-12T06:05:25.44713535Z",
+        "2026-11-12T06:05:25.561240011Z",
+        "2026-11-12T06:05:25.577870896Z"
+      ],
+      "count": 10
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w5",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 0,
+      "past_resume_completion_events": 2,
+      "predicted_at": [
+        "2026-11-12T06:05:24.329692166Z",
+        "2026-11-12T06:05:24.566056638Z",
+        "2026-11-12T06:05:24.793950957Z",
+        "2026-11-12T06:05:25.056834498Z",
+        "2026-11-12T06:05:25.465888375Z",
+        "2026-11-12T06:05:25.553183581Z",
+        "2026-11-12T06:05:25.827341171Z",
+        "2026-11-12T06:05:26.049307455Z",
+        "2026-11-12T06:05:26.340023687Z",
+        "2026-11-12T06:05:26.362862364Z"
+      ],
+      "count": 10
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w1",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 0,
+      "past_resume_completion_events": 4,
+      "predicted_at": [
+        "2026-11-12T06:05:26.354339101Z",
+        "2026-11-12T06:05:26.575620674Z",
+        "2026-11-12T06:05:26.800414879Z",
+        "2026-11-12T06:05:27.048200007Z",
+        "2026-11-12T06:05:27.300888413Z",
+        "2026-11-12T06:05:27.582607483Z",
+        "2026-11-12T06:05:27.793273433Z",
+        "2026-11-12T06:05:28.08354247Z",
+        "2026-11-12T06:05:28.35735711Z",
+        "2026-11-12T06:05:28.382765345Z"
+      ],
+      "count": 10
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w4",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 0,
+      "past_resume_completion_events": 5,
+      "predicted_at": [
+        "2026-11-12T06:05:27.316133286Z",
+        "2026-11-12T06:05:27.55016735Z",
+        "2026-11-12T06:05:27.80358315Z",
+        "2026-11-12T06:05:28.046349351Z",
+        "2026-11-12T06:05:28.345656994Z",
+        "2026-11-12T06:05:28.677936586Z",
+        "2026-11-12T06:05:28.998017506Z",
+        "2026-11-12T06:05:29.127669901Z",
+        "2026-11-12T06:05:29.33890659Z",
+        "2026-11-12T06:05:29.585400914Z",
+        "2026-11-12T06:05:29.957169548Z",
+        "2026-11-12T06:05:30.062236883Z",
+        "2026-11-12T06:05:30.30629624Z",
+        "2026-11-12T06:05:30.656580425Z",
+        "2026-11-12T06:05:32.752486123Z",
+        "2026-11-12T06:05:32.989941671Z",
+        "2026-11-12T06:05:33.065894461Z"
+      ],
+      "count": 17
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w6",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 0,
+      "past_resume_completion_events": 5,
+      "predicted_at": [
+        "2026-11-12T06:05:31.572105347Z",
+        "2026-11-12T06:05:31.827144867Z",
+        "2026-11-12T06:05:32.256466934Z",
+        "2026-11-12T06:05:32.315421108Z",
+        "2026-11-12T06:05:32.724699763Z",
+        "2026-11-12T06:05:33.034381794Z",
+        "2026-11-12T06:05:33.123195199Z",
+        "2026-11-12T06:05:33.313373257Z",
+        "2026-11-12T06:05:33.598692687Z",
+        "2026-11-12T06:05:33.817105605Z",
+        "2026-11-12T06:05:34.102234494Z",
+        "2026-11-12T06:05:34.293171975Z",
+        "2026-11-12T06:05:34.562820899Z",
+        "2026-11-12T06:05:36.849533738Z",
+        "2026-11-12T06:05:37.238215453Z"
+      ],
+      "count": 15
+    },
+    {
+      "metric": "return_distribution_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w4",
+      "reason": "model",
+      "predicted_at": [
+        "2026-11-12T06:05:32.752486123Z"
+      ],
+      "count": 1
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w5",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 0,
+      "past_resume_completion_events": 3,
+      "predicted_at": [
+        "2026-11-12T06:05:33.592414944Z",
+        "2026-11-12T06:05:33.885601577Z",
+        "2026-11-12T06:05:34.043074401Z",
+        "2026-11-12T06:05:34.299024011Z",
+        "2026-11-12T06:05:34.554128048Z",
+        "2026-11-12T06:05:34.920208295Z",
+        "2026-11-12T06:05:35.047898047Z",
+        "2026-11-12T06:05:35.299299103Z",
+        "2026-11-12T06:05:35.542074165Z",
+        "2026-11-12T06:05:35.562933371Z"
+      ],
+      "count": 10
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w1",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 0,
+      "past_resume_completion_events": 5,
+      "predicted_at": [
+        "2026-11-12T06:05:35.553969563Z",
+        "2026-11-12T06:05:35.801416996Z",
+        "2026-11-12T06:05:36.310381454Z",
+        "2026-11-12T06:05:36.749662947Z",
+        "2026-11-12T06:05:36.856873991Z",
+        "2026-11-12T06:05:37.138605544Z",
+        "2026-11-12T06:05:37.313692692Z",
+        "2026-11-12T06:05:37.549351729Z",
+        "2026-11-12T06:05:37.818037268Z",
+        "2026-11-12T06:05:38.050187151Z",
+        "2026-11-12T06:05:38.289861845Z",
+        "2026-11-12T06:05:38.564169405Z",
+        "2026-11-12T06:05:38.590608637Z"
+      ],
+      "count": 13
+    },
+    {
+      "metric": "return_distribution_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w6",
+      "reason": "model",
+      "predicted_at": [
+        "2026-11-12T06:05:36.849533738Z"
+      ],
+      "count": 1
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w12",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 0,
+      "past_resume_completion_events": 1,
+      "predicted_at": [
+        "2026-11-12T06:05:38.572729665Z",
+        "2026-11-12T06:05:40.74989118Z",
+        "2026-11-12T06:05:42.305309451Z",
+        "2026-11-12T06:05:44.341053903Z",
+        "2026-11-12T06:05:44.567547343Z",
+        "2026-11-12T06:05:46.302504762Z",
+        "2026-11-12T06:05:46.588474128Z",
+        "2026-11-12T06:05:46.86795419Z",
+        "2026-11-12T06:05:47.092613538Z",
+        "2026-11-12T06:05:47.858901715Z",
+        "2026-11-12T06:05:47.880955339Z",
+        "2026-11-12T06:05:48.069636637Z",
+        "2026-11-12T06:05:48.297650445Z",
+        "2026-11-12T06:05:50.341770818Z",
+        "2026-11-12T06:05:50.675176591Z"
+      ],
+      "count": 15
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w5",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 1,
+      "past_resume_completion_events": 4,
+      "predicted_at": [
+        "2026-11-12T06:05:43.425824571Z",
+        "2026-11-12T06:05:43.73665772Z",
+        "2026-11-12T06:05:43.810313226Z",
+        "2026-11-12T06:05:44.055148718Z",
+        "2026-11-12T06:05:44.327641929Z",
+        "2026-11-12T06:05:44.582471874Z",
+        "2026-11-12T06:05:44.817414357Z",
+        "2026-11-12T06:05:45.083346368Z",
+        "2026-11-12T06:05:45.599175428Z",
+        "2026-11-12T06:05:45.612811159Z"
+      ],
+      "count": 10
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w1",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 1,
+      "past_resume_completion_events": 6,
+      "predicted_at": [
+        "2026-11-12T06:05:46.360460465Z",
+        "2026-11-12T06:05:46.563132352Z"
+      ],
+      "count": 2
+    },
+    {
+      "metric": "return_distribution_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w12",
+      "reason": "model",
+      "predicted_at": [
+        "2026-11-12T06:05:50.341770818Z"
+      ],
+      "count": 1
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w5",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 2,
+      "past_resume_completion_events": 5,
+      "predicted_at": [
+        "2026-11-12T06:05:53.133032759Z",
+        "2026-11-12T06:05:53.364774926Z",
+        "2026-11-12T06:05:53.650413974Z",
+        "2026-11-12T06:05:53.845671302Z",
+        "2026-11-12T06:05:54.062112966Z",
+        "2026-11-12T06:05:54.327365098Z",
+        "2026-11-12T06:05:54.674513714Z",
+        "2026-11-12T06:05:55.157808861Z",
+        "2026-11-12T06:05:55.417550596Z",
+        "2026-11-12T06:05:55.557900937Z",
+        "2026-11-12T06:05:55.801089578Z",
+        "2026-11-12T06:05:56.088553043Z",
+        "2026-11-12T06:05:59.067571167Z",
+        "2026-11-12T06:05:59.376027075Z"
+      ],
+      "count": 14
+    },
+    {
+      "metric": "return_distribution_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w8",
+      "reason": "model",
+      "predicted_at": [
+        "2026-11-12T06:06:33.3514972Z"
+      ],
+      "count": 1
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w28",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 1,
+      "past_resume_completion_events": 2,
+      "predicted_at": [
+        "2026-11-12T06:06:39.290799132Z",
+        "2026-11-12T06:06:39.598185395Z",
+        "2026-11-12T06:06:39.79135774Z",
+        "2026-11-12T06:06:40.046136214Z",
+        "2026-11-12T06:06:40.297133284Z",
+        "2026-11-12T06:06:40.570692885Z",
+        "2026-11-12T06:06:40.952035934Z",
+        "2026-11-12T06:06:41.19071072Z",
+        "2026-11-12T06:06:41.224261878Z"
+      ],
+      "count": 9
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w28",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 2,
+      "past_resume_completion_events": 3,
+      "predicted_at": [
+        "2026-11-12T06:06:48.110551686Z",
+        "2026-11-12T06:06:48.319593107Z",
+        "2026-11-12T06:06:48.696718327Z",
+        "2026-11-12T06:06:48.866985502Z",
+        "2026-11-12T06:06:49.093523095Z",
+        "2026-11-12T06:06:49.319499442Z",
+        "2026-11-12T06:06:49.541411837Z",
+        "2026-11-12T06:06:49.793585771Z",
+        "2026-11-12T06:06:50.059218864Z",
+        "2026-11-12T06:06:50.297129945Z",
+        "2026-11-12T06:06:50.305407992Z"
+      ],
+      "count": 11
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w28",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 3,
+      "past_resume_completion_events": 4,
+      "predicted_at": [
+        "2026-11-12T06:06:56.33252121Z",
+        "2026-11-12T06:06:56.758688671Z",
+        "2026-11-12T06:06:56.858602603Z",
+        "2026-11-12T06:06:57.074147164Z",
+        "2026-11-12T06:06:57.319399094Z",
+        "2026-11-12T06:06:57.543037912Z",
+        "2026-11-12T06:06:57.797729805Z",
+        "2026-11-12T06:06:58.150661407Z",
+        "2026-11-12T06:06:58.31910254Z",
+        "2026-11-12T06:06:58.340827782Z"
+      ],
+      "count": 10
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w28",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 4,
+      "past_resume_completion_events": 5,
+      "predicted_at": [
+        "2026-11-12T06:07:05.125063052Z",
+        "2026-11-12T06:07:05.344531955Z",
+        "2026-11-12T06:07:05.580878024Z",
+        "2026-11-12T06:07:05.832625763Z",
+        "2026-11-12T06:07:06.085199712Z",
+        "2026-11-12T06:07:06.304589791Z",
+        "2026-11-12T06:07:06.696678157Z",
+        "2026-11-12T06:07:06.983139243Z",
+        "2026-11-12T06:07:07.039909274Z"
+      ],
+      "count": 9
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w28",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 5,
+      "past_resume_completion_events": 6,
+      "predicted_at": [
+        "2026-11-12T06:07:14.100615204Z",
+        "2026-11-12T06:07:14.486209202Z",
+        "2026-11-12T06:07:14.626286272Z",
+        "2026-11-12T06:07:14.866722179Z",
+        "2026-11-12T06:07:15.078848317Z",
+        "2026-11-12T06:07:15.302038201Z",
+        "2026-11-12T06:07:15.55411353Z",
+        "2026-11-12T06:07:15.805698288Z",
+        "2026-11-12T06:07:16.060896711Z",
+        "2026-11-12T06:07:16.367415607Z",
+        "2026-11-12T06:07:16.595451984Z",
+        "2026-11-12T06:07:16.85906007Z",
+        "2026-11-12T06:07:17.126307972Z",
+        "2026-11-12T06:07:19.10607622Z",
+        "2026-11-12T06:07:19.299377137Z"
+      ],
+      "count": 15
+    },
+    {
+      "metric": "return_distribution_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w28",
+      "reason": "model",
+      "predicted_at": [
+        "2026-11-12T06:07:19.10607622Z"
+      ],
+      "count": 1
+    },
+    {
+      "metric": "return_distribution_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w26",
+      "reason": "model",
+      "predicted_at": [
+        "2026-11-12T06:07:32.134821459Z",
+        "2026-11-12T06:07:37.315516921Z",
+        "2026-11-12T06:07:39.854370983Z"
+      ],
+      "count": 3
+    },
+    {
+      "metric": "return_distribution_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w27",
+      "reason": "model",
+      "predicted_at": [
+        "2026-11-12T06:07:33.024040842Z"
+      ],
+      "count": 1
+    },
+    {
+      "metric": "return_distribution_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w14",
+      "reason": "model",
+      "predicted_at": [
+        "2026-11-12T06:07:51.093454472Z",
+        "2026-11-12T06:07:56.423600385Z",
+        "2026-11-12T06:08:01.607199736Z"
+      ],
+      "count": 3
+    },
+    {
+      "metric": "return_distribution_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w15",
+      "reason": "model",
+      "predicted_at": [
+        "2026-11-12T06:08:17.553550932Z",
+        "2026-11-12T06:08:19.577435874Z",
+        "2026-11-12T06:08:21.917264789Z",
+        "2026-11-12T06:08:24.237635026Z",
+        "2026-11-12T06:08:24.322054374Z"
+      ],
+      "count": 5
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w22",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 1,
+      "past_resume_completion_events": 6,
+      "predicted_at": [
+        "2026-11-12T06:08:19.30178173Z",
+        "2026-11-12T06:08:19.568843666Z",
+        "2026-11-12T06:08:19.796259123Z",
+        "2026-11-12T06:08:20.05387767Z",
+        "2026-11-12T06:08:20.305446813Z",
+        "2026-11-12T06:08:20.569114347Z",
+        "2026-11-12T06:08:20.859061496Z",
+        "2026-11-12T06:08:21.044967303Z",
+        "2026-11-12T06:08:21.399399914Z",
+        "2026-11-12T06:08:21.607220712Z",
+        "2026-11-12T06:08:21.989789877Z",
+        "2026-11-12T06:08:22.141722032Z",
+        "2026-11-12T06:08:22.293142325Z",
+        "2026-11-12T06:08:24.775475358Z",
+        "2026-11-12T06:08:24.845839457Z",
+        "2026-11-12T06:08:25.10654006Z",
+        "2026-11-12T06:08:25.542634355Z",
+        "2026-11-12T06:08:25.834610083Z",
+        "2026-11-12T06:08:26.040767316Z",
+        "2026-11-12T06:08:26.289564961Z",
+        "2026-11-12T06:08:26.565150336Z",
+        "2026-11-12T06:08:26.865758815Z",
+        "2026-11-12T06:08:27.061354737Z",
+        "2026-11-12T06:08:27.312815062Z",
+        "2026-11-12T06:08:27.621693779Z",
+        "2026-11-12T06:08:30.075821481Z",
+        "2026-11-12T06:08:30.773658454Z",
+        "2026-11-12T06:08:30.935398325Z",
+        "2026-11-12T06:08:31.116979215Z",
+        "2026-11-12T06:08:31.402573374Z",
+        "2026-11-12T06:08:31.805878145Z",
+        "2026-11-12T06:08:32.088814171Z",
+        "2026-11-12T06:08:32.29915904Z",
+        "2026-11-12T06:08:32.884618756Z",
+        "2026-11-12T06:08:33.443617741Z",
+        "2026-11-12T06:08:33.638433347Z",
+        "2026-11-12T06:08:35.794856527Z",
+        "2026-11-12T06:08:36.047488426Z",
+        "2026-11-12T06:08:36.317432911Z",
+        "2026-11-12T06:08:36.87534525Z",
+        "2026-11-12T06:08:37.458710157Z",
+        "2026-11-12T06:08:37.596326576Z",
+        "2026-11-12T06:08:37.809708718Z",
+        "2026-11-12T06:08:38.083752146Z",
+        "2026-11-12T06:08:38.291103287Z",
+        "2026-11-12T06:08:38.603374823Z",
+        "2026-11-12T06:08:38.906642998Z",
+        "2026-11-12T06:08:41.603273509Z",
+        "2026-11-12T06:08:41.839447062Z",
+        "2026-11-12T06:08:42.071028722Z",
+        "2026-11-12T06:08:42.294291695Z",
+        "2026-11-12T06:08:42.741983059Z",
+        "2026-11-12T06:08:43.232738211Z",
+        "2026-11-12T06:08:43.780354645Z",
+        "2026-11-12T06:08:43.93101391Z",
+        "2026-11-12T06:08:44.098186019Z",
+        "2026-11-12T06:08:44.340682606Z",
+        "2026-11-12T06:08:44.608304173Z",
+        "2026-11-12T06:08:44.924173699Z",
+        "2026-11-12T06:08:45.138846029Z",
+        "2026-11-12T06:08:47.38479557Z",
+        "2026-11-12T06:08:47.721638008Z",
+        "2026-11-12T06:08:47.796133009Z"
+      ],
+      "count": 63
+    },
+    {
+      "metric": "return_distribution_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w19",
+      "reason": "model",
+      "predicted_at": [
+        "2026-11-12T06:08:21.59011351Z",
+        "2026-11-12T06:08:35.584870268Z"
+      ],
+      "count": 2
+    },
+    {
+      "metric": "return_distribution_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w22",
+      "reason": "model",
+      "predicted_at": [
+        "2026-11-12T06:08:30.075821481Z",
+        "2026-11-12T06:08:35.794856527Z",
+        "2026-11-12T06:08:41.603273509Z",
+        "2026-11-12T06:08:47.38479557Z"
+      ],
+      "count": 4
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w20",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 1,
+      "past_resume_completion_events": 6,
+      "predicted_at": [
+        "2026-11-12T06:08:33.632152376Z",
+        "2026-11-12T06:08:33.816025351Z",
+        "2026-11-12T06:08:34.06457898Z",
+        "2026-11-12T06:08:34.292795507Z",
+        "2026-11-12T06:08:34.566426579Z",
+        "2026-11-12T06:08:34.843132245Z",
+        "2026-11-12T06:08:35.053665647Z",
+        "2026-11-12T06:08:35.294582277Z",
+        "2026-11-12T06:08:35.595180051Z",
+        "2026-11-12T06:08:35.85568292Z",
+        "2026-11-12T06:08:36.066954926Z",
+        "2026-11-12T06:08:36.296307033Z",
+        "2026-11-12T06:08:36.889533323Z",
+        "2026-11-12T06:08:39.340275437Z",
+        "2026-11-12T06:08:39.659202675Z",
+        "2026-11-12T06:08:39.801437163Z",
+        "2026-11-12T06:08:40.054926092Z",
+        "2026-11-12T06:08:40.310506511Z",
+        "2026-11-12T06:08:40.614077637Z",
+        "2026-11-12T06:08:40.959972519Z",
+        "2026-11-12T06:08:41.06510316Z",
+        "2026-11-12T06:08:41.291004567Z",
+        "2026-11-12T06:08:41.587336097Z",
+        "2026-11-12T06:08:41.793415473Z",
+        "2026-11-12T06:08:42.059915429Z",
+        "2026-11-12T06:08:42.314127281Z",
+        "2026-11-12T06:08:44.972360394Z",
+        "2026-11-12T06:08:45.162918263Z",
+        "2026-11-12T06:08:45.296975953Z",
+        "2026-11-12T06:08:45.539776369Z",
+        "2026-11-12T06:08:45.789820907Z",
+        "2026-11-12T06:08:46.068147586Z",
+        "2026-11-12T06:08:46.292578104Z",
+        "2026-11-12T06:08:46.841907977Z",
+        "2026-11-12T06:08:47.245763281Z",
+        "2026-11-12T06:08:47.419123741Z",
+        "2026-11-12T06:08:47.657765601Z",
+        "2026-11-12T06:08:47.819926163Z",
+        "2026-11-12T06:08:48.044372695Z",
+        "2026-11-12T06:08:49.654336772Z",
+        "2026-11-12T06:08:49.862552216Z",
+        "2026-11-12T06:08:50.047632157Z",
+        "2026-11-12T06:08:50.340266213Z",
+        "2026-11-12T06:08:50.962603038Z",
+        "2026-11-12T06:08:51.027256802Z",
+        "2026-11-12T06:08:51.27712879Z",
+        "2026-11-12T06:08:51.433425824Z",
+        "2026-11-12T06:08:51.588831437Z",
+        "2026-11-12T06:08:51.793315781Z",
+        "2026-11-12T06:08:52.065578198Z",
+        "2026-11-12T06:08:52.330193736Z",
+        "2026-11-12T06:08:52.592490146Z",
+        "2026-11-12T06:08:52.90003091Z",
+        "2026-11-12T06:08:52.923155233Z"
+      ],
+      "count": 54
+    },
+    {
+      "metric": "return_distribution_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w25",
+      "reason": "model",
+      "predicted_at": [
+        "2026-11-12T06:08:33.653222815Z",
+        "2026-11-12T06:08:58.415984264Z"
+      ],
+      "count": 2
+    },
+    {
+      "metric": "return_distribution_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w20",
+      "reason": "model",
+      "predicted_at": [
+        "2026-11-12T06:08:39.340275437Z",
+        "2026-11-12T06:08:44.972360394Z",
+        "2026-11-12T06:08:49.654336772Z",
+        "2026-11-12T06:09:03.145379973Z"
+      ],
+      "count": 4
+    },
+    {
+      "metric": "return_distribution_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w24",
+      "reason": "model",
+      "predicted_at": [
+        "2026-11-12T06:08:52.079552404Z",
+        "2026-11-12T06:09:06.616689186Z",
+        "2026-11-12T06:09:11.555433659Z",
+        "2026-11-12T06:09:17.098124508Z"
+      ],
+      "count": 4
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w20",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 2,
+      "past_resume_completion_events": 7,
+      "predicted_at": [
+        "2026-11-12T06:08:58.381388778Z",
+        "2026-11-12T06:08:58.729379388Z",
+        "2026-11-12T06:08:59.054784796Z",
+        "2026-11-12T06:08:59.353913138Z",
+        "2026-11-12T06:08:59.825885053Z",
+        "2026-11-12T06:09:00.062458054Z",
+        "2026-11-12T06:09:00.291373856Z",
+        "2026-11-12T06:09:00.639741262Z",
+        "2026-11-12T06:09:00.948397657Z",
+        "2026-11-12T06:09:01.236356558Z",
+        "2026-11-12T06:09:01.295771197Z",
+        "2026-11-12T06:09:03.145379973Z",
+        "2026-11-12T06:09:03.400645774Z"
+      ],
+      "count": 13
+    },
+    {
+      "metric": "return_distribution_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w29",
+      "reason": "model",
+      "predicted_at": [
+        "2026-11-12T06:09:00.718264822Z",
+        "2026-11-12T06:09:06.987769801Z",
+        "2026-11-12T06:09:19.408427958Z"
+      ],
+      "count": 3
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w21",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 3,
+      "past_resume_completion_events": 6,
+      "predicted_at": [
+        "2026-11-12T06:09:11.077569538Z",
+        "2026-11-12T06:09:11.106458515Z",
+        "2026-11-12T06:09:11.28888743Z",
+        "2026-11-12T06:09:11.564839316Z",
+        "2026-11-12T06:09:11.810905312Z",
+        "2026-11-12T06:09:12.129356341Z",
+        "2026-11-12T06:09:12.301445379Z",
+        "2026-11-12T06:09:12.663582725Z",
+        "2026-11-12T06:09:12.86482294Z",
+        "2026-11-12T06:09:13.119484429Z",
+        "2026-11-12T06:09:13.328515088Z",
+        "2026-11-12T06:09:13.598137383Z",
+        "2026-11-12T06:09:13.81546881Z",
+        "2026-11-12T06:09:14.045396723Z",
+        "2026-11-12T06:09:17.34703311Z",
+        "2026-11-12T06:09:17.549065792Z",
+        "2026-11-12T06:09:17.795121478Z",
+        "2026-11-12T06:09:18.070530311Z",
+        "2026-11-12T06:09:18.302981913Z",
+        "2026-11-12T06:09:18.572810644Z",
+        "2026-11-12T06:09:19.299935977Z",
+        "2026-11-12T06:09:19.77393687Z",
+        "2026-11-12T06:09:19.847613212Z",
+        "2026-11-12T06:09:20.10658197Z",
+        "2026-11-12T06:09:20.357704375Z",
+        "2026-11-12T06:09:23.346478612Z",
+        "2026-11-12T06:09:23.543268229Z",
+        "2026-11-12T06:09:23.831230095Z",
+        "2026-11-12T06:09:24.072593707Z",
+        "2026-11-12T06:09:24.469045065Z",
+        "2026-11-12T06:09:24.700398841Z",
+        "2026-11-12T06:09:24.882384969Z",
+        "2026-11-12T06:09:25.172428609Z",
+        "2026-11-12T06:09:25.323547294Z",
+        "2026-11-12T06:09:25.622547619Z",
+        "2026-11-12T06:09:25.802338171Z",
+        "2026-11-12T06:09:26.058136868Z",
+        "2026-11-12T06:09:26.360330815Z",
+        "2026-11-12T06:09:29.24004139Z",
+        "2026-11-12T06:09:29.371369276Z",
+        "2026-11-12T06:09:29.552563143Z",
+        "2026-11-12T06:09:29.856942927Z",
+        "2026-11-12T06:09:30.2280255Z",
+        "2026-11-12T06:09:30.311580981Z",
+        "2026-11-12T06:09:30.652952068Z",
+        "2026-11-12T06:09:31.122874069Z",
+        "2026-11-12T06:09:31.55014984Z",
+        "2026-11-12T06:09:31.594790642Z",
+        "2026-11-12T06:09:31.824947007Z",
+        "2026-11-12T06:09:32.12113512Z",
+        "2026-11-12T06:09:32.312280357Z",
+        "2026-11-12T06:09:32.612559406Z",
+        "2026-11-12T06:09:32.682448189Z"
+      ],
+      "count": 53
+    },
+    {
+      "metric": "return_distribution_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w21",
+      "reason": "model",
+      "predicted_at": [
+        "2026-11-12T06:09:17.34703311Z",
+        "2026-11-12T06:09:23.346478612Z",
+        "2026-11-12T06:09:29.371369276Z",
+        "2026-11-12T06:09:45.24637064Z"
+      ],
+      "count": 4
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w16",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 1,
+      "past_resume_completion_events": 2,
+      "predicted_at": [
+        "2026-11-12T06:09:19.285243465Z",
+        "2026-11-12T06:09:19.395144253Z",
+        "2026-11-12T06:09:19.754267685Z",
+        "2026-11-12T06:09:19.871179565Z",
+        "2026-11-12T06:09:20.091697189Z",
+        "2026-11-12T06:09:20.427581246Z",
+        "2026-11-12T06:09:20.653533132Z",
+        "2026-11-12T06:09:21.016725527Z"
+      ],
+      "count": 8
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w17",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 2,
+      "past_resume_completion_events": 7,
+      "predicted_at": [
+        "2026-11-12T06:09:23.856135247Z",
+        "2026-11-12T06:09:24.047028096Z",
+        "2026-11-12T06:09:24.490775843Z",
+        "2026-11-12T06:09:24.655622997Z",
+        "2026-11-12T06:09:24.873316346Z",
+        "2026-11-12T06:09:25.192588461Z",
+        "2026-11-12T06:09:25.295055556Z",
+        "2026-11-12T06:09:25.597402476Z",
+        "2026-11-12T06:09:25.790479537Z",
+        "2026-11-12T06:09:26.04978288Z",
+        "2026-11-12T06:09:26.292455182Z",
+        "2026-11-12T06:09:26.63037231Z",
+        "2026-11-12T06:09:26.87284049Z",
+        "2026-11-12T06:09:30.335927141Z",
+        "2026-11-12T06:09:30.60458015Z",
+        "2026-11-12T06:09:31.015852401Z",
+        "2026-11-12T06:09:31.371666176Z",
+        "2026-11-12T06:09:31.611680737Z",
+        "2026-11-12T06:09:31.799286681Z",
+        "2026-11-12T06:09:32.069155403Z",
+        "2026-11-12T06:09:32.33827109Z",
+        "2026-11-12T06:09:32.588702941Z",
+        "2026-11-12T06:09:33.003072515Z",
+        "2026-11-12T06:09:33.248109003Z",
+        "2026-11-12T06:09:33.349757715Z",
+        "2026-11-12T06:09:36.894404531Z",
+        "2026-11-12T06:09:37.194516292Z",
+        "2026-11-12T06:09:37.305569254Z",
+        "2026-11-12T06:09:37.572324968Z",
+        "2026-11-12T06:09:37.789152443Z",
+        "2026-11-12T06:09:38.048394746Z",
+        "2026-11-12T06:09:38.292451112Z",
+        "2026-11-12T06:09:38.848493044Z",
+        "2026-11-12T06:09:39.113367907Z",
+        "2026-11-12T06:09:39.523291517Z",
+        "2026-11-12T06:09:42.761069537Z",
+        "2026-11-12T06:09:42.989812174Z",
+        "2026-11-12T06:09:43.191174928Z",
+        "2026-11-12T06:09:43.300104198Z",
+        "2026-11-12T06:09:43.595963846Z",
+        "2026-11-12T06:09:43.833480349Z",
+        "2026-11-12T06:09:44.04623247Z",
+        "2026-11-12T06:09:44.303768811Z",
+        "2026-11-12T06:09:44.683851915Z",
+        "2026-11-12T06:09:45.036881907Z",
+        "2026-11-12T06:09:45.105792528Z",
+        "2026-11-12T06:09:45.412786225Z",
+        "2026-11-12T06:09:45.595907583Z",
+        "2026-11-12T06:09:48.386919014Z",
+        "2026-11-12T06:09:48.618557996Z",
+        "2026-11-12T06:09:49.193512735Z",
+        "2026-11-12T06:09:49.353263168Z",
+        "2026-11-12T06:09:49.696580276Z",
+        "2026-11-12T06:09:49.844968973Z",
+        "2026-11-12T06:09:50.043307527Z",
+        "2026-11-12T06:09:50.295763208Z",
+        "2026-11-12T06:09:50.60198343Z",
+        "2026-11-12T06:09:50.897243039Z",
+        "2026-11-12T06:09:51.154205816Z",
+        "2026-11-12T06:09:51.294367942Z",
+        "2026-11-12T06:09:51.559693987Z",
+        "2026-11-12T06:09:54.296652957Z"
+      ],
+      "count": 62
+    },
+    {
+      "metric": "return_distribution_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w17",
+      "reason": "model",
+      "predicted_at": [
+        "2026-11-12T06:09:30.335927141Z",
+        "2026-11-12T06:09:48.386919014Z",
+        "2026-11-12T06:09:54.296652957Z"
+      ],
+      "count": 3
+    },
+    {
+      "metric": "resume_mean_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w21",
+      "reason": "bounded_final_trace_observation_history",
+      "available_measurements": 4,
+      "past_resume_completion_events": 7,
+      "predicted_at": [
+        "2026-11-12T06:09:39.474291284Z",
+        "2026-11-12T06:09:39.585835786Z",
+        "2026-11-12T06:09:39.888219144Z",
+        "2026-11-12T06:09:40.089591471Z",
+        "2026-11-12T06:09:40.2928911Z",
+        "2026-11-12T06:09:40.700809154Z",
+        "2026-11-12T06:09:41.146290476Z",
+        "2026-11-12T06:09:41.311472563Z",
+        "2026-11-12T06:09:41.576522046Z",
+        "2026-11-12T06:09:41.853831484Z",
+        "2026-11-12T06:09:42.054715056Z",
+        "2026-11-12T06:09:42.324900006Z",
+        "2026-11-12T06:09:45.24637064Z",
+        "2026-11-12T06:09:45.461394748Z",
+        "2026-11-12T06:09:45.572514651Z"
+      ],
+      "count": 15
+    },
+    {
+      "metric": "return_distribution_recomputation",
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w18",
+      "reason": "model",
+      "predicted_at": [
+        "2026-11-12T06:09:57.55594961Z"
+      ],
+      "count": 1
+    }
+  ],
+  "nonzero_chain_coverage": {
+    "nonzero_predictions": 0,
+    "accepted_cache_source": 0,
+    "resume_mean_recomputed": 0,
+    "conditional_return_recomputed": 0,
+    "unknown_return_proxy": 0
+  },
+  "cache_observer": {
+    "native_updates": 1477,
+    "accepted": 1468,
+    "rejected_status_counts": {
+      "409": 9
+    },
+    "summary": {
+      "schema_version": 1,
+      "source_kind": "live_kvindexer_observation",
+      "backend_kind": "mocker",
+      "source_version": "kvindexer-prefix-interval-first-loss-v1",
+      "sent": 1468,
+      "rejected_fenced_updates": 9,
+      "polls": 788,
+      "errors": [],
+      "event_stream_gaps": {},
+      "healthy": true,
+      "loss_severity_model": "pooled_first_loss_capped_at_current_resident_prefix",
+      "exposure_model": "interval_observed_lower_bound",
+      "cohorts": [
+        {
+          "worker_id": 7487014108886441730,
+          "worker_epoch": "scale-7301-32-agentcloud-v2-joint-f4625371da93:63987:117597",
+          "sample_count": 137,
+          "loss_events": 0,
+          "exposure_ms": 627263.6592680019,
+          "loss_buckets": []
+        },
+        {
+          "worker_id": 13145464958887981216,
+          "worker_epoch": "scale-7301-32-agentcloud-v2-joint-f4625371da93:64053:117638",
+          "sample_count": 20,
+          "loss_events": 0,
+          "exposure_ms": 76736.38341900008,
+          "loss_buckets": []
+        }
+      ]
+    }
+  },
+  "worker_events": [
+    {
+      "worker_index": 0,
+      "batches": 332,
+      "event_counts": {
+        "BlockStored": 274,
+        "BlockRemoved": 162
+      },
+      "block_counts": {
+        "BlockStored": 2661,
+        "BlockRemoved": 1638
+      },
+      "first_sequence": 0,
+      "last_sequence": 331,
+      "sequence_gaps": [],
+      "errors": []
+    },
+    {
+      "worker_index": 1,
+      "batches": 51,
+      "event_counts": {
+        "BlockStored": 51
+      },
+      "block_counts": {
+        "BlockStored": 651
+      },
+      "first_sequence": 0,
+      "last_sequence": 50,
+      "sequence_gaps": [],
+      "errors": []
+    }
+  ],
+  "first_loss_intervals": [],
+  "wire_loss_anchors": [],
+  "native_memory_ledger": {
+    "completed_requests": 189,
+    "native_snapshots": 189,
+    "resume_events": 102,
+    "resume_fidelity_counts": {
+      "MEMORY": 102
+    },
+    "final_session_fidelity_counts": {
+      "MEMORY": 32
+    },
+    "completed_requests_ram_continuity": 189
+  },
+  "suspend_receipts": [
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w1",
+      "operation_id": "auto-3450cedc390d6da2920cb78875d78d95",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w1/scheduling/auto-3450cedc390d6da2920cb78875d78d95"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w1",
+      "operation_id": "auto-4d2b7a307a8952a009e54f200bec526d",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w1/scheduling/auto-4d2b7a307a8952a009e54f200bec526d"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w1",
+      "operation_id": "auto-af9b94b0fc06b7c4acb60a0fe0ef6cc2",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w1/scheduling/auto-af9b94b0fc06b7c4acb60a0fe0ef6cc2"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w1",
+      "operation_id": "auto-cdaa10cdd6c91b6912f62b89e8323416",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w1/scheduling/auto-cdaa10cdd6c91b6912f62b89e8323416"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w1",
+      "operation_id": "auto-cde76bc21e0d6e64a5559c1ca009f646",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w1/scheduling/auto-cde76bc21e0d6e64a5559c1ca009f646"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w2",
+      "operation_id": "auto-590776239d60a2ed19366ca4d93a7f8d",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w2/scheduling/auto-590776239d60a2ed19366ca4d93a7f8d"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w2",
+      "operation_id": "auto-5b8080e81646923ae6520091514f8174",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w2/scheduling/auto-5b8080e81646923ae6520091514f8174"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w2",
+      "operation_id": "auto-70d851d6526187d949387b2a73cb0c2a",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w2/scheduling/auto-70d851d6526187d949387b2a73cb0c2a"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w2",
+      "operation_id": "auto-dc1b50d7d28060f0c913f221808e4df8",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w2/scheduling/auto-dc1b50d7d28060f0c913f221808e4df8"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w2",
+      "operation_id": "auto-f123673a1c6d4f91024c138b41ab212f",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w2/scheduling/auto-f123673a1c6d4f91024c138b41ab212f"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w3",
+      "operation_id": "auto-0590fa5cfa7f927b5dfe7073004ffc45",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w3/scheduling/auto-0590fa5cfa7f927b5dfe7073004ffc45"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w3",
+      "operation_id": "auto-1f027e7a2b47c8745339ec3439f63b01",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w3/scheduling/auto-1f027e7a2b47c8745339ec3439f63b01"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w3",
+      "operation_id": "auto-320c9f5b3354284b9bf24dbf5d9b2964",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w3/scheduling/auto-320c9f5b3354284b9bf24dbf5d9b2964"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w3",
+      "operation_id": "auto-87a5b6a7896b4bb87969b36d4542bc85",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w3/scheduling/auto-87a5b6a7896b4bb87969b36d4542bc85"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w4",
+      "operation_id": "auto-2b103fa2d743973f9ecbaa10c5ba90f6",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w4/scheduling/auto-2b103fa2d743973f9ecbaa10c5ba90f6"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w4",
+      "operation_id": "auto-37aa193d14499badb7425725846be77a",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w4/scheduling/auto-37aa193d14499badb7425725846be77a"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w4",
+      "operation_id": "auto-67327eb1975a7a7d440c3bbab4f092ae",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w4/scheduling/auto-67327eb1975a7a7d440c3bbab4f092ae"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w4",
+      "operation_id": "auto-f3bcdfb891f566b1bb84eabc51e4e021",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w4/scheduling/auto-f3bcdfb891f566b1bb84eabc51e4e021"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w5",
+      "operation_id": "auto-311f26e29c7a451465354f0115ba63bb",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w5/scheduling/auto-311f26e29c7a451465354f0115ba63bb"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w5",
+      "operation_id": "auto-544927a3d9d8df6b246f9bbb5cce9046",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w5/scheduling/auto-544927a3d9d8df6b246f9bbb5cce9046"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w5",
+      "operation_id": "auto-99599580592f9a8cba64b6a2c71ceeeb",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w5/scheduling/auto-99599580592f9a8cba64b6a2c71ceeeb"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w5",
+      "operation_id": "auto-9dfb4c2e19117f04786b4caa36cbf79d",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w5/scheduling/auto-9dfb4c2e19117f04786b4caa36cbf79d"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w6",
+      "operation_id": "auto-06b232e9c8b35230df378a4a5f15840d",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w6/scheduling/auto-06b232e9c8b35230df378a4a5f15840d"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w6",
+      "operation_id": "auto-0b4fca5bd2cc4e375c54704d0792db71",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w6/scheduling/auto-0b4fca5bd2cc4e375c54704d0792db71"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w6",
+      "operation_id": "auto-14f323d2f7162d1e65b08a7081e2d112",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w6/scheduling/auto-14f323d2f7162d1e65b08a7081e2d112"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w6",
+      "operation_id": "auto-eb31e74b26a79e8cf2475ad7f3e13351",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w6/scheduling/auto-eb31e74b26a79e8cf2475ad7f3e13351"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w7",
+      "operation_id": "auto-01a25420f2af29c3005d6b3559401396",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w7/scheduling/auto-01a25420f2af29c3005d6b3559401396"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w7",
+      "operation_id": "auto-0a3262dd0e3a64e1d1c53d29aad824fc",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w7/scheduling/auto-0a3262dd0e3a64e1d1c53d29aad824fc"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w7",
+      "operation_id": "auto-0bea06e0b11140c6096e7f93ad90fab0",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w7/scheduling/auto-0bea06e0b11140c6096e7f93ad90fab0"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w7",
+      "operation_id": "auto-642a6a38993fbaf8432e0b6e11f3809c",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w7/scheduling/auto-642a6a38993fbaf8432e0b6e11f3809c"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w7",
+      "operation_id": "auto-f6d515a7cab23ba489bad0db7c5ff11f",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w7/scheduling/auto-f6d515a7cab23ba489bad0db7c5ff11f"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w8",
+      "operation_id": "auto-4de56394ec019a07526c5dcde839ab03",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w8/scheduling/auto-4de56394ec019a07526c5dcde839ab03"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w8",
+      "operation_id": "auto-6d3249b0a40023f3bc2f75407729a631",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w8/scheduling/auto-6d3249b0a40023f3bc2f75407729a631"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w8",
+      "operation_id": "auto-81020f168416e5ad8b93533da490972c",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w8/scheduling/auto-81020f168416e5ad8b93533da490972c"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w8",
+      "operation_id": "auto-d4799b5b8bb22fe95a57144a33a49c65",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w8/scheduling/auto-d4799b5b8bb22fe95a57144a33a49c65"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w9",
+      "operation_id": "auto-32992b8a051ed9ffab152d7281116700",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w9/scheduling/auto-32992b8a051ed9ffab152d7281116700"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w9",
+      "operation_id": "auto-ba8be550dad83341398ccee2c67bb6b2",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w9/scheduling/auto-ba8be550dad83341398ccee2c67bb6b2"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w9",
+      "operation_id": "auto-e90a49196b0be708248e3ecd5754817c",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w9/scheduling/auto-e90a49196b0be708248e3ecd5754817c"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w9",
+      "operation_id": "auto-f6cb53bf7f8d94e153ccf3a5d8a519f6",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w9/scheduling/auto-f6cb53bf7f8d94e153ccf3a5d8a519f6"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w10",
+      "operation_id": "auto-0105fcaf4680917d1b831bdd0bd86e43",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w10/scheduling/auto-0105fcaf4680917d1b831bdd0bd86e43"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w10",
+      "operation_id": "auto-67f383567832b401849a86d64d3c371e",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w10/scheduling/auto-67f383567832b401849a86d64d3c371e"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w11",
+      "operation_id": "auto-2a801afb3eb203b113a0038f4bf10eba",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w11/scheduling/auto-2a801afb3eb203b113a0038f4bf10eba"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w11",
+      "operation_id": "auto-811a912b8461c737a7bc991c71fb2e8a",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w11/scheduling/auto-811a912b8461c737a7bc991c71fb2e8a"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w11",
+      "operation_id": "auto-9e3944f1290ca1fc6df451a4faaa67d9",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w11/scheduling/auto-9e3944f1290ca1fc6df451a4faaa67d9"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w11",
+      "operation_id": "auto-acaca3a2bbd41166d5278cbcdb894f65",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w11/scheduling/auto-acaca3a2bbd41166d5278cbcdb894f65"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w13",
+      "operation_id": "auto-2f9332de36b13f25684f43d8fea8fe5c",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w13/scheduling/auto-2f9332de36b13f25684f43d8fea8fe5c"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w13",
+      "operation_id": "auto-4e9d027ef1ae8673244e090c98aa957d",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w13/scheduling/auto-4e9d027ef1ae8673244e090c98aa957d"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w13",
+      "operation_id": "auto-8e0dd3f5bc914b733a8f964e4a9a53f7",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w13/scheduling/auto-8e0dd3f5bc914b733a8f964e4a9a53f7"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w13",
+      "operation_id": "auto-d4023f5be2c77d4638e62a66b099e59c",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w13/scheduling/auto-d4023f5be2c77d4638e62a66b099e59c"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w13",
+      "operation_id": "auto-ed8027146451b4c3c92556354daf656a",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w13/scheduling/auto-ed8027146451b4c3c92556354daf656a"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w16",
+      "operation_id": "auto-2704317be47ea341cee1d9738d287126",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w16/scheduling/auto-2704317be47ea341cee1d9738d287126"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w16",
+      "operation_id": "auto-5f7a56f0dd743308b6f6ae50c18c5bb9",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w16/scheduling/auto-5f7a56f0dd743308b6f6ae50c18c5bb9"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w16",
+      "operation_id": "auto-ebfdd3eddc1d9ddde650e2e4e55e36ea",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w16/scheduling/auto-ebfdd3eddc1d9ddde650e2e4e55e36ea"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w16",
+      "operation_id": "auto-f96f4f501f005ffcea59f707c0f2a13b",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w16/scheduling/auto-f96f4f501f005ffcea59f707c0f2a13b"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w16",
+      "operation_id": "auto-fd21d6571c4d7b24187aae81558466fb",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w16/scheduling/auto-fd21d6571c4d7b24187aae81558466fb"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w18",
+      "operation_id": "auto-86cdf4d715f6e9ff38391c90fb47fca6",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w18/scheduling/auto-86cdf4d715f6e9ff38391c90fb47fca6"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w19",
+      "operation_id": "auto-4486de02cbcd54712453493573c988bf",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w19/scheduling/auto-4486de02cbcd54712453493573c988bf"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w19",
+      "operation_id": "auto-8881146cfd277f79a59b5695531f0905",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w19/scheduling/auto-8881146cfd277f79a59b5695531f0905"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w20",
+      "operation_id": "auto-c83e05956586764b77580bd2065f2b38",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w20/scheduling/auto-c83e05956586764b77580bd2065f2b38"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w21",
+      "operation_id": "auto-e6db66020e5906dadd15f9fe137304bf",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w21/scheduling/auto-e6db66020e5906dadd15f9fe137304bf"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w24",
+      "operation_id": "auto-f1225b5064e88c94fc8f13aa1b771af7",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w24/scheduling/auto-f1225b5064e88c94fc8f13aa1b771af7"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w28",
+      "operation_id": "auto-490bb427947da6d99eabe78aea272f14",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w28/scheduling/auto-490bb427947da6d99eabe78aea272f14"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w28",
+      "operation_id": "auto-b8f242512462bef63aeb3f35db7e0c4b",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w28/scheduling/auto-b8f242512462bef63aeb3f35db7e0c4b"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w28",
+      "operation_id": "auto-c0fcf6103cb3db9b768a89932bc94ca3",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w28/scheduling/auto-c0fcf6103cb3db9b768a89932bc94ca3"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w28",
+      "operation_id": "auto-fc6cb61f06318b00693ef367763b678c",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w28/scheduling/auto-fc6cb61f06318b00693ef367763b678c"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w30",
+      "operation_id": "auto-2d1537a212561cc59355a4857c192038",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w30/scheduling/auto-2d1537a212561cc59355a4857c192038"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w30",
+      "operation_id": "auto-4ea5eaa1832f8718bb760f19e5b24610",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w30/scheduling/auto-4ea5eaa1832f8718bb760f19e5b24610"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w30",
+      "operation_id": "auto-6c10efeb750c2e4243513fb010aacf97",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w30/scheduling/auto-6c10efeb750c2e4243513fb010aacf97"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w30",
+      "operation_id": "auto-bc6d2ded12f1e07cf6f5e03b95cff74f",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w30/scheduling/auto-bc6d2ded12f1e07cf6f5e03b95cff74f"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w30",
+      "operation_id": "auto-ead5f4797fe9a484d637dd5487a4166e",
+      "status": "COMPLETED",
+      "reason": "v2_unknown_two_second_deadline",
+      "kv_applied": false,
+      "nonzero_delta": false,
+      "reference": "final-state.json/scale-7301-32-agentcloud-v2-joint-f4625371da93-w30/scheduling/auto-ead5f4797fe9a484d637dd5487a4166e"
+    }
+  ],
+  "representative_nonzero_predictions": [],
+  "issues": [],
+  "source_files": [
+    {
+      "path": "/home/li/code/Claudeagent/runs/experiments/joint-kv/repo/docs/evidence/joint-kv/43163231106/13921192095/experiment/scale-7301-32-agentcloud-v2-joint-f4625371da93/result.json",
+      "sha256": "22aa4a111cab4025c5fd18781f4e45282b3020b7182ae72cdcd0d778e749b2a4",
+      "bytes": 649414
+    },
+    {
+      "path": "/home/li/code/Claudeagent/runs/experiments/joint-kv/repo/docs/evidence/joint-kv/43163231106/13921192095/experiment/scale-7301-32-agentcloud-v2-joint-f4625371da93/events.jsonl.gz",
+      "sha256": "9ef2c626bdfba118e70d39ff0b616212cd27709bdd00898ef007af42000d73d2",
+      "bytes": 1398329
+    },
+    {
+      "path": "/home/li/code/Claudeagent/runs/experiments/joint-kv/repo/docs/evidence/joint-kv/43163231106/13921192095/experiment/scale-7301-32-agentcloud-v2-joint-f4625371da93/kv-observations.jsonl.gz",
+      "sha256": "5292b817d1f402354e52b293826930d3079ae0dd42c52e85a6ddb770c133fc47",
+      "bytes": 297449
+    },
+    {
+      "path": "/home/li/code/Claudeagent/runs/experiments/joint-kv/repo/docs/evidence/joint-kv/43163231106/13921192095/experiment/scale-7301-32-agentcloud-v2-joint-f4625371da93/final-state.json",
+      "sha256": "86f790a503ec2723c923b59273aa0ce34a5e652e51c135afc044cf2ae7b30256",
+      "bytes": 4648041
+    },
+    {
+      "path": "/home/li/code/Claudeagent/runs/experiments/joint-kv/repo/docs/evidence/joint-kv/43163231106/13921192095/experiment/scale-7301-32-agentcloud-v2-joint-f4625371da93/traces.json",
+      "sha256": "d8748554098e06f7f607c84cb8fbfbc6f41712f01fd52f18ff5aaa5efea7a8ac",
+      "bytes": 8198794
+    },
+    {
+      "path": "/home/li/code/Claudeagent/runs/experiments/joint-kv/repo/docs/evidence/joint-kv/43163231106/13921192095/experiment/scale-7301-32-agentcloud-v2-joint-f4625371da93/worker-0-events.json",
+      "sha256": "e51e036f3a39df3b0c9829107cfbb461549dc939cab6b9611338e8a56a39c04a",
+      "bytes": 547624
+    },
+    {
+      "path": "/home/li/code/Claudeagent/runs/experiments/joint-kv/repo/docs/evidence/joint-kv/43163231106/13921192095/experiment/scale-7301-32-agentcloud-v2-joint-f4625371da93/worker-1-events.json",
+      "sha256": "c82749880d3618bcfb5cb25363e22791ef0a826feab7617fd246a7a2357d2676",
+      "bytes": 106938
+    },
+    {
+      "path": "/home/li/code/Claudeagent/runs/experiments/joint-kv/repo/docs/evidence/joint-kv/43163231106/13921192095/experiment/scale-7301-32-agentcloud-v2-joint-f4625371da93/kv-observer-summary.json",
+      "sha256": "947226f9884a184b51e404e3f229d43942d6591a5c4797ea9fe6f032ef1fdcd5",
+      "bytes": 950
+    },
+    {
+      "path": "/home/li/code/Claudeagent/runs/experiments/joint-kv/repo/docs/evidence/joint-kv/43163231106/13921192095/experiment/scale-7301-32-agentcloud-v2-joint-f4625371da93/worker-incarnations.json",
+      "sha256": "6378bef2665eaf705850d1bad7d10c9c73f43d875ee07da7d20952acf2118aa9",
+      "bytes": 180
+    },
+    {
+      "path": "/home/li/code/Claudeagent/runs/experiments/joint-kv/repo/docs/evidence/joint-kv/43163231106/13921192095/source/bench/configs/joint-kv-calibration.json",
+      "sha256": "6f3821ddce2f7fbf413fd3659c60dd2a4aa5170f6ab76342a10e6f14b0e2355c",
+      "bytes": 85521
+    },
+    {
+      "path": "/home/li/code/Claudeagent/runs/experiments/joint-kv/repo/docs/evidence/joint-kv/43163231106/13921192095/source/docs/evidence/joint-kv-calibration/aisimulate-perf-model.rs",
+      "sha256": "103e2ada29d3e961747e0408f5fe641911b15fd0449cecfea42116a166fb8f0f",
+      "bytes": 14799
+    }
+  ],
+  "prediction_subpopulations": {
+    "event_diagnostics": {
+      "total": 1425,
+      "valid": 1138,
+      "invalid": 287,
+      "applied": 704,
+      "nonzero_delta": 0,
+      "nonzero_applied_cost_input": 0
+    },
+    "final_state_only": {
+      "total": 70,
+      "valid": 66,
+      "invalid": 4,
+      "applied": 0,
+      "nonzero_delta": 0,
+      "nonzero_applied_cost_input": 0
+    }
+  },
+  "final_state_only_applied": [],
+  "terminal_snapshot_classification": [
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w0",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w0-r5",
+      "model_reference": "events.jsonl.gz:4091",
+      "native_reference": "events.jsonl.gz:4089",
+      "execution_epoch": 2,
+      "snapshot_epoch": 2,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w4",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w4-r5",
+      "model_reference": "events.jsonl.gz:5281",
+      "native_reference": "events.jsonl.gz:5279",
+      "execution_epoch": 6,
+      "snapshot_epoch": 6,
+      "snapshot_worker": 13145464958887981216,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w6",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w6-r5",
+      "model_reference": "events.jsonl.gz:5463",
+      "native_reference": "events.jsonl.gz:5461",
+      "execution_epoch": 6,
+      "snapshot_epoch": 6,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w1",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w1-r5",
+      "model_reference": "events.jsonl.gz:5877",
+      "native_reference": "events.jsonl.gz:5875",
+      "execution_epoch": 7,
+      "snapshot_epoch": 7,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w12",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w12-r5",
+      "model_reference": "events.jsonl.gz:6049",
+      "native_reference": "events.jsonl.gz:6047",
+      "execution_epoch": 2,
+      "snapshot_epoch": 2,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w5",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w5-r5",
+      "model_reference": "events.jsonl.gz:6432",
+      "native_reference": "events.jsonl.gz:6430",
+      "execution_epoch": 6,
+      "snapshot_epoch": 6,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w3",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w3-r5",
+      "model_reference": "events.jsonl.gz:7628",
+      "native_reference": "events.jsonl.gz:7626",
+      "execution_epoch": 6,
+      "snapshot_epoch": 6,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w8",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w8-r5",
+      "model_reference": "events.jsonl.gz:7890",
+      "native_reference": "events.jsonl.gz:7888",
+      "execution_epoch": 6,
+      "snapshot_epoch": 6,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w7",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w7-r5",
+      "model_reference": "events.jsonl.gz:8326",
+      "native_reference": "events.jsonl.gz:8324",
+      "execution_epoch": 7,
+      "snapshot_epoch": 7,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w2",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w2-r5",
+      "model_reference": "events.jsonl.gz:8815",
+      "native_reference": "events.jsonl.gz:8813",
+      "execution_epoch": 7,
+      "snapshot_epoch": 7,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w10",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w10-r2",
+      "model_reference": "events.jsonl.gz:9464",
+      "native_reference": "events.jsonl.gz:9462",
+      "execution_epoch": 4,
+      "snapshot_epoch": 4,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w31",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w31-r5",
+      "model_reference": "events.jsonl.gz:9680",
+      "native_reference": "events.jsonl.gz:9678",
+      "execution_epoch": 2,
+      "snapshot_epoch": 2,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w28",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w28-r5",
+      "model_reference": "events.jsonl.gz:9900",
+      "native_reference": "events.jsonl.gz:9898",
+      "execution_epoch": 6,
+      "snapshot_epoch": 6,
+      "snapshot_worker": 13145464958887981216,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w9",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w9-r5",
+      "model_reference": "events.jsonl.gz:9973",
+      "native_reference": "events.jsonl.gz:9971",
+      "execution_epoch": 6,
+      "snapshot_epoch": 6,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w27",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w27-r5",
+      "model_reference": "events.jsonl.gz:10639",
+      "native_reference": "events.jsonl.gz:10637",
+      "execution_epoch": 2,
+      "snapshot_epoch": 2,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w26",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w26-r5",
+      "model_reference": "events.jsonl.gz:10820",
+      "native_reference": "events.jsonl.gz:10818",
+      "execution_epoch": 2,
+      "snapshot_epoch": 2,
+      "snapshot_worker": 13145464958887981216,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w30",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w30-r5",
+      "model_reference": "events.jsonl.gz:11742",
+      "native_reference": "events.jsonl.gz:11740",
+      "execution_epoch": 7,
+      "snapshot_epoch": 7,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w13",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w13-r5",
+      "model_reference": "events.jsonl.gz:12053",
+      "native_reference": "events.jsonl.gz:12051",
+      "execution_epoch": 7,
+      "snapshot_epoch": 7,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w14",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w14-r5",
+      "model_reference": "events.jsonl.gz:12285",
+      "native_reference": "events.jsonl.gz:12283",
+      "execution_epoch": 2,
+      "snapshot_epoch": 2,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w11",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w11-r5",
+      "model_reference": "events.jsonl.gz:12680",
+      "native_reference": "events.jsonl.gz:12678",
+      "execution_epoch": 6,
+      "snapshot_epoch": 6,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w15",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w15-r5",
+      "model_reference": "events.jsonl.gz:12964",
+      "native_reference": "events.jsonl.gz:12962",
+      "execution_epoch": 2,
+      "snapshot_epoch": 2,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w19",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w19-r5",
+      "model_reference": "events.jsonl.gz:13591",
+      "native_reference": "events.jsonl.gz:13589",
+      "execution_epoch": 4,
+      "snapshot_epoch": 4,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w22",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w22-r5",
+      "model_reference": "events.jsonl.gz:13928",
+      "native_reference": "events.jsonl.gz:13926",
+      "execution_epoch": 2,
+      "snapshot_epoch": 2,
+      "snapshot_worker": 13145464958887981216,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w25",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w25-r5",
+      "model_reference": "events.jsonl.gz:14424",
+      "native_reference": "events.jsonl.gz:14422",
+      "execution_epoch": 2,
+      "snapshot_epoch": 2,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w20",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w20-r5",
+      "model_reference": "events.jsonl.gz:14650",
+      "native_reference": "events.jsonl.gz:14648",
+      "execution_epoch": 3,
+      "snapshot_epoch": 3,
+      "snapshot_worker": 13145464958887981216,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w23",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w23-r5",
+      "model_reference": "events.jsonl.gz:15140",
+      "native_reference": "events.jsonl.gz:15138",
+      "execution_epoch": 2,
+      "snapshot_epoch": 2,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w24",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w24-r5",
+      "model_reference": "events.jsonl.gz:15293",
+      "native_reference": "events.jsonl.gz:15291",
+      "execution_epoch": 3,
+      "snapshot_epoch": 3,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w29",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w29-r5",
+      "model_reference": "events.jsonl.gz:15684",
+      "native_reference": "events.jsonl.gz:15682",
+      "execution_epoch": 2,
+      "snapshot_epoch": 2,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w21",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w21-r5",
+      "model_reference": "events.jsonl.gz:16567",
+      "native_reference": "events.jsonl.gz:16565",
+      "execution_epoch": 3,
+      "snapshot_epoch": 3,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w17",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w17-r5",
+      "model_reference": "events.jsonl.gz:16959",
+      "native_reference": "events.jsonl.gz:16957",
+      "execution_epoch": 2,
+      "snapshot_epoch": 2,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w16",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w16-r5",
+      "model_reference": "events.jsonl.gz:17200",
+      "native_reference": "events.jsonl.gz:17198",
+      "execution_epoch": 7,
+      "snapshot_epoch": 7,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    },
+    {
+      "session_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w18",
+      "logical_request_id": "scale-7301-32-agentcloud-v2-joint-f4625371da93-w18-r5",
+      "model_reference": "events.jsonl.gz:17322",
+      "native_reference": "events.jsonl.gz:17320",
+      "execution_epoch": 3,
+      "snapshot_epoch": 3,
+      "snapshot_worker": 7487014108886441730,
+      "binding_present": false,
+      "program_present": false,
+      "classification": "finalized_native_snapshot"
+    }
+  ],
+  "zero_delta_reason_counts": {
+    "invalid:no_cache_observation": 248,
+    "invalid:low_support": 35,
+    "invalid:no_feedback": 2,
+    "observed_first_loss_hazard_zero": 1204,
+    "invalid:stale_observation": 2,
+    "invalid:worker_changed": 4
+  },
+  "zero_delta_support_scope": "Cohort first-loss statistics cover observed nonterminal completion-to-next-request windows; worker-wide BlockRemoved events are separately retained.",
+  "status": "verified_with_history_coverage_limits",
+  "review_runtime": {
+    "elapsed_seconds": 1.753238,
+    "peak_rss_bytes": 234901504,
+    "script_sha256": "244927dd1cd2e1bc0115f7a6e5745207583cebdf930b80fa4d739cc26e78966d"
+  }
+}

@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "execution_kind": "joint-kv-admission-recovery-independent-source-review",
+  "status": "source_contract_verified",
+  "review_scope": "Current uncommitted benchmark implementation and targeted test fixtures",
+  "implementation_sources": [
+    {
+      "path": "bench/scale.py",
+      "sha256": "6829e043841de622d62be0d480edb06af4464d2efe57b0d7c90f8f3ed1f56b46",
+      "bytes": 65686,
+      "entry_lines": {
+        "admit": 345,
+        "tool": 370,
+        "submit_model": 381,
+        "resume": 425
+      }
+    },
+    {
+      "path": "bench/joint_kv_runtime.py",
+      "sha256": "9b245093f75144f5aa04ebd185d964567b754252501a18536afd0ef002a9d789",
+      "bytes": 17235,
+      "entry_lines": {
+        "before_request": 193,
+        "request_accepted": 185
+      }
+    },
+    {
+      "path": "tests/tooling/test_scale_admission.py",
+      "sha256": "7da770e4168cc6d514fe09b8c1b64c146bceb0951404a22af211dce86db43690",
+      "bytes": 11303
+    },
+    {
+      "path": "tests/tooling/test_scale_capacity.py",
+      "sha256": "336492b31a90b18dc992044173f974723a1bde96c9fd018458bd017dc330adca",
+      "bytes": 7595
+    },
+    {
+      "path": "tests/tooling/test_scale_pairs.py",
+      "sha256": "f0cb04b819faef22279373416efa73dee43ea28981fbcdcd31a70fa6b7fa5742",
+      "bytes": 13739
+    }
+  ],
+  "historical_measurement": {
+    "github_run_id": "43163231106",
+    "source_commit": "55120d52e1be0fef3ab443af66f81baa046cc320",
+    "code_identity": "Frozen archived experiment source",
+    "failure_contract_review": "docs/evidence/joint-kv/43163231106/review/failure-admission-race.json",
+    "failure_contract_review_sha256": "bdd9f916c3a2c46557e37ee556758d7eb2d27860991804dab7e2ee816a22bff2",
+    "implementation_matrix_measurement": "unmeasured"
+  },
+  "verified_controls": [
+    {
+      "control": "definite_refusal_only",
+      "result": "passed",
+      "detail": "Only CloudError with status 423 and code admission_closed enters recovery; original transport failures, 500, OUTCOME_UNKNOWN, stale_epoch, and other errors preserve the original attempt."
+    },
+    {
+      "control": "bounded_attempts",
+      "result": "passed",
+      "detail": "At most four sends and three fresh recovery demands; a shared admission deadline bounds entry into later attempts and the recovery/FIFO wait."
+    },
+    {
+      "control": "tool_business_identity",
+      "result": "passed",
+      "detail": "tool_op_id, kind, command, and timeout_ms remain fixed across definite-refusal retries. The next send reads the latest execution epoch."
+    },
+    {
+      "control": "model_business_identity",
+      "result": "passed",
+      "detail": "logical_request_id, payload, and terminal_turn stay fixed across retries. Per-attempt cache query, submitted_at, and execution_epoch update separately in the evidence row."
+    },
+    {
+      "control": "original_receipts",
+      "result": "passed",
+      "detail": "RUNNING or OUTCOME_UNKNOWN tool receipts end the current benchmark operation without another send. Existing core requests and tool receipts are deduplicated by original ID and business hash."
+    },
+    {
+      "control": "fifo_automatic_return",
+      "result": "passed",
+      "detail": "After acquiring a FairSlots token, refresh runs under return_pending=True. A completed automatic return is observed with the current epoch before constructing another demand; acquired token ownership is retained."
+    },
+    {
+      "control": "memory_resume_count",
+      "result": "passed",
+      "detail": "The initial epoch remains the comparison anchor. An epoch increase by one requires MEMORY and records a resume; a same-epoch OPEN gate records admission_reopened."
+    },
+    {
+      "control": "latency_accounting",
+      "result": "passed",
+      "detail": "All recovery FIFO waits add to gateway_queue_seconds; admission_recovery_seconds records recovery elapsed time. Tool resource intervals contain accepted tool executions."
+    },
+    {
+      "control": "cache_cohort_boundary",
+      "result": "passed",
+      "detail": "before_request captures the latest cache query without closing the previous cohort. request_accepted closes it once after successful registration. Definite admission refusals retain the previous exposure cohort."
+    }
+  ],
+  "targeted_test_executions": [
+    {
+      "origin": "Parent agent reported local test execution",
+      "suites": [
+        "admission",
+        "capacity",
+        "pairs",
+        "validation"
+      ],
+      "tests": 43,
+      "failures": 0
+    },
+    {
+      "origin": "Parent agent reported local test execution",
+      "suites": [
+        "admission",
+        "capacity",
+        "pairs",
+        "joint_ci",
+        "joint_routing"
+      ],
+      "tests": 52,
+      "failures": 0
+    }
+  ],
+  "fixture_scope": {
+    "gate_fields": "Resume fixtures contain the explicit RUNNING/OPEN or QUIESCING/CLOSED gate values observed by production code.",
+    "epoch_paths": [
+      "Automatic return completes while waiting for FIFO capacity: epoch 2 to 3, MEMORY, current state accepted.",
+      "Quiesce rolls back in the same epoch: gate reopens, admission_reopened recorded, MEMORY resume count unchanged."
+    ],
+    "identity_and_failure_paths": [
+      "Same operation and frozen timeout/command after a definite refusal.",
+      "Single attempt retained for transport failure, unknown outcome, unexpected code/status, and existing RUNNING/OUTCOME_UNKNOWN receipt.",
+      "Four refusal attempts and fresh per-attempt demand identities.",
+      "Deadline crossing and recovery failure prevent subsequent submissions.",
+      "Model cache query updates at each attempt; successful logical registration emits one model_submit and closes one previous cohort."
+    ],
+    "validation_kind": "Mocked benchmark/API fixtures plus static comparison with the frozen Go control flow",
+    "new_runtime_measurement": "unmeasured"
+  },
+  "issues": []
+}

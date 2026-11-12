@@ -1,0 +1,197 @@
+{
+  "schema_version": 1,
+  "execution_kind": "arm64-go-contract-validation",
+  "status": "failed",
+  "commit": "c24b619dc6bbd0d0d3ff5019a951696f0178b9e6",
+  "source_sha256": "2937d38aec9b6b08a6db051dd8ae344df82a4e5f4f5baf450d8a03b4886dffeb",
+  "source_directory": "/home/developer/agentcloud-joint-kv-20261112-c24b619-cannlab/validation/repo",
+  "source_sync": "verified_git_object_source_archive",
+  "source_archive_sha256": "4c84070211596a0daabf78a0d546fbcac29cc3c2d5423ccbdf669d7f0b8c7f3d",
+  "module_archive_sha256": "301d82bb77a61974e57422e8451f2bd89486aebdd4cc28d28e020cc2e00c1f41",
+  "module_uncompressed_sha256": "af319debaff4b17d2bec990f7e65bb6fc1016a52d7a0eea0612c776efd67a40a",
+  "go_release": {
+    "filename": "go1.27.3.linux-arm64.tar.gz",
+    "os": "linux",
+    "arch": "arm64",
+    "version": "go1.27.3",
+    "sha256": "a06e99309dbcbdca1a8ccd2282c3ee146e55930886e26b4f1193269587165f49",
+    "size": 67076044,
+    "kind": "archive"
+  },
+  "go_version": "go version go1.27.3 linux/arm64",
+  "gcc_version": "gcc (Ubuntu 9.4.0-1ubuntu1~20.04.2) 9.4.0",
+  "arch": "aarch64",
+  "cgo_enabled": "1",
+  "process_id": 4009,
+  "started_at": "2026-11-12T06:14:19.089012+00:00",
+  "resource_limits": {
+    "cpu_ids": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "GOMAXPROCS": 4,
+    "GOMEMLIMIT": "3GiB",
+    "max_rss_mib": 4096,
+    "min_available_mib": 8192,
+    "contracted_memory_gib": 32,
+    "combined_reserved_cpu_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "combined_rss_budget_mib": 8192
+  },
+  "cgroups": {
+    "/sys/fs/cgroup/cpu/cpu.cfs_quota_us": "1300000",
+    "/sys/fs/cgroup/cpu/cpu.cfs_period_us": "100000",
+    "/sys/fs/cgroup/cpuset/cpuset.cpus": "0-15",
+    "/sys/fs/cgroup/memory/memory.limit_in_bytes": "107374182400"
+  },
+  "actual_affinity": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "environment": {
+    "PATH": "/home/developer/agentcloud-joint-kv-20261112-c24b619-cannlab/validation/toolchain/go/bin:/usr/bin:/bin",
+    "LANG": "C.UTF-8",
+    "CUDA_VISIBLE_DEVICES": "",
+    "GOMAXPROCS": "4",
+    "GOMEMLIMIT": "3GiB",
+    "CGO_ENABLED": "1",
+    "GOTOOLCHAIN": "local",
+    "GOENV": "off",
+    "GOPROXY": "off",
+    "GOSUMDB": "off",
+    "GOFLAGS": "-p=4",
+    "GOPATH": "/home/developer/agentcloud-joint-kv-20261112-c24b619-cannlab/validation/gopath",
+    "GOMODCACHE": "/home/developer/agentcloud-joint-kv-20261112-c24b619-cannlab/validation/go-mod-cache",
+    "GOCACHE": "/home/developer/agentcloud-joint-kv-20261112-c24b619-cannlab/validation/go-build-cache",
+    "GOTMPDIR": "/home/developer/agentcloud-joint-kv-20261112-c24b619-cannlab/validation/tmp",
+    "TMPDIR": "/home/developer/agentcloud-joint-kv-20261112-c24b619-cannlab/validation/tmp"
+  },
+  "postgresql_executed": false,
+  "postgresql_admin_configured": false,
+  "commands": [
+    {
+      "name": "race",
+      "argv": [
+        "/home/developer/agentcloud-joint-kv-20261112-c24b619-cannlab/validation/toolchain/go/bin/go",
+        "test",
+        "-race",
+        "-count=1",
+        "-p",
+        "4",
+        "-json",
+        "./..."
+      ],
+      "guard_argv": [
+        "/usr/local/bin/python3",
+        "scripts/resource_guard.py",
+        "--max-rss-mib",
+        "4096",
+        "--min-available-mib",
+        "8192",
+        "--timeout",
+        "1800",
+        "--log",
+        "/home/developer/agentcloud-joint-kv-20261112-c24b619-cannlab/validation/logs/go-race-c24b619.log",
+        "--",
+        "taskset",
+        "-c",
+        "0-3",
+        "/home/developer/agentcloud-joint-kv-20261112-c24b619-cannlab/validation/toolchain/go/bin/go",
+        "test",
+        "-race",
+        "-count=1",
+        "-p",
+        "4",
+        "-json",
+        "./..."
+      ],
+      "started_at": "2026-11-12T06:14:19.089541+00:00",
+      "exit_code": 1,
+      "stdout": "/home/developer/agentcloud-joint-kv-20261112-c24b619-cannlab/validation/logs/go-race-guard.stdout.log",
+      "stderr": "/home/developer/agentcloud-joint-kv-20261112-c24b619-cannlab/validation/logs/go-race-guard.stderr.log",
+      "log": "/home/developer/agentcloud-joint-kv-20261112-c24b619-cannlab/validation/logs/go-race-c24b619.log",
+      "guard": {
+        "status": "failed",
+        "exit_code": 1,
+        "stop_reason": null,
+        "peak_group_rss_bytes": 699138048,
+        "elapsed_seconds": 68.65
+      }
+    },
+    {
+      "name": "vet",
+      "argv": [
+        "/home/developer/agentcloud-joint-kv-20261112-c24b619-cannlab/validation/toolchain/go/bin/go",
+        "vet",
+        "-p",
+        "4",
+        "./..."
+      ],
+      "guard_argv": [
+        "/usr/local/bin/python3",
+        "scripts/resource_guard.py",
+        "--max-rss-mib",
+        "4096",
+        "--min-available-mib",
+        "8192",
+        "--timeout",
+        "900",
+        "--log",
+        "/home/developer/agentcloud-joint-kv-20261112-c24b619-cannlab/validation/logs/go-vet-c24b619.log",
+        "--",
+        "taskset",
+        "-c",
+        "0-3",
+        "/home/developer/agentcloud-joint-kv-20261112-c24b619-cannlab/validation/toolchain/go/bin/go",
+        "vet",
+        "-p",
+        "4",
+        "./..."
+      ],
+      "started_at": "2026-11-12T06:15:27.812831+00:00",
+      "exit_code": 0,
+      "stdout": "/home/developer/agentcloud-joint-kv-20261112-c24b619-cannlab/validation/logs/go-vet-guard.stdout.log",
+      "stderr": "/home/developer/agentcloud-joint-kv-20261112-c24b619-cannlab/validation/logs/go-vet-guard.stderr.log",
+      "log": "/home/developer/agentcloud-joint-kv-20261112-c24b619-cannlab/validation/logs/go-vet-c24b619.log",
+      "guard": {
+        "status": "passed",
+        "exit_code": 0,
+        "stop_reason": null,
+        "peak_group_rss_bytes": 480104448,
+        "elapsed_seconds": 44.22
+      }
+    }
+  ],
+  "top_level_tests_passed": 151,
+  "top_level_tests_skipped": [
+    "github.com/lilong555/agentcloud/internal/journal:TestPostgresEntityTransactionRollsBackMetadataAndRowsTogether",
+    "github.com/lilong555/agentcloud/internal/journal:TestPostgresDurableReopenAndAdvisoryOwnership",
+    "github.com/lilong555/agentcloud/internal/journal:TestPostgresRevisionConflictPoisonsWriter",
+    "github.com/lilong555/agentcloud/internal/control:TestPostgresRestartKeepsUnknownAndClosedGate",
+    "github.com/lilong555/agentcloud/internal/control:TestPostgresCostDeadlineSurvivesRestartAndToolReset",
+    "github.com/lilong555/agentcloud/internal/control:TestPostgresIncrementalEntitiesPreserveOtherSessionsAndClaims",
+    "github.com/lilong555/agentcloud/internal/control:TestPostgresCommitGateHidesUncommittedState",
+    "github.com/lilong555/agentcloud/internal/control:TestPostgresFailedRevisionKeepsDurableStateAndFailsClosed",
+    "github.com/lilong555/agentcloud/internal/control:TestPostgresLegacyDocumentMigratesAtomically",
+    "github.com/lilong555/agentcloud/internal/control:TestSnapshotGCPostgresSessionEntityPreservesDeleteTombstones"
+  ],
+  "finished_at": "2026-11-12T06:16:12.122369+00:00",
+  "logs_sha256": {
+    "logs/go-race-c24b619.log": "628f91ba3515ca88de660ff455b4cad33451c8c3a76e32db32a278db226fde00",
+    "logs/go-race-guard.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "logs/go-race-guard.stdout.log": "3e2cda38f6ae3e548e4d9127a3b8bd5967a7b5f42f029d901530d1a9bdaa63a2",
+    "logs/go-vet-c24b619.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "logs/go-vet-guard.stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "logs/go-vet-guard.stdout.log": "42154901c8254e0f84b631176b4c16f4ff2eb098169d0f00e007a6eb0012952b"
+  }
+}
