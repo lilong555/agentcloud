@@ -27,7 +27,7 @@ from runtime.client import Client, CloudError
 from scripts.disk_guard import inspect
 
 ROOT=Path(__file__).resolve().parents[1]
-AUTONOMOUS_POLICIES=('agentcloud','cost-aware','agentcloud-v2')
+AUTONOMOUS_POLICIES=('agentcloud','cost-aware','agentcloud-v2','agentcloud-v2-cache','agentcloud-v2-joint')
 SCHEDULER_POLICIES=AUTONOMOUS_POLICIES+('static-2-shadow',)
 POLICIES=SCHEDULER_POLICIES+('eager-0','static-2','static-5','static-15')
 SYMMETRIC_PROTOCOL='symmetric-program-v1'
@@ -41,7 +41,7 @@ def atomic_json(path,value):
 
 def scheduler_options(policy):
     flags=[]
-    effective='cost-aware' if policy=='static-2-shadow' else policy if policy in ('cost-aware','agentcloud-v2') else 'observed'
+    effective='cost-aware' if policy=='static-2-shadow' else 'agentcloud-v2' if policy=='agentcloud-v2-cache' else policy if policy in ('cost-aware','agentcloud-v2','agentcloud-v2-joint') else 'observed'
     if policy in SCHEDULER_POLICIES: flags+=['--enable-autonomous-scheduler']
     if effective!='observed': flags+=['--scheduler-policy',effective]
     if policy=='static-2-shadow': flags+=['--scheduler-shadow']
@@ -121,7 +121,17 @@ def cleanup_schedule(schedule,args):
     return int(failed)
 
 
-def request_rows(config,trial_id,n):
+def arrival_trace(config,seed,n):
+    if config.get('agent_trace_workload'):
+        from bench.joint_workload import AgentArrivalTrace
+        return AgentArrivalTrace(config,seed,n)
+    return ArrivalTrace(config,seed,n)
+
+
+def request_rows(config,trial_id,n,trace=None):
+    if config.get('agent_trace_workload'):
+        if trace is None: raise ValueError('Agent request rows require the frozen arrival trace')
+        return trace.request_rows(trial_id,config['tenants'])
     return [dict(session_id=f'{trial_id}-w{index}',tenant=f'tenant-{chr(97+(index//len(KINDS)+index)%config["tenants"])}',
         workspace_index=index,workload=KINDS[index%len(KINDS)],round=turn,status='NOT_OFFERED',
         context_tokens=tokens,logical_request_id=f'{trial_id}-w{index}-r{turn}')
@@ -165,7 +175,7 @@ class Trial:
     def __init__(self,config,args,seed,concurrency,policy,order,trial_id=None):
         self.config,self.args=config,args
         self.seed,self.n,self.policy,self.order=seed,concurrency,policy,order
-        self.arrivals=ArrivalTrace(config,seed,concurrency)
+        self.arrivals=arrival_trace(config,seed,concurrency)
         self.id=trial_id or f'scale-{seed}-{concurrency}-{policy}-{uuid.uuid4().hex[:6]}'
         self.deadline=time.monotonic()+config.get('trial_deadline_seconds',1500);self.cleanup_deadline=None
         self.private=ROOT/'artifacts/scale'/self.id;self.private.mkdir(parents=True)
@@ -173,7 +183,7 @@ class Trial:
         write_json(self.output/'arrival-trace.json',self.arrivals.document)
         self.ev=Evidence(self.output/'events.jsonl');self.stopped=threading.Event();self.slots=FairSlots(config['worker_slots'],self.stopped)
         self.lock=threading.Lock();self.samples=[];self.resumes=[];self.idle=[];self.tools=[];self.sessions=[];self.service_samples=[]
-        self.rows=request_rows(config,self.id,concurrency)
+        self.rows=request_rows(config,self.id,concurrency,self.arrivals)
         base=(args.client_dir/'coordinator-token').read_text().strip()
         self.tokens={f'tenant-{chr(97+i)}':base if i==0 else hashlib.sha256((base+f':tenant-{i}').encode()).hexdigest() for i in range(config['tenants'])}
         self.clients={tenant:BudgetClient(f'http://127.0.0.1:{args.coordinator_port}',token,timeout=180,budget=self.remaining) for tenant,token in self.tokens.items()}
@@ -182,6 +192,7 @@ class Trial:
         self.admin=os.getenv('AGENTCLOUD_TEST_PG_ADMIN','postgresql:///postgres?host=/var/run/postgresql')
         self.last_guard=0.;self.expected_workers=[]
         self.native_snapshots=[]
+        self.cache_observer=None
     def event(self,kind,**values): return self.ev.event(kind,trial_id=self.id,**values)
     def client(self,entry): return self.clients[entry['tenant']]
     def remaining(self,limit):
@@ -214,7 +225,17 @@ class Trial:
             runtime_dir=self.private/'dynamo',max_model_len=self.config['max_model_len'],
             num_gpu_blocks=self.config['num_gpu_blocks'],num_workers=1,
             speedup_ratio=self.config['mocker_speedup_ratio'],tenants=self.config['tenants'])
-        self.native=Stack(options,self.private/'native-logs');self.native.start()
+        if self.config.get('joint_kv_runtime',{}).get('enabled'):
+            from bench.joint_kv_runtime import JointStack, write_policy
+            options.run_id=self.id
+            options.timeout_seconds=self.remaining(self.config.get('trial_deadline_seconds',1500))
+            options.affinity=self.config['joint_kv_runtime'].get('affinity','off')
+            options.policy_path=write_policy(self.private/'joint-policy.yaml',
+                self.policy in ('agentcloud-v2-cache','agentcloud-v2-joint'))
+            self.native=JointStack(options,self.private/'native-logs')
+        else:
+            self.native=Stack(options,self.private/'native-logs')
+        self.native.start()
         execute(self.admin,'CREATE DATABASE '+self.db);self.created_db=True
         env=dict(os.environ,AGENTCLOUD_TOKENS=','.join(token+'='+tenant for tenant,token in self.tokens.items()),
             AGENTCLOUD_DATABASE_URL=connection(self.admin,self.db),
@@ -227,6 +248,9 @@ class Trial:
             '--model-url',self.model_url(),'--dynamo-control-url',self.native.control,
             '--dynamo-tenant-tokens-file',str(self.native.runtime_dir/'tenant-tokens.json'),'--enable-experiment-controls']
         flags,expected_policy=scheduler_options(self.policy);command+=flags
+        if self.policy=='agentcloud-v2-joint':
+            command+=['--kv-calibration-file',str(ROOT/'bench/configs/joint-kv-calibration.json'),
+                '--kv-observation-max-age','2s','--kv-minimum-samples','4']
         self.coordinator_command=command;self.coordinator_env=env
         self.coordinator=subprocess.Popen(command,cwd=ROOT,env=env,stdout=self.log('coordinator.log'),stderr=subprocess.STDOUT,start_new_session=True)
         for _ in range(200):
@@ -255,7 +279,8 @@ class Trial:
                 self.event('worker_assignment',sample=sample)
                 if time.time()-last_process_sample>=1:
                     last_process_sample=time.time()
-                    for name,process in [('coordinator',self.coordinator)]+list(zip(('native_frontend','native_mocker'),self.native.processes)):
+                    native_processes=[('native_'+row['name'],process) for row,process in zip(self.native.commands,self.native.processes)]
+                    for name,process in [('coordinator',self.coordinator)]+native_processes:
                         try:
                             fields=(Path('/proc')/str(process.pid)/'stat').read_text().rsplit(')',1)[1].split()
                             row=dict(at=last_process_sample,component=name,pid=process.pid,
@@ -282,9 +307,14 @@ class Trial:
         else:
             self.event('worker_readiness_timeout',workers=latest)
             raise TimeoutError('registered gVisor Worker runtimes and unallocated placement capacity were not observed')
+        if self.config.get('joint_kv_runtime',{}).get('enabled'):
+            from bench.joint_kv_runtime import CacheObserver
+            self.cache_observer=CacheObserver(self)
+            self.cache_observer.start()
     def refresh(self,entry):
         self.guard();state=self.client(entry).session(entry['id']);before=entry.get('state')
         entry['state']=state
+        self.record_diagnostics(entry,state)
         if state['state']=='RECOVERY_REQUIRED': raise RuntimeError('session requires recovery reconciliation')
         if state['state']=='SUSPENDED' and entry['resident'] and not entry.get('return_pending'):
             if state['manifest']['fidelity']!='MEMORY': raise RuntimeError('MEMORY fidelity required')
@@ -292,9 +322,22 @@ class Trial:
         if before and (before['state'],before['epoch'])!=(state['state'],state['epoch']):
             self.event('observed_lifecycle',session_id=entry['id'],tenant=entry['tenant'],state=state['state'],epoch=state['epoch'],manifest=state.get('manifest'))
         return state
+    def record_diagnostics(self,entry,state):
+        if not getattr(self,'config',{}).get('joint_kv_runtime',{}).get('enabled'): return
+        seen=entry.setdefault('_diagnostics',{})
+        for row in (state.get('autonomous_scheduler') or {}).get('diagnostics',[]):
+            signature=hashlib.sha256(json.dumps(row,sort_keys=True).encode()).hexdigest()
+            identity=row.get('at','')
+            if seen.get(identity)==signature: continue
+            seen[identity]=signature
+            self.event('scheduler_decision',session_id=entry['id'],tenant=entry['tenant'],
+                execution_epoch=state['epoch'],diagnostic=row)
+        if len(seen)>64:
+            entry['_diagnostics']={key:seen[key] for key in sorted(seen)[-64:]}
     def snapshot(self,entry,label):
         try:
             result=self.client(entry).call('GET',self.client(entry).path(entry['id'])+'/native')
+            entry['native_receipt']=result
             self.native_snapshots.append(result['snapshot']);self.event('native_snapshot',session_id=entry['id'],label=label,**result)
             return result['snapshot']
         except CloudError as exc:
@@ -414,11 +457,21 @@ class Trial:
                     if proof['ram'][key]!=entry['proof'][key]: raise RuntimeError('Actor RAM continuity failed: '+key)
                 if proof['ram']['context']['turns']!=turn+1: raise RuntimeError('Actor context turn counter was replayed')
                 row['ram_continuity']=True
-                if len(history)>row['context_tokens']: raise RuntimeError('prior context would be truncated')
-                history.extend(['x']*(row['context_tokens']-len(history)));prompt=' '.join(history)
-                payload=dict(model='agentcloud-tiny',messages=[dict(role='user',content=prompt)],max_tokens=self.config['output_tokens'],
-                    min_tokens=self.config['output_tokens'],ignore_eos=True,temperature=0,stream=True,stream_options=dict(include_usage=True))
-                row.update(prompt_sha256=hashlib.sha256(prompt.encode()).hexdigest(),submitted_at=time.time())
+                output_tokens=row.get('output_tokens',self.config['output_tokens'])
+                if self.config.get('agent_trace_workload'):
+                    prompt=self.arrivals.prompt(entry['index'],turn)
+                    tokens=self.arrivals.tokens(entry['index'],turn)
+                else:
+                    if len(history)>row['context_tokens']: raise RuntimeError('prior context would be truncated')
+                    history.extend(['x']*(row['context_tokens']-len(history)));prompt=' '.join(history)
+                    tokens=None
+                payload=dict(model='agentcloud-tiny',messages=[dict(role='user',content=prompt)],max_tokens=output_tokens,
+                    min_tokens=output_tokens,ignore_eos=True,temperature=0,stream=True,stream_options=dict(include_usage=True))
+                if self.cache_observer:
+                    self.cache_observer.before_request(entry,tokens,row)
+                    payload['nvext']=dict(extra_fields=['worker_id','timing'])
+                row.update(prompt_sha256=hashlib.sha256(prompt.encode()).hexdigest(),submitted_at=time.time(),
+                    terminal_turn=turn==len(rows)-1,execution_epoch=entry['state']['epoch'])
                 self.event('model_submit',**row)
                 self.client(entry).call('POST',self.client(entry).path(entry['id'])+'/requests',dict(logical_request_id=row['logical_request_id'],payload=payload,terminal_turn=turn==len(rows)-1))
                 idle=dict(uid=entry['state']['actor']['uid'],start=row['submitted_at'],end=None);self.idle.append(idle)
@@ -433,10 +486,13 @@ class Trial:
                         if receipt['status']=='OUTCOME_UNKNOWN': raise RuntimeError('model outcome unknown; original attempt retained')
                         if receipt['status']=='COMPLETED':
                             result=receipt;row.update(completed_at=timestamp(receipt['updated_at']),usage=receipt.get('result',{}).get('usage',{}),attempt_id=receipt.get('attempt_id'))
-                            if 'ttft_seconds' not in row or row['usage'].get('prompt_tokens')!=row['context_tokens'] or row['usage'].get('completion_tokens')!=self.config['output_tokens']: raise RuntimeError('actual model token trace differs from frozen workload')
+                            if 'ttft_seconds' not in row or row['usage'].get('prompt_tokens')!=row['context_tokens'] or row['usage'].get('completion_tokens')!=output_tokens: raise RuntimeError('actual model token trace differs from frozen workload')
                             row.update(status='COMPLETED',token_trace_validated=True)
                             row['cached_tokens']=(row['usage'].get('prompt_tokens_details') or {}).get('cached_tokens')
+                            if self.cache_observer: row['native_extensions']=receipt.get('result',{}).get('nvext',{})
                             self.snapshot(entry,'model_complete')
+                            if self.cache_observer:
+                                self.cache_observer.completed(entry,tokens,row,entry['native_receipt'])
                             entry['next_arrival']=self.arrivals.next_arrival(entry['index'],turn,self.started,row['completed_at'])
                             # This describes a window that has already begun. Its deadline is a fixed safety TTL.
                             if entry['next_arrival']>time.time():
@@ -464,8 +520,8 @@ class Trial:
         interactive=[r for r in complete if r['workload']=='interactive'];success=sum(r['ttft_seconds']<=self.config['interactive_slo_seconds'] for r in interactive)
         duration=self.finished-self.started;ids={e['state']['actor']['uid'] for e in self.sessions if e.get('state')}
         result=integrate([s for s in self.samples if s.get('worker_name') in self.expected_workers],ids,self.idle,self.tools,self.started,self.finished,self.config['workers'])
-        result.update(offered=self.n*len(self.config['context_tokens']),completed=len(complete),interactive_slo_successes=success,
-            interactive_offered=sum(i%4==0 for i in range(self.n))*len(self.config['context_tokens']),goodput_per_second=success/duration,duration_seconds=duration,
+        result.update(offered=len(self.rows),completed=len(complete),interactive_slo_successes=success,
+            interactive_offered=sum(row['workload']=='interactive' for row in self.rows),goodput_per_second=success/duration,duration_seconds=duration,
             ttft_seconds={f'p{p}':quantile([r['ttft_seconds'] for r in complete],p/100) for p in (50,95,99)},
             interactive_ttft_seconds={f'p{p}':quantile([r['ttft_seconds'] for r in interactive],p/100) for p in (50,95,99)},
             resume_seconds={f'p{p}':quantile([r['seconds'] for r in self.resumes],p/100) for p in (50,95,99)},
@@ -475,13 +531,24 @@ class Trial:
         result['arrival_queue_seconds']={kind:{f'p{p}':quantile([r.get('trajectory_queue_seconds') for r in self.rows if r['workload']==kind],p/100) for p in (50,95,99)} for kind in KINDS}
         result['scheduled_arrivals_by_finish']=sum(r.get('arrival_at',float('inf'))<=self.finished for r in self.rows)
         result['service_process_resources']={}
-        for component in ('coordinator','native_frontend','native_mocker'):
+        for component in sorted({row['component'] for row in self.service_samples}):
             rows=[row for row in self.service_samples if row['component']==component and self.started<=row['at']<=self.finished]
             if len(rows)>=2:
                 elapsed=rows[-1]['at']-rows[0]['at'];cpu=rows[-1]['cpu_seconds']-rows[0]['cpu_seconds']
                 result['service_process_resources'][component]=dict(cpu_seconds=cpu,mean_cpu_cores=cpu/elapsed,
                     peak_resident_bytes=max(row['resident_bytes'] for row in rows),sampled_seconds=elapsed,
                     sampling_interval_seconds=1,source='Linux /proc/<pid>/stat process CPU and resident pages')
+        if getattr(self,'cache_observer',None):
+            result['recomputed_tokens']=sum(r.get('recomputed_tokens',0) for r in complete)
+            result['kv_accounted_requests']=sum('recomputed_tokens' in r for r in complete)
+            result['cache_count_source']='official_mocker_engine_usage'
+            result['by_source']={source:dict(
+                offered=sum(r.get('source_dataset')==source for r in self.rows),
+                completed=sum(r.get('source_dataset')==source for r in complete),
+                ttft_p95_seconds=quantile([r['ttft_seconds'] for r in complete if r.get('source_dataset')==source],.95),
+                cached_tokens=sum(r.get('cached_tokens') or 0 for r in complete if r.get('source_dataset')==source),
+                recomputed_tokens=sum(r.get('recomputed_tokens',0) for r in complete if r.get('source_dataset')==source))
+                for source in sorted({r['source_dataset'] for r in self.rows})}
         return result
     def cleanup(self):
         objects={};states=[];diagnostics={};journal={};self.cleanup_errors=[]
@@ -498,6 +565,7 @@ class Trial:
                         self.cleanup_errors.append(str(exc))
                         self.event('native_cleanup_finalize_error',session_id=entry['id'],error=str(exc))
                 state=self.client(entry).session(entry['id']);states.append(clean(state));entry['state']=state
+                self.record_diagnostics(entry,state)
                 actor=state['actor']
                 if actor.get('uid'): objects[actor['uid']]=dict(kind='actor',name=actor['name'],uid=actor['uid'])
                 for receipt in state.get('lifecycle',{}).values():
@@ -573,6 +641,18 @@ class Trial:
                 self.remaining(1);return action()
             except Exception as exc:
                 errors.append(label+': '+str(exc));record_failure(report,errors[-1])
+        if getattr(self,'cache_observer',None):
+            observer=attempt('KV observer shutdown',self.cache_observer.close)
+            report['kv_observer']=observer
+            if not observer or not observer['healthy']:
+                record_failure(report,'live KV observations failed their health checks')
+            report['kv_token_accounting_complete']=all(
+                row.get('status')=='COMPLETED' and row.get('cached_tokens',-1)>=0 and
+                row.get('recomputed_tokens',-1)>=0 and
+                row['cached_tokens']+row['recomputed_tokens']==row['context_tokens']
+                for row in self.rows)
+            if not report['kv_token_accounting_complete']:
+                record_failure(report,'live Mocker token accounting is incomplete')
         result=attempt('resource cleanup',self.cleanup)
         errors.extend(getattr(self,'cleanup_errors',[]))
         if result:
@@ -600,14 +680,25 @@ class Trial:
         if self.probe_thread: attempt('probe join',lambda:self.probe_thread.join(timeout=self.remaining(5)))
         if self.native:
             attempt('native shutdown',self.native.close)
-            for path in (self.private/'native-logs').glob('*.log'):
+            for path in (self.private/'native-logs').glob('*'):
+                if not path.is_file() or path.suffix not in ('.log','.json'): continue
                 # Bounded public logs; runtime credentials remain in the private tree.
                 def export(path=path):
                     with path.open('rb') as handle:
-                        handle.seek(max(0,path.stat().st_size-8*2**20))
+                        if path.suffix=='.log': handle.seek(max(0,path.stat().st_size-8*2**20))
                         (self.output/path.name).write_bytes(handle.read())
                 attempt('native log export',export)
         for handle in self.handles: attempt('log close',handle.close)
+        if getattr(self,'cache_observer',None):
+            for name in ('coordinator.log','probe.log'):
+                path=self.private/name
+                if not path.exists(): continue
+                def export_control_log(path=path):
+                    content=path.read_text(errors='replace')
+                    for secret in [*self.tokens.values(),*self.native.runtime.secrets]:
+                        content=content.replace(secret,'[REDACTED]')
+                    (self.output/path.name).write_text(content)
+                attempt('control log export',export_control_log)
         if self.created_db:
             def drop():
                 execute(self.admin,'DROP DATABASE '+self.db+' WITH (FORCE)');report['ephemeral_postgres_database_released']=True
@@ -620,6 +711,13 @@ class Trial:
 def prepare_schedule(config,args):
     runner_id=str(uuid.uuid4());host=host_metadata()
     source={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in [ROOT/'bench/scale.py',ROOT/'bench/workloads/actor_mix.py',ROOT/'bench/workloads/arrivals.py',ROOT/'bench/worker_readiness.py',ROOT/'bench/worker_probe/main.go',ROOT/'bench/analysis/resources.py',ROOT/'experiments/dynamo/native_mocker.py',ROOT/'integrations/dynamo/manifest.json',ROOT/'integrations/substrate/manifest.json']}
+    if config.get('joint_kv_runtime',{}).get('enabled'):
+        paths=['bench/joint_workload.py','bench/joint_kv_runtime.py','bench/agent_traces/workload.py',
+            'experiments/dynamo/lifecycle_kv_mocker.py','experiments/dynamo/kv_events.py',
+            'bench/configs/joint-kv-calibration.json','internal/control/kv_cost.go',
+            'internal/control/scheduler_v2.go','internal/policy/kv_cost.go','internal/signals/cache.go',
+            config['agent_trace_workload']['manifest']]
+        source.update({name:hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in paths})
     source['selected_config']=hashlib.sha256(args.config.read_bytes()).hexdigest()
     metadata=dict(schema_version=1,comparison_protocol=config.get('comparison_protocol','legacy-ablation-v1'),paired_runner_id=runner_id,
         host=host,runner=dict(os=os.getenv('RUNNER_OS'),arch=os.getenv('RUNNER_ARCH'),name=os.getenv('RUNNER_NAME')),
@@ -636,12 +734,13 @@ def prepare_schedule(config,args):
             for group_order,policy in enumerate(policies):
                 plan.append(dict(seed=seed,concurrency=n,policy=policy,order=len(plan),paired_order=group_order,
                     paired_policy_order=policies,trial_id=f'scale-{seed}-{n}-{policy}-{uuid.uuid4().hex[:12]}'))
+    traces={(item['seed'],item['concurrency']):arrival_trace(config,item['seed'],item['concurrency']) for item in plan}
     schedule=dict(**metadata,config=config,config_path=str(args.config.resolve()),order=plan,
-        planned_requests=sum(item['concurrency']*len(config['context_tokens']) for item in plan))
+        planned_requests=sum(len(traces[item['seed'],item['concurrency']].rows) for item in plan))
     for item in plan:
         output=args.output_dir/item['trial_id'];output.mkdir(parents=True)
-        rows=request_rows(config,item['trial_id'],item['concurrency'])
-        trace=ArrivalTrace(config,item['seed'],item['concurrency'])
+        trace=traces[item['seed'],item['concurrency']]
+        rows=request_rows(config,item['trial_id'],item['concurrency'],trace)
         report=dict(**metadata,**item,config=config,status='failed',trial_execution_status='NOT_STARTED',cleanup_success=False,
             arrival_pattern=trace.mode,arrival_trace_sha256=trace.sha256,requests=rows,resumes=[],sessions=[],
             scheduler_inputs='server_observed' if item['policy'] in SCHEDULER_POLICIES else 'static_ttl',

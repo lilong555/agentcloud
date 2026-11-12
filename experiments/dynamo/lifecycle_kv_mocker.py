@@ -165,7 +165,10 @@ class Stack(ControlStack):
         try:
             native.PYTHON = Path(sys.executable)
             os.environ["AGENTCLOUD_DYNAMO_TOKEN"] = self.token
-            model, _ = native.prepare(self.control_port, self.private, 2048, max_sessions=128)
+            model, _ = native.prepare(self.control_port, self.private,
+                getattr(self.args, "max_model_len", 2048),
+                tenants=getattr(self.args, "tenants", 1),
+                max_sessions=getattr(self.args, "max_sessions", 128))
         finally:
             native.PYTHON = previous_python
             if previous_token is None:
@@ -186,23 +189,32 @@ class Stack(ControlStack):
                                "--block-size", "16", "--threads", "1"], env)
         command = [sys.executable, "-m", "dynamo.frontend", "--http-host", "127.0.0.1",
                    "--http-port", str(self.front_port), "--router-mode", "kv",
-                   "--router-policy-config", str(POLICY), "--kv-cache-block-size", "16", *common]
-        if self.args.affinity == "hard":
-            command += ["--router-session-affinity-ttl-secs", "300", "--router-session-affinity-mode", "hard"]
+                   "--router-policy-config", str(getattr(self.args, "policy_path", POLICY)),
+                   "--kv-cache-block-size", "16", *common]
+        if self.args.affinity in ("hard", "soft"):
+            command += ["--router-session-affinity-ttl-secs", "300",
+                        "--router-session-affinity-mode", self.args.affinity]
         self.launch("frontend", command, {**env, "DYN_SYSTEM_PORT": str(self.front_system),
                     "DYN_EXECUTION_CONTROL_CONFIG": str(self.private / "control.json")})
         self.wait(lambda: self.http(self.indexer, "/workers"), lambda _: True, 60)
-        for index in range(2):
+        worker_count = getattr(self.args, "num_workers", 2)
+        for index in range(worker_count):
             event, replay, system = kv.ports(3)
             observer = Observer(f"tcp://127.0.0.1:{event}")
             self.observers.append(observer)
             observer.thread.start()
             observer.ready.wait(5)
-            self.launch(f"mocker-{index}", [sys.executable, "-m", "dynamo.mocker", "--model-path", str(model),
+            worker_command = [sys.executable, "-m", "dynamo.mocker", "--model-path", str(model),
                 "--model-name", MODEL, "--num-workers", "1", "--block-size", "16",
-                "--num-gpu-blocks-override", "128", "--max-model-len", "2048", "--kv-bytes-per-token", "512",
-                "--speedup-ratio", "1", "--zmq-kv-events-ports", str(event),
-                "--zmq-replay-ports", str(replay), *common], {**env, "DYN_SYSTEM_PORT": str(system)})
+                "--num-gpu-blocks-override", str(getattr(self.args, "num_gpu_blocks", 128)),
+                "--max-model-len", str(getattr(self.args, "max_model_len", 2048)),
+                "--kv-bytes-per-token", "512",
+                "--speedup-ratio", str(getattr(self.args, "speedup_ratio", 1)),
+                "--zmq-kv-events-ports", str(event),
+                "--zmq-replay-ports", str(replay), *common]
+            if getattr(self.args, "planner_profile_data", None):
+                worker_command += ["--planner-profile-data", str(self.args.planner_profile_data)]
+            self.launch(f"mocker-{index}", worker_command, {**env, "DYN_SYSTEM_PORT": str(system)})
             ids, _ = self.wait(self.discovered, lambda ids: len(ids) == index + 1, 90)
             worker = next(iter(ids - set(self.worker_ids)))
             self.worker_ids.append(worker)
@@ -211,7 +223,7 @@ class Stack(ControlStack):
                 "replay_endpoint": f"tcp://127.0.0.1:{replay}"})
         self.wait(lambda: self.control_call("capabilities"), lambda v: v.get("classifier_count") == 1, 30)
         self.wait(lambda: self.http(self.indexer, "/workers"), lambda rows:
-            len(rows) == 2 and all(r.get("listeners", {}).get("0", {}).get("status") == "active" for r in rows))
+            len(rows) == worker_count and all(r.get("listeners", {}).get("0", {}).get("status") == "active" for r in rows))
 
     def infer(self, tokens, name, receipt, final=False, expect_status=200, worker=None, max_tokens=1):
         payload = {"model": MODEL, "prompt": tokens, "max_tokens": max_tokens, "temperature": 0,
