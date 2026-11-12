@@ -154,7 +154,7 @@ func (b *DynamoBridge) Waiting(ctx context.Context, s *Session) (QueueObservatio
 		wasFinal = true
 	}
 	if wasFinal {
-		return QueueObservation{Source: "native_dynamo_final_snapshot", Scope: "classifier", WaitingRequests: snapshot.WaitingRequests, SessionWaitingRequests: snapshot.SessionWaitingRequests, AdmissionHistory: snapshot.AdmissionHistory, ObservedAt: time.Now().UTC()}, nil
+		return QueueObservation{Source: "native_dynamo_final_snapshot", Scope: "classifier", WaitingRequests: snapshot.WaitingRequests, SessionWaitingRequests: snapshot.SessionWaitingRequests, AdmissionHistory: snapshot.AdmissionHistory, CacheObservation: snapshot.CacheObservation, SelectedWorkerID: snapshot.SelectedWorkerID, SelectedDPRank: snapshot.SelectedDPRank, ObservedAt: time.Now().UTC()}, nil
 	}
 	if _, err := client.Register(ctx, binding); err != nil {
 		return QueueObservation{}, err
@@ -163,7 +163,7 @@ func (b *DynamoBridge) Waiting(ctx context.Context, s *Session) (QueueObservatio
 	if err == nil {
 		b.observeReleased(ctx, binding, receipt)
 	}
-	return QueueObservation{Source: "native_dynamo", Scope: "classifier", WaitingRequests: receipt.Snapshot.WaitingRequests, SessionWaitingRequests: receipt.Snapshot.SessionWaitingRequests, AdmissionHistory: receipt.Snapshot.AdmissionHistory, ObservedAt: time.Now().UTC()}, err
+	return QueueObservation{Source: "native_dynamo", Scope: "classifier", WaitingRequests: receipt.Snapshot.WaitingRequests, SessionWaitingRequests: receipt.Snapshot.SessionWaitingRequests, AdmissionHistory: receipt.Snapshot.AdmissionHistory, CacheObservation: receipt.Snapshot.CacheObservation, SelectedWorkerID: receipt.Snapshot.SelectedWorkerID, SelectedDPRank: receipt.Snapshot.SelectedDPRank, ObservedAt: time.Now().UTC()}, err
 }
 func (b *DynamoBridge) Session(ctx context.Context, s *Session) (dynamo.Receipt, error) {
 	client, err := b.clientFor(s)

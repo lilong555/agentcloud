@@ -28,6 +28,11 @@ type Config struct {
 	SchedulerStableFor        time.Duration
 	SchedulerIdlePrior        time.Duration
 	SchedulerPolicy           string
+	KVCalibration             *policy.KVCalibration
+	KVObservationMaxAge       time.Duration
+	KVResumeMaxAge            time.Duration
+	KVMinimumSamples          uint64
+	KVMaxReleaseDelay         time.Duration
 	SchedulerShadow           bool
 	SchedulerConcurrency      int
 	CapacityObserver          CapacityObserver
@@ -121,8 +126,31 @@ func New(ctx context.Context, cfg Config) (*Controller, error) {
 	if cfg.SchedulerPolicy == "" {
 		cfg.SchedulerPolicy = "observed"
 	}
-	if cfg.SchedulerPolicy != "observed" && cfg.SchedulerPolicy != "cost-aware" && cfg.SchedulerPolicy != "agentcloud-v2" {
-		return nil, errors.New("scheduler policy must be observed, cost-aware or agentcloud-v2")
+	if cfg.SchedulerPolicy != "observed" && cfg.SchedulerPolicy != "cost-aware" && cfg.SchedulerPolicy != "agentcloud-v2" && cfg.SchedulerPolicy != "agentcloud-v2-joint" {
+		return nil, errors.New("scheduler policy must be observed, cost-aware, agentcloud-v2 or agentcloud-v2-joint")
+	}
+	if cfg.KVObservationMaxAge == 0 {
+		cfg.KVObservationMaxAge = 2 * time.Second
+	}
+	if cfg.KVMinimumSamples == 0 {
+		cfg.KVMinimumSamples = 4
+	}
+	if cfg.KVResumeMaxAge == 0 {
+		cfg.KVResumeMaxAge = 30 * time.Minute
+	}
+	if cfg.KVResumeMaxAge < time.Millisecond || cfg.KVResumeMaxAge > 24*time.Hour {
+		return nil, errors.New("KV resume evidence age must be 1ms..24h")
+	}
+	if cfg.KVCalibration != nil {
+		calibration := *cfg.KVCalibration
+		calibration.LossPoints = append([]policy.KVLossPoint(nil), cfg.KVCalibration.LossPoints...)
+		cfg.KVCalibration = &calibration
+	}
+	if cfg.KVMaxReleaseDelay == 0 {
+		cfg.KVMaxReleaseDelay = 30 * time.Second
+	}
+	if cfg.KVObservationMaxAge < time.Millisecond || cfg.KVObservationMaxAge > time.Minute || cfg.KVMaxReleaseDelay < v2UnknownWait || cfg.KVMaxReleaseDelay > time.Minute {
+		return nil, errors.New("KV observation age must be 1ms..1m; release delay must be 2s..1m")
 	}
 	if cfg.SchedulerShadow && (!cfg.EnableExperimentControls || !cfg.EnableAutonomousScheduler) {
 		return nil, errors.New("scheduler shadow requires experiment controls and autonomous scheduler")
@@ -888,7 +916,7 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 	s.ActualFidelity = actor.ActualFidelity
 	if action == "resume" {
 		s.Epoch++
-		if c.schedulerPolicy() == "agentcloud-v2" {
+		if c.v2Scheduler() {
 			resetReleasePlan(s)
 		}
 		s.RunningSince = time.Now().UTC()

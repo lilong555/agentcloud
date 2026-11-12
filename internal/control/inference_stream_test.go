@@ -274,6 +274,42 @@ func TestSSEToolCallsAccumulateAndClaim(t *testing.T) {
 	}
 }
 
+func TestSSEPreservesWorkerIdentityWhenTerminalNVExtAddsTiming(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, "data: {\"id\":\"worker-timing\",\"choices\":[{\"index\":0,\"delta\":{\"content\":\"ok\"},\"finish_reason\":null}],\"nvext\":{\"worker_id\":{\"prefill_worker_id\":18446744073709551610,\"prefill_dp_rank\":2}}}\n\n")
+		fmt.Fprint(w, "data: {\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}],\"nvext\":{\"timing\":{\"prefill_time_ms\":42.5,\"ttft_ms\":44.5}}}\n\ndata: {\"choices\":[],\"nvext\":{}}\n\ndata: [DONE]\n\n")
+	}))
+	defer upstream.Close()
+	cfg := testConfig(t)
+	cfg.ModelURL = upstream.URL
+	c := newTestController(t, cfg)
+	s := createTestSession(t, c, "tenant-a", "stream-session")
+	if _, err := c.Submit("tenant-a", s.SessionID, "worker-timing", json.RawMessage(streamPayload)); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, func() bool { return streamRequest(t, c, "worker-timing").Status == "COMPLETED" })
+	r, err := c.Request("tenant-a", s.SessionID, "worker-timing", s.Epoch)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var completion struct {
+		NVExt struct {
+			Worker struct {
+				ID   uint64 `json:"prefill_worker_id"`
+				Rank uint32 `json:"prefill_dp_rank"`
+			} `json:"worker_id"`
+			Timing struct {
+				PrefillMS float64 `json:"prefill_time_ms"`
+				TTFTMS    float64 `json:"ttft_ms"`
+			} `json:"timing"`
+		} `json:"nvext"`
+	}
+	if err := json.Unmarshal(r.Result, &completion); err != nil || completion.NVExt.Worker.ID != 18446744073709551610 || completion.NVExt.Worker.Rank != 2 || completion.NVExt.Timing.PrefillMS != 42.5 || completion.NVExt.Timing.TTFTMS != 44.5 {
+		t.Fatalf("worker/timing extensions: %s %v", r.Result, err)
+	}
+}
+
 type experimentSignal struct {
 	sends   atomic.Int32
 	headers atomic.Int32

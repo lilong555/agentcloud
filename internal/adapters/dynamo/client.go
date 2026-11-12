@@ -67,25 +67,28 @@ type AdmissionObservation struct {
 	AdmittedAt      *time.Time `json:"admitted_at,omitempty"`
 }
 type Snapshot struct {
-	SessionWaitingRequests uint64                 `json:"session_waiting_requests,omitempty"`
-	SessionActiveRequests  uint64                 `json:"session_active_requests,omitempty"`
-	AdmissionHistory       []AdmissionObservation `json:"admission_history,omitempty"`
-	ReleasedActingTokens   *uint64                `json:"released_acting_tokens,omitempty"`
-	ProgramPresent         bool                   `json:"program_present"`
-	Phase                  *string                `json:"phase"`
-	Lifecycle              *string                `json:"lifecycle"`
-	BaselineTokens         *uint64                `json:"baseline_tokens"`
-	LogicalBudgetTokens    *uint64                `json:"logical_budget_tokens"`
-	ExecutionMultiplier    *float64               `json:"execution_multiplier"`
-	State                  *signals.State         `json:"state"`
-	Sequence               uint64                 `json:"sequence"`
-	Fresh                  bool                   `json:"fresh"`
-	WaitingRequests        uint64                 `json:"waiting_requests"`
-	PausedPrograms         uint64                 `json:"paused_programs"`
-	CompletedEvents        uint64                 `json:"completed_events"`
-	AbortedEvents          uint64                 `json:"aborted_events"`
-	PauseEvents            uint64                 `json:"pause_events"`
-	FinalEvents            uint64                 `json:"final_events"`
+	SelectedWorkerID       *uint64                   `json:"selected_worker_id,omitempty"`
+	SelectedDPRank         *uint32                   `json:"selected_dp_rank,omitempty"`
+	CacheObservation       *signals.CacheObservation `json:"cache_observation,omitempty"`
+	SessionWaitingRequests uint64                    `json:"session_waiting_requests,omitempty"`
+	SessionActiveRequests  uint64                    `json:"session_active_requests,omitempty"`
+	AdmissionHistory       []AdmissionObservation    `json:"admission_history,omitempty"`
+	ReleasedActingTokens   *uint64                   `json:"released_acting_tokens,omitempty"`
+	ProgramPresent         bool                      `json:"program_present"`
+	Phase                  *string                   `json:"phase"`
+	Lifecycle              *string                   `json:"lifecycle"`
+	BaselineTokens         *uint64                   `json:"baseline_tokens"`
+	LogicalBudgetTokens    *uint64                   `json:"logical_budget_tokens"`
+	ExecutionMultiplier    *float64                  `json:"execution_multiplier"`
+	State                  *signals.State            `json:"state"`
+	Sequence               uint64                    `json:"sequence"`
+	Fresh                  bool                      `json:"fresh"`
+	WaitingRequests        uint64                    `json:"waiting_requests"`
+	PausedPrograms         uint64                    `json:"paused_programs"`
+	CompletedEvents        uint64                    `json:"completed_events"`
+	AbortedEvents          uint64                    `json:"aborted_events"`
+	PauseEvents            uint64                    `json:"pause_events"`
+	FinalEvents            uint64                    `json:"final_events"`
 }
 
 type Receipt struct {

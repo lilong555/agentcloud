@@ -8,6 +8,7 @@ import (
 	"github.com/lilong555/agentcloud/internal/adapters/dynamo"
 	"github.com/lilong555/agentcloud/internal/observability"
 	"github.com/lilong555/agentcloud/internal/policy"
+	"github.com/lilong555/agentcloud/internal/signals"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -17,6 +18,9 @@ type QueueObserver interface {
 }
 
 type QueueObservation struct {
+	SelectedWorkerID       *uint64                       `json:"selected_worker_id,omitempty"`
+	SelectedDPRank         *uint32                       `json:"selected_dp_rank,omitempty"`
+	CacheObservation       *signals.CacheObservation     `json:"cache_observation,omitempty"`
 	SessionWaitingRequests uint64                        `json:"session_waiting_requests,omitempty"`
 	AdmissionHistory       []dynamo.AdmissionObservation `json:"admission_history,omitempty"`
 	Source                 string                        `json:"source"`
@@ -177,6 +181,7 @@ func (c *Controller) ModelBoundary(ctx context.Context, tenant, id string, input
 		cancel()
 		observeErr = err
 		if err == nil {
+			value.CacheObservation = signals.CopyCacheObservation(value.CacheObservation)
 			observation = &value
 		}
 	}
@@ -210,10 +215,10 @@ func (c *Controller) ModelBoundary(ctx context.Context, tenant, id string, input
 		estimateSource = "server_observed"
 	}
 	var capacity *CapacityObservation
-	if c.schedulerPolicy() == "agentcloud-v2" && serverEvidence != nil {
+	if c.v2Scheduler() && serverEvidence != nil {
 		capacity = serverEvidence.WorkerCapacity
 	}
-	if input.ExpectedWaitMS == 0 || c.conditionalScheduler() && input.ServerEvidence != nil || c.schedulerPolicy() == "agentcloud-v2" || c.cfg.SchedulerShadow {
+	if input.ExpectedWaitMS == 0 || c.conditionalScheduler() && input.ServerEvidence != nil || c.v2Scheduler() || c.cfg.SchedulerShadow {
 		input, serverEvidence = c.serverEstimateLocked(s, input, observation, capacity, p.Config(), now)
 		estimateSource = "server_observed"
 	}

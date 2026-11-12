@@ -106,7 +106,7 @@ func (c *Controller) submitWithContext(ctx context.Context, tenant, id, logicalI
 	s.DynamoFinalized = false
 	s.DynamoFinalizedSnapshot = nil
 	c.state.Requests[key(tenant, logicalID)] = r
-	if c.schedulerPolicy() == "agentcloud-v2" && boundarySafe(s) {
+	if c.v2Scheduler() && boundarySafe(s) {
 		if s.Autonomous != nil && s.Autonomous.Episode != nil && !strings.HasPrefix(s.Autonomous.Episode.Origin, "model") {
 			resetReleasePlan(s)
 			s.Autonomous.WaitResetAt = now
@@ -220,7 +220,7 @@ func (c *Controller) dispatchOne() {
 			if s.Autonomous == nil {
 				s.Autonomous = &AutonomousState{Epoch: s.Epoch}
 			}
-			if c.schedulerPolicy() == "agentcloud-v2" {
+			if c.v2Scheduler() {
 				resetReleasePlan(s)
 			}
 			s.Autonomous.ReturnDemand = true
@@ -443,6 +443,19 @@ func (s *streamCompletion) append(data string, first func(string, string) error)
 	}
 	for field, value := range chunk {
 		if field != "choices" && field != "object" && value != nil {
+			// Dynamo emits worker identity and terminal timing in separate
+			// extension objects. Retain earlier fields when later chunks add
+			// response metadata.
+			if field == "nvext" {
+				if incoming, ok := value.(map[string]any); ok {
+					if prior, ok := s.metadata[field].(map[string]any); ok {
+						for name, extra := range incoming {
+							prior[name] = extra
+						}
+						continue
+					}
+				}
+			}
 			s.metadata[field] = value
 		}
 	}

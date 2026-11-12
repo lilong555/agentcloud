@@ -13,40 +13,43 @@ const schedulerDiagnosticLimit = 32
 // WaitEpisode follows a continuous safe wait across model completion and idle.
 // Its identity and unknown deadline survive controller restarts.
 type WaitEpisode struct {
-	ID                string    `json:"id"`
-	Epoch             uint64    `json:"epoch"`
-	Origin            string    `json:"origin"`
-	StartedAt         time.Time `json:"started_at"`
-	ObservedAt        time.Time `json:"observed_at"`
-	ValidUntil        time.Time `json:"valid_until,omitempty"`
-	EarliestReleaseAt time.Time `json:"earliest_release_at"`
-	UnknownReleaseAt  time.Time `json:"unknown_release_at"`
-	PlannedReleaseAt  time.Time `json:"planned_release_at,omitempty"`
-	Selection         string    `json:"selection"`
-	PredictionKnown   bool      `json:"prediction_known"`
-	PredictionReason  string    `json:"prediction_reason,omitempty"`
-	SwitchCostMS      int64     `json:"switch_cost_ms"`
-	HoldingRate       float64   `json:"holding_rate"`
-	PredictedCostMS   *float64  `json:"predicted_cost_ms,omitempty"`
-	KeepCostMS        *float64  `json:"keep_cost_ms,omitempty"`
+	KVCost            *policy.KVCostEstimate `json:"kv_cost,omitempty"`
+	KVLatestReleaseAt time.Time              `json:"kv_latest_release_at,omitempty"`
+	ID                string                 `json:"id"`
+	Epoch             uint64                 `json:"epoch"`
+	Origin            string                 `json:"origin"`
+	StartedAt         time.Time              `json:"started_at"`
+	ObservedAt        time.Time              `json:"observed_at"`
+	ValidUntil        time.Time              `json:"valid_until,omitempty"`
+	EarliestReleaseAt time.Time              `json:"earliest_release_at"`
+	UnknownReleaseAt  time.Time              `json:"unknown_release_at"`
+	PlannedReleaseAt  time.Time              `json:"planned_release_at,omitempty"`
+	Selection         string                 `json:"selection"`
+	PredictionKnown   bool                   `json:"prediction_known"`
+	PredictionReason  string                 `json:"prediction_reason,omitempty"`
+	SwitchCostMS      int64                  `json:"switch_cost_ms"`
+	HoldingRate       float64                `json:"holding_rate"`
+	PredictedCostMS   *float64               `json:"predicted_cost_ms,omitempty"`
+	KeepCostMS        *float64               `json:"keep_cost_ms,omitempty"`
 }
 
 // SchedulerDiagnostic retains a fixed-size decision trace, including Shadow's
 // computed intent separately from the action allowed through its actuator gate.
 type SchedulerDiagnostic struct {
-	At               time.Time `json:"at"`
-	Policy           string    `json:"policy"`
-	Shadow           bool      `json:"shadow"`
-	EpisodeID        string    `json:"episode_id,omitempty"`
-	WaitPhase        string    `json:"wait_phase,omitempty"`
-	PredictionKnown  bool      `json:"prediction_known"`
-	PredictionReason string    `json:"prediction_reason,omitempty"`
-	ComputedAction   string    `json:"computed_action"`
-	ComputedReason   string    `json:"computed_reason"`
-	Action           string    `json:"action"`
-	Reason           string    `json:"reason"`
-	ObservationMS    float64   `json:"observation_ms"`
-	DecisionMS       float64   `json:"decision_ms"`
+	KVCost           *policy.KVCostEstimate `json:"kv_cost,omitempty"`
+	At               time.Time              `json:"at"`
+	Policy           string                 `json:"policy"`
+	Shadow           bool                   `json:"shadow"`
+	EpisodeID        string                 `json:"episode_id,omitempty"`
+	WaitPhase        string                 `json:"wait_phase,omitempty"`
+	PredictionKnown  bool                   `json:"prediction_known"`
+	PredictionReason string                 `json:"prediction_reason,omitempty"`
+	ComputedAction   string                 `json:"computed_action"`
+	ComputedReason   string                 `json:"computed_reason"`
+	Action           string                 `json:"action"`
+	Reason           string                 `json:"reason"`
+	ObservationMS    float64                `json:"observation_ms"`
+	DecisionMS       float64                `json:"decision_ms"`
 }
 
 func (c *Controller) schedulerPolicy() string {
@@ -57,14 +60,18 @@ func (c *Controller) schedulerPolicy() string {
 }
 
 func (c *Controller) conditionalScheduler() bool {
-	return c.schedulerPolicy() == "cost-aware" || c.schedulerPolicy() == "agentcloud-v2"
+	return c.schedulerPolicy() == "cost-aware" || c.v2Scheduler()
+}
+
+func (c *Controller) v2Scheduler() bool {
+	return c.schedulerPolicy() == "agentcloud-v2" || c.schedulerPolicy() == "agentcloud-v2-joint"
 }
 
 func (c *Controller) schedulerDecisionLocked(s *Session, input ModelBoundaryRequest, evidence *ServerEstimateEvidence, config policy.LifecycleConfig, now time.Time) (policy.LifecycleDecision, error) {
 	switch c.schedulerPolicy() {
 	case "cost-aware":
 		return c.costDecisionLocked(s, input, evidence, config, now)
-	case "agentcloud-v2":
+	case "agentcloud-v2", "agentcloud-v2-joint":
 		return c.v2DecisionLocked(s, input, evidence, config, now)
 	default:
 		p, err := policy.NewLifecycle(config)
@@ -174,6 +181,9 @@ func (c *Controller) v2DecisionLocked(s *Session, input ModelBoundaryRequest, ev
 		episode.EarliestReleaseAt = laterTime(episode.EarliestReleaseAt, s.LastResumedAt.Add(c.cfg.SchedulerStableFor))
 	}
 	episode.SwitchCostMS = max(int64(1), initial.SnapshotCostMS+initial.ResumeCostMS+initial.JournalCostMS)
+	if c.schedulerPolicy() == "agentcloud-v2-joint" {
+		c.jointKVCostLocked(s, episode, evidence, now)
+	}
 	slots := int64(1)
 	if capacity := evidence.WorkerCapacity; capacity != nil {
 		if capacity.CapacityActors > 0 {
@@ -198,6 +208,21 @@ func (c *Controller) v2DecisionLocked(s *Session, input ModelBoundaryRequest, ev
 	episode.PlannedReleaseAt = laterTime(episode.UnknownReleaseAt, episode.EarliestReleaseAt)
 	if episode.PredictionKnown {
 		c.selectV2ReleaseLocked(episode, evidence, now)
+	}
+	if episode.KVCost != nil && episode.KVCost.AppliedToDecision && episode.KVCost.DeltaMS != 0 {
+		// One uninterrupted wait has one finite, anchored extension budget.
+		// Refreshes, model updates and phase changes retain this upper bound.
+		if episode.KVLatestReleaseAt.IsZero() {
+			limit := c.cfg.KVMaxReleaseDelay
+			if limit == 0 {
+				limit = 30 * time.Second
+			}
+			episode.KVLatestReleaseAt = laterTime(episode.StartedAt.Add(limit), episode.EarliestReleaseAt)
+		}
+		if episode.PlannedReleaseAt.IsZero() || episode.PlannedReleaseAt.After(episode.KVLatestReleaseAt) {
+			episode.PlannedReleaseAt = episode.KVLatestReleaseAt
+			episode.Selection = "joint_kv_bounded_keep"
+		}
 	}
 	evidence.Episode = copyValue(episode)
 	c.markSession(s)
@@ -244,7 +269,7 @@ func (c *Controller) selectV2ReleaseLocked(episode *WaitEpisode, evidence *Serve
 }
 
 func (c *Controller) recordSchedulerDiagnosticLocked(s *Session, evidence *ServerEstimateEvidence, computedAction, computedReason, action, reason string, observationMS, decisionMS float64, now time.Time) {
-	if !c.cfg.SchedulerShadow && c.schedulerPolicy() != "agentcloud-v2" {
+	if !c.cfg.SchedulerShadow && !c.v2Scheduler() {
 		return
 	}
 	a := s.Autonomous
@@ -258,6 +283,7 @@ func (c *Controller) recordSchedulerDiagnosticLocked(s *Session, evidence *Serve
 		}
 		if evidence.Episode != nil {
 			row.EpisodeID = evidence.Episode.ID
+			row.KVCost = copyValue(evidence.Episode.KVCost)
 		}
 	}
 	if len(a.Diagnostics) >= schedulerDiagnosticLimit {

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -14,18 +15,44 @@ import (
 
 func TestAutonomousObservedWaitSafeSuspendReturnDemandAndCooldown(t *testing.T) {
 	var requests atomic.Int32
+	var queued atomic.Uint64
+	var delayedObservation atomic.Bool
+	releaseWaiting := make(chan struct{})
+	var releaseOnce sync.Once
+	release := func() { releaseOnce.Do(func() { close(releaseWaiting) }) }
 	model := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		requests.Add(1)
-		time.Sleep(200 * time.Millisecond)
+		if requests.Add(1) == 2 {
+			// Keep the observed upstream queue present until safe suspension
+			// completes. Runner load then cannot consume a short response-time
+			// window before the scheduler confirms stable waiting.
+			queued.Store(1)
+			select {
+			case <-releaseWaiting:
+			case <-r.Context().Done():
+				return
+			}
+			queued.Store(0)
+		} else {
+			time.Sleep(200 * time.Millisecond)
+		}
 		_, _ = w.Write([]byte(`{"choices":[{"message":{"content":"ok"}}]}`))
 	}))
 	defer model.Close()
+	defer release()
 	cfg := testConfig(t)
 	cfg.EnableAutonomousScheduler = true
 	cfg.SchedulerInterval = 10 * time.Millisecond
 	cfg.SchedulerStableFor = 20 * time.Millisecond
 	cfg.ModelURL = model.URL
 	cfg.ModelTimeout = 2 * time.Second
+	cfg.QueueObserver = costQueueFunc(func(context.Context, *Session) (QueueObservation, error) {
+		waiting := queued.Load()
+		if waiting > 0 && delayedObservation.CompareAndSwap(false, true) {
+			// Exercise an observation that outlasts the 200ms calibration.
+			time.Sleep(250 * time.Millisecond)
+		}
+		return QueueObservation{Source: "observed_test_model_queue", Scope: "session", WaitingRequests: waiting, SessionWaitingRequests: waiting, ObservedAt: time.Now().UTC()}, nil
+	})
 	cfg.Scheduling = policy.LifecycleConfig{SnapshotCostMS: 5, ResumeCostMS: 5, JournalCostMS: 1, CooldownMS: 500}
 	c := newTestController(t, cfg)
 	s := createTestSession(t, c, "tenant-a", "workspace")
@@ -48,11 +75,18 @@ func TestAutonomousObservedWaitSafeSuspendReturnDemandAndCooldown(t *testing.T) 
 	if suspended.Manifest == nil || suspended.Autonomous == nil || suspended.Autonomous.Evidence.ModelSamples < 1 {
 		t.Fatalf("missing safety/evidence %+v", suspended)
 	}
+	if !delayedObservation.Load() {
+		t.Fatal("delayed queue observation was not exercised")
+	}
 	for _, receipt := range suspended.Scheduling {
 		if receipt.EstimateSource != "server_observed" || receipt.ServerEvidence == nil {
 			t.Fatalf("caller hints supplied %+v", receipt)
 		}
+		if receipt.Decision.Action == "SUSPEND" && (receipt.QueueObservation == nil || receipt.QueueObservation.SessionWaitingRequests != 1) {
+			t.Fatalf("missing pending upstream queue evidence %+v", receipt)
+		}
 	}
+	release()
 	waitFor(t, func() bool { r, _ := c.Request("tenant-a", s.SessionID, "waiting", 0); return r.Status == "COMPLETED" })
 	if _, err := c.ReturnDemand(context.Background(), "tenant-a", s.SessionID, LifecycleRequest{OperationID: "return", ExpectedEpoch: 1}); err != nil {
 		t.Fatal(err)

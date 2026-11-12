@@ -9,6 +9,7 @@ import (
 
 	substrateapi "github.com/lilong555/agentcloud/internal/adapters/substrate"
 	"github.com/lilong555/agentcloud/internal/policy"
+	"github.com/lilong555/agentcloud/internal/signals"
 )
 
 type CapacityObservation = substrateapi.WorkerCapacity
@@ -21,6 +22,9 @@ func (b *SubstrateBackend) SchedulingCapacity(ctx context.Context, s *Session) (
 }
 
 type ServerEstimateEvidence struct {
+	SelectedWorkerID     *uint64                    `json:"selected_worker_id,omitempty"`
+	SelectedDPRank       *uint32                    `json:"selected_dp_rank,omitempty"`
+	CacheObservation     *signals.CacheObservation  `json:"cache_observation,omitempty"`
 	Episode              *WaitEpisode               `json:"episode,omitempty"`
 	Shadow               bool                       `json:"shadow,omitempty"`
 	ComputedAction       string                     `json:"computed_action,omitempty"`
@@ -90,6 +94,10 @@ func (c *Controller) scopedMetricEstimateLocked(s *Session, metric string, fallb
 }
 func (c *Controller) serverEstimateLocked(s *Session, input ModelBoundaryRequest, queue *QueueObservation, capacity *CapacityObservation, config policy.LifecycleConfig, now time.Time) (ModelBoundaryRequest, *ServerEstimateEvidence) {
 	evidence := &ServerEstimateEvidence{Sources: []string{"coordinator_durable_request_state"}, CostSources: map[string]string{}, WorkerCapacity: capacity}
+	if queue != nil && c.schedulerPolicy() == "agentcloud-v2-joint" {
+		evidence.CacheObservation = signals.CopyCacheObservation(queue.CacheObservation)
+		evidence.SelectedWorkerID, evidence.SelectedDPRank = copyValue(queue.SelectedWorkerID), copyValue(queue.SelectedDPRank)
+	}
 	service, source, count := c.scopedMetricEstimateLocked(s, "model_http_ms", 0)
 	evidence.ModelServiceP75MS = service
 	evidence.ModelSamples = count
@@ -283,6 +291,7 @@ func (c *Controller) autonomousStep(snapshot *Session) {
 		stop()
 		observationErr = err
 		if err == nil {
+			value.CacheObservation = signals.CopyCacheObservation(value.CacheObservation)
 			queue = &value
 		}
 	}
@@ -421,7 +430,7 @@ func (c *Controller) autonomousStep(snapshot *Session) {
 	}
 	c.lock()
 	if current := c.state.Sessions[key(tenant, id)]; current != nil && current.Autonomous != nil {
-		if c.schedulerPolicy() == "agentcloud-v2" && boundary != nil {
+		if c.v2Scheduler() && boundary != nil {
 			a := current.Autonomous
 			a.LastAction, a.Reason, a.Evidence = boundary.Decision.Action, boundary.Decision.Reason, boundary.ServerEvidence
 			if len(a.Diagnostics) > 0 {

@@ -7,11 +7,31 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/lilong555/agentcloud/internal/signals"
 )
+
+func TestClientReadsPrefixObservationWithoutRefreshingItsTimestamp(t *testing.T) {
+	b := signals.Binding{SourceID: "coordinator", TenantID: "tenant", WorkspaceID: "workspace", SessionID: "session", ActorUID: "actor", Epoch: 1}
+	at := time.Now().UTC().Add(-time.Second)
+	events, samples, exposure := uint64(0), uint64(8), 8000.0
+	o := &signals.CacheObservation{SchemaVersion: 1, ObservedAt: at, SourceKind: "live_kvindexer_observation", BackendKind: "mocker", SourceVersion: "observer-v1", WorkerID: 7, WorkerEpoch: "producer-a", ExecutionEpoch: 1, PrefixDigest: "prefix-a", HistoryTokens: 256, DeviceOverlapTokens: 240, Valid: true, LossEvents: &events, SampleCount: &samples, ExposureMS: &exposure, StatsObservedAt: &at}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(Receipt{ProtocolVersion: 1, Accepted: true, Reconciled: true, Binding: b, RoutingSessionID: "ac:test", InferenceLease: "lease", Snapshot: Snapshot{CacheObservation: o}})
+	}))
+	defer server.Close()
+	c, err := NewClient(server.URL, "test-control-token-0123456789abcdef", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := c.Session(context.Background(), b)
+	if err != nil || !reflect.DeepEqual(r.Snapshot.CacheObservation, o) {
+		t.Fatalf("cache observation: %+v %v", r.Snapshot.CacheObservation, err)
+	}
+}
 
 func TestClientTransportsTrustedBindingsAndReceipts(t *testing.T) {
 	binding := signals.Binding{SourceID: "coordinator", TenantID: "tenant", WorkspaceID: "workspace", SessionID: "session", ActorUID: "actor", Epoch: 1}

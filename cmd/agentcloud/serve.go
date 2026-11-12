@@ -19,13 +19,19 @@ import (
 	substrateapi "github.com/lilong555/agentcloud/internal/adapters/substrate"
 	"github.com/lilong555/agentcloud/internal/control"
 	"github.com/lilong555/agentcloud/internal/observability"
+	"github.com/lilong555/agentcloud/internal/policy"
 )
 
 func serve(args []string, stdout, stderr io.Writer) error {
 	flags := flag.NewFlagSet("serve", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	autonomous := flags.Bool("enable-autonomous-scheduler", false, "启用服务端基于实际队列、Worker容量与历史延迟的自主休眠恢复")
-	schedulerPolicy := flags.String("scheduler-policy", "observed", "生命周期策略：observed、cost-aware 或 agentcloud-v2")
+	schedulerPolicy := flags.String("scheduler-policy", "observed", "生命周期策略：observed、cost-aware、agentcloud-v2 或 agentcloud-v2-joint")
+	kvCalibrationFile := flags.String("kv-calibration-file", "", "联合KV成本的冻结校准JSON与可核验来源")
+	kvObservationMaxAge := flags.Duration("kv-observation-max-age", 2*time.Second, "联合KV索引与统计观测最大年龄")
+	kvResumeMaxAge := flags.Duration("kv-resume-max-age", 30*time.Minute, "联合KV恢复实测样本最大年龄")
+	kvMinimumSamples := flags.Uint64("kv-minimum-samples", 4, "联合KV前缀风险集最小实测样本数")
+	kvMaxReleaseDelay := flags.Duration("kv-max-release-delay", 30*time.Second, "联合KV已知等待的固定释放上界")
 	schedulerShadow := flags.Bool("scheduler-shadow", false, "仅执行 cost-aware 观测与计算；需要启用实验控制和自主调度")
 	schedulerInterval := flags.Duration("scheduler-interval", 250*time.Millisecond, "自主调度观察间隔")
 	schedulerIdlePrior := flags.Duration("scheduler-idle-prior", 0, "冷启动idle预计时长先验；实际idle观测后由p75历史替代")
@@ -72,6 +78,14 @@ func serve(args []string, stdout, stderr io.Writer) error {
 	}
 	if *schedulerShadow && (!*experimentControls || !*autonomous) {
 		return errors.New("scheduler shadow requires --enable-experiment-controls and --enable-autonomous-scheduler")
+	}
+	var kvCalibration *policy.KVCalibration
+	if *kvCalibrationFile != "" {
+		var err error
+		kvCalibration, err = control.LoadKVCalibration(*kvCalibrationFile)
+		if err != nil {
+			return err
+		}
 	}
 	bindings := map[string]string{}
 	for _, entry := range strings.Split(*tokens, ",") {
@@ -175,7 +189,7 @@ func serve(args []string, stdout, stderr io.Writer) error {
 		}
 		sink = bridge
 	}
-	c, err := control.New(ctx, control.Config{EnableAutonomousScheduler: *autonomous, SchedulerInterval: *schedulerInterval, SchedulerStableFor: *schedulerStable, SchedulerIdlePrior: *schedulerIdlePrior, SchedulerPolicy: *schedulerPolicy, SchedulerShadow: *schedulerShadow, Observability: telemetry, Signals: sink, DataDir: *data, DatabaseURL: *database, Backend: execution, ModelURL: *modelURL, ModelAPIKey: os.Getenv("AGENTCLOUD_MODEL_API_KEY"), ModelConcurrency: *modelConcurrency, ModelTimeout: *modelTimeout, Tokens: bindings, EnableExperimentControls: *experimentControls, SnapshotGC: control.SnapshotGCConfig{Disabled: *snapshotGCDisabled, Keep: *snapshotKeep, Interval: *snapshotGCInterval, Batch: *snapshotGCBatch, OrphanGrace: *snapshotOrphanGrace}})
+	c, err := control.New(ctx, control.Config{EnableAutonomousScheduler: *autonomous, SchedulerInterval: *schedulerInterval, SchedulerStableFor: *schedulerStable, SchedulerIdlePrior: *schedulerIdlePrior, SchedulerPolicy: *schedulerPolicy, SchedulerShadow: *schedulerShadow, KVCalibration: kvCalibration, KVObservationMaxAge: *kvObservationMaxAge, KVResumeMaxAge: *kvResumeMaxAge, KVMinimumSamples: *kvMinimumSamples, KVMaxReleaseDelay: *kvMaxReleaseDelay, Observability: telemetry, Signals: sink, DataDir: *data, DatabaseURL: *database, Backend: execution, ModelURL: *modelURL, ModelAPIKey: os.Getenv("AGENTCLOUD_MODEL_API_KEY"), ModelConcurrency: *modelConcurrency, ModelTimeout: *modelTimeout, Tokens: bindings, EnableExperimentControls: *experimentControls, SnapshotGC: control.SnapshotGCConfig{Disabled: *snapshotGCDisabled, Keep: *snapshotKeep, Interval: *snapshotGCInterval, Batch: *snapshotGCBatch, OrphanGrace: *snapshotOrphanGrace}})
 	if err != nil {
 		return err
 	}
