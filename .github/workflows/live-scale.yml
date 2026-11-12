@@ -5,7 +5,7 @@ on:
       scope:
         description: 'Paired scheduling experiments; workload scopes include long tails, changing waits and open-loop arrivals'
         type: choice
-        options: [smoke, matrix, cost-smoke, cost-matrix, workload-smoke, workload-matrix, gate1, gate2, boundary-screen, boundary-confirm]
+        options: [smoke, matrix, cost-smoke, cost-matrix, workload-smoke, workload-matrix, gate1, gate2, boundary-screen, boundary-confirm, joint-smoke, joint-full]
         default: smoke
       max_parallel:
         description: 'Independent GitHub hosted runners'
@@ -23,11 +23,24 @@ on:
         description: 'JSON coordinates: paired scopes use complete n/seed/scenario groups; legacy scopes also require policy'
         type: string
         default: ''
+      smoke_run_id:
+        description: 'Successful same-source joint-smoke run required by joint-full'
+        type: string
+        default: ''
 permissions:
   contents: read
   actions: read
 jobs:
+  joint:
+    if: inputs.scope == 'joint-smoke' || inputs.scope == 'joint-full'
+    uses: ./.github/workflows/joint-kv-gate2.yml
+    with:
+      suite: ${{ inputs.scope == 'joint-full' && 'full' || 'smoke' }}
+      source_ref: ${{ inputs.source_ref }}
+      max_parallel: ${{ inputs.max_parallel || 8 }}
+      smoke_run_id: ${{ inputs.smoke_run_id }}
   plan:
+    if: inputs.scope != 'joint-smoke' && inputs.scope != 'joint-full'
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
@@ -48,7 +61,7 @@ jobs:
           print(json.dumps(selected))
           PY
   native:
-    if: '!inputs.native_run_id'
+    if: ${{ !inputs.native_run_id && inputs.scope != 'joint-smoke' && inputs.scope != 'joint-full' }}
     uses: ./.github/workflows/native-validation.yml
   experiment:
     needs: [plan,native]

@@ -2,6 +2,20 @@ name: Joint KV Gate2
 run-name: Joint KV Gate2 ${{ inputs.suite }}
 
 on:
+  workflow_call:
+    inputs:
+      suite:
+        type: string
+        required: true
+      source_ref:
+        type: string
+        default: ''
+      max_parallel:
+        type: number
+        default: 10
+      smoke_run_id:
+        type: string
+        default: ''
   workflow_dispatch:
     inputs:
       suite:

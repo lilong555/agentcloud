@@ -72,9 +72,9 @@ Gate 2 使用 N=32／64、四个 Warm Actor 槽位、16 MiB 工作堆、两个 M
 ```bash
 python3 -m experiments.dynamo.joint_calibration --check
 python3 -m bench.joint_plan --suite smoke --validate-workload
-gh workflow run joint-kv-gate2.yml --ref experiment/joint-kv-gate2 -f suite=smoke
-gh workflow run joint-kv-gate2.yml --ref experiment/joint-kv-gate2 \
-  -f suite=full -f smoke_run_id=<成功的同源码冒烟 Run ID>
+gh workflow run live-scale.yml --ref experiment/joint-kv-gate2 -f scope=joint-smoke
+gh workflow run live-scale.yml --ref experiment/joint-kv-gate2 \
+  -f scope=joint-full -f smoke_run_id=<成功的同源码冒烟 Run ID>
 ```
 
 完整矩阵通过同源码 N=4 五策略和四组原生路由微实验后运行。源码校验、校准、清理、失败样本与每个配对计划均可独立审计。
