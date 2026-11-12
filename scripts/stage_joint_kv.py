@@ -29,6 +29,78 @@ SOURCE_PATHS = (
 SOURCE_SUFFIXES = {".py", ".go", ".rs", ".json", ".yaml", ".yml", ".sh", ".toml", ".lock", ".md", ".txt", ".Dockerfile"}
 
 
+def public_source(source):
+    source = Path(source)
+    if not source.is_absolute():
+        source = ROOT / source
+    if (source.is_symlink() or not source.is_file()
+            or not source.resolve().is_relative_to(ROOT.resolve())
+            or any(parent.is_symlink() for parent in source.parents if parent != ROOT)):
+        raise ValueError("invalid joint KV evidence file: " + str(source))
+    if "private" in source.resolve().relative_to(ROOT.resolve()).parts:
+        raise ValueError("private runtime directory is excluded from public evidence")
+    return source
+
+
+def fallback(run_id, attempt, suite):
+    """Keep independently verified public raw records when full staging fails."""
+    if (suite not in ("smoke", "full")
+            or any(not re.fullmatch(r"[1-9][0-9]*", str(value)) for value in (run_id, attempt))):
+        raise ValueError("current joint KV run, attempt and suite are required")
+    output = ROOT / "artifacts/joint-kv-fallback"
+    output.mkdir(parents=True, exist_ok=False)
+    files, rejected = [], []
+    planned_ids = None
+    try:
+        schedule = json.loads(public_source(ROOT / "artifacts/joint-kv-schedule.json").read_text())
+        if all(str(schedule.get(key)) == str(value) for key, value in
+               (("github_run_id", run_id), ("github_run_attempt", attempt))):
+            planned_ids = {row["trial_id"] for row in schedule.get("order", [])}
+    except (ValueError, OSError, KeyError):
+        pass
+
+    def keep(source, relative):
+        try:
+            source = public_source(source)
+        except ValueError:
+            rejected.append(str(source.relative_to(ROOT)))
+            return
+        target = output / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(source, target)
+        files.append(dict(path=str(relative), sha256=digest(target), bytes=target.stat().st_size))
+
+    for report_path in sorted((ROOT / "docs/evidence/scale").glob("*/result.json")):
+        try:
+            report = json.loads(public_source(report_path).read_text())
+        except (ValueError, OSError):
+            rejected.append(str(report_path.relative_to(ROOT)))
+            continue
+        if any(str(report.get(key)) != str(value) for key, value in
+               (("github_run_id", run_id), ("github_run_attempt", attempt))):
+            continue
+        if (report.get("trial_id") != report_path.parent.name
+                or planned_ids is not None and report["trial_id"] not in planned_ids):
+            continue
+        for path in sorted(report_path.parent.iterdir()):
+            if path.suffix in (".json", ".jsonl", ".log"):
+                keep(path, Path("experiment") / report_path.parent.name / path.name)
+    routing = ROOT / "artifacts/joint-kv-routing"
+    for path in sorted(routing.rglob("*")):
+        if "private" not in path.relative_to(routing).parts and (path.is_file() or path.is_symlink()):
+            keep(path, Path("routing") / path.relative_to(routing))
+    for name in ("joint-kv-schedule.json", "joint-kv-inputs.json", "joint-kv-run.json",
+                 "joint-kv-jobs.json", "joint-kv-runner.log"):
+        path = ROOT / "artifacts" / name
+        if path.exists() or path.is_symlink():
+            keep(path, Path("provenance") / name)
+    report = dict(schema_version=1, source_kind="github_actions_public_raw_fallback", gpu_execution=False,
+                  github_run_id=str(run_id), github_run_attempt=str(attempt), suite=suite,
+                  status="raw_only", files=files, rejected=rejected)
+    (output / "fallback.json").write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
+    return report
+
+
 def stage(run_id, attempt, suite, schedule_path=None):
     if any(not re.fullmatch(r"[1-9][0-9]*", str(value)) for value in (run_id, attempt)):
         raise ValueError("current GitHub run and attempt identifiers are required")
@@ -39,7 +111,11 @@ def stage(run_id, attempt, suite, schedule_path=None):
     output = artifacts / "joint-kv-public"
     if output.exists():
         raise FileExistsError("this joint KV runner evidence is already staged")
-    schedule_path = schedule_path or artifacts / "joint-kv-schedule.json"
+    schedule_path = Path(schedule_path or artifacts / "joint-kv-schedule.json")
+    if not schedule_path.is_absolute():
+        schedule_path = ROOT / schedule_path
+    if schedule_path.exists() or schedule_path.is_symlink():
+        schedule_path = public_source(schedule_path)
     schedule = json.loads(schedule_path.read_text()) if schedule_path.is_file() else {}
     if schedule and any(str(schedule.get(key)) != str(value) for key, value in
                         (("github_run_id", run_id), ("github_run_attempt", attempt))):
@@ -59,13 +135,7 @@ def stage(run_id, attempt, suite, schedule_path=None):
 
         def include(source, relative):
             nonlocal size
-            source = Path(source)
-            if (source.is_symlink() or not source.is_file()
-                    or not source.resolve().is_relative_to(ROOT.resolve())
-                    or any(parent.is_symlink() for parent in source.parents if parent != ROOT)):
-                raise ValueError("invalid joint KV evidence file: " + str(source))
-            if "private" in source.relative_to(ROOT).parts:
-                raise ValueError("private runtime directory is excluded from public evidence")
+            source = public_source(source)
             size += source.stat().st_size
             if size > 2 * 2**30:
                 raise ValueError("joint KV runner evidence exceeds 2 GiB")
@@ -170,9 +240,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--suite", choices=("smoke", "full"), required=True)
     parser.add_argument("--schedule", type=Path)
+    parser.add_argument("--fallback", action="store_true")
     args = parser.parse_args()
-    report = stage(os.getenv("GITHUB_RUN_ID"), os.getenv("GITHUB_RUN_ATTEMPT"), args.suite, args.schedule)
-    print(json.dumps({key: report[key] for key in ("status", "stored_bytes", "missing")}), flush=True)
+    if args.fallback:
+        report = fallback(os.getenv("GITHUB_RUN_ID"), os.getenv("GITHUB_RUN_ATTEMPT"), args.suite)
+        print(json.dumps({"status": report["status"], "files": len(report["files"]), "rejected": report["rejected"]}), flush=True)
+    else:
+        report = stage(os.getenv("GITHUB_RUN_ID"), os.getenv("GITHUB_RUN_ATTEMPT"), args.suite, args.schedule)
+        print(json.dumps({key: report[key] for key in ("status", "stored_bytes", "missing")}), flush=True)
 
 
 if __name__ == "__main__":

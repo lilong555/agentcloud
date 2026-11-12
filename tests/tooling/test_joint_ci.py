@@ -3,7 +3,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
+import shutil
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -142,6 +146,61 @@ class JointStagingTests(unittest.TestCase):
                 (root / "docs/evidence/scale/joint-0/link.json").symlink_to(root / "scripts/example.py")
                 with self.assertRaisesRegex(ValueError, "invalid joint KV evidence"):
                     staging.stage(20, 2, "smoke")
+
+    def test_actual_cli_accepts_relative_schedule_and_keeps_raw_bytes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            for name in ("scripts/stage_joint_kv.py", "scripts/import_live_artifact.py", "bench/joint_plan.py"):
+                target = root / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(staging.ROOT / name, target)
+            (root / "bench/__init__.py").write_text("")
+            result = subprocess.run([sys.executable, "scripts/stage_joint_kv.py", "--suite", "smoke",
+                                     "--schedule", "artifacts/joint-kv-schedule.json"], cwd=root,
+                                    env=dict(os.environ, GITHUB_RUN_ID="20", GITHUB_RUN_ATTEMPT="2", PYTHONPATH=""),
+                                    capture_output=True, text=True, timeout=15)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual((root / "artifacts/joint-kv-public/schedule.json").read_bytes(),
+                             (root / "artifacts/joint-kv-schedule.json").read_bytes())
+
+    def test_relative_schedule_rejects_private_outside_and_symlink(self):
+        for unsafe in ("private", "outside", "symlink"):
+            with self.subTest(unsafe=unsafe), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory) / "repo"
+                root.mkdir()
+                self.fixture(root)
+                schedule = root / "artifacts/joint-kv-schedule.json"
+                if unsafe == "private":
+                    target = root / "artifacts/private/schedule.json"
+                    target.parent.mkdir()
+                    shutil.copyfile(schedule, target)
+                    relative = Path("artifacts/private/schedule.json")
+                elif unsafe == "outside":
+                    shutil.copyfile(schedule, root.parent / "schedule.json")
+                    relative = Path("../schedule.json")
+                else:
+                    (root / "artifacts/schedule-link.json").symlink_to(schedule)
+                    relative = Path("artifacts/schedule-link.json")
+                with patch.object(staging, "ROOT", root), self.assertRaises(ValueError):
+                    staging.stage(20, 2, "smoke", relative)
+
+    def test_fallback_preserves_failed_trial_and_routing_without_private_or_symlinks(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root, failed=True)
+            routing = root / "artifacts/joint-kv-routing"
+            (routing / "leak.json").symlink_to(routing / "private/token")
+            with patch.object(staging, "ROOT", root):
+                report = staging.fallback(20, 2, "smoke")
+            paths = {row["path"] for row in report["files"]}
+            self.assertIn("experiment/joint-0/result.json", paths)
+            self.assertIn("experiment/joint-0/kv-observations.jsonl", paths)
+            self.assertIn("routing/summary.json", paths)
+            self.assertFalse(any("private" in path or "historical" in path or "leak" in path for path in paths))
+            self.assertIn("artifacts/joint-kv-routing/leak.json", report["rejected"])
+            self.assertEqual((root / "artifacts/joint-kv-fallback/experiment/joint-0/result.json").read_bytes(),
+                             (root / "docs/evidence/scale/joint-0/result.json").read_bytes())
 
     def test_launch_failure_has_zero_observed_trials(self):
         with tempfile.TemporaryDirectory() as directory:

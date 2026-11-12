@@ -511,7 +511,8 @@ class Trial:
             self.client(entry).call('POST',self.client(entry).path(entry['id'])+'/finalize',{})
             entry['status']='passed'
         except Exception as exc:
-            entry['status']='failed';entry['error']=str(exc);self.event('session_failed',session_id=entry['id'],error=str(exc))
+            entry['status']='failed';entry['error']=str(exc);entry['primary_error']=str(exc)
+            self.event('session_failed',session_id=entry['id'],error=str(exc))
         finally:
             try: self.suspend(entry,'final-release')
             except Exception as exc: entry['status']='failed';entry['error']=str(exc);self.event('cleanup_error',session_id=entry['id'],error=str(exc))
@@ -616,7 +617,7 @@ class Trial:
                 if self.started is not None:
                     self.finished=self.finished or time.time();report['metrics']=self.metrics()
             except Exception as exc: record_failure(report,'metrics: '+str(exc))
-            report.update(requests=self.rows,resumes=self.resumes,sessions=[dict(id=e['id'],tenant=e['tenant'],status=e.get('status'),error=e.get('error')) for e in self.sessions])
+            report.update(requests=self.rows,resumes=self.resumes,sessions=[dict(id=e['id'],tenant=e['tenant'],status=e.get('status'),error=e.get('error'),primary_error=e.get('primary_error')) for e in self.sessions])
             report['cleanup_success']=False;report['trial_execution_status']='CLEANING'
             atomic_json(self.output/'result.json',report)
             self.cleanup_deadline=time.monotonic()+self.config.get('cleanup_deadline_seconds',300)
@@ -796,7 +797,12 @@ def run_schedule(schedule,args,executor=None):
         atomic_json(args.output_dir/'index.json',dict(paired_runner_id=schedule['paired_runner_id'],
             status='passed' if len(reports)==len(schedule['order']) and all(r['status']=='passed' for r in reports) else 'incomplete',
             trials=[{k:v for k,v in r.items() if k not in ('requests','resumes','sessions')} for r in reports]))
-        print(json.dumps(dict(status=report['status'],trial_id=report['trial_id'],error=report.get('error'))),flush=True)
+        progress=dict(status=report['status'],trial_id=report['trial_id'],error=report.get('error'))
+        if report['status']!='passed':
+            progress.update(session_errors=[row for row in report.get('sessions',[]) if row.get('error')],
+                validation_errors=report.get('validation_errors',[]),cleanup_errors=report.get('cleanup_errors',[]),
+                kv_observer_errors=(report.get('kv_observer') or {}).get('errors',[]))
+        print(json.dumps(clean(progress)),flush=True)
     return 0 if all(r['status']=='passed' for r in reports) else 1
 
 

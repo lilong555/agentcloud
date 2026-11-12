@@ -241,7 +241,14 @@ func (c *Controller) Handler() http.Handler {
 		if err != nil {
 			return problem(503, "native_observation_unavailable", err.Error())
 		}
-		respond(w, 200, map[string]any{"epoch": s.Epoch, "snapshot": receipt.Snapshot})
+		result := map[string]any{"epoch": s.Epoch, "snapshot": receipt.Snapshot}
+		if receipt.Binding.SourceID != "" {
+			result["binding"] = receipt.Binding
+		}
+		if receipt.BindingGeneration != "" {
+			result["binding_generation"] = receipt.BindingGeneration
+		}
+		respond(w, 200, result)
 		return nil
 	}))
 	mux.HandleFunc("POST /v1/sessions/{id}/finalize", c.authenticated(func(w http.ResponseWriter, r *http.Request, tenant string) error {
