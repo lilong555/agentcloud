@@ -2,9 +2,27 @@
 
 真实模型、规模调度、故障恢复与资源热力图分别保存原始证据。Azure CPA 的真实 `gpt-6-luna` 已完成两类 Agent 功能任务；规模与故障矩阵由独立 GitHub Actions 执行，当前运行结果由 [STATUS](STATUS.md)索引。
 
+## 在线 KV 与沙箱生命周期联合策略
+
+`agentcloud-v2-joint` 在基础快照／恢复成本上增加 `E[C_KV|SUSPEND]−E[C_KV|KEEP]`。两动作共享 GPU 政策、当前驻留和历史损失分布，历史恢复关键路径形成额外缓存暴露；共同驱逐风险与已经缺失的前缀重建成本相消。条件回访分布来自过去的完成／删失事件，未知等待保留两秒释放期限，额外 KEEP 采用有限期限。[jointKVCostLocked:86](../internal/control/kv_cost.go#L86)、[EstimateKV:164](../internal/policy/kv_cost.go#L164)与 [v2DecisionLocked:124](../internal/control/scheduler_v2.go#L124)为决策入口。
+
+原生 `cache_reselect` 由 ThunderAgent 分类器和选择器共同开启；[select_cache_worker:606](../integrations/dynamo/files/lib/router-plugins/builtin/src/thunderagent/request_classifier/scheduler.rs#L606)依据缓存、prefill／decode 负载和可用容量预留目标，`Sent` 提交实际 Worker，取消回滚未提交迁移。Hard affinity 保持目标，Off／Soft 使用原生候选空间。观测两秒过期、事件缺口、身份错配、低支持或校准范围外输入均记录回退原因。[路由合同与具名测试映射](../integrations/dynamo/CACHE_ROUTING.md)定义更新身份、容量计费和缓存观察字段。
+
+| 验证对象 | 当前事实与原始身份 |
+| --- | --- |
+| 当前本地契约 | [JSON](evidence/local-contract.json)记录源码摘要 `2937d38aec9b6b08a6db051dd8ae344df82a4e5f4f5baf450d8a03b4886dffeb`、152 个 Go 顶层测试通过，六条验证命令退出码均为 0。[Go 日志](evidence/logs/local-20261112T051713670525Z/race-tests.stdout.log)保留 10 个 PostgreSQL 顶层测试和两个子项的数据库缺配跳过；[tooling](evidence/logs/local-20261112T051713670525Z/tooling-tests.stderr.log)为 236 项全部通过，[runtime](evidence/logs/local-20261112T051713670525Z/runtime-tests.stderr.log)为 62 项中 58 通过、四个模块跳过。 |
+| 已归档 Go CI | 源码 `293e19f97ee06df90c7b5e9cdd44b8cdb2c742a6` 的 [43155952398／contracts job 130975803254](https://github.com/lilong555/agentcloud/actions/runs/43155952398/job/130975803254)记录 161 项顶层测试通过，PostgreSQL 契约实际执行；该 CI 与当前本地验证各自保留源码身份。 |
+| 原生 wheel | [43012181604](https://github.com/lilong555/agentcloud/actions/runs/43012181604)，78 passed、2 ignored；缓存选择、迁移预留、取消和 `Sent` 提交的测试名见 [test-map.json](../integrations/dynamo/test-map.json)。 |
+| 成本参考 | [provenance.json](evidence/joint-kv-calibration/provenance.json)锁定 `aisimulate-core` 包／源码 SHA 与 `polynomial_prefill_time:206`，类型为 `mocker_simulation`；真实 CPU 编排 TTFT 和模拟引擎 Prefill 分列。 |
+| 真实请求结构 | [joint-workload.json](evidence/agent-traces/joint-workload.json)冻结 432 条轨迹、150 个任务组；[SOURCE_AUDIT](evidence/agent-traces/SOURCE_AUDIT.json)与 [VALIDATION](evidence/agent-traces/VALIDATION.json)记录来源、摘要与确定性选择。每任务选择一个 attempt，60.88% 非末轮等待为缺测模型 3s，时间代表性按该构造报告。 |
+| 联合冒烟 43157107777 | [Actions](https://github.com/lilong555/agentcloud/actions/runs/43157107777)为 `failure`；计划源码 `19c5f98659794f03237791a1443e38215aadbb2c`。工作流输入校验报告 `live-scale.yml:40` 的 `Unexpected value '1'`，联合 job 未创建，源码与 trial 未执行；五个计划 trial、120 个计划请求保留，完成请求为 0。[摘要](evidence/joint-kv/43157107777/summary.json)／[原始注解](evidence/joint-kv/43157107777/launch-1/diagnostics/workflow-annotations.json)。 |
+| 联合冒烟 43157987378 | [Actions](https://github.com/lilong555/agentcloud/actions/runs/43157987378)为 `failure`；日志确认执行源码 `848a3f232347475e850053b2fe92679d47f7c2e4`。首个 `static-15` trial 报 `session failure`，其余四策略报前序清理失败；公开证据 staging 随后出现相对路径 `ValueError`，请求级／路由 artifact 缺失。五个计划 trial、120 个计划请求保留，完成与失败请求计数为 `null`，原生路由步骤为 success、逐请求验收待原始产物。[摘要](evidence/joint-kv/43157987378/summary.json)／[执行观察](evidence/joint-kv/43157987378/launch-1/diagnostics/job-log-observations.json)／[job 原始日志](evidence/joint-kv/43157987378/launch-1/diagnostics/job-130982580550.log.gz)。 |
+
+全量联合性能仍待验收。完整配对包含 TTL2、TTL15、v2、v2-cache、v2-joint，分别隔离缓存重选和 KV 成本增量；N=32／64、五种子、动态调用数及失败分母由冻结计划确定。主要比较为 joint 对 cache 的交互 P95，同时保留资源积分、轨迹完成时间、恢复次数、命中／重算、最坏种子与来源分层。机制和执行入口见 [JOINT_KV_SCHEDULING](JOINT_KV_SCHEDULING.md)。以下历史 Gate 1／2、TraceLab 和 GPU 结果保持各自源码与运行身份。
+
 ## 三项性能边界与归因
 
-**Gate 2，N64／16 MiB：驻留复用与首次准入公平性。** 64 会话竞争 4 个 Warm 槽位，超额订阅为 16:1。v2 相对 TTL2 的 Actor 预留差为 −3.746 GB·s，95% 区间 [−12.191, +4.699] 跨零；交互 P95 增加 18.836 s，区间 [+9.087, +27.482]。Runner 的 [FairSlots.acquire](../bench/scale.py#L146)先授予槽位，[resume](../bench/scale.py#L342)随后登记 ReturnDemand；[HoldingRate](../internal/control/scheduler_v2.go#L191)使用已经登记的返回需求，首次排队压力尚未完整进入 KEEP 成本。已有会话驻留复用延长后到会话的首次等待。Gate 2 中双方平均恢复次数均为 224，v2 累计恢复耗时另增加 116.221 s；资源均值下降、恢复代价和前置公平性共同解释实测取舍。少恢复的直接证据来自 64 MiB／3 s 边界，该坐标 v2 首轮排队占累计 TTFT 的 98.733%。[正式数据](evidence/gate2-a7e324a-summary.json) · [边界逐轮分解](evidence/boundary-confirm-a7e324a-summary.json)
+**Gate 2，N64／16 MiB：驻留复用与首次准入公平性。** 64 会话竞争 4 个 Warm 槽位，超额订阅为 16:1。v2 相对 TTL2 的 Actor 预留差为 −3.746 GB·s，95% 区间 [−12.191, +4.699] 跨零；交互 P95 增加 18.836 s，区间 [+9.087, +27.482]。Runner 的 [FairSlots.acquire](../bench/scale.py#L156)先授予槽位，[resume](../bench/scale.py#L385)随后登记 ReturnDemand；[HoldingRate](../internal/control/scheduler_v2.go#L201)使用已经登记的返回需求，首次排队压力尚未完整进入 KEEP 成本。已有会话驻留复用延长后到会话的首次等待。Gate 2 中双方平均恢复次数均为 224，v2 累计恢复耗时另增加 116.221 s；资源均值下降、恢复代价和前置公平性共同解释实测取舍。少恢复的直接证据来自 64 MiB／3 s 边界，该坐标 v2 首轮排队占累计 TTFT 的 98.733%。[正式数据](evidence/gate2-a7e324a-summary.json) · [边界逐轮分解](evidence/boundary-confirm-a7e324a-summary.json)
 
 **TTL2，128 MiB／3 s：快照频率与磁盘容量约束。** TTL2 在 16 MiB 的低恢复成本负载中是强基线；128 MiB 下三个 trial 各产生 434／435／436 个 Tag，包含各 64 个初始化恢复点，随后触发 6 GiB 磁盘余量保护。完整尾部样本约为 163～168 MiB/快照，逐 trial 以 Tag 数乘样本范围外推，累计逻辑快照量约 **69.1～71.5 GiB**，体现频繁快照形成的逻辑写入放大。物理写入、压缩峰值及写放大比值的采集状态为 `uncollected_in_ci_runner (see 128MiB boundary report)`。v2 的成本迟滞减少高成本快照频率，K=2 GC 控制恢复点保留量；已发生的累计写入继续单独计量。三个边界坐标合计 **13/18 trial**；其中 128 MiB 坐标为 **1/6** 完整通过、三个 TTL2 失败、两个 v2 被前序清理阻断。[失败账本](evidence/boundary-confirm-storage-a7e324a.json) · [逻辑估算与物理采集状态](STORAGE_COSTS.md)
 

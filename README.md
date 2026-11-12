@@ -2,7 +2,11 @@
 
 **64 个有状态 Agent 共享 4 个 gVisor Warm 槽位，实现 16× 沙箱超卖。** AgentCloud 在模型等待期间回收沙箱，在交互返回时恢复内存状态，并把工具副作用、恢复成本和首次准入尾延迟纳入同一条可对账的执行链路。
 
-Go 协调器通过 PostgreSQL 保存请求、回执和恢复 manifest；Substrate 执行带 UID／epoch 围栏的 MEMORY 快照；Dynamo 原生 Rust 扩展连接 Program 准入、执行反馈和会话回收。上游交付包含 **38 个 Substrate 文件＋13 个 Dynamo 文件、2＋3 组补丁**，完整文件与补丁均可还原到相同 Git tree。
+Go 协调器通过 PostgreSQL 保存请求、回执和恢复 manifest；Substrate 执行带 UID／epoch 围栏的 MEMORY 快照；Dynamo 原生 Rust 扩展连接 Program 准入、执行反馈和会话回收。上游交付包含 **38 个 Substrate 文件＋16 个 Dynamo 文件、2＋3 组补丁**，完整文件与补丁均可还原到相同 Git tree。
+
+**在线 KV 联合策略：**`agentcloud-v2-joint` 读取官方 KVIndexer 的当前前缀驻留与首次损失统计，将 SUSPEND 和 KEEP 的预期重算成本差额计入生命周期切换成本；`cache_reselect` 将前缀命中、prefill／decode 负载和原子容量预留共同用于 Worker 选择。Hard affinity 保持目标，Off／Soft 提供候选空间。观测过期、事件缺口或支持不足时回退到基础成本；未知等待保留两秒释放期限。[机制、动作条件与实验身份](docs/JOINT_KV_SCHEDULING.md) · [原生缓存路由合同](integrations/dynamo/CACHE_ROUTING.md)
+
+当前本地契约记录 **152 个 Go 顶层测试、236 个 tooling 测试通过**；runtime 为 58 项通过、四个模块跳过。联合冒烟 [43157107777](docs/evidence/joint-kv/43157107777/summary.json) 与 [43157987378](docs/evidence/joint-kv/43157987378/summary.json) 均失败，完整五策略配对与全量性能仍待验收。[测试身份与失败原文](docs/EXPERIMENTS.md#在线-kv-与沙箱生命周期联合策略)
 
 ```mermaid
 flowchart LR
@@ -11,7 +15,7 @@ flowchart LR
     G <-->|UID · Epoch · Safepoint| S[Substrate<br/>4 gVisor Warm Slots]
     G <-->|Lease · Program · Feedback| D[Dynamo Native Rust]
     S -->|Checkpoint / Resume cost| G
-    D -->|Queue / Admission| G
+    D -->|Queue · Admission · KV observation| G
     D --> I[Inference Worker]
 ```
 
