@@ -1,0 +1,116 @@
+name: MEMORY physical cost calibration
+on:
+  workflow_dispatch:
+    inputs:
+      batches:
+        description: Independent batches per 16/64/128 MiB x 1/4 concurrency cell
+        type: choice
+        options: ['1', '3']
+        default: '3'
+  workflow_call:
+    inputs:
+      batches:
+        type: string
+        default: '3'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  costs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 110
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: agentcloud
+          POSTGRES_PASSWORD: agentcloud-ci
+          POSTGRES_DB: agentcloud_substrate
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U agentcloud -d agentcloud_substrate" --health-interval 5s --health-timeout 5s --health-retries 12
+    env:
+      AGENTCLOUD_DATABASE_URL: postgresql://agentcloud:agentcloud-ci@127.0.0.1:5432/agentcloud_substrate?sslmode=disable
+      AGENTCLOUD_TEST_PG_ADMIN: postgresql://agentcloud:agentcloud-ci@127.0.0.1:5432/agentcloud_substrate?sslmode=disable
+      AGENTCLOUD_CI_WORKER_MEMORY_MIB: '1536'
+      GOMAXPROCS: '2'
+      GOFLAGS: '-p=2'
+      CUDA_VISIBLE_DEVICES: ''
+      LIFECYCLE_KV_WHEEL_RUN_ID: '43012181604'
+      COST_BATCHES: ${{ inputs.batches || '3' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v7
+      - name: Check measurement accounting
+        run: python3 -m unittest discover -s tests/tooling -p test_memory_costs.py -v
+      - name: Restore locked sources
+        run: python3 scripts/upstream.py --fetch substrate dynamo
+      - name: Verify source wheel run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p artifacts/memory-cost-wheel
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$LIFECYCLE_KV_WHEEL_RUN_ID" > artifacts/memory-cost-wheel/run.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          run=json.loads(Path('artifacts/memory-cost-wheel/run.json').read_text())
+          assert run['id']==43012181604 and run['conclusion']=='success'
+          assert run['path']=='.github/workflows/kv-event-wheel.yml'
+          PY
+      - uses: actions/download-artifact@v4
+        with:
+          name: kv-event-wheel
+          path: artifacts/kv-event-wheel
+          run-id: '43012181604'
+          github-token: ${{ github.token }}
+      - name: Install verified native Dynamo CPU runtime
+        run: |
+          python3 -m experiments.dynamo.lifecycle_kv_mocker verify-wheel --output-dir artifacts/memory-cost-wheel/check
+          uv venv --python 3.12 .venv-dynamo
+          uv pip install --python .venv-dynamo/bin/python -r experiments/dynamo/requirements-cpu.lock artifacts/kv-event-wheel/*.whl
+          uv pip check --python .venv-dynamo/bin/python
+          .venv-dynamo/bin/python scripts/verify_cpu_environment.py
+      - name: Prepare real gVisor MEMORY runtime
+        run: |
+          bash scripts/ci_live_prepare.sh
+          python3 deploy/substrate/configure-matrix.py --workers 2 --worker-memory-mib 1536 --actor-memory-mib 512
+      - name: Bound credentials to this hosted experiment
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          export KUBECONFIG="$PWD/artifacts/substrate/kubeconfig"
+          kubectl --context=kind-agentcloud -n ate-system create token ate-client \
+            --audience=api.ate-system.svc --duration=6600s > artifacts/substrate/client/.memory-token
+          chmod 600 artifacts/substrate/client/.memory-token
+          mv artifacts/substrate/client/.memory-token artifacts/substrate/client/token
+      - name: Measure six strata with bounded cleanup
+        timeout-minutes: 45
+        run: .venv-dynamo/bin/python -u -m bench.memory_costs --output artifacts/memory-costs --batches "$COST_BATCHES" --min-free-gib 14
+      - name: Collect runtime provenance
+        if: always()
+        run: python3 scripts/ci_live_collect.py
+      - name: Release this Runner's experiment resources
+        if: always()
+        run: python3 scripts/ci_live_cleanup.py
+      - name: Stage runtime receipts
+        if: always()
+        run: |
+          mkdir -p artifacts/memory-costs/runtime
+          python3 - <<'PY'
+          from pathlib import Path
+          import shutil
+          for name in ('ci-live-runtime.json','ci-live-cleanup.json'):
+              path=Path('docs/evidence')/name
+              if path.exists(): shutil.copy2(path,Path('artifacts/memory-costs/runtime')/name)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: memory-costs-evidence
+          path: |
+            artifacts/memory-costs/
+            artifacts/memory-cost-wheel/
+          if-no-files-found: error
+          retention-days: 30
