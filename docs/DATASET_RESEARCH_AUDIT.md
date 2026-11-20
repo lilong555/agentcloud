@@ -1,6 +1,6 @@
 # Agent 调度数据集审计
 
-FreeInference、TraceLab、AgentLogs 和 Alibaba 2017 分别覆盖 Agent 等待、工具因果窗口、云端会话和物理容量竞争。AgentCloud 的 MEMORY、安全点、准入排队和成本由原生测量提供。多源组合形成真实数据驱动的混合工作负载，各来源的统计范围、推导和合成设定分别保留。
+活动研究数据源固定为 AgentLogs 和 FreeInference，事件资格通过后冻结一个主数据集和一个独立泛化验证集。AgentCloud 的 MEMORY、安全点、准入排队和物理成本由原生测量提供。下表保留既有来源审计，历史证据用于复核已经发布的结果。
 
 本审计固定日期 2026-11-20。[来源清单](evidence/research/2026-11-20/sources/github-sources.json)、[全量下载清单](evidence/research/2026-11-20/agentlogs-population-inputs.json)、[全量元数据统计](evidence/research/2026-11-20/agentlogs-population-audit.json)及[原研究附件](research/2026-11-20/package_manifest.json)提供版本与证据入口。
 
@@ -58,13 +58,13 @@ artifacts/research-venv/bin/python -m unittest discover -s tests/tooling -p test
 
 12 项回归测试覆盖完整状态人口、缺失和异常端点、重复 ID、复合关联歧义、半开边界、任务家族传递闭包、冻结源库存和下载摘要。CI 执行封存报告检查与受控 SQL 测试；全量扫描以本地固定原文件的独立回执为准。Session 日志的模型／工具边界、原生运行资源及完整删失信息保持独立采集资格。
 
-## Alibaba 2017：容器与容量竞争
+## 历史资料：Alibaba 2017
 
 冻结 commit [`3858992ca41bf92082e6d6522ddf0bebd14e838b`](https://github.com/alibaba/clusterdata/tree/3858992ca41bf92082e6d6522ddf0bebd14e838b/cluster-trace-v2017)。官方 [README](evidence/research/2026-11-20/sources/alibaba-readme.md)描述约 1,300 台机器，容器数据 12 小时，服务器与 batch 数据约 24 小时。
 
 `container_event.csv` 的八列为 timestamp、Create/Remove、instance ID、machine ID、CPU 请求、归一化内存／磁盘请求、CPU 集合。事件标记操作完成；`container_usage.csv` 使用百分比，按请求资源解释。时间以采集起点为零、单位秒，零和负数可表示窗口前事件。资源每 60 秒采样、300 秒平均，内存和磁盘归一化、CPU 核数保留原尺度。官方还记录了 usage 中部分 instance 缺少 event、batch 的 task/job ID 缺失等问题。
 
-本阶段以 [Schema](evidence/research/2026-11-20/sources/alibaba-schema.csv)和[语义说明](evidence/research/2026-11-20/sources/alibaba-trace.md)验证容量研究可行性。原始多 GB 轨迹的下载、SHA 校验、Create/Remove 配对与容量守恒统计待执行。仓库根及 2017 目录未见专属 LICENSE；2020 GPU 目录的许可属于该目录数据。2017 数据再分发的许可核实保留独立状态。
+已有 [Schema](evidence/research/2026-11-20/sources/alibaba-schema.csv)和[语义说明](evidence/research/2026-11-20/sources/alibaba-trace.md)保留审计身份；当前研究范围已移除该数据源。原始多 GB 轨迹下载与再分发许可核实属于历史未完成项。
 
 将 Alibaba 容量分布映射到 AgentCloud 工作集时，映射尺度属于 C 类设定。真实 MEMORY 的 Snapshot／Resume 成本由相同硬件实测；AgentLogs 的 Session 与 Alibaba 的容器没有共同业务身份，组合实验登记其独立采样方式。
 

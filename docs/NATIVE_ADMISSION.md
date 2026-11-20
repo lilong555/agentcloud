@@ -56,7 +56,9 @@ RPC 是后端阶段的子项，分解时独立展示。跨机器客户端差值�
 
 Legacy 首次 provision 位于交互计时窗口之前，Native 首次启动位于窗口之内。报告同时给出首次请求和后续请求分母，模式差值需要结合这项计时范围差异解释。Actor GB·s 是 Worker assignment 预留积分；资源覆盖率与恢复次数分别报告。
 
-`bench.research_quality` 校验需求身份、Epoch、尝试序号、RPC 配对、容量拒绝、等待进出、Ready/释放守恒，以及 PostgreSQL 导出序号和重启连续性。Native 验收要求 Coordinator 数据；Legacy 采集单独接受历史 FIFO 审计。`bench.research_gate` 的正式研究资格依赖真实控制面容量事件和 RPC 回执，其他数据、成本、闭环与统计门槛继续独立管理。
+`bench.research_quality` 校验需求身份、Epoch、尝试序号、RPC 配对、容量拒绝、等待进出、Ready/释放守恒，以及 PostgreSQL 导出序号和重启连续性。Native 验收要求 Coordinator 数据；Legacy 采集单独接受历史 FIFO 审计。`bench.research_gate` 使用[两级研究资格](SCHEDULING_RESEARCH_PATH.md)：Tier-1 接受事件级负载、分层 MEMORY 成本与排队去噪回执；Tier-2 检查最终实机比较的重启、开销、校准和统计证据。
+
+资源释放与 `admission.retry_notified` 在同一事务内持久化，通知携带释放事件序号，选择最早的未通知需求。事务提交和 Coordinator 重启会唤醒准入循环，下一次尝试记录 `slot_release` 来源并消费通知。全局兜底探测最多每秒一次，按上次尝试时间轮转等待者；RPC 并发沿用 `SchedulerConcurrency`。物理放置由 Substrate 决定，v2 策略按原有 tick 执行。验收同时核对通知来源、单次消费和 shadow 模式行为。
 
 固定的 `admission_semantics` 仅开放 `bench/configs/admission-semantics.json`：8 会话、4 个物理槽位、2 Workers、同种子、`static-2` 与 `agentcloud-v2`，两个模式共 4 个 trial。该合成负载用于生产准入路径与采集语义验收。
 
@@ -79,7 +81,7 @@ gh workflow run live-scale.yml --ref experiment/joint-kv-gate2 \
   -f scope=admission-semantics
 ```
 
-导出路径应使用新目录。`native-admission-evidence` artifact 包含本次四个 trial 的配置、结果、PostgreSQL 事件、Worker 采样、清理回执及 SHA256 inventory。
+导出路径应使用新目录。`native-admission-evidence` artifact 包含本次四个 trial 的配置、结果、PostgreSQL 事件、Worker 采样、清理回执及 SHA256 inventory。`memory-restart/` 保存独立的真实 MEMORY 容量等待、Coordinator SIGKILL、身份连续性和事件唤醒验收。
 
 | 测试 | 验证内容 |
 |---|---|
@@ -92,7 +94,7 @@ gh workflow run live-scale.yml --ref experiment/joint-kv-gate2 \
 
 受控容量测试使用 gRPC fixture 和本地 VOLUMES checkpoint。真实 MEMORY、Worker 放置、恢复次数与耗时结论采用 GitHub Actions 的独立实测结果。单种子小规模验收用于功能与观测完整性，性能研究另需独立统计设计。
 
-本地验收记录见 [完整检查](evidence/local-contract.json) 与 [准入采集清单](evidence/native-admission/local/manifest.json)：173 个 Go 顶层测试通过；Python tooling 共 326 项、跳过 5 项，runtime 共 62 项、跳过 4 项。`make check`、`make verify-delivery` 和 `make evidence-audit` 通过。严格容量采集覆盖 12 个首次需求及 Coordinator 重启；独立 VOLUMES 采集覆盖首次和恢复需求、Epoch 2、两次 Coordinator 启动及数据库清理。
+本地验收记录见 [完整检查](evidence/local-contract.json) 与 [准入采集清单](evidence/native-admission/local/manifest.json)：175 个 Go 顶层测试通过；Python tooling 共 342 项、跳过 5 项，runtime 共 62 项、跳过 4 项。`make check`、`make verify-delivery` 和 `make evidence-audit` 通过。严格容量采集覆盖 12 个首次需求及 Coordinator 重启；独立 VOLUMES 采集覆盖首次和恢复需求、Epoch 2、两次 Coordinator 启动及数据库清理。
 
 ## 真实 MEMORY 对照结果
 
@@ -154,8 +156,8 @@ python3 docs/evidence/native-admission/analyze.py \
 | 首次／恢复持久容量等待 | PASS：生产 Substrate RPC 触发的 183 次拒绝全部推进；首次 Actor 无重复创建 |
 | Native 计划到达 | PASS：直接提交 API，32/32 Native 请求完成 |
 | 控制面事务观测 | PASS：四组共 80 个准入需求，PG 顺序、RPC、等待及 Ready／释放闭合 |
-| 研究准入闸门 | PASS：固定语义验收可执行；正式算法研究继续检查六项独立资格 |
-| 并发、重启与异常保护 | PASS：173 个 Go 顶层测试及受控 PG／gRPC 重启采集；MEMORY 重启覆盖见下文 |
+| 研究准入闸门 | PASS：固定语义验收可执行；算法仿真与最终实机比较分别检查 Tier-1／Tier-2 |
+| 并发、重启与异常保护 | PASS：175 个 Go 顶层测试及受控 PG／gRPC 重启采集；MEMORY 重启覆盖见下文 |
 | Legacy／Native 最小对照 | PASS：同 Runner、同到达、四 trial、64/64 请求，原始证据和复算脚本已归档 |
 
 真实 MEMORY 的 Coordinator 崩溃／重启、CreateActor 自身返回 ResourceExhausted、未知 RPC 回执和失败提交分支，目前使用受控 gRPC／真实 PG 测试验证。首次 `CREATING/WAITING_CAPACITY → PARKED` 反馈映射，以及旧自主路径由 Ready 事务统一完成回执的实现，通过当前源码的本地 race 全检；Actions `739e24b` 的覆盖范围以该固定提交为准。这些项仍需目标 MEMORY 环境的专项验收。
@@ -171,7 +173,7 @@ N=64、多种子、采集开销消融、物理 RSS／charge／设备 I/O、跨�
 | `internal/control/controller.go`、`autonomous.go`、`http.go`、`types.go`、`idle_cost.go` | 生命周期接入、HTTP 202、需求回执、状态快照 |
 | `bench/scale.py`、`admission.py`、`research_capture.py`、`runtime/client.py` | Native 到达路径、Legacy 标注与客户端发送时刻 |
 | `bench/research_quality.py`、`research_gate.py`、`research_acceptance.py` | 控制面事件资格与本地采集验收 |
-| `bench/configs/admission-semantics.json`、`research-readiness.json` | 固定语义对照及六项研究资格 |
+| `bench/configs/admission-semantics.json`、`research-readiness.json` | 固定语义对照及两级研究资格 |
 | `.github/workflows/native-admission.yml`、`live-scale.yml` | 同 Runner 四 trial 的真实 MEMORY 运行和证据归档 |
 | `internal/control/admission_test.go`、`tests/tooling/test_native_admission.py`、`test_research_gate.py` | 并发、重启、失败提交和采集完整性验收 |
 | `docs/NATIVE_ADMISSION.md`、`RESEARCH_OBSERVABILITY.md`、`SCHEDULING_RESEARCH_EVIDENCE.md` | 状态机、测量口径、研究资格及实测结果 |

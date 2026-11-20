@@ -1,6 +1,6 @@
 # 原生研究观测与验收
 
-AgentCloud 的原生准入观测来自 PostgreSQL 中与控制状态同时提交的 Coordinator 事件：首次启动、恢复需求、Substrate RPC、容量拒绝、等待进出、Ready 和资源释放。Runner FIFO 以 `legacy_runner_admission` 来源保留历史对照。当前验收覆盖事务一致性、诊断轮转、进程重启、受控容量与事件完整性。调度研究的六项资格由[注册表](../bench/configs/research-readiness.json)管理，固定准入语义对照使用独立运行入口，详见[控制面容量准入](NATIVE_ADMISSION.md)。
+AgentCloud 的核心观测集固定为 PostgreSQL 中与控制状态同时提交的 Coordinator 事件：首次启动、恢复需求、Substrate RPC、容量拒绝、等待进出、Ready、资源释放与对应 Worker 采样。Runner FIFO 以 `legacy_runner_admission` 来源保留历史对照。调度研究采用 [Tier-1 仿真与 Tier-2 实机两级资格](SCHEDULING_RESEARCH_PATH.md)，由[注册表](../bench/configs/research-readiness.json)管理。固定准入语义对照使用独立运行入口，详见[控制面容量准入](NATIVE_ADMISSION.md)。
 
 ## 采集与证据
 
@@ -20,7 +20,7 @@ Native 模式按计划到达直接提交 AgentCloud API，物理容量以 Substr
 
 数据库 `staged_at` 表示事务内写入时刻，导出快照证明记录已提交可见。协调器 `observed_at_ns` 表示外部观察时刻，原有 lifecycle measurement 保留其自身测量口径。跨进程时间比较需要时钟校准；`execution_epoch_id` 标识协调器所见的逻辑 Epoch，恢复进程的 `runtime_incarnation` 还需外部签发与握手。
 
-原生 envelope 独立版本化，完整的 [v1.1.0 研究契约](RESEARCH_EVENT_CONTRACT.md)包含 318 字段、71 事件、25 表和 40 指标。当前 PostgreSQL 事件与生命周期观测提供已实现的来源，统一 ETL 与逐字段 `available_at` 仍列在资格闸门中。
+原生 envelope 独立版本化，完整的 [v1.1.0 研究契约](RESEARCH_EVENT_CONTRACT.md)包含 318 字段、71 事件、25 表和 40 指标，作为长期架构规范保存。当前采集和分析围绕核心观测集闭合；在线来源检查覆盖实际部署的策略输入。
 
 ## CPU 采集验收
 
@@ -61,4 +61,4 @@ python3 -m bench.research_gate
 
 启用采集会增加数据库写入和快照复制开销；Native 热路径使用现有 PostgreSQL 持久化。Legacy 文件采集保留 `capture_write_ns`，控制端整体采集成本与策略排序影响需要单独测量。原始协调器事件保留既有 `detail` 自由文本，导出按私有文件管理。本仓库的验收 fixture 使用受控数据。
 
-通过 `python3 -m bench.research_gate --require-comparison` 才开放算法执行。`bench.scale`、`bench.public_trace_live` 和对应 Actions 工作流在运行准备前检查资格。固定 `admission_semantics` 仅接受冻结的准入对照配置，其他研究门槛保持独立。算法来源可指定历史 commit，资格检查采用当前 workflow 的注册状态；既有封存实验继续按原协议解释。
+`python3 -m bench.research_gate --require-simulation` 检查 Tier-1，开放算法研发与模拟器；`--require-comparison` 检查 Tier-1 和完整 Tier-2，开放最终实机算法比较。`bench.scale`、`bench.public_trace_live` 和对应 Actions 工作流在运行准备前检查资格。固定 `admission_semantics` 接受冻结的准入对照配置；既有封存实验继续按原协议解释。

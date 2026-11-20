@@ -89,6 +89,8 @@ type Controller struct {
 	signalLocks         keyedMutex[string]
 	unhealthy           error
 	snapshotGCWake      chan struct{}
+	admissionWake       chan struct{}
+	nextAdmissionProbe  time.Time
 }
 
 func New(ctx context.Context, cfg Config) (*Controller, error) {
@@ -183,7 +185,7 @@ func New(ctx context.Context, cfg Config) (*Controller, error) {
 			return nil, err
 		}
 	}
-	c := &Controller{cfg: cfg, store: store, evidenceClock: evidenceClock, telemetry: telemetry, ownTelemetry: ownTelemetry, stranded: map[string]*strandedInterval{}, schedulerBusy: map[string]bool{}}
+	c := &Controller{cfg: cfg, store: store, evidenceClock: evidenceClock, telemetry: telemetry, ownTelemetry: ownTelemetry, stranded: map[string]*strandedInterval{}, schedulerBusy: map[string]bool{}, admissionWake: make(chan struct{}, 1)}
 	c.commitCond = sync.NewCond(&c.mu)
 	c.ctx, c.cancel = context.WithCancel(ctx)
 	if err = store.Load(&c.state); err != nil {
@@ -255,6 +257,7 @@ func New(ctx context.Context, cfg Config) (*Controller, error) {
 	go c.strandingLoop()
 	c.workers.Add(1)
 	go c.autonomousLoop()
+	c.wakeAdmission()
 	for i := 0; i < cfg.ModelConcurrency; i++ {
 		c.workers.Add(1)
 		go c.dispatchLoop()
@@ -321,6 +324,12 @@ func (c *Controller) persistContext(parent context.Context) error {
 		c.commitCond.Broadcast()
 	}
 	if err == nil {
+		for _, e := range c.pendingEvents {
+			if e.Kind == "admission.demand_persisted" || e.Kind == "admission.retry_notified" {
+				c.wakeAdmission()
+				break
+			}
+		}
 		c.dirty = map[string]map[string]bool{}
 		c.pendingEvents = map[string]Event{}
 		c.pendingObservations = map[string]RecordedMeasurement{}
@@ -978,6 +987,7 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 		c.readyAdmissionLocked(s, admission)
 	} else if !prepared {
 		c.admissionEventLocked(s, nil, "resource_released")
+		c.notifyCapacityReleaseLocked(c.state.EventSequence)
 	}
 	receipt.Status = "COMPLETED"
 	receipt.Manifest = manifest

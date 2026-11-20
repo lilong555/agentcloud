@@ -12,30 +12,33 @@ import (
 // AdmissionDemand belongs to the durable control plane. Backend capacity
 // refusals, rather than a configured slot count, determine admission waits.
 type AdmissionDemand struct {
-	ID             string                `json:"id"`
-	Kind           string                `json:"kind"`
-	Source         string                `json:"source"`
-	TenantID       string                `json:"tenant_id"`
-	SessionID      string                `json:"session_id"`
-	Epoch          uint64                `json:"epoch"`
-	OperationID    string                `json:"operation_id"`
-	Status         string                `json:"status"`
-	RequestedAt    time.Time             `json:"requested_at"`
-	ReceivedAt     time.Time             `json:"received_at"`
-	ClientSentAtNS string                `json:"client_sent_at_ns,omitempty"`
-	AttemptCount   uint64                `json:"attempt_count"`
-	LastAttemptAt  time.Time             `json:"last_attempt_at,omitempty"`
-	RetryAfter     time.Time             `json:"retry_after,omitempty"`
-	WaitingSince   time.Time             `json:"waiting_since,omitempty"`
-	CapacityWaitMS float64               `json:"capacity_wait_ms"`
-	WaitAgeMS      float64               `json:"wait_age_ms"`
-	BackendMS      float64               `json:"backend_ms"`
-	ReadyAt        *time.Time            `json:"ready_at,omitempty"`
-	Reason         string                `json:"reason,omitempty"`
-	RPCMethod      string                `json:"rpc_method,omitempty"`
-	RPCDurationMS  float64               `json:"rpc_duration_ms"`
-	RPCCode        string                `json:"rpc_code,omitempty"`
-	InitialActor   *substrateapi.Summary `json:"initial_actor,omitempty"`
+	ID              string                `json:"id"`
+	Kind            string                `json:"kind"`
+	Source          string                `json:"source"`
+	TenantID        string                `json:"tenant_id"`
+	SessionID       string                `json:"session_id"`
+	Epoch           uint64                `json:"epoch"`
+	OperationID     string                `json:"operation_id"`
+	Status          string                `json:"status"`
+	RequestedAt     time.Time             `json:"requested_at"`
+	ReceivedAt      time.Time             `json:"received_at"`
+	ClientSentAtNS  string                `json:"client_sent_at_ns,omitempty"`
+	AttemptCount    uint64                `json:"attempt_count"`
+	LastAttemptAt   time.Time             `json:"last_attempt_at,omitempty"`
+	RetryAfter      time.Time             `json:"retry_after,omitempty"`
+	WakePending     bool                  `json:"wake_pending,omitempty"`
+	RetryTrigger    string                `json:"retry_trigger,omitempty"`
+	ReleaseSequence uint64                `json:"release_sequence,omitempty"`
+	WaitingSince    time.Time             `json:"waiting_since,omitempty"`
+	CapacityWaitMS  float64               `json:"capacity_wait_ms"`
+	WaitAgeMS       float64               `json:"wait_age_ms"`
+	BackendMS       float64               `json:"backend_ms"`
+	ReadyAt         *time.Time            `json:"ready_at,omitempty"`
+	Reason          string                `json:"reason,omitempty"`
+	RPCMethod       string                `json:"rpc_method,omitempty"`
+	RPCDurationMS   float64               `json:"rpc_duration_ms"`
+	RPCCode         string                `json:"rpc_code,omitempty"`
+	InitialActor    *substrateapi.Summary `json:"initial_actor,omitempty"`
 }
 
 type arrivalKey struct{}
@@ -94,9 +97,64 @@ func (c *Controller) startAdmissionLocked(s *Session, d *AdmissionDemand) {
 		c.admissionEventLocked(s, d, "waiting_capacity_exited")
 	}
 	d.Status, d.Reason = "ATTEMPTING", ""
+	if !d.WakePending && d.RetryTrigger == "slot_release" {
+		d.RetryTrigger, d.ReleaseSequence = "direct_retry", 0
+	}
+	d.WakePending = false
+	if d.RetryTrigger == "" {
+		d.RetryTrigger = "request"
+	}
 	d.AttemptCount++
 	d.LastAttemptAt, d.RetryAfter = now, time.Time{}
 	c.admissionEventLocked(s, d, "attempt_started")
+}
+
+func (c *Controller) wakeAdmission() {
+	select {
+	case c.admissionWake <- struct{}{}:
+	default:
+	}
+}
+
+func activeAdmission(s *Session) *AdmissionDemand {
+	if s == nil || !pendingAdmission(s) {
+		return nil
+	}
+	for _, d := range s.Admissions {
+		if d.Epoch == s.Epoch && (d.Status == "PENDING" || d.Status == "WAITING_CAPACITY") {
+			return d
+		}
+	}
+	return nil
+}
+
+// One committed release wakes the oldest durable demand. It is an opportunity
+// to ask Substrate, not a reservation or a statement about physical capacity.
+func (c *Controller) notifyCapacityReleaseLocked(sequence uint64) {
+	var selected *Session
+	var oldest *AdmissionDemand
+	for _, s := range c.state.Sessions {
+		d := activeAdmission(s)
+		if d == nil || d.WakePending {
+			continue
+		}
+		if oldest == nil || d.RequestedAt.Before(oldest.RequestedAt) ||
+			d.RequestedAt.Equal(oldest.RequestedAt) && key(s.TenantID, s.SessionID) < key(selected.TenantID, selected.SessionID) {
+			selected, oldest = s, d
+		}
+	}
+	if oldest == nil {
+		return
+	}
+	oldest.WakePending, oldest.RetryTrigger, oldest.ReleaseSequence = true, "slot_release", sequence
+	oldest.RetryAfter = time.Time{}
+	for _, r := range selected.Lifecycle {
+		if r.Action == "resume" && r.Epoch == selected.Epoch && r.Status == "WAITING_CAPACITY" {
+			r.RetryAfter = time.Time{}
+			c.markEntity("lifecycle", key(selected.TenantID, selected.SessionID)+"/"+r.OperationID)
+		}
+	}
+	c.admissionEventLocked(selected, oldest, "retry_notified")
 }
 
 func (c *Controller) waitAdmissionLocked(s *Session, d *AdmissionDemand, err error) {

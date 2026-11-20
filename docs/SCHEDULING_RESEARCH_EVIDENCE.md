@@ -2,7 +2,7 @@
 
 AgentCloud 已具备可运行的动作条件化 KV 成本模型、真实 MEMORY 生命周期及双 Mocker 联合实验。当前最清晰的研究问题是首次准入等待、异构恢复成本和快照 I/O；现有联合 Gate 2 显示资源开销增加，调度收益需要更完整的观测与独立负载验证。
 
-**当前执行范围：权威数据审计与观测基础验收。** 算法对照由[机器可检验资格注册](../bench/configs/research-readiness.json)控制；六项资格齐备后才开放运行。当前可运行全量元数据审计、离线契约检查和 CPU 原生采集验收。
+**当前执行范围：Native 排队归因、核心观测集与两源事件资格。** [依赖路径](SCHEDULING_RESEARCH_PATH.md)固定五个阶段；[资格注册](../bench/configs/research-readiness.json)将仿真研发 Tier-1 与最终实机 Tier-2 分开。核心事务事件与 Worker 采样构成当前观测范围，完整契约保留为长期规范。
 
 证据入口：[最终 Checklist](FINAL_RELEASE_CHECKLIST.md) · [数据集审计](DATASET_RESEARCH_AUDIT.md) · [事件契约与检查器](RESEARCH_EVENT_CONTRACT.md) · [完整外部研究报告](research/2026-11-20/AgentCloud_Research_Audit_2026-11-20.html)。外部报告固定源码 `d9ed974d22a0d56cc36f4507f7236128c842bc49`；当前联合实测固定源码 `609a58d9081b3340ab57f99b2c249be24871d376`。每组结果使用自身的源码、环境和请求分母。
 
@@ -46,9 +46,11 @@ hard affinity 表达绑定约束，CACHE／LOAD 评分在约束允许的候选�
 
 当前 ReproPatch＋OpenHands 工作负载在两规模五种子并集中覆盖 136 个任务、200 条轨迹、101 个仓库。N64 ReproPatch 每种子抽取 21/22 个任务，种子两两任务 Jaccard 为 0.9091；约 81.89% 的非末轮等待采用建模值，约 99.76% 的回放等待时间来自该建模部分。它提供可重复的请求链、前缀和系统压力；真实等待分布与跨任务泛化使用独立数据验证。完整分母见 [workload audit](evidence/joint-kv-workload-audit.json)。
 
-FreeInference 用于筛选成功人口的 API 等待与上下文增长；TraceLab 用于独立 Harness 的合格局部窗口；AgentLogs 用于云端 Session 到达、结束、状态与任务家族；Alibaba 2017 用于机器放置、资源归一化与容量竞争。来源间的混合工作负载明确登记合成到达、工作集和资源映射，原始联合相关性由 AgentCloud 原生测量补齐。
+活动数据源为 AgentLogs 与 FreeInference，事件资格通过后冻结主数据与独立泛化角色。FreeInference 提供筛选成功人口的 API 等待和上下文增长，AgentLogs 提供云端任务家族与日志事件。TraceLab、Alibaba 2017 和 ReproPatch 的已有审计归入历史证据。资源与 MEMORY 成本由 AgentCloud 原生测量提供，合成压力保留独立来源标记。
 
-## 研究验收顺序
+## 历史能力与证据覆盖
+
+以下 G0～G5 描述已有证据覆盖，执行顺序与退出条件采用[两级闸门及五阶段路径](SCHEDULING_RESEARCH_PATH.md)。
 
 | 闸门 | 交付与验收 | 当前状态 |
 | --- | --- | --- |

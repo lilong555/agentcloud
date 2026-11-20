@@ -142,10 +142,11 @@ def audit_coordinator_admission(path, *, require_capacity=False, require_rpc=Tru
     errors, incomplete = [], []
     demands, owners, counts, methods = {}, {}, Counter(), Counter()
     run_id=None; releases=0; delays=[];rpc_durations={};rpc_codes={}
+    release_sequences=set(); notifications={}; notified_sequences=set()
     statuses={'PENDING','ATTEMPTING','WAITING_CAPACITY','READY','OUTCOME_UNKNOWN'}
     known={'request_received','demand_persisted','attempt_started','rpc_started','rpc_completed',
         'capacity_rejected','waiting_capacity_entered','waiting_capacity_exited','actor_created',
-        'actor_ready','outcome_unknown','resource_released'}
+        'actor_ready','outcome_unknown','resource_released','retry_notified'}
     identity_fields=('id','kind','source','tenant_id','session_id','epoch','operation_id',
         'requested_at','received_at','client_sent_at_ns')
 
@@ -165,6 +166,7 @@ def audit_coordinator_admission(path, *, require_capacity=False, require_rpc=Tru
         owner=(event.get('tenant_id'),event.get('session_id'),event.get('epoch'),event.get('actor_uid'))
         if kind=='resource_released':
             releases+=1
+            release_sequences.add(event.get('sequence'))
             if owner not in owners: errors.append('release_without_matching_ready')
             else: owners.pop(owner)
             if event.get('admission_snapshot'): errors.append('release_has_demand_snapshot')
@@ -213,6 +215,11 @@ def audit_coordinator_admission(path, *, require_capacity=False, require_rpc=Tru
             if not demand['events']['demand_persisted']: incomplete.append('demand_persisted_missing')
             demand['attempt']=attempt
             demand['last_rpc_code']=None;demand['last_rpc_method']=None
+            if snapshot.get('retry_trigger')=='slot_release':
+                release=snapshot.get('release_sequence')
+                if notifications.get(release)!=key: errors.append('release_retry_without_notification')
+                else: notifications.pop(release)
+                if snapshot.get('wake_pending'): errors.append('release_notification_unconsumed')
         elif attempt!=demand['attempt']: errors.append('attempt_count_changed_outside_start')
         if kind in ('request_received','demand_persisted'):
             if snapshot.get('status')!='PENDING' or attempt!=0: errors.append('invalid_pending_admission')
@@ -222,7 +229,15 @@ def audit_coordinator_admission(path, *, require_capacity=False, require_rpc=Tru
                 delays.append(received*1000-int(client)/1e6)
         elif kind in ('attempt_started','rpc_started','rpc_completed','actor_created'):
             if snapshot.get('status')!='ATTEMPTING' or attempt<1: errors.append('invalid_attempt_status')
-        if kind=='rpc_started':
+        if kind=='retry_notified':
+            release=snapshot.get('release_sequence')
+            if (snapshot.get('status') not in ('PENDING','WAITING_CAPACITY')
+                    or not snapshot.get('wake_pending') or snapshot.get('retry_trigger')!='slot_release'
+                    or release not in release_sequences or release in notified_sequences):
+                errors.append('invalid_release_notification')
+            notifications[release]=key
+            notified_sequences.add(release)
+        elif kind=='rpc_started':
             method=snapshot.get('rpc_method')
             if method not in ('CreateActor','ResumeActor'): errors.append('invalid_admission_rpc_method')
             if demand['rpc']: errors.append('overlapping_admission_rpc')
@@ -282,6 +297,7 @@ def audit_coordinator_admission(path, *, require_capacity=False, require_rpc=Tru
     if any(not demand['terminal'] for demand in demands.values()): incomplete.append('open_admission_at_close')
     if any(demand['rpc'] for demand in demands.values()): incomplete.append('rpc_completed_missing')
     if owners: incomplete.append('ready_allocation_without_release')
+    if notifications: incomplete.append('release_notification_unconsumed_at_close')
     capacity_episodes=sum(demand['capacity_waits']>0 for demand in demands.values())
     if require_capacity and not capacity_episodes: incomplete.append('capacity_wait_coverage_missing')
     if require_capacity and not any(d['capacity_waits'] and d['events']['actor_ready'] for d in demands.values()):

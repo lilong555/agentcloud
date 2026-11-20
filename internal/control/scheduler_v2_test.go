@@ -320,6 +320,13 @@ func TestShadowComputesOldCostWithoutAutonomousActions(t *testing.T) {
 	if s.State != "SUSPENDED" || s.Epoch != 1 || s.Autonomous.Evidence.ComputedAction != "RESUME" || len(s.Lifecycle) != 1 {
 		t.Fatalf("shadow resumed: %+v", s)
 	}
+	lastEvaluation := s.Autonomous.LastEvaluatedAt
+	c.wakeAdmission()
+	time.Sleep(50 * time.Millisecond)
+	s, _ = c.Get("tenant-a", "shadow")
+	if !s.Autonomous.LastEvaluatedAt.Equal(lastEvaluation) || s.State != "SUSPENDED" {
+		t.Fatalf("admission wake repeatedly evaluated shadow policy: %+v", s.Autonomous)
+	}
 	_, _, err = c.Lifecycle(context.Background(), "tenant-a", "shadow", "resume", LifecycleRequest{OperationID: "ttl-resume", ExpectedEpoch: 1})
 	if err != nil {
 		t.Fatal(err)

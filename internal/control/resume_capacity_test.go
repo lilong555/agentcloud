@@ -204,11 +204,14 @@ func TestAutonomousCapacityRetryReusesOneReceiptAndReturnDemand(t *testing.T) {
 	cfg.EnableAutonomousScheduler = true
 	cfg.SchedulerInterval = time.Hour
 	c := newTestController(t, cfg)
-	s := suspendCapacitySession(t, c, "suspend")
+	suspendCapacitySession(t, c, "suspend")
 	if _, err := c.ReturnDemand(context.Background(), "tenant-a", "capacity", LifecycleRequest{OperationID: "return", ExpectedEpoch: 1}); err != nil {
 		t.Fatal(err)
 	}
-	c.autonomousStep(s)
+	waitFor(t, func() bool {
+		s, _ := c.Get("tenant-a", "capacity")
+		return s.State == "SUSPENDED" && s.Autonomous.Reason == "await_worker_capacity_retry"
+	})
 	waiting, _ := c.Get("tenant-a", "capacity")
 	op := waiting.Autonomous.LastOperationID
 	if op == "" || !waiting.Autonomous.ReturnDemand || waiting.ReturnDemands["return"].Status != "PENDING" || waiting.Autonomous.Reason != "await_worker_capacity_retry" {

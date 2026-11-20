@@ -473,6 +473,10 @@ func TestAdmissionReadyFeedbackPreservesNextEpochReturn(t *testing.T) {
 	defer close(sink.release)
 	backend.allowed.Store(true)
 	suspendCapacitySession(t, c, "suspend")
+	// Hold the scheduler claim while the controlled feedback interleaving runs.
+	c.lock()
+	c.schedulerBusy[key("tenant-a", "capacity")] = true
+	c.mu.Unlock()
 	if _, err := c.ReturnDemand(context.Background(), "tenant-a", "capacity", LifecycleRequest{OperationID: "return-1", ExpectedEpoch: 1}); err != nil {
 		t.Fatal(err)
 	}
@@ -505,9 +509,12 @@ func TestAdmissionReadyFeedbackPreservesNextEpochReturn(t *testing.T) {
 	if s.ReturnDemands["return-1"].Status != "COMPLETED" || s.ReturnDemands["return-2"].Status != "PENDING" || !s.Autonomous.ReturnDemand {
 		t.Fatalf("ready feedback changed the next epoch demand: %+v", s.ReturnDemands)
 	}
-	c.advanceAdmission(context.Background(), s)
-	s, _ = c.Get("tenant-a", "capacity")
-	if s.Epoch != 3 || s.ReturnDemands["return-2"].Status != "COMPLETED" {
-		t.Fatal("next epoch demand did not advance")
-	}
+	c.lock()
+	delete(c.schedulerBusy, key("tenant-a", "capacity"))
+	c.wakeAdmission()
+	c.mu.Unlock()
+	waitFor(t, func() bool {
+		s, _ := c.Get("tenant-a", "capacity")
+		return s.Epoch == 3 && s.ReturnDemands["return-2"].Status == "COMPLETED"
+	})
 }

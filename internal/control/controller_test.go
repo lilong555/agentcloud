@@ -319,6 +319,11 @@ func TestPostgresRestartKeepsUnknownAndClosedGate(t *testing.T) {
 
 func TestHTTPIdentityStrictDecodeAndEndToEnd(t *testing.T) {
 	c := newTestController(t, testConfig(t))
+	// Reserve this session for the explicit lifecycle API assertions below.
+	// Event-driven return progression is exercised by the admission tests.
+	c.lock()
+	c.schedulerBusy[key("tenant-a", "http")] = true
+	c.mu.Unlock()
 	server := httptest.NewServer(c.Handler())
 	defer server.Close()
 	call := func(method, path, token, body string) (int, map[string]any) {

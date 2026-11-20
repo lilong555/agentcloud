@@ -113,6 +113,21 @@ class NativeAdmissionCaptureTests(unittest.TestCase):
         events=[e for e in events if e['kind'] not in ('admission.capacity_rejected','admission.waiting_capacity_entered','admission.waiting_capacity_exited')]
         self.assertIn('capacity_wait_coverage_missing',self.audit(events,require_capacity=True)['incomplete'])
 
+    def test_release_notification_requires_real_release_and_matching_consumption(self):
+        events=self.fixture(resume=True)
+        index=next(i for i,e in enumerate(events) if e['kind']=='admission.attempt_started'
+            and e['admission_snapshot']['kind']=='resume_admission')
+        release=next(i+1 for i,e in enumerate(events) if e['kind']=='admission.resource_released')
+        notification=deepcopy(events[index-1]);notification['kind']='admission.retry_notified'
+        notification['admission_snapshot'].update(wake_pending=True,retry_trigger='slot_release',release_sequence=release)
+        events.insert(index,notification)
+        events[index+1]['admission_snapshot'].update(wake_pending=False,retry_trigger='slot_release',release_sequence=release)
+        self.assertEqual(self.audit(events)['status'],'passed')
+        bad=deepcopy(events);bad[index]['admission_snapshot']['release_sequence']=999999
+        self.assertIn('invalid_release_notification',self.audit(bad)['errors'])
+        bad=deepcopy(events);bad.pop(index)
+        self.assertIn('release_retry_without_notification',self.audit(bad)['errors'])
+
 
 class NativeDriverTests(unittest.TestCase):
     def setup_args(self, directory, mode='native'):

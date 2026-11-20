@@ -15,7 +15,7 @@
     },
     "native_capture_integrity": {
       "status": "partial",
-      "requirement": "Complete PostgreSQL Coordinator admission demand, capacity-rejection/retry, CreateActor/ResumeActor RPC, ready and release chains; runtime receipts and cross-producer identities on the target MEMORY runtime, with measured capture overhead. Historical FairSlots captures retain their legacy runner-admission scope.",
+      "requirement": "Complete PostgreSQL Coordinator admission demand, capacity-rejection/retry, CreateActor/ResumeActor RPC, ready and release chains; restart recovery, runtime receipts and cross-producer identities on the target MEMORY runtime, with measured capture overhead. Historical FairSlots captures retain their legacy runner-admission scope.",
       "evidence": [
         {
           "evidence": "docs/evidence/research/2026-11-20/native-capture-local/manifest.json",
@@ -37,7 +37,7 @@
     },
     "physical_cost_calibration": {
       "status": "pending",
-      "requirement": "Target-environment MEMORY lifecycle, RSS/charge and device I/O, failures and concurrency; held-out calibration error.",
+      "requirement": "Target-environment MEMORY lifecycle, RSS/charge and device I/O, failures and concurrency; held-out calibration error against frozen tolerance.",
       "evidence": []
     },
     "closed_loop_DAG_validation": {
@@ -52,7 +52,38 @@
     },
     "independent_statistical_design": {
       "status": "pending",
-      "requirement": "Frozen primary metrics, complete planned/offered denominators, family/time holdout, paired runner units, failure treatment and calibration tolerance.",
+      "requirement": "Frozen primary metrics, complete planned/offered denominators, family/time holdout, paired runner units across multiple independent seeds, failure treatment and calibration tolerance.",
+      "evidence": []
+    }
+  },
+  "tier1_gates": {
+    "event_distribution_and_family_time_split": {
+      "status": "pending",
+      "requirement": "Event-level wait and tool distributions for AgentLogs and FreeInference, with family-isolated temporal splits and frozen source hashes; freeze primary and independent-validation roles after event qualification.",
+      "evidence": []
+    },
+    "stratified_memory_costs": {
+      "status": "pending",
+      "requirement": "Real Substrate MEMORY measurements for every frozen heap/concurrency coordinate: sample counts, checkpoint/resume p50 and p95, physical RSS, memory charge, physical snapshot write bytes and filesystem used-space watermark. Each metric identifies its collector and raw-table column; independent raw and fitted tables have verified SHA256, and the fitted table cites its raw source hash.",
+      "target_coordinates": [
+        {"heap_mib": 16, "concurrency": 1},
+        {"heap_mib": 16, "concurrency": 4},
+        {"heap_mib": 64, "concurrency": 1},
+        {"heap_mib": 64, "concurrency": 4},
+        {"heap_mib": 128, "concurrency": 1},
+        {"heap_mib": 128, "concurrency": 4}
+      ],
+      "evidence": []
+    },
+    "native_queue_without_polling_noise": {
+      "status": "pending",
+      "requirement": "Native admission wakes from capacity-release events with bounded fallback retry. Independently qualify measured release-to-eligible-attempt p95/max latency, fallback-attempt fraction, and bounded eligible wait by tenant against budgets frozen before the new runtime validation.",
+      "acceptance_limits": {
+        "release_to_eligible_attempt_p95_ms": 100,
+        "release_to_eligible_attempt_max_ms": 250,
+        "fallback_attempt_fraction": 0.5,
+        "eligible_wait_max_ms": 250
+      },
       "evidence": []
     }
   }

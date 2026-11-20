@@ -200,16 +200,30 @@ func (c *Controller) autonomousLoop() {
 	defer ticker.Stop()
 	semaphore := make(chan struct{}, c.cfg.SchedulerConcurrency)
 	for {
+		policyTick := false
 		select {
 		case <-c.ctx.Done():
 			return
 		case <-ticker.C:
+			policyTick = true
+		case <-c.admissionWake:
+		}
+		{
 			c.lock()
+			now := time.Now()
 			var candidates []*Session
 			if c.ready() == nil {
 				for _, s := range c.state.Sessions {
 					if pendingAdmission(s) {
-						if d := s.Admissions["initial"]; s.State == "WAITING_CAPACITY" && d != nil && time.Now().Before(d.RetryAfter) {
+						if c.cfg.SchedulerShadow && s.State != "WAITING_CAPACITY" && !policyTick {
+							continue
+						}
+						d := activeAdmission(s)
+						if d == nil && !policyTick {
+							continue
+						}
+						if d != nil && !d.WakePending && d.Status != "PENDING" &&
+							(!policyTick || now.Before(d.RetryAfter) || now.Before(c.nextAdmissionProbe)) {
 							continue
 						}
 						if !c.schedulerBusy[key(s.TenantID, s.SessionID)] {
@@ -217,7 +231,7 @@ func (c *Controller) autonomousLoop() {
 						}
 						continue
 					}
-					if !c.cfg.EnableAutonomousScheduler {
+					if !policyTick || !c.cfg.EnableAutonomousScheduler {
 						continue
 					}
 					if s.AblationGroup != "" && s.AblationGroup != "E" {
@@ -255,6 +269,28 @@ func (c *Controller) autonomousLoop() {
 				}
 			}
 			sort.Slice(candidates, func(i, j int) bool {
+				aSession := c.state.Sessions[key(candidates[i].TenantID, candidates[i].SessionID)]
+				bSession := c.state.Sessions[key(candidates[j].TenantID, candidates[j].SessionID)]
+				da, db := activeAdmission(aSession), activeAdmission(bSession)
+				if da != nil || db != nil {
+					if da == nil || db == nil {
+						return da != nil
+					}
+					if da.WakePending != db.WakePending {
+						return da.WakePending
+					}
+					if da.Status != db.Status {
+						return da.Status == "PENDING"
+					}
+					// Rotate fallback probes across waiters, including different resource shapes.
+					if !da.WakePending && !da.LastAttemptAt.Equal(db.LastAttemptAt) {
+						return da.LastAttemptAt.Before(db.LastAttemptAt)
+					}
+					if !da.RequestedAt.Equal(db.RequestedAt) {
+						return da.RequestedAt.Before(db.RequestedAt)
+					}
+					return key(da.TenantID, da.SessionID) < key(db.TenantID, db.SessionID)
+				}
 				var a, b time.Time
 				if candidates[i].Autonomous != nil {
 					a = candidates[i].Autonomous.LastEvaluatedAt
@@ -265,8 +301,17 @@ func (c *Controller) autonomousLoop() {
 				return a.Before(b)
 			})
 			for _, s := range candidates {
+				d := activeAdmission(c.state.Sessions[key(s.TenantID, s.SessionID)])
+				fallback := d != nil && d.Status == "WAITING_CAPACITY" && !d.WakePending
+				if fallback && now.Before(c.nextAdmissionProbe) {
+					continue
+				}
 				select {
 				case semaphore <- struct{}{}:
+					if fallback {
+						c.nextAdmissionProbe = now.Add(resumeCapacityRetryDelay)
+						d.RetryTrigger, d.ReleaseSequence = "fallback", 0
+					}
 					k := key(s.TenantID, s.SessionID)
 					c.schedulerBusy[k] = true
 					c.operations.Add(1)
@@ -276,6 +321,7 @@ func (c *Controller) autonomousLoop() {
 							<-semaphore
 							c.lock()
 							delete(c.schedulerBusy, key(snapshot.TenantID, snapshot.SessionID))
+							c.wakeAdmission()
 							c.mu.Unlock()
 						}()
 						c.autonomousStep(snapshot)

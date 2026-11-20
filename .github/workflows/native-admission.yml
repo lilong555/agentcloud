@@ -85,6 +85,8 @@ jobs:
       - name: Collect runtime evidence
         if: always()
         run: python3 scripts/ci_live_collect.py
+      - name: Validate committed capacity wait across Coordinator SIGKILL
+        run: python3 -m bench.native_restart --output artifacts/admission-restart
       - name: Release owned resources
         if: always()
         run: |
@@ -113,6 +115,8 @@ jobs:
             if source.exists(): shutil.copy2(source,out/name)
           source=Path('artifacts/admission-capacity')
           if source.exists(): shutil.copytree(source,out/'controlled-capacity')
+          source=Path('artifacts/admission-restart')
+          if source.exists(): shutil.copytree(source,out/'memory-restart')
           files=[dict(path=str(p.relative_to(out)),sha256=hashlib.sha256(p.read_bytes()).hexdigest(),bytes=p.stat().st_size) for p in sorted(out.rglob('*')) if p.is_file()]
           (out/'inventory.json').write_text(json.dumps(dict(source_commit=os.environ['GITHUB_SHA'],github_run_id=os.environ['GITHUB_RUN_ID'],github_run_attempt=os.environ['GITHUB_RUN_ATTEMPT'],files=files),indent=2)+'\n')
           PY
