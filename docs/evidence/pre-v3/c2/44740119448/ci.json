@@ -1,0 +1,266 @@
+{
+  "schema_version": 1,
+  "source_commit": "394b6e25b38e1b72a5edd6398f8057358c54e87e",
+  "run_url": "https://github.com/lilong555/agentcloud/actions/runs/44740119448",
+  "status": "passed",
+  "artifact": {
+    "id": 14631050931,
+    "name": "verification-evidence",
+    "bytes": 1628123,
+    "sha256": "04aed9b6c8591e542b8a174284d855e285080c84fb518cd2511f8a0bfcd7410a",
+    "digest_verified": true
+  },
+  "commands": [
+    {
+      "name": "race-tests",
+      "command": [
+        "go",
+        "test",
+        "-p",
+        "2",
+        "-race",
+        "-count=1",
+        "-json",
+        "./..."
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "vet",
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "tooling-tests",
+      "command": [
+        "/opt/hostedtoolcache/Python/3.13.18/x64/bin/python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests/tooling",
+        "-v"
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "runtime-tests",
+      "command": [
+        "/opt/hostedtoolcache/Python/3.13.18/x64/bin/python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests/python",
+        "-v"
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "python-syntax",
+      "command": [
+        "/opt/hostedtoolcache/Python/3.13.18/x64/bin/python3",
+        "-m",
+        "compileall",
+        "-q",
+        "-x",
+        "[/\\\\](\\.venv|__pycache__)[/\\\\]",
+        "scripts",
+        "experiments",
+        "runtime",
+        "adapters",
+        "bench",
+        "tests/faults"
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "replay",
+      "command": [
+        "go",
+        "run",
+        "./cmd/agentcloud",
+        "replay",
+        "--input",
+        "fixtures/signals/demo.jsonl",
+        "--output",
+        "artifacts/replay-demo.json"
+      ],
+      "status": "passed",
+      "exit_code": 0
+    }
+  ],
+  "go_top_level_counts": {
+    "pass": 199
+  },
+  "go_raw_sha256": "5e737bf3eb82fa7e1f7b5364dcf109873f0fac97fa5b7929114ec75600bdda18",
+  "go_raw_artifact_path": "docs/evidence/logs/local-20261120T125934514657Z/race-tests.stdout.log",
+  "python": {
+    "tooling-tests": {
+      "ran": 371,
+      "passed": 365,
+      "skipped": 6,
+      "log_sha256": "81d1340d2066d0f6d141fcf939d516fa4cc7e31f4407214f0d5ba90e606096c3",
+      "skip_lines": [
+        "test_all_states_missing_invalid_and_negative_endpoints_retained (test_agentlogs_population.PopulationSQLTests.test_all_states_missing_invalid_and_negative_endpoints_retained) ... skipped 'install scripts/research-requirements.txt to run SQL population fixtures'",
+        "test_composite_workflow_join_missing_and_ambiguous_keys_keep_denominator (test_agentlogs_population.PopulationSQLTests.test_composite_workflow_join_missing_and_ambiguous_keys_keep_denominator) ... skipped 'install scripts/research-requirements.txt to run SQL population fixtures'",
+        "test_duplicate_identifiers_are_retained_and_excluded_from_interval_cohort (test_agentlogs_population.PopulationSQLTests.test_duplicate_identifiers_are_retained_and_excluded_from_interval_cohort) ... skipped 'install scripts/research-requirements.txt to run SQL population fixtures'",
+        "test_half_open_boundaries_do_not_double_count_adjacent_sessions (test_agentlogs_population.PopulationSQLTests.test_half_open_boundaries_do_not_double_count_adjacent_sessions) ... skipped 'install scripts/research-requirements.txt to run SQL population fixtures'",
+        "test_shared_session_task_aliases_form_one_family (test_agentlogs_population.PopulationSQLTests.test_shared_session_task_aliases_form_one_family) ... skipped 'install scripts/research-requirements.txt to run SQL population fixtures'",
+        "test_metadata_query_and_synthetic_provenance (test_prev3_arrivals.ArrivalsTests.test_metadata_query_and_synthetic_provenance) ... skipped 'DuckDB required for metadata SQL'"
+      ]
+    },
+    "runtime-tests": {
+      "ran": 62,
+      "passed": 58,
+      "skipped": 4,
+      "log_sha256": "909e195422a7d934ca730e00e7f170fb0342bc138c2f74e2c78312f0a3876714",
+      "skip_lines": [
+        "test_deerflow (unittest.loader.ModuleSkipped.test_deerflow) ... skipped '\u8fd0\u884c adapters/deerflow/setup.sh \u5b89\u88c5\u771f\u5b9e\u4e0a\u6e38\u5951\u7ea6\u4f9d\u8d56'",
+        "test_deerflow_deep_graph (unittest.loader.ModuleSkipped.test_deerflow_deep_graph) ... skipped '\u5728DeerFlow venv\u8fd0\u884c\u771f\u5b9e\u4e0a\u6e38\u5b50Agent\u56fe\u6d4b\u8bd5'",
+        "test_deerflow_events (unittest.loader.ModuleSkipped.test_deerflow_events) ... skipped 'DeerFlow event lifecycle tests run in the locked adapter environment'",
+        "test_deerflow_store (unittest.loader.ModuleSkipped.test_deerflow_store) ... skipped '\u5728DeerFlow venv\u8fd0\u884c\u539f\u751f\u68c0\u67e5\u70b9\u6d4b\u8bd5'"
+      ]
+    }
+  },
+  "native_capture": {
+    "status": "passed",
+    "actual_fidelity": "VOLUMES",
+    "runtime": "local-volumes",
+    "execution_kind": "controlled-local-coordinator-admission-capture",
+    "coordinator_starts": 2,
+    "final_state": "SUSPENDED",
+    "epoch_after_resume": 2,
+    "capacity_semantics": "pending_real_substrate_capacity_evidence"
+  },
+  "capture_quality": {
+    "admission_mode": "native",
+    "checks": {
+      "coordinator": {
+        "errors": [],
+        "incomplete": [],
+        "records": 50,
+        "run_id": "research_5f8cf1defcb54c749e672b1c91a05310",
+        "scope": "committed_records; staged_at is transaction staging, export snapshot proves visibility",
+        "source_instances": 2,
+        "status": "passed",
+        "streams": {
+          "events": 27,
+          "observations": 23
+        }
+      },
+      "coordinator_admission": {
+        "capacity_wait_episodes": 0,
+        "client_to_received": {
+          "clock_quality": "cross-clock wall-time estimate; no clock synchronization bound measured",
+          "estimated_ms": [
+            0.250244140625,
+            0.208984375
+          ],
+          "samples": 2
+        },
+        "counts": {
+          "admission.actor_ready": 2,
+          "admission.attempt_started": 2,
+          "admission.demand_persisted": 2,
+          "admission.request_received": 2,
+          "admission.resource_released": 2
+        },
+        "demands": 2,
+        "errors": [],
+        "incomplete": [],
+        "qualification_scope": "coordinator_admission_capture",
+        "releases": 2,
+        "require_capacity": false,
+        "require_rpc": false,
+        "rpc_methods": {},
+        "run_id": "research_5f8cf1defcb54c749e672b1c91a05310",
+        "source": "coordinator_admission",
+        "status": "passed",
+        "timing_ms": {
+          "initial_admission": {
+            "attempts": 1,
+            "backend": {
+              "maximum": 0.144152,
+              "p50": 0.144152,
+              "p95": 0.144152,
+              "samples": 1,
+              "total": 0.144152
+            },
+            "capacity_rejections": 0,
+            "capacity_wait": {
+              "maximum": 0,
+              "p50": 0,
+              "p95": 0,
+              "samples": 1,
+              "total": 0
+            },
+            "demands": 1,
+            "outcome_unknown": 0,
+            "ready": 1,
+            "wait_age": {
+              "maximum": 5.37395,
+              "p50": 5.37395,
+              "p95": 5.37395,
+              "samples": 1,
+              "total": 5.37395
+            }
+          },
+          "resume_admission": {
+            "attempts": 1,
+            "backend": {
+              "maximum": 0.833058,
+              "p50": 0.833058,
+              "p95": 0.833058,
+              "samples": 1,
+              "total": 0.833058
+            },
+            "capacity_rejections": 0,
+            "capacity_wait": {
+              "maximum": 0,
+              "p50": 0,
+              "p95": 0,
+              "samples": 1,
+              "total": 0
+            },
+            "demands": 1,
+            "outcome_unknown": 0,
+            "ready": 1,
+            "wait_age": {
+              "maximum": 5.741701,
+              "p50": 5.741701,
+              "p95": 5.741701,
+              "samples": 1,
+              "total": 5.741701
+            }
+          },
+          "rpc": {}
+        }
+      }
+    },
+    "qualification_scope": "coordinator_admission_capture",
+    "qualifies": [],
+    "remaining_gates": [
+      "dataset_use_case_qualification",
+      "native_capture_integrity",
+      "physical_cost_calibration",
+      "closed_loop_DAG_validation",
+      "complete_online_feature_lineage",
+      "independent_statistical_design"
+    ],
+    "scheduling_comparison_admitted": false,
+    "schema_version": 1,
+    "status": "passed"
+  },
+  "remote_archive": "cannlab:/mnt/workspace/agentcloud-prev3-20261120/ci-44740119448/artifact.zip",
+  "scope": "Engineering validation and controlled VOLUMES/PostgreSQL restart capture; physical MEMORY calibration has its separate receipt"
+}

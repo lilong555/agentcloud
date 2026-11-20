@@ -1,0 +1,436 @@
+{
+  "schema_version": 1,
+  "research_status": "exploratory",
+  "status": "failed",
+  "source_commit": "a0a683b02c1a20d69373c57e4ff5ac9d26bfba3c",
+  "github_run_id": "44736059816",
+  "trace_sha256": "79e5dfa1c9ff14eb970d542fc78d6e21090abf9250c49541d1979944e3ae93c9",
+  "cost_sha256": "810bf6a8c795e6d1e4579e4128247f91ab2783fce9115a740af65cd63261906b",
+  "inventory_files": 17,
+  "errors": [],
+  "trials": [
+    {
+      "trial_id": "calibration-static-2-b99e46f92d",
+      "policy": "static-2",
+      "status": "failed",
+      "failures": [
+        "cleanup_success",
+        "ephemeral_postgres_database_released",
+        "trial_failed",
+        "session_denominator",
+        "post_measurement_retirement",
+        "event_qualification"
+      ],
+      "original_error": "session failure; planned requests retained in denominator",
+      "original_validation_errors": [
+        "symmetric Program E feedback or terminal FINAL count differs from frozen protocol",
+        "research capture export: research capture qualification failed",
+        "native_program_active: Dynamo finalization requires no program and no active requests",
+        "native_program_active: Dynamo finalization requires no program and no active requests",
+        "native_program_active: Dynamo finalization requires no program and no active requests",
+        "native_program_active: Dynamo finalization requires no program and no active requests",
+        "native_program_active: Dynamo finalization requires no program and no active requests",
+        "native_program_active: Dynamo finalization requires no program and no active requests",
+        "native_program_active: Dynamo finalization requires no program and no active requests",
+        "native_program_active: Dynamo finalization requires no program and no active requests",
+        "native binding capacity remains allocated after terminal turns",
+        "research capture export: research capture qualification failed"
+      ],
+      "nodes": {
+        "status": "passed",
+        "errors": [],
+        "planned_events": 68,
+        "recorded_events": 68,
+        "planned_models": 38,
+        "model_requests": 38,
+        "native_proxy_records": 38,
+        "node_elapsed_minus_source_ms": {
+          "model_wait": {
+            "samples": 38,
+            "p50": 1198.0770025253296,
+            "p95": 1354.2781042098998,
+            "maximum": 3606.141944885254
+          },
+          "active": {
+            "samples": 29,
+            "p50": 1661.1418342590332,
+            "p95": 7408.5250244140625,
+            "maximum": 7814.233631134033
+          },
+          "user_idle": {
+            "samples": 1,
+            "p50": 4.613105773925781,
+            "p95": 4.613105773925781,
+            "maximum": 4.613105773925781
+          }
+        },
+        "proxy_service_minus_source_ms": {
+          "samples": 38,
+          "p50": 0.4686495001189339,
+          "p95": 0.9537717999608675,
+          "maximum": 1.1044299999393714
+        },
+        "overhead_scope": "client node entry through completion includes admission, proof, polling and control RPC; derived wall-clock intervals"
+      },
+      "coordinator_quality": {
+        "schema_version": 1,
+        "status": "failed",
+        "checks": {
+          "coordinator": {
+            "run_id": "calibration-static-2-b99e46f92d",
+            "status": "passed",
+            "errors": [],
+            "incomplete": [],
+            "records": 5352,
+            "streams": {
+              "events": 1809,
+              "observations": 3543
+            },
+            "source_instances": 1,
+            "scope": "committed_records; staged_at is transaction staging, export snapshot proves visibility"
+          },
+          "coordinator_admission": {
+            "run_id": "calibration-static-2-b99e46f92d",
+            "status": "incomplete",
+            "errors": [],
+            "incomplete": [
+              "ready_allocation_without_release"
+            ],
+            "source": "coordinator_admission",
+            "demands": 30,
+            "capacity_wait_episodes": 19,
+            "releases": 28,
+            "counts": {
+              "admission.request_received": 30,
+              "admission.demand_persisted": 30,
+              "admission.attempt_started": 54,
+              "admission.rpc_started": 62,
+              "admission.rpc_completed": 62,
+              "admission.actor_created": 8,
+              "admission.capacity_rejected": 24,
+              "admission.waiting_capacity_entered": 24,
+              "admission.actor_ready": 30,
+              "admission.waiting_capacity_exited": 24,
+              "admission.resource_released": 28,
+              "admission.retry_notified": 19
+            },
+            "rpc_methods": {
+              "CreateActor": 8,
+              "ResumeActor": 54
+            },
+            "require_capacity": true,
+            "require_rpc": true,
+            "timing_ms": {
+              "initial_admission": {
+                "demands": 8,
+                "ready": 8,
+                "attempts": 14,
+                "capacity_rejections": 6,
+                "outcome_unknown": 0,
+                "wait_age": {
+                  "samples": 8,
+                  "total": 72943.602877,
+                  "p50": 3999.979464,
+                  "p95": 14669.523855,
+                  "maximum": 14669.523855
+                },
+                "capacity_wait": {
+                  "samples": 8,
+                  "total": 44169.840079,
+                  "p50": 0,
+                  "p95": 11179.149127,
+                  "maximum": 11179.149127
+                },
+                "backend": {
+                  "samples": 8,
+                  "total": 28622.369568,
+                  "p50": 3499.994205,
+                  "p95": 3986.48593,
+                  "maximum": 3986.48593
+                }
+              },
+              "resume_admission": {
+                "demands": 22,
+                "ready": 22,
+                "attempts": 40,
+                "capacity_rejections": 18,
+                "outcome_unknown": 0,
+                "wait_age": {
+                  "samples": 22,
+                  "total": 55846.966969,
+                  "p50": 2100.175565,
+                  "p95": 6396.228729,
+                  "maximum": 6515.719129
+                },
+                "capacity_wait": {
+                  "samples": 22,
+                  "total": 49696.152709999995,
+                  "p50": 1881.060251,
+                  "p95": 6098.128705,
+                  "maximum": 6138.704495
+                },
+                "backend": {
+                  "samples": 22,
+                  "total": 5659.0015029999995,
+                  "p50": 228.615583,
+                  "p95": 457.882871,
+                  "maximum": 513.226658
+                }
+              },
+              "rpc": {
+                "CreateActor": {
+                  "duration": {
+                    "samples": 8,
+                    "total": 162.81054899999998,
+                    "p50": 19.060303,
+                    "p95": 26.360337,
+                    "maximum": 26.360337
+                  },
+                  "codes": {
+                    "OK": 8
+                  }
+                },
+                "ResumeActor": {
+                  "duration": {
+                    "samples": 54,
+                    "total": 31019.833204999995,
+                    "p50": 121.131906,
+                    "p95": 3707.288598,
+                    "maximum": 3880.116602
+                  },
+                  "codes": {
+                    "ResourceExhausted": 24,
+                    "OK": 30
+                  }
+                }
+              }
+            },
+            "client_to_received": {
+              "samples": 30,
+              "estimated_ms": [
+                0.517822265625,
+                0.544189453125,
+                0.255859375,
+                0.978271484375,
+                1.02490234375,
+                1.222412109375,
+                0.744140625,
+                0.391357421875,
+                0.3154296875,
+                0.306884765625,
+                0.274169921875,
+                0.212158203125,
+                0.57470703125,
+                0.2138671875,
+                0.2509765625,
+                0.187744140625,
+                0.462646484375,
+                0.17529296875,
+                0.20166015625,
+                0.271728515625,
+                0.1708984375,
+                0.2021484375,
+                2.433837890625,
+                0.202392578125,
+                0.19091796875,
+                0.17919921875,
+                0.17431640625,
+                0.2744140625,
+                0.238037109375,
+                0.178955078125
+              ],
+              "clock_quality": "cross-clock wall-time estimate; no clock synchronization bound measured"
+            },
+            "qualification_scope": "coordinator_capacity_semantics"
+          }
+        },
+        "admission_mode": "native",
+        "qualification_scope": "coordinator_admission_capture",
+        "qualifies": [],
+        "scheduling_comparison_admitted": false,
+        "remaining_gates": [
+          "dataset_use_case_qualification",
+          "native_capture_integrity",
+          "physical_cost_calibration",
+          "closed_loop_DAG_validation",
+          "complete_online_feature_lineage",
+          "independent_statistical_design"
+        ]
+      },
+      "post_measurement_retirement_requests": 0,
+      "resource_coverage_fraction": 0.9996846315971256,
+      "resource_transition_uncertainty_gbs": 4.695874048000001,
+      "measured_lifecycle_ms": {
+        "journal_commit_ms": {
+          "samples": 2368,
+          "p50": 1.3931520000000002,
+          "p95": 2.9340893500000025,
+          "maximum": 38.812383
+        },
+        "checkpoint_total_ms": {
+          "samples": 28,
+          "p50": 1898.1116670000001,
+          "p95": 4075.0423124499994,
+          "maximum": 4747.187679
+        },
+        "resume_ready_ms": {
+          "samples": 22,
+          "p50": 207.47810700000002,
+          "p95": 363.16497795,
+          "maximum": 513.226723
+        }
+      },
+      "initial_arrival_to_setup_ready_ms": {
+        "samples": 8,
+        "p50": 12679.83329296112,
+        "p95": 18326.80149078369,
+        "maximum": 18450.623750686646
+      }
+    },
+    {
+      "trial_id": "calibration-agentcloud-v2-b88860b03d",
+      "policy": "agentcloud-v2",
+      "status": "failed",
+      "failures": [
+        "cleanup_success",
+        "ephemeral_postgres_database_released",
+        "trial_failed",
+        "session_denominator",
+        "resource_coverage",
+        "post_measurement_retirement",
+        "event_qualification"
+      ],
+      "original_error": null,
+      "original_validation_errors": null,
+      "nodes": {
+        "status": "failed",
+        "errors": [
+          "event_identity_or_denominator",
+          "event_receipt:63184587ded20b065f257e2e/m0",
+          "event_receipt:63184587ded20b065f257e2e/g1",
+          "event_receipt:63184587ded20b065f257e2e/m1",
+          "event_receipt:63184587ded20b065f257e2e/g2",
+          "event_receipt:63184587ded20b065f257e2e/m2",
+          "event_receipt:63184587ded20b065f257e2e/g3",
+          "event_receipt:63184587ded20b065f257e2e/m3",
+          "event_receipt:63184587ded20b065f257e2e/g4",
+          "event_receipt:63184587ded20b065f257e2e/m4",
+          "event_receipt:3a46306d6294c42e82d783e5/m0",
+          "event_receipt:3a46306d6294c42e82d783e5/g1",
+          "event_receipt:3a46306d6294c42e82d783e5/m1",
+          "event_receipt:3a46306d6294c42e82d783e5/g2",
+          "event_receipt:3a46306d6294c42e82d783e5/m2",
+          "event_receipt:891fe39da2151bc7969538f5/m0",
+          "event_receipt:891fe39da2151bc7969538f5/g1",
+          "event_receipt:891fe39da2151bc7969538f5/m1",
+          "event_receipt:891fe39da2151bc7969538f5/g2",
+          "event_receipt:891fe39da2151bc7969538f5/m2",
+          "event_receipt:891fe39da2151bc7969538f5/g3",
+          "event_receipt:891fe39da2151bc7969538f5/m3",
+          "event_receipt:891fe39da2151bc7969538f5/g4",
+          "event_receipt:891fe39da2151bc7969538f5/m4",
+          "event_receipt:261ed4811bb40ef973454780/m0",
+          "event_receipt:261ed4811bb40ef973454780/g1",
+          "event_receipt:261ed4811bb40ef973454780/m1",
+          "event_receipt:261ed4811bb40ef973454780/g2",
+          "event_receipt:261ed4811bb40ef973454780/m2",
+          "event_receipt:261ed4811bb40ef973454780/g3",
+          "event_receipt:261ed4811bb40ef973454780/m3",
+          "event_receipt:261ed4811bb40ef973454780/g4",
+          "event_receipt:261ed4811bb40ef973454780/m4",
+          "event_receipt:3631e788278daa7e862dcc25/m0",
+          "event_receipt:3631e788278daa7e862dcc25/g1",
+          "event_receipt:3631e788278daa7e862dcc25/m1",
+          "event_receipt:3631e788278daa7e862dcc25/g2",
+          "event_receipt:3631e788278daa7e862dcc25/m2",
+          "event_receipt:3631e788278daa7e862dcc25/g3",
+          "event_receipt:3631e788278daa7e862dcc25/m3",
+          "event_receipt:3631e788278daa7e862dcc25/g4",
+          "event_receipt:3631e788278daa7e862dcc25/m4",
+          "event_receipt:e9abc585da76c118edd9c5fe/m0",
+          "event_receipt:e9abc585da76c118edd9c5fe/g1",
+          "event_receipt:e9abc585da76c118edd9c5fe/m1",
+          "event_receipt:e9abc585da76c118edd9c5fe/g2",
+          "event_receipt:e9abc585da76c118edd9c5fe/m2",
+          "event_receipt:e9abc585da76c118edd9c5fe/g3",
+          "event_receipt:e9abc585da76c118edd9c5fe/m3",
+          "event_receipt:e9abc585da76c118edd9c5fe/g4",
+          "event_receipt:e9abc585da76c118edd9c5fe/m4",
+          "event_receipt:692d4593fb2153b6ce3e320d/m0",
+          "event_receipt:692d4593fb2153b6ce3e320d/g1",
+          "event_receipt:692d4593fb2153b6ce3e320d/m1",
+          "event_receipt:692d4593fb2153b6ce3e320d/g2",
+          "event_receipt:692d4593fb2153b6ce3e320d/m2",
+          "event_receipt:692d4593fb2153b6ce3e320d/g3",
+          "event_receipt:692d4593fb2153b6ce3e320d/m3",
+          "event_receipt:692d4593fb2153b6ce3e320d/g4",
+          "event_receipt:692d4593fb2153b6ce3e320d/m4",
+          "event_receipt:744478088f32a92faa82bcb3/m0",
+          "event_receipt:744478088f32a92faa82bcb3/g1",
+          "event_receipt:744478088f32a92faa82bcb3/m1",
+          "event_receipt:744478088f32a92faa82bcb3/g2",
+          "event_receipt:744478088f32a92faa82bcb3/m2",
+          "event_receipt:744478088f32a92faa82bcb3/g3",
+          "event_receipt:744478088f32a92faa82bcb3/m3",
+          "event_receipt:744478088f32a92faa82bcb3/g4",
+          "event_receipt:744478088f32a92faa82bcb3/m4",
+          "model_identity_or_denominator",
+          "proxy_completion_denominator"
+        ],
+        "planned_events": 68,
+        "recorded_events": 0,
+        "planned_models": 38,
+        "model_requests": 0,
+        "native_proxy_records": 0,
+        "node_elapsed_minus_source_ms": {},
+        "proxy_service_minus_source_ms": {
+          "samples": 0,
+          "p50": null,
+          "p95": null,
+          "maximum": null
+        },
+        "overhead_scope": "client node entry through completion includes admission, proof, polling and control RPC; derived wall-clock intervals"
+      },
+      "coordinator_quality": {
+        "schema_version": 1,
+        "status": "failed",
+        "checks": {
+          "coordinator": {
+            "status": "failed",
+            "errors": [
+              "[Errno 2] No such file or directory: '/mnt/workspace/agentcloud-prev3-20261120/c2-native-44736059816/artifact/evidence/trials/calibration-agentcloud-v2-b88860b03d/research/coordinator.jsonl'"
+            ]
+          },
+          "coordinator_admission": {
+            "status": "failed",
+            "errors": [
+              "[Errno 2] No such file or directory: '/mnt/workspace/agentcloud-prev3-20261120/c2-native-44736059816/artifact/evidence/trials/calibration-agentcloud-v2-b88860b03d/research/coordinator.jsonl'"
+            ]
+          }
+        },
+        "admission_mode": "native",
+        "qualification_scope": "coordinator_admission_capture",
+        "qualifies": [],
+        "scheduling_comparison_admitted": false,
+        "remaining_gates": [
+          "dataset_use_case_qualification",
+          "native_capture_integrity",
+          "physical_cost_calibration",
+          "closed_loop_DAG_validation",
+          "complete_online_feature_lineage",
+          "independent_statistical_design"
+        ]
+      },
+      "post_measurement_retirement_requests": 0,
+      "resource_coverage_fraction": null,
+      "resource_transition_uncertainty_gbs": null,
+      "measured_lifecycle_ms": {},
+      "initial_arrival_to_setup_ready_ms": {
+        "samples": 0,
+        "p50": null,
+        "p95": null,
+        "maximum": null
+      }
+    }
+  ]
+}

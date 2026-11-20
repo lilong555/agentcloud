@@ -96,6 +96,8 @@ python3 scripts/run_prev3_c1.py --binary BIN/agentcloud-sim \
 
 本次运行的输入摘要、测量表、测试回执与资格状态见 [pre-v3 证据](evidence/pre-v3/README.md)。
 
+最新 [Native／DES 校准证据](evidence/pre-v3/c2/README.md)已取得完整 TTL2／v2 实机配对。两组源节点、RAM、PG 连续性和资源释放验收通过；冻结预测的排队与 GB·s 误差超出容忍，C2 状态为 `calibration_required`。秒级首次激活、工作集初始化与工具校验占槽是下一次模型接入项。
+
 ## Native／DES 配对校准
 
 校准输入为 [prev3-calibration-plan.json](../bench/configs/prev3-calibration-plan.json)。从 265 条 validation 会话中，按源到达时间与会话 ID 排序，筛得 246 个满足预算的串行前缀，取最早 8 个；19 条超出事件预算，238 条符合资格但未选中。每个前缀最多 5 次模型调用，总计 38 次模型调用、29 段 active gap、1 段 user idle，来自 3 个账号代理租户。该切片用于系统校准，保留短前缀选择条件和 benchmark 子人口。
