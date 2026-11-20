@@ -92,7 +92,75 @@ gh workflow run live-scale.yml --ref experiment/joint-kv-gate2 \
 
 受控容量测试使用 gRPC fixture 和本地 VOLUMES checkpoint。真实 MEMORY、Worker 放置、恢复次数与耗时结论采用 GitHub Actions 的独立实测结果。单种子小规模验收用于功能与观测完整性，性能研究另需独立统计设计。
 
-本地验收记录见 [完整检查](evidence/local-contract.json) 与 [准入采集清单](evidence/native-admission/local/manifest.json)：173 个 Go 顶层测试通过；Python tooling 共 326 项、跳过 5 项，runtime 共 62 项、跳过 4 项。`make check` 和 `make verify-delivery` 通过。严格容量采集覆盖 12 个首次需求及 Coordinator 重启；独立 VOLUMES 采集覆盖首次和恢复需求、Epoch 2、两次 Coordinator 启动及数据库清理。
+本地验收记录见 [完整检查](evidence/local-contract.json) 与 [准入采集清单](evidence/native-admission/local/manifest.json)：173 个 Go 顶层测试通过；Python tooling 共 326 项、跳过 5 项，runtime 共 62 项、跳过 4 项。`make check`、`make verify-delivery` 和 `make evidence-audit` 通过。严格容量采集覆盖 12 个首次需求及 Coordinator 重启；独立 VOLUMES 采集覆盖首次和恢复需求、Epoch 2、两次 Coordinator 启动及数据库清理。
+
+## 真实 MEMORY 对照结果
+
+[Actions 44696576156](https://github.com/lilong555/agentcloud/actions/runs/44696576156)（attempt 1）通过，源码固定为 `739e24b2923adc586994e1abfd5122cb7ce67293`。同一 Ubuntu 24.04 Runner、4 vCPU、2 Workers、4 个物理 Actor 槽位，依次运行 Legacy 和 Native；各模式使用同一 seed 7101 的 TTL2／v2 顺序。每个 trial 为 8 会话、每会话 2 轮、Actor 256 MiB、工作集 16 MiB。推理使用真实 Dynamo Frontend 与 CPU Mocker。
+
+四个 trial 完成 **64/64 请求**，RAM 连续性检查全部通过。PostgreSQL 导出共 **10,996 条事件与生命周期观测**，80 次 Ready 与 80 次释放逐一闭合。每个 trial 创建 8 个 Actor；全部 48 次恢复均记录 `actual_fidelity=MEMORY`。最大同时分配为 4，Worker 资源采样覆盖率最低 **98.7602%**。四个独立数据库、所属进程和 Kind 集群均已释放。Runner 上的独立受控容量／重启验收另保存 402 条记录、2 个 producer incarnation。
+
+原始文件及 SHA256 见[归档清单](evidence/native-admission/44696576156/artifact.json)，逐 trial 指标与事件复核见[可复算汇总](evidence/native-admission/44696576156/summary.json)。Artifact ID 为 `14612310713`，原 ZIP SHA256 为 `b70fbec181f5d23fb22e4e561c60e5d5a8e2b96c809496191a130df20f45c266`。
+
+| 模式 | 策略 | 首轮 P95（s） | 后续轮 P95（s） | 全部请求 P95（s） | Actor 预留 GB·s | MEMORY 恢复次数 |
+|---|---|---:|---:|---:|---:|---:|
+| Legacy | TTL2 | 12.952 | 11.660 | 12.712 | 21.382 | 16 |
+| Legacy | v2 | 13.962 | 12.742 | 13.587 | 21.583 | 16 |
+| Native | TTL2 | 44.313 | 18.272 | 40.127 | 49.807 | 8 |
+| Native | v2 | 43.054 | 19.267 | 41.443 | 49.662 | 8 |
+
+每行首轮、后续轮各 8 个请求，总计 16 个请求。TTFT 沿用历史线性插值分位数定义；Actor 预留以十进制 GB 计算。Legacy provision 位于该资源积分窗口之外，Native 的首次启动与安装位于窗口之内。
+
+| 模式／策略 | 首次容量等待累计（s） | 恢复容量等待累计（s） | Runner 首次 FIFO 累计（s） | Runner 恢复 FIFO 累计（s） | 真实容量拒绝：首次／恢复 |
+|---|---:|---:|---:|---:|---:|
+| Legacy／TTL2 | 0 | 0 | 0.017 | 83.493 | 0／0 |
+| Legacy／v2 | 0 | 0 | 0.020 | 87.265 | 0／0 |
+| Native／TTL2 | 82.857 | 26.481 | — | — | 71／23 |
+| Native／v2 | 82.162 | 26.254 | — | — | 66／23 |
+
+容量等待按 PostgreSQL 的 WAITING_CAPACITY 进入／退出区间累计，重试 RPC 单列。Native 的两种需求各 8 个；Legacy 首次需求 8 个，恢复需求 16 个。表中累计值跨多个并发需求相加。Native 的 FIFO 列为路径不适用；Legacy 服务端容量等待的 0 来自完整事件流中实际未出现容量拒绝。
+
+Native 累计 **183 次 ResourceExhausted** 均来自已创建 Actor 的 ResumeActor，首次启动拒绝 137 次、恢复拒绝 46 次；全部需求最终 Ready，`OUTCOME_UNKNOWN` 为 0。首次 CreateActor 每会话仅成功一次，等待期间保存的 Actor 身份供后续尝试复用。这条实测链路覆盖“Create 成功、首次激活容量不足、释放后继续激活”的核心路径。
+
+| Native 耗时分解 | TTL2 | v2 |
+|---|---:|---:|
+| 客户端发送至控制面入口 P95（ms，16 个墙钟差样本） | 4.877 | 2.672 |
+| 首次需求接收至 Ready 累计（s） | 142.902 | 140.027 |
+| 首次 Ensure 后端阶段累计（s） | 59.503 | 57.334 |
+| 首次成功 ResumeActor RPC P95（ms，8 次） | 6,570.647 | 6,556.664 |
+| 恢复需求接收至 Ready 累计（s） | 37.469 | 41.384 |
+| 恢复后端阶段累计（s） | 8.860 | 9.334 |
+| 成功恢复 ResumeActor RPC P95（ms，8 次） | 680.303 | 823.781 |
+
+后端阶段包含 RPC、状态核验、attach 与事务观测；RPC 分位数采用成功调用子集，容量拒绝耗时在 JSON 中按 gRPC code 单列。Legacy 保留历史客户端行为，未采集发送时刻。客户端墙钟差是入口延迟估计，时钟同步误差界仍待测量。PG 需求耗时分布使用 nearest-rank，TTFT 和上表 RPC 分位数使用线性插值，汇总中已记录各自口径。
+
+这些结果说明，Legacy 的 Runner FIFO 吸收了容量竞争，控制面接收到的请求已受 permit 限制；Native 则将首次启动和恢复竞争显式交给 Substrate 与 Coordinator。Legacy 每个会话在计时前预挂起一次，因此比 Native 多出 8 次恢复。Native 的首轮包含启动、安装和首次容量等待；后续轮 P95 相对 Legacy 增加 6.612 s（TTL2）与 6.524 s（v2），该现象发生在原生控制面竞争路径中，贡献量仍需独立干预拆解。
+
+同模式的 v2−TTL2 全部请求 P95 差值为 Legacy +0.874 s、Native +1.316 s，Actor 预留积分差值分别为 +0.201 与 −0.145 GB·s。交互子集每 trial 仅 4 个请求，其 P95 差值为 +1.208 s 与 +18.155 s。此次定位为单种子、小规模准入语义验收，性能结论保留单次观察性质；两模式的计时范围、固定执行顺序和请求分母均随结果发布。
+
+```bash
+python3 docs/evidence/native-admission/analyze.py \
+  docs/evidence/native-admission/44696576156 \
+  --output artifacts/native-admission-summary.json
+```
+
+分析脚本核验原始 inventory、配置／到达轨迹、GitHub 身份、物理 host boot ID，重新审计 PG 与 Legacy 流，并对账 MEMORY 恢复、请求分母及资源清理。压缩文件保留原始字节摘要；浮点复算仅容忍 Python 版本求和舍入差异。
+
+## 验收范围
+
+| 项目 | 状态与证据 |
+|---|---|
+| Legacy 兼容与来源标记 | PASS：保留 FairSlots 与历史指标；两组 Legacy 实测通过 |
+| 首次／恢复持久容量等待 | PASS：生产 Substrate RPC 触发的 183 次拒绝全部推进；首次 Actor 无重复创建 |
+| Native 计划到达 | PASS：直接提交 API，32/32 Native 请求完成 |
+| 控制面事务观测 | PASS：四组共 80 个准入需求，PG 顺序、RPC、等待及 Ready／释放闭合 |
+| 研究准入闸门 | PASS：固定语义验收可执行；正式算法研究继续检查六项独立资格 |
+| 并发、重启与异常保护 | PASS：173 个 Go 顶层测试及受控 PG／gRPC 重启采集；MEMORY 重启覆盖见下文 |
+| Legacy／Native 最小对照 | PASS：同 Runner、同到达、四 trial、64/64 请求，原始证据和复算脚本已归档 |
+
+真实 MEMORY 的 Coordinator 崩溃／重启、CreateActor 自身返回 ResourceExhausted、未知 RPC 回执和失败提交分支，目前使用受控 gRPC／真实 PG 测试验证。首次 `CREATING/WAITING_CAPACITY → PARKED` 反馈映射，以及旧自主路径由 Ready 事务统一完成回执的实现，通过当前源码的本地 race 全检；Actions `739e24b` 的覆盖范围以该固定提交为准。这些项仍需目标 MEMORY 环境的专项验收。
+
+N=64、多种子、采集开销消融、物理 RSS／charge／设备 I/O、跨生产者时钟误差和 GPU 执行属于后续独立验证范围。[研究资格注册表](../bench/configs/research-readiness.json)的原生观测项保持 `partial`，本次证据支持准入语义完整性。
 
 ## 源码入口
 
@@ -102,6 +170,10 @@ gh workflow run live-scale.yml --ref experiment/joint-kv-gate2 \
 | `internal/control/substrate.go`、`resume_capacity.go` | Substrate 身份核验、容量拒绝证明与幂等初次激活 |
 | `internal/control/controller.go`、`autonomous.go`、`http.go`、`types.go`、`idle_cost.go` | 生命周期接入、HTTP 202、需求回执、状态快照 |
 | `bench/scale.py`、`admission.py`、`research_capture.py`、`runtime/client.py` | Native 到达路径、Legacy 标注与客户端发送时刻 |
-| `bench/research_quality.py`、`research_gate.py`、`research_acceptance.py`、`bench/configs/` | 控制面事件资格、固定语义对照与本地采集验收 |
+| `bench/research_quality.py`、`research_gate.py`、`research_acceptance.py` | 控制面事件资格与本地采集验收 |
+| `bench/configs/admission-semantics.json`、`research-readiness.json` | 固定语义对照及六项研究资格 |
 | `.github/workflows/native-admission.yml`、`live-scale.yml` | 同 Runner 四 trial 的真实 MEMORY 运行和证据归档 |
-| `internal/control/admission_test.go`、`tests/tooling/` | 并发、重启、失败提交和采集完整性验收 |
+| `internal/control/admission_test.go`、`tests/tooling/test_native_admission.py`、`test_research_gate.py` | 并发、重启、失败提交和采集完整性验收 |
+| `docs/NATIVE_ADMISSION.md`、`RESEARCH_OBSERVABILITY.md`、`SCHEDULING_RESEARCH_EVIDENCE.md` | 状态机、测量口径、研究资格及实测结果 |
+| `docs/evidence/native-admission/analyze.py`、`local/`、`44696576156/` | 本地采集、原始 Actions 归档、双模式复算及失败分母 |
+| `docs/evidence/local-contract.json`、`logs/local-*/`、`source-reproduction.json`、`upstream-patches-reproduction.json` | 本地测试、源码恢复和交付校验记录 |

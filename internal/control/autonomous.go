@@ -456,16 +456,6 @@ func (c *Controller) autonomousStep(snapshot *Session) {
 				last.Action, last.Reason = boundary.Decision.Action, boundary.Decision.Reason
 			}
 		}
-		if err == nil && action == "RESUME" {
-			current.Autonomous.ReturnDemand = false
-			for _, demand := range current.ReturnDemands {
-				if demand.Status == "PENDING" {
-					demand.Status = "COMPLETED"
-					demand.ResultEpoch = current.Epoch
-				}
-			}
-			current.Autonomous.CandidateSince = time.Time{}
-		}
 		if err != nil {
 			var apiErr *APIError
 			if errors.As(err, &apiErr) && apiErr.Code == "resume_capacity_wait" {

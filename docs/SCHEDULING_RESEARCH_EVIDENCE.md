@@ -38,7 +38,9 @@ hard affinity 表达绑定约束，CACHE／LOAD 评分在约束允许的候选�
 
 [本地算术核验](evidence/research/2026-11-20/contract-validation.json)验证正式 Gate 2 的 50 份原始 JSON 摘要、14,400 请求、50 个交互 P95、八组配对均值及同 Runner 身份。最低资源采样覆盖率为 98.2956%。资源积分和 bootstrap 区间沿用封存分析，逐请求 P95 与配对均值由 [`research_audit.py`](../scripts/research_audit.py)复算。
 
-首次队列的具体证据位于 [`FairSlots.acquire`](../bench/admission.py) 和 [`Trial.resume`](../bench/scale.py)：Runner 获取 permit 后才向协调器登记 ReturnDemand，KEEP 的 HoldingRate 使用已登记需求。这个可见性缺口与尾延迟回退方向相符；各机制的贡献量需要队列事件和干预实验。64 MiB／3 s 的少恢复结果具有独立坐标，恢复次数为 143.333 对 384，同时交互 P95 增加 313.307 s。128 MiB 的 434～436 Tag 与磁盘保护对应存储压力边界。
+历史首次队列的具体证据位于 [`FairSlots.acquire`](../bench/admission.py) 和 [`Trial.resume`](../bench/scale.py) 的 Legacy 路径：Runner 获取 permit 后才向协调器登记 ReturnDemand，KEEP 的 HoldingRate 使用已登记需求。Native 模式直接提交首次 Create 和后续 ReturnDemand，由 Coordinator 持久记录两种容量等待；[准入语义验收](NATIVE_ADMISSION.md)独立比较这两条路径。v2 的 HoldingRate 与决策公式沿用既有实现，各机制的性能贡献由后续干预实验量化。64 MiB／3 s 的少恢复结果具有独立坐标，恢复次数为 143.333 对 384，同时交互 P95 增加 313.307 s。128 MiB 的 434～436 Tag 与磁盘保护对应存储压力边界。
+
+独立的 [N=8 准入对照](evidence/native-admission/44696576156/summary.json)在同一 Runner、4 个物理槽位下完成 64/64 请求。Native TTL2／v2 各记录 94／89 次 Substrate 容量拒绝，首次和恢复等待均经控制面重试完成；Legacy 两组的控制面容量拒绝为 0，Runner 恢复 FIFO 累计等待为 83.493／87.265 s。Native 首轮包含首次启动和安装，Legacy 首轮使用预先创建的快照；单种子结果用于核验准入路径和观测语义，完整计时分解与分母见[实测报告](NATIVE_ADMISSION.md#真实-memory-对照结果)。
 
 ## 负载资格
 

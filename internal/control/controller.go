@@ -1021,7 +1021,7 @@ func (c *Controller) signalContext(parent context.Context, session *Session, sta
 		state = "SUSPENDED"
 	case "RESUMING":
 		state = "RESUMING"
-	case "CHECKPOINTED", "QUIESCING", "SUSPENDING", "RECOVERY_REQUIRED":
+	case "CREATING", "WAITING_CAPACITY", "CHECKPOINTED", "QUIESCING", "SUSPENDING", "RECOVERY_REQUIRED":
 		state = "PARKED"
 	default:
 		if live.ActiveTools > 0 {

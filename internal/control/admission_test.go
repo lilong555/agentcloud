@@ -416,6 +416,7 @@ func TestInitialAdmissionFailedCommitKeepsOwnedActorAndUnknownIntent(t *testing.
 
 func TestInitialAdmissionHTTPAcceptedAndArrivalClock(t *testing.T) {
 	cfg := testConfig(t)
+	cfg.Signals = &experimentSignal{}
 	backend, _ := admissionFixture(t)
 	cfg.Backend, cfg.SchedulerInterval = backend, time.Hour
 	c := newTestController(t, cfg)
@@ -435,6 +436,13 @@ func TestInitialAdmissionHTTPAcceptedAndArrivalClock(t *testing.T) {
 	d := s.Admissions["initial"]
 	if d.ClientSentAtNS != "1795158000000000001" || d.ReceivedAt.IsZero() || !d.RequestedAt.Equal(d.ReceivedAt) {
 		t.Fatalf("arrival evidence: %+v", d)
+	}
+	c.signal(&s, "")
+	c.lock()
+	defer c.mu.Unlock()
+	last := c.state.Events[len(c.state.Events)-1]
+	if last.Kind != "signal.applied" || last.Detail != "PARKED" {
+		t.Fatalf("initial waiting execution feedback: %+v", last)
 	}
 }
 
