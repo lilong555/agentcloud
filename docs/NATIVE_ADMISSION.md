@@ -58,7 +58,7 @@ Legacy 首次 provision 位于交互计时窗口之前，Native 首次启动位�
 
 `bench.research_quality` 校验需求身份、Epoch、尝试序号、RPC 配对、容量拒绝、等待进出、Ready/释放守恒，以及 PostgreSQL 导出序号和重启连续性。Native 验收要求 Coordinator 数据；Legacy 采集单独接受历史 FIFO 审计。`bench.research_gate` 使用[两级研究资格](SCHEDULING_RESEARCH_PATH.md)：Tier-1 接受事件级负载、分层 MEMORY 成本与排队去噪回执；Tier-2 检查最终实机比较的重启、开销、校准和统计证据。
 
-资源释放与 `admission.retry_notified` 在同一事务内持久化，通知携带释放事件序号，选择最早的未通知需求。事务提交和 Coordinator 重启会唤醒准入循环，下一次尝试记录 `slot_release` 来源并消费通知。全局兜底探测间隔为 5 秒，启动和本地释放后重新计时，按上次尝试时间轮转等待者；RPC 并发沿用 `SchedulerConcurrency`。物理放置由 Substrate 决定，v2 策略按原有 tick 执行。验收同时核对通知来源、单次消费、快照持久化期间的准入推进和 shadow 模式行为。
+资源释放与 `admission.retry_notified` 在同一事务内持久化，通知携带释放事件序号，选择最早的未通知需求。事务提交和 Coordinator 重启会唤醒准入循环，下一次尝试记录 `slot_release` 来源并消费通知。全局兜底探测间隔为 5 秒，启动和本地释放后重新计时，按上次尝试时间轮转等待者。准入推进与策略生命周期操作各自使用上限为 `SchedulerConcurrency` 的执行池，同一会话保持互斥，使挂起后的快照持久化与其他 Actor 的准入可以并行。物理放置由 Substrate 决定，v2 策略按原有 tick 执行。验收同时核对通知来源、单次消费、快照持久化期间的准入推进和 shadow 模式行为。
 
 固定的 `admission_semantics` 仅开放 `bench/configs/admission-semantics.json`：8 会话、4 个物理槽位、2 Workers、同种子、`static-2` 与 `agentcloud-v2`，两个模式共 4 个 trial。该合成负载用于生产准入路径与采集语义验收。
 
@@ -161,6 +161,15 @@ python3 docs/evidence/native-admission/analyze.py \
 
 [原始归档](evidence/native-admission/44706448532/artifact.json)、[四组复算](evidence/native-admission/44706448532/summary.json)、[排队与预算诊断](evidence/native-admission/diagnostics/44706448532.json)分别保存整体状态、请求分母和逐项预算；原始失败记录完整保留。
 
+[Actions 44710735545](https://github.com/lilong555/agentcloud/actions/runs/44710735545) 使用源码 `f46219b03843851e6b0b8659fe67053874892081`，整体 workflow、64/64 请求、MEMORY 重启专项与资源清理均通过。重启专项保存两次 Coordinator 启动，首次等待身份与提交起点一致；释放事件驱动首次激活，随后恢复至 Epoch 2，RAM nonce／PID／heap／AST／context 完全一致。原始 [MEMORY 回执](evidence/native-admission/44710735545/memory-restart/result.json)和 PostgreSQL 事件保存在[不可变归档](evidence/native-admission/44710735545/artifact.json)。
+
+| Native 策略 | release→attempt P95 / max | 通知样本 | 兜底／全部重试 | 获通知租户数 | 冻结预算 |
+|---|---:|---:|---:|---:|---|
+| TTL2 | 7.273 / 7.725 ms | 8 | 3/11（27.27%） | 4 | PASS |
+| v2 | 1527.571 / 1700.374 ms | 8 | 3/11（27.27%） | 4 | 延迟超限 |
+
+v2 的序号 268／270 释放事件立即通知等待者，尝试分别晚 1.207／1.700 秒；对应序号 283／290 紧随其他 Actor 的 `scheduling.completed`。该版本的四个自主执行名额同时被三个等待持久化的挂起操作和一个首次激活占用。当前执行池将准入与策略操作各自限流，同会话互斥；该调整由独立运行验收。完整[诊断](evidence/native-admission/diagnostics/44710735545.json)保留八个通知样本和全部超限项，阶段一保持 `pending`。
+
 ## 验收范围
 
 | 项目 | 状态与证据 |
@@ -173,7 +182,7 @@ python3 docs/evidence/native-admission/analyze.py \
 | 并发、重启与异常保护 | PASS：176 个 Go 顶层测试及受控 PG／gRPC 重启采集；MEMORY 重启覆盖见下文 |
 | Legacy／Native 最小对照 | PASS：同 Runner、同到达、四 trial、64/64 请求，原始证据和复算脚本已归档 |
 
-真实 MEMORY 的 Coordinator 崩溃／重启、CreateActor 自身返回 ResourceExhausted、未知 RPC 回执和失败提交分支，目前使用受控 gRPC／真实 PG 测试验证。首次 `CREATING/WAITING_CAPACITY → PARKED` 反馈映射，以及旧自主路径由 Ready 事务统一完成回执的实现，通过当前源码的本地 race 全检；Actions `739e24b` 的覆盖范围以该固定提交为准。这些项仍需目标 MEMORY 环境的专项验收。
+真实 MEMORY 的 Coordinator 崩溃／重启、持久首次等待和释放后恢复已由运行 `44710735545` 验证。CreateActor 自身返回 ResourceExhausted、未知 RPC 回执和失败提交分支通过受控 gRPC／真实 PG 测试，目标 MEMORY 环境的故障注入仍待专项覆盖。各运行的覆盖范围由归档中的固定提交确定。
 
 N=64、多种子、采集开销消融、物理 RSS／charge／设备 I/O、跨生产者时钟误差和 GPU 执行属于后续独立验证范围。[研究资格注册表](../bench/configs/research-readiness.json)的原生观测项保持 `partial`，本次证据支持准入语义完整性。
 

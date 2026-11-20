@@ -6,11 +6,16 @@ import (
 	"time"
 
 	substrateapi "github.com/lilong555/agentcloud/internal/adapters/substrate"
+	"github.com/lilong555/agentcloud/internal/policy"
 )
 
 type delayedDurabilityBackend struct {
 	*initialFixtureBackend
 	released, durable chan struct{}
+}
+
+func (b *delayedDurabilityBackend) SchedulingCapacity(context.Context, *Session) (CapacityObservation, error) {
+	return CapacityObservation{ObservedAt: time.Now().UTC()}, nil
 }
 
 func (b *delayedDurabilityBackend) Checkpoint(ctx context.Context, s *Session, op string) (Actor, string, error) {
@@ -37,7 +42,15 @@ func (b *delayedDurabilityBackend) Checkpoint(ctx context.Context, s *Session, o
 
 func TestCapacityReleaseWakesBeforeSnapshotDurability(t *testing.T) {
 	cfg := testConfig(t)
-	cfg.SchedulerInterval = time.Hour
+	cfg.EnableAutonomousScheduler = true
+	cfg.SchedulerPolicy = "agentcloud-v2"
+	cfg.SchedulerConcurrency = 1
+	cfg.SchedulerInterval, cfg.SchedulerStableFor = 10*time.Millisecond, time.Millisecond
+	cfg.ModelTimeout = 5 * time.Second
+	cfg.Scheduling = policy.LifecycleConfig{SnapshotCostMS: 5, ResumeCostMS: 5}
+	cfg.QueueObserver = costQueueFunc(func(context.Context, *Session) (QueueObservation, error) {
+		return QueueObservation{Source: "native_test", Scope: "classifier", ObservedAt: time.Now().UTC()}, nil
+	})
 	backend, upstream := admissionFixture(t)
 	upstream.capacity = 1
 	b := &delayedDurabilityBackend{initialFixtureBackend: &initialFixtureBackend{
@@ -48,28 +61,37 @@ func TestCapacityReleaseWakesBeforeSnapshotDurability(t *testing.T) {
 	defer close(b.durable)
 	createTestSession(t, c, "tenant-a", "holder")
 	createTestSession(t, c, "tenant-b", "waiter")
-	done := make(chan error, 1)
-	go func() {
-		_, _, err := c.Lifecycle(context.Background(), "tenant-a", "holder", "suspend", LifecycleRequest{OperationID: "release", ExpectedEpoch: 1})
-		done <- err
-	}()
+	c.lock()
+	s := c.state.Sessions[key("tenant-a", "holder")]
+	s.IdleSince, s.RunningSince = time.Now().Add(-3*time.Second), time.Now().Add(-time.Minute)
+	s.LastResumedAt = s.RunningSince
+	s.Autonomous = nil
+	c.mu.Unlock()
 	select {
 	case <-b.released:
 	case <-time.After(2 * time.Second):
-		t.Fatal("Substrate release was not recorded")
+		current, _ := c.Get("tenant-a", "holder")
+		t.Fatalf("Substrate release was not recorded: state=%s", current.State)
 	}
 	waitFor(t, func() bool {
 		s, _ := c.Get("tenant-b", "waiter")
 		return s.State == "RUNNING" && s.Admissions["initial"].AttemptCount == 2
 	})
 	holder, _ := c.Get("tenant-a", "holder")
-	if holder.State != "QUIESCING" || holder.Manifest != nil || holder.Lifecycle["release"].ResourceReleaseSequence == 0 {
+	var release *LifecycleReceipt
+	for _, receipt := range holder.Lifecycle {
+		if receipt.Action == "suspend" {
+			release = receipt
+		}
+	}
+	if holder.State != "QUIESCING" || holder.Manifest != nil || release == nil || release.ResourceReleaseSequence == 0 {
 		t.Fatalf("release implied snapshot durability: %+v", holder)
 	}
 	b.durable <- struct{}{}
-	if err := <-done; err != nil {
-		t.Fatal(err)
-	}
+	waitFor(t, func() bool {
+		s, _ := c.Get("tenant-a", "holder")
+		return s.State == "SUSPENDED" && s.Lifecycle[release.OperationID].Status == "COMPLETED"
+	})
 	c.lock()
 	defer c.mu.Unlock()
 	releases := 0

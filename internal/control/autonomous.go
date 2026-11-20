@@ -199,6 +199,9 @@ func (c *Controller) autonomousLoop() {
 	ticker := time.NewTicker(c.cfg.SchedulerInterval)
 	defer ticker.Stop()
 	semaphore := make(chan struct{}, c.cfg.SchedulerConcurrency)
+	// A suspended Actor has released placement while checkpoint durability may
+	// still occupy a lifecycle worker. Admission has its own bounded executor.
+	admissionSemaphore := make(chan struct{}, c.cfg.SchedulerConcurrency)
 	for {
 		policyTick := false
 		select {
@@ -302,12 +305,16 @@ func (c *Controller) autonomousLoop() {
 			})
 			for _, s := range candidates {
 				d := activeAdmission(c.state.Sessions[key(s.TenantID, s.SessionID)])
+				pool := semaphore
+				if pendingAdmission(s) {
+					pool = admissionSemaphore
+				}
 				fallback := d != nil && d.Status == "WAITING_CAPACITY" && !d.WakePending
 				if fallback && now.Before(c.nextAdmissionProbe) {
 					continue
 				}
 				select {
-				case semaphore <- struct{}{}:
+				case pool <- struct{}{}:
 					if fallback {
 						c.nextAdmissionProbe = now.Add(capacityProbeInterval)
 						d.RetryTrigger, d.ReleaseSequence = "fallback", 0
@@ -315,17 +322,17 @@ func (c *Controller) autonomousLoop() {
 					k := key(s.TenantID, s.SessionID)
 					c.schedulerBusy[k] = true
 					c.operations.Add(1)
-					go func(snapshot *Session) {
+					go func(snapshot *Session, pool chan struct{}) {
 						defer c.operations.Done()
 						defer func() {
-							<-semaphore
+							<-pool
 							c.lock()
 							delete(c.schedulerBusy, key(snapshot.TenantID, snapshot.SessionID))
 							c.wakeAdmission()
 							c.mu.Unlock()
 						}()
 						c.autonomousStep(snapshot)
-					}(s)
+					}(s, pool)
 				default:
 				}
 			}
