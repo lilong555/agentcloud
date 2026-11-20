@@ -1,7 +1,7 @@
-"""CPU-only native capture acceptance with an isolated PostgreSQL database.
+"""CPU-only coordinator admission capture with an isolated PostgreSQL database.
 
-Uses the real coordinator, HTTP protocol, process restart and local FILESYSTEM
-backend. The controlled workload verifies capture; it reports no scheduling gain.
+Uses the real coordinator, HTTP protocol, process restart and local VOLUMES
+backend. The scope is local capture integrity; Substrate capacity is a separate check.
 """
 import argparse
 import hashlib
@@ -13,13 +13,11 @@ import signal
 import socket
 import subprocess
 import tempfile
-import threading
 import time
 import uuid
 
-from bench.admission import FairSlots
 from bench.postgres import connection, execute
-from bench.research_capture import AdmissionCapture, atomic_document
+from bench.research_capture import atomic_document
 from bench.research_quality import audit_capture
 from runtime.client import Client
 
@@ -36,9 +34,7 @@ def run(binary, output):
     with socket.socket() as sock:
         sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
     private=tempfile.TemporaryDirectory(prefix='agentcloud-capture-')
-    capture=AdmissionCapture(output,run_id,{'capacity':1,'workload':'controlled-capture-acceptance'})
-    slots=FairSlots(1,threading.Event(),capture.event)
-    client=Client('http://127.0.0.1:'+str(port),token,timeout=5)
+    client=Client('http://127.0.0.1:'+str(port),token,timeout=5,client_sent_at=True)
     process=None;created=False;logs=[];exported=False;report={}
     env=dict(os.environ,AGENTCLOUD_DATABASE_URL=connection(admin,database),AGENTCLOUD_TOKENS=token+'=tenant')
 
@@ -67,14 +63,18 @@ def run(binary, output):
 
     try:
         execute(admin,'CREATE DATABASE '+database);created=True;start()
-        slots.acquire('session',5,kind='first_actor_admission',tenant='tenant')
         state=client.create('session','workspace','external')
         receipt=client.tool('session',state['epoch'],'write','file_write',path='evidence.txt',content='capture-proof')
         if receipt['status']!='COMPLETED': raise RuntimeError('controlled write failed')
         state=client.lifecycle('session','suspend',state['epoch'],'suspend')
-        slots.release('session')
-        slots.acquire('session',5,tenant='tenant',epoch=state['epoch'])
-        state=client.lifecycle('session','resume',state['epoch'],'resume')
+        client.call('POST',client.path('session')+'/return-demand',dict(operation_id='resume',expected_epoch=state['epoch']))
+        deadline=time.monotonic()+10
+        while time.monotonic()<deadline:
+            state=client.session('session')
+            if state['state']=='RUNNING' and state['gate']=='OPEN': break
+            if state['state']=='RECOVERY_REQUIRED': raise RuntimeError('controlled resume outcome unknown')
+            time.sleep(.02)
+        else: raise TimeoutError('controlled return demand readiness')
         if state['epoch']!=2: raise RuntimeError('resume epoch did not advance')
         client.request('session','model',{'model':'controlled','messages':[{'role':'user','content':'controlled'}]})
         deadline=time.monotonic()+10
@@ -85,15 +85,11 @@ def run(binary, output):
             time.sleep(.02)
         else: raise TimeoutError('controlled inference completion')
         client.claim('session','model',2)
-        # Keep a queued timeout in the complete offered denominator.
-        try: slots.acquire('timed-out',.002,tenant='other',epoch=1)
-        except TimeoutError: pass
-        else: raise RuntimeError('capacity guard failed')
         stop();start()
         receipt=client.tool('session',2,'read','file_read',path='evidence.txt')
         if receipt['status']!='COMPLETED' or receipt['result']['content']!='capture-proof':
             raise RuntimeError('restart lost durable content')
-        state=client.lifecycle('session','suspend',2,'final-suspend');slots.release('session')
+        state=client.lifecycle('session','suspend',2,'final-suspend')
         report.update(status='passed',epoch_after_resume=2,final_state=state['state'],
             actual_fidelity=state['actual_fidelity'],model_requests=1,coordinator_starts=2)
     except Exception as exc:
@@ -101,15 +97,13 @@ def run(binary, output):
     finally:
         try: stop()
         except Exception as exc: report.update(status='failed',shutdown_error=str(exc))
-        try: capture.close()
-        except Exception as exc: report.update(status='failed',capture_close_error=str(exc))
         if created:
             try:
                 subprocess.run([str(binary),'research-export','--run-id',run_id,'--output',str(output/'coordinator.jsonl')],
                     env=env,cwd=ROOT,check=True,capture_output=True,text=True,timeout=30)
                 exported=True
             except Exception as exc: report.update(status='failed',export_error=str(exc))
-        quality=audit_capture(output);atomic_document(output/'quality.json',quality)
+        quality=audit_capture(output,admission_mode='native',require_rpc=False);atomic_document(output/'quality.json',quality)
         if quality['status']!='passed': report['status']='failed'
         if quality.get('checks',{}).get('coordinator',{}).get('source_instances')!=2:
             report.update(status='failed',restart_identity_check='expected_two_process_sources')
@@ -124,15 +118,18 @@ def run(binary, output):
         for path in sorted(Path(private.name).glob('coordinator-*.log')):
             (output/path.name).write_text(path.read_text(errors='replace').replace(token,'[REDACTED]').replace(admin,'[DATABASE]'))
         private.cleanup()
-        report.update(schema_version=1,run_id=run_id,execution_kind='controlled-native-capture-acceptance',
-            runtime='local-filesystem',inference='deterministic-CPU-fixture',gpu_execution=False,
+        report.update(schema_version=1,run_id=run_id,execution_kind='controlled-local-coordinator-admission-capture',
+            purpose='admission_semantics',admission_mode='native',runtime='local-volumes',
+            capacity_semantics='pending_real_substrate_capacity_evidence',
+            qualification_scope='local_postgres_coordinator_capture',qualifies=[],
+            inference='deterministic-CPU-fixture',gpu_execution=False,
             quality=quality,source_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
             github_run_id=os.environ.get('GITHUB_RUN_ID','local'),
             github_run_attempt=os.environ.get('GITHUB_RUN_ATTEMPT','local'),
             environment=dict(kernel=platform.release(),machine=platform.machine(),python=platform.python_version()),
             source_dirty=bool(subprocess.check_output(['git','status','--porcelain'],cwd=ROOT,text=True)),
             source_sha256={str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest()
-                for area in ('internal','cmd','bench') for p in sorted((ROOT/area).rglob('*'))
+                for area in ('internal','cmd','bench','runtime') for p in sorted((ROOT/area).rglob('*'))
                 if p.is_file() and p.suffix in ('.go','.py')},
             binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest())
         atomic_document(output/'result.json',report)

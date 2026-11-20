@@ -49,6 +49,13 @@ type endpoint func(http.ResponseWriter, *http.Request, string) error
 
 func (c *Controller) authenticated(next endpoint) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		arrival := requestArrival{received: time.Now().UTC()}
+		if value := r.Header.Get("X-AgentCloud-Client-Sent-At-Ns"); value != "" {
+			if ns, err := strconv.ParseInt(value, 10, 64); err == nil && ns > 0 && strconv.FormatInt(ns, 10) == value {
+				arrival.clientNS = value
+			}
+		}
+		r = r.WithContext(context.WithValue(r.Context(), arrivalKey{}, arrival))
 		token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
 		tenant := ""
 		if token != r.Header.Get("Authorization") {
@@ -101,7 +108,12 @@ func (c *Controller) Handler() http.Handler {
 		if err != nil {
 			return err
 		}
-		respond(w, 201, s)
+		code := 201
+		if s.State == "WAITING_CAPACITY" || s.State == "CREATING" {
+			code = 202
+			w.Header().Set("Retry-After", "1")
+		}
+		respond(w, code, s)
 		return nil
 	}))
 	mux.HandleFunc("GET /v1/sessions", c.authenticated(func(w http.ResponseWriter, r *http.Request, tenant string) error {

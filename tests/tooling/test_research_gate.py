@@ -15,6 +15,8 @@ class ResearchGateTests(unittest.TestCase):
         (root/'source.py').write_text('controlled source')
         receipt=dict(status='passed',qualifies=sorted(REQUIRED),source_sha256={
             'source.py':hashlib.sha256((root/'source.py').read_bytes()).hexdigest()})
+        receipt['checks']=dict(coordinator_admission=dict(status='passed',require_rpc=True,
+            require_capacity=True,capacity_wait_episodes=1))
         (root/'receipt.json').write_text(json.dumps(receipt))
         ref=dict(evidence='receipt.json',sha256=hashlib.sha256((root/'receipt.json').read_bytes()).hexdigest())
         (root/DATASETS).write_text(json.dumps(dict(schema_version=1,datasets=[dict(

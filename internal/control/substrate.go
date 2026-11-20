@@ -171,13 +171,33 @@ func (b *SubstrateBackend) Ensure(ctx context.Context, s *Session) (Actor, error
 		return Actor{}, errors.New("invalid Actor name")
 	}
 	current, err := b.cfg.Client.GetActor(ctx, name)
-	if status.Code(err) == codes.NotFound {
-		current, err = b.cfg.Client.Create(ctx, name, b.cfg.Template)
+	if s.Actor.UID != "" {
+		if err != nil || !initialActorMatches(s, current) {
+			return Actor{}, errInitialActorChanged
+		}
+	} else if status.Code(err) == codes.NotFound {
+		current, err = admissionRPC(ctx, "CreateActor", func() (substrateapi.Summary, error) { return b.cfg.Client.Create(ctx, name, b.cfg.Template) })
+		if status.Code(err) == codes.ResourceExhausted {
+			probe, cancel := context.WithTimeout(ctx, 2*time.Second)
+			_, readErr := b.cfg.Client.GetActor(probe, name)
+			cancel()
+			if status.Code(readErr) == codes.NotFound {
+				return Actor{}, &initialCapacityWaitError{actor: Actor{Name: name}, cause: err}
+			}
+		}
 	} else if err == nil {
 		return Actor{}, errors.New("Actor name already exists; explicit reconciliation is required")
 	}
 	if err != nil {
 		return Actor{}, err
+	}
+	if current.State != "SUSPENDED" || current.UID == "" || current.Version <= 0 {
+		return Actor{}, errInitialActorChanged
+	}
+	if h, ok := ctx.Value(admissionHooksKey{}).(admissionHooks); ok && h.created != nil && s.Actor.UID == "" {
+		if err = h.created(current); err != nil {
+			return Actor{}, err
+		}
 	}
 	if b.cfg.CoordinatorURL != "" {
 		origin, e := url.Parse(b.cfg.CoordinatorURL)
@@ -198,8 +218,19 @@ func (b *SubstrateBackend) Ensure(ctx context.Context, s *Session) (Actor, error
 			return Actor{}, e
 		}
 	}
-	current, err = b.cfg.Client.Resume(ctx, name, current.UID, current.Version)
+	before := current
+	current, err = admissionRPC(ctx, "ResumeActor", func() (substrateapi.Summary, error) {
+		return b.cfg.Client.Resume(ctx, name, before.UID, before.Version)
+	})
 	if err != nil {
+		if status.Code(err) == codes.ResourceExhausted {
+			probe, cancel := context.WithTimeout(ctx, 2*time.Second)
+			after, readErr := b.cfg.Client.GetActor(probe, name)
+			cancel()
+			if readErr == nil && before == after && after.State == "SUSPENDED" && after.UID != "" && after.Version > 0 {
+				return Actor{}, &initialCapacityWaitError{actor: fromSubstrate(after), proof: &after, cause: err}
+			}
+		}
 		return Actor{}, err
 	}
 	actor := fromSubstrate(current)
@@ -296,7 +327,9 @@ func (b *SubstrateBackend) Resume(ctx context.Context, s *Session) (Actor, error
 	if retained.TagUID != manifest.RetainedTagUID {
 		return Actor{}, errors.New("retained tag was replaced")
 	}
-	restored, err := b.cfg.Client.Resume(ctx, current.Name, current.UID, current.Version)
+	restored, err := admissionRPC(ctx, "ResumeActor", func() (substrateapi.Summary, error) {
+		return b.cfg.Client.Resume(ctx, current.Name, current.UID, current.Version)
+	})
 	if err != nil {
 		if status.Code(err) == codes.ResourceExhausted {
 			probe, cancel := context.WithTimeout(ctx, 2*time.Second)

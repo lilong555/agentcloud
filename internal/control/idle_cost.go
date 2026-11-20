@@ -163,6 +163,7 @@ func (c *Controller) selectReleaseDeadline(plan *ReleasePlan, evidence *ServerEs
 func schedulingSnapshot(s *Session) *Session {
 	snapshot := *s
 	snapshot.Tools, snapshot.Lifecycle, snapshot.Scheduling = nil, nil, nil
+	snapshot.Admissions = nil
 	snapshot.IdleWindows, snapshot.ReturnDemands = nil, nil
 	if s.Autonomous != nil {
 		snapshot.Autonomous = &AutonomousState{Epoch: s.Autonomous.Epoch, LastEvaluatedAt: s.Autonomous.LastEvaluatedAt,

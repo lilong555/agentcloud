@@ -34,6 +34,8 @@ SCHEDULER_POLICIES=AUTONOMOUS_POLICIES+('static-2-shadow',)
 POLICIES=SCHEDULER_POLICIES+('eager-0','static-2','static-5','static-15')
 SYMMETRIC_PROTOCOL='symmetric-program-v1'
 PROCESS_OWNER_ENV='AGENTCLOUD_SCALE_TRIAL_ID'
+ADMISSION_MODES=('legacy_fair_slots','native')
+PURPOSES=('algorithm_comparison','admission_semantics')
 
 
 def atomic_json(path,value):
@@ -115,7 +117,7 @@ def cleanup_schedule(schedule,args):
                 if not database.replace('_','').isalnum() or not database.startswith('scale_'): raise ValueError('invalid trial database name')
                 if (folder/'research').exists():
                     from bench.research_quality import audit_capture
-                    if audit_capture(folder/'research')['status']!='passed':
+                    if audit_capture(folder/'research',admission_mode=report.get('admission_mode','legacy_fair_slots'))['status']!='passed':
                         cleanup['preserved_research_database']=database
                         raise RuntimeError('research capture incomplete; database retained for export and inspection')
                 execute(os.getenv('AGENTCLOUD_TEST_PG_ADMIN','postgresql:///postgres?host=/var/run/postgresql'),
@@ -167,13 +169,18 @@ class Trial:
         self.output=args.output_dir/self.id;self.output.mkdir(parents=True,exist_ok=True)
         write_json(self.output/'arrival-trace.json',self.arrivals.document)
         self.ev=Evidence(self.output/'events.jsonl');self.stopped=threading.Event()
-        self.research_capture=AdmissionCapture(self.output/'research',self.id,config)
-        self.slots=FairSlots(config['worker_slots'],self.stopped,self.research_capture.event)
+        (self.output/'research').mkdir(exist_ok=True)
+        self.research_capture=None
+        self.slots=None
+        if not self.native_admission:
+            self.research_capture=AdmissionCapture(self.output/'research',self.id,config)
+            self.slots=FairSlots(config['worker_slots'],self.stopped,self.research_capture.event)
         self.lock=threading.Lock();self.samples=[];self.resumes=[];self.idle=[];self.tools=[];self.sessions=[];self.service_samples=[]
         self.rows=request_rows(config,self.id,concurrency,self.arrivals)
         base=(args.client_dir/'coordinator-token').read_text().strip()
         self.tokens={f'tenant-{chr(97+i)}':base if i==0 else hashlib.sha256((base+f':tenant-{i}').encode()).hexdigest() for i in range(config['tenants'])}
-        self.clients={tenant:BudgetClient(f'http://127.0.0.1:{args.coordinator_port}',token,timeout=180,budget=self.remaining) for tenant,token in self.tokens.items()}
+        self.clients={tenant:BudgetClient(f'http://127.0.0.1:{args.coordinator_port}',token,timeout=180,
+            budget=self.remaining,client_sent_at=self.native_admission) for tenant,token in self.tokens.items()}
         self.native=None;self.coordinator=None;self.probe=None;self.handles=[];self.probe_thread=None
         self.created_db=False;self.db=self.id.replace('-','_');self.started=None;self.finished=None
         self.admin=os.getenv('AGENTCLOUD_TEST_PG_ADMIN','postgresql:///postgres?host=/var/run/postgresql')
@@ -182,6 +189,12 @@ class Trial:
         self.cache_observer=None
     def event(self,kind,**values): return self.ev.event(kind,trial_id=self.id,**values)
     def client(self,entry): return self.clients[entry['tenant']]
+    @property
+    def native_admission(self): return getattr(self,'config',{}).get('admission_mode','legacy_fair_slots')=='native'
+    def release_permit(self,entry):
+        if entry.get('resident'):
+            entry['resident']=False
+            if not self.native_admission: self.slots.release(entry['id'])
     def remaining(self,limit):
         deadline=getattr(self,'cleanup_deadline',None) or getattr(self,'deadline',None)
         if deadline is None: return limit
@@ -306,7 +319,7 @@ class Trial:
         if state['state']=='RECOVERY_REQUIRED': raise RuntimeError('session requires recovery reconciliation')
         if state['state']=='SUSPENDED' and entry['resident'] and not entry.get('return_pending'):
             if state['manifest']['fidelity']!='MEMORY': raise RuntimeError('MEMORY fidelity required')
-            entry['resident']=False;self.slots.release(entry['id'])
+            self.release_permit(entry)
         if before and (before['state'],before['epoch'])!=(state['state'],state['epoch']):
             self.event('observed_lifecycle',session_id=entry['id'],tenant=entry['tenant'],state=state['state'],epoch=state['epoch'],manifest=state.get('manifest'))
         return state
@@ -404,7 +417,7 @@ class Trial:
                     if state['epoch']!=epoch or state['state']!='SUSPENDED' or (state.get('manifest') or {}).get('fidelity')!='MEMORY' or state.get('gate')!='CLOSED' or state.get('active_tools')!=0:
                         raise RuntimeError('MEMORY suspension was not committed at the expected epoch')
                     entry['state']=state
-                    if entry['resident']: entry['resident']=False;self.slots.release(entry['id'])
+                    self.release_permit(entry)
                     self.event('suspend',session_id=entry['id'],start=begin,end=time.time(),manifest=state['manifest'])
                     return state
             remaining=deadline-time.monotonic()
@@ -415,7 +428,9 @@ class Trial:
         if state['state']=='RUNNING' and state['gate']=='OPEN': return queue
         expected_epoch=state['epoch']
         acquired=False
-        if not entry['resident']:
+        if deadline is not None and time.monotonic()>=deadline:
+            raise TimeoutError('operation admission deadline')
+        if not self.native_admission and not entry['resident']:
             timeout=self.remaining(self.config['request_deadline_seconds'])
             if deadline is not None:
                 timeout=min(timeout,deadline-time.monotonic())
@@ -426,11 +441,12 @@ class Trial:
             if acquired: state=self.refresh(entry)
             if state['state']=='RUNNING' and state.get('gate')=='OPEN':
                 pass
-            elif self.policy in AUTONOMOUS_POLICIES:
+            elif self.native_admission or self.policy in AUTONOMOUS_POLICIES:
                 body=dict(operation_id=operation,expected_epoch=state['epoch'])
                 demand=self.client(entry).call('POST',self.client(entry).path(entry['id'])+'/return-demand',body)
                 deadline=min(deadline if deadline is not None else float('inf'),self.phase_deadline(self.config['request_deadline_seconds']))
                 while demand['status']!='COMPLETED':
+                    if demand['status']=='OUTCOME_UNKNOWN': raise RuntimeError('return demand requires outcome reconciliation')
                     if time.monotonic()>deadline: raise TimeoutError('managed return demand deadline')
                     time.sleep(self.config['poll_seconds']);state=self.refresh(entry)
                     demand=state.get('return_demands',{}).get(operation,demand)
@@ -451,6 +467,7 @@ class Trial:
                         time.sleep(min(1.,remaining))
             entry['state']=state
             if state['state']!='RUNNING' or state.get('gate')!='OPEN': raise RuntimeError('open session admission was not observed')
+            if self.native_admission: entry['resident']=True
             if state['epoch']==expected_epoch:
                 self.event('admission_reopened',session_id=entry['id'],epoch=state['epoch'],seconds=time.time()-begin,queue_seconds=queue)
                 return queue
@@ -459,7 +476,7 @@ class Trial:
             self.event('resume',session_id=entry['id'],epoch=state['epoch'],seconds=time.time()-begin,queue_seconds=queue,actual_fidelity=state['actual_fidelity'])
             return queue
         except BaseException:
-            if entry['resident']: entry['resident']=False;self.slots.release(entry['id'])
+            self.release_permit(entry)
             raise
         finally: entry['return_pending']=False
     def provision(self,index):
@@ -467,18 +484,34 @@ class Trial:
         except BaseException:
             self.stopped.set()
             entry=next((e for e in self.sessions if e['index']==index),None)
-            if entry and entry['resident']: entry['resident']=False;self.slots.release(entry['id'])
+            if entry: self.release_permit(entry)
             raise
-    def _provision(self,index):
-        self.guard()
+    def session_entry(self,index):
         name=f'{self.id}-w{index}';tenant=f'tenant-{chr(97+(index//len(KINDS)+index)%self.config["tenants"])}'
         entry=dict(id=name,tenant=tenant,index=index,kind=KINDS[index%len(KINDS)],resident=False,state=None)
-        self.sessions.append(entry);self.slots.acquire(name,self.remaining(self.config['request_deadline_seconds']),kind='first_actor_admission',tenant=tenant);entry['resident']=True
+        self.sessions.append(entry)
+        return entry
+    def create_and_install(self,entry):
+        self.guard();name=entry['id']
+        deadline=self.phase_deadline(self.config['request_deadline_seconds'])
         entry['state']=self.client(entry).call('POST','/v1/sessions',dict(session_id=name,workspace_id=name,actor_name='ac-'+name,
             mode='external',profile=entry['kind'],ablation_group=self.ablation_group()))
-        installed=self.client(entry).tool(name,1,'install-workload','file_write',path='actor_mix.py',content=(ROOT/'bench/workloads/actor_mix.py').read_text())
+        if self.native_admission:
+            while entry['state'].get('state')!='RUNNING' or entry['state'].get('gate')!='OPEN':
+                if entry['state'].get('state')=='RECOVERY_REQUIRED': raise RuntimeError('initial admission requires outcome reconciliation')
+                if time.monotonic()>=deadline: raise TimeoutError('initial admission deadline')
+                time.sleep(self.config['poll_seconds']);self.refresh(entry)
+            entry['resident']=True
+        def install():
+            return self.client(entry).tool(name,entry['state']['epoch'] if self.native_admission else 1,
+                'install-workload','file_write',path='actor_mix.py',content=(ROOT/'bench/workloads/actor_mix.py').read_text())
+        installed=self.admit(entry,'install-workload','tool',install) if self.native_admission else install()
         if installed['status']!='COMPLETED': raise RuntimeError('workload installation failed')
         entry['proof']=self.tool(entry,'start-ram',f'python3 actor_mix.py start --memory-mib {self.config["heap_mib"]}')
+    def _provision(self,index):
+        self.guard();entry=self.session_entry(index)
+        self.slots.acquire(entry['id'],self.remaining(self.config['request_deadline_seconds']),kind='first_actor_admission',tenant=entry['tenant']);entry['resident']=True
+        self.create_and_install(entry)
         self.suspend(entry,'initial-memory');return entry
     def session_run(self,entry):
         history=[f'token{5+(self.seed+entry["index"])%900}'];previous=None
@@ -492,7 +525,12 @@ class Trial:
                 if row['trajectory_queue_seconds']>=self.config['request_deadline_seconds']:
                     row['status']='DEADLINE_EXCEEDED'
                     raise TimeoutError('scheduled arrival expired in the serial workspace queue')
-                row['gateway_queue_seconds']=self.resume(entry,f'return-{turn}')
+                if self.native_admission and turn==0:
+                    begin=time.monotonic();self.create_and_install(entry)
+                    row['initial_admission_and_setup_seconds']=time.monotonic()-begin
+                    row['gateway_queue_seconds']=0.
+                else:
+                    row['gateway_queue_seconds']=self.resume(entry,f'return-{turn}')
                 if previous: self.client(entry).claim(entry['id'],previous,entry['state']['epoch'])
                 proof=self.tool(entry,f'work-{turn}',f'python3 actor_mix.py work --kind {entry["kind"]} --seed {self.seed+entry["index"]} --turn {turn}',row)
                 for key in ('nonce','pid','heap_bytes','heap_sha256','ast_identity','ast_sha256'):
@@ -637,8 +675,12 @@ class Trial:
         atomic_json(self.output/'result.json',report)
         try:
             self.start()
-            with futures.ThreadPoolExecutor(max_workers=self.config['worker_slots']) as pool: entries=list(pool.map(self.provision,range(self.n)))
-            self.event('all_workspaces_ready',count=len(entries),state='SUSPENDED',fidelity='MEMORY');self.started=time.time()
+            if self.native_admission:
+                entries=[self.session_entry(index) for index in range(self.n)]
+            else:
+                with futures.ThreadPoolExecutor(max_workers=self.config['worker_slots']) as pool: entries=list(pool.map(self.provision,range(self.n)))
+                self.event('all_workspaces_ready',count=len(entries),state='SUSPENDED',fidelity='MEMORY')
+            self.started=time.time()
             self.arrivals.bind(self.rows,self.started)
             self.event('arrival_trace_ready',sha256=self.arrivals.sha256,mode=self.arrivals.mode,planned_requests=len(self.rows))
             with futures.ThreadPoolExecutor(max_workers=self.n) as pool: list(pool.map(self.session_run,entries))
@@ -747,14 +789,17 @@ class Trial:
         if self.created_db:
             def research_export():
                 from bench.research_quality import audit_capture
-                self.research_capture.close()
+                if self.research_capture: self.research_capture.close()
                 subprocess.run([str(ROOT/'bin/agentcloud'),'research-export','--run-id',self.id,
                     '--output',str(self.output/'research/coordinator.jsonl')],
                     env=dict(os.environ,AGENTCLOUD_DATABASE_URL=connection(self.admin,self.db)),
                     check=True,capture_output=True,text=True,timeout=self.remaining(60))
-                quality=audit_capture(self.output/'research')
+                quality=audit_capture(self.output/'research',admission_mode=self.config.get('admission_mode','legacy_fair_slots'),
+                    require_capacity=self.native_admission and self.config.get('purpose')=='admission_semantics')
                 atomic_json(self.output/'research/quality.json',quality)
                 report['research_capture']=quality
+                admission=quality.get('checks',{}).get('coordinator_admission')
+                if admission: report['coordinator_admission_timing_ms']=admission['timing_ms']
                 if quality['status']!='passed': raise RuntimeError('research capture qualification failed')
                 return True
             exported=attempt('research capture export',research_export)
@@ -781,10 +826,17 @@ def prepare_schedule(config,args):
             config['agent_trace_workload']['manifest']]
         source.update({name:hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in paths})
     source['selected_config']=hashlib.sha256(args.config.read_bytes()).hexdigest()
-    for name in ('bench/admission.py','bench/research_capture.py','bench/research_quality.py',
+    for name in ('bench/admission.py','bench/research_capture.py','bench/research_quality.py','bench/research_gate.py',
+                 'runtime/client.py','internal/control/admission.go','internal/control/controller.go',
+                 'internal/control/http.go','internal/control/resume_capacity.go','internal/control/substrate.go',
+                 'internal/control/types.go','internal/control/autonomous.go','internal/control/idle_cost.go',
                  'internal/journal/research.go','internal/journal/entities.go','internal/observability/clock.go'):
         source[name]=hashlib.sha256((ROOT/name).read_bytes()).hexdigest()
+    purpose=config.get('purpose','algorithm_comparison');admission_mode=config.get('admission_mode','legacy_fair_slots')
+    selection_sha256=hashlib.sha256(json.dumps(dict(config=config,purpose=purpose,admission_mode=admission_mode),
+        sort_keys=True,separators=(',',':')).encode()).hexdigest()
     metadata=dict(schema_version=1,comparison_protocol=config.get('comparison_protocol','legacy-ablation-v1'),paired_runner_id=runner_id,
+        purpose=purpose,admission_mode=admission_mode,selection_sha256=selection_sha256,
         host=host,runner=dict(os=os.getenv('RUNNER_OS'),arch=os.getenv('RUNNER_ARCH'),name=os.getenv('RUNNER_NAME')),
         github_run_id=os.getenv('GITHUB_RUN_ID'),github_run_attempt=os.getenv('GITHUB_RUN_ATTEMPT'),source_sha256=source,
         source_commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
@@ -834,7 +886,9 @@ def run_schedule(schedule,args,executor=None):
                     command=[sys.executable,'-m','bench.scale','--schedule',str(args.schedule),
                         '--output-dir',str(args.output_dir),'--client-dir',str(args.client_dir),'--actor-template',args.actor_template,
                         '--coordinator-port',str(args.coordinator_port),'--dynamo-port',str(args.dynamo_port),
-                        '--control-port',str(args.control_port),'--execute-trial',item['trial_id']]
+                        '--control-port',str(args.control_port),'--execute-trial',item['trial_id'],
+                        '--purpose',schedule.get('purpose','algorithm_comparison'),
+                        '--admission-mode',schedule.get('admission_mode','legacy_fair_slots')]
                     process=subprocess.Popen(command,cwd=ROOT,start_new_session=True,
                         env=dict(os.environ,**{PROCESS_OWNER_ENV:item['trial_id']}))
                     try:
@@ -859,6 +913,7 @@ def run_schedule(schedule,args,executor=None):
             blocked=not report.get('cleanup_success',False)
         atomic_json(path,report);reports.append(report)
         atomic_json(args.output_dir/'index.json',dict(paired_runner_id=schedule['paired_runner_id'],
+            purpose=schedule.get('purpose','algorithm_comparison'),admission_mode=schedule.get('admission_mode','legacy_fair_slots'),
             status='passed' if len(reports)==len(schedule['order']) and all(r['status']=='passed' for r in reports) else 'incomplete',
             trials=[{k:v for k,v in r.items() if k not in ('requests','resumes','sessions')} for r in reports]))
         progress=dict(status=report['status'],trial_id=report['trial_id'],error=report.get('error'))
@@ -872,8 +927,10 @@ def run_schedule(schedule,args,executor=None):
 
 def selected_config(args):
     config=json.loads(args.config.read_text());frozen=json.loads(args.config.read_text())
+    config['purpose']=getattr(args,'purpose',None) or config.get('purpose','algorithm_comparison')
+    config['admission_mode']=getattr(args,'admission_mode',None) or config.get('admission_mode','legacy_fair_slots')
     for field,override,cast in [('concurrency',args.concurrency,int),('paired_seeds',args.seeds,int),('policies',args.policies,str)]:
-        if override: config[field]=[cast(item) for item in override.split(',')]
+        if override is not None: config[field]=[cast(item) for item in override.split(',')] if override else []
     if config.get('paired_execution'):
         if config.get('comparison_protocol')!=SYMMETRIC_PROTOCOL: raise ValueError('paired execution requires symmetric Program protocol')
         if config['policies']!=frozen['policies']: raise ValueError('paired execution requires the complete frozen policy group')
@@ -894,6 +951,12 @@ def selected_config(args):
             raise ValueError('gate workload differs from frozen configuration')
     if not config['concurrency'] or not config['paired_seeds'] or not config['policies'] or any(n<1 or n>64 for n in config['concurrency']) or any(p not in POLICIES for p in config['policies']):
         raise ValueError('invalid frozen matrix selection')
+    if config['purpose']=='admission_semantics':
+        if ((args.heap_mib is not None and args.heap_mib!=config['heap_mib']) or args.wait_seconds is not None
+                or args.scenario not in (None,config.get('workload_scenario'))):
+            raise ValueError('admission semantics workload differs from frozen configuration')
+        from bench.research_gate import require_admission_semantics
+        require_admission_semantics(config)
     return config
 
 
@@ -905,25 +968,40 @@ def main():
     parser.add_argument('--actor-template',default='agentcloud-matrix')
     parser.add_argument('--coordinator-port',type=int,default=8093);parser.add_argument('--dynamo-port',type=int,default=19080);parser.add_argument('--control-port',type=int,default=19081)
     parser.add_argument('--concurrency');parser.add_argument('--seeds');parser.add_argument('--policies')
+    parser.add_argument('--purpose',choices=PURPOSES)
+    parser.add_argument('--admission-mode',choices=ADMISSION_MODES)
     parser.add_argument('--heap-mib',type=int);parser.add_argument('--wait-seconds',type=int);parser.add_argument('--scenario')
     parser.add_argument('--schedule',type=Path);parser.add_argument('--plan-only',action='store_true')
     parser.add_argument('--cleanup-schedule',action='store_true')
     parser.add_argument('--execute-trial',help=argparse.SUPPRESS);args=parser.parse_args()
-    if not args.plan_only and not args.cleanup_schedule:
-        from bench.research_gate import require_comparison_ready
-        try: require_comparison_ready()
-        except (OSError,ValueError,KeyError,TypeError) as exc: parser.error(str(exc))
-    args.output_dir.mkdir(parents=True,exist_ok=True)
     if args.cleanup_schedule and (not args.schedule or not args.schedule.exists()): return 0
-    if args.schedule and args.schedule.exists():
+    existing=bool(args.schedule and args.schedule.exists())
+    if existing:
         if args.plan_only: parser.error('schedule exists; use a new path for an independent paired run')
         schedule=json.loads(args.schedule.read_text());config=schedule['config'];args.config=Path(schedule['config_path'])
+        for field,default in [('purpose','algorithm_comparison'),('admission_mode','legacy_fair_slots')]:
+            value=schedule.get(field,default)
+            if config.get(field,default)!=value or getattr(args,field) not in (None,value):
+                parser.error('schedule '+field+' differs from frozen selection')
+            setattr(args,field,value)
+        if schedule.get('selection_sha256'):
+            expected=hashlib.sha256(json.dumps(dict(config=config,purpose=args.purpose,admission_mode=args.admission_mode),
+                sort_keys=True,separators=(',',':')).encode()).hexdigest()
+            if schedule['selection_sha256']!=expected: parser.error('schedule selection hash mismatch')
         for field,environment in [('github_run_id','GITHUB_RUN_ID'),('github_run_attempt','GITHUB_RUN_ATTEMPT')]:
             if schedule.get(field)!=os.getenv(environment): parser.error('schedule belongs to a different run or attempt')
     else:
         if args.execute_trial: parser.error('trial execution requires an existing schedule')
         try: config=selected_config(args)
         except ValueError as exc: parser.error(str(exc))
+    if not args.plan_only and not args.cleanup_schedule:
+        from bench.research_gate import require_admission_semantics, require_comparison_ready
+        try:
+            if config.get('purpose')=='admission_semantics': require_admission_semantics(config)
+            else: require_comparison_ready()
+        except (OSError,ValueError,KeyError,TypeError) as exc: parser.error(str(exc))
+    args.output_dir.mkdir(parents=True,exist_ok=True)
+    if not existing:
         schedule=prepare_schedule(config,args)
         args.schedule=args.schedule or args.output_dir/f'schedule-{schedule["paired_runner_id"]}.json'
         args.schedule.parent.mkdir(parents=True,exist_ok=True);atomic_json(args.schedule,schedule)

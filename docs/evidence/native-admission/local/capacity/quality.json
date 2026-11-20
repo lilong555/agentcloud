@@ -1,0 +1,151 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "checks": {
+    "coordinator": {
+      "run_id": "native-admission-capacity",
+      "status": "passed",
+      "errors": [],
+      "incomplete": [],
+      "records": 396,
+      "streams": {
+        "events": 264,
+        "observations": 132
+      },
+      "source_instances": 2,
+      "scope": "committed_records; staged_at is transaction staging, export snapshot proves visibility"
+    },
+    "coordinator_admission": {
+      "run_id": "native-admission-capacity",
+      "status": "passed",
+      "errors": [],
+      "incomplete": [],
+      "source": "coordinator_admission",
+      "demands": 12,
+      "capacity_wait_episodes": 12,
+      "releases": 12,
+      "counts": {
+        "admission.request_received": 12,
+        "admission.demand_persisted": 12,
+        "admission.attempt_started": 28,
+        "admission.rpc_started": 40,
+        "admission.rpc_completed": 40,
+        "admission.actor_created": 12,
+        "admission.capacity_rejected": 16,
+        "admission.waiting_capacity_entered": 16,
+        "admission.waiting_capacity_exited": 16,
+        "admission.actor_ready": 12,
+        "admission.resource_released": 12
+      },
+      "rpc_methods": {
+        "CreateActor": 12,
+        "ResumeActor": 28
+      },
+      "require_capacity": true,
+      "require_rpc": true,
+      "timing_ms": {
+        "initial_admission": {
+          "demands": 12,
+          "ready": 12,
+          "attempts": 28,
+          "capacity_rejections": 16,
+          "outcome_unknown": 0,
+          "wait_age": {
+            "samples": 12,
+            "total": 19861.611615,
+            "p50": 1318.110019,
+            "p95": 2442.113234,
+            "maximum": 2442.113234
+          },
+          "capacity_wait": {
+            "samples": 12,
+            "total": 16621.090410999997,
+            "p50": 1038.486136,
+            "p95": 2125.873301,
+            "maximum": 2125.873301
+          },
+          "backend": {
+            "samples": 12,
+            "total": 3059.969153,
+            "p50": 231.017319,
+            "p95": 378.012948,
+            "maximum": 378.012948
+          }
+        },
+        "resume_admission": {
+          "demands": 0,
+          "ready": 0,
+          "attempts": 0,
+          "capacity_rejections": 0,
+          "outcome_unknown": 0,
+          "wait_age": {
+            "samples": 0,
+            "total": 0,
+            "p50": null,
+            "p95": null,
+            "maximum": null
+          },
+          "capacity_wait": {
+            "samples": 0,
+            "total": 0,
+            "p50": null,
+            "p95": null,
+            "maximum": null
+          },
+          "backend": {
+            "samples": 0,
+            "total": 0,
+            "p50": null,
+            "p95": null,
+            "maximum": null
+          }
+        },
+        "rpc": {
+          "CreateActor": {
+            "duration": {
+              "samples": 12,
+              "total": 9.784530000000002,
+              "p50": 0.652715,
+              "p95": 1.688074,
+              "maximum": 1.688074
+            },
+            "codes": {
+              "OK": 12
+            }
+          },
+          "ResumeActor": {
+            "duration": {
+              "samples": 28,
+              "total": 473.531399,
+              "p50": 0.923057,
+              "p95": 72.095657,
+              "maximum": 113.864156
+            },
+            "codes": {
+              "ResourceExhausted": 16,
+              "OK": 12
+            }
+          }
+        }
+      },
+      "client_to_received": {
+        "samples": 0,
+        "estimated_ms": [],
+        "clock_quality": "cross-clock wall-time estimate; no clock synchronization bound measured"
+      },
+      "qualification_scope": "coordinator_capacity_semantics"
+    }
+  },
+  "admission_mode": "native",
+  "qualification_scope": "coordinator_admission_capture",
+  "qualifies": [],
+  "scheduling_comparison_admitted": false,
+  "remaining_gates": [
+    "dataset_use_case_qualification",
+    "native_capture_integrity",
+    "physical_cost_calibration",
+    "closed_loop_DAG_validation",
+    "complete_online_feature_lineage",
+    "independent_statistical_design"
+  ]
+}

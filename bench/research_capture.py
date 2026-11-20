@@ -1,8 +1,4 @@
-"""Durable metadata-only capture at the runner admission owner.
-
-This native envelope has its own version. The full proposed research contract
-also requires runtime, cost and cross-producer availability instrumentation.
-"""
+"""Durable metadata-only capture for the legacy FairSlots runner permit stream."""
 import hashlib
 import json
 import os
@@ -50,7 +46,8 @@ class AdmissionCapture:
         self.started = time.monotonic_ns()
         self.write_ns = 0
         self.sealed = False
-        self.manifest = dict(schema_version=1, capture_kind='native-fairslots',
+        self.manifest = dict(schema_version=1, capture_kind='legacy-fairslots',
+            source='legacy_runner_admission', admission_mode='legacy_fair_slots',
             run_id=run_id, source_instance_id=self.instance, host_boot_id=self.boot,
             clock_domain_id='runner-process:' + self.instance,
             config_sha256=hashlib.sha256(canonical(config)).hexdigest(),
@@ -67,6 +64,7 @@ class AdmissionCapture:
             started = time.monotonic_ns()
             wall = time.time_ns()
             row = dict(schema_version=1, event_type=kind, run_id=self.run_id,
+                source='legacy_runner_admission',
                 source_instance_id=self.instance, source_seq=str(self.count+1),
                 host_boot_id=self.boot, clock_domain_id=self.manifest['clock_domain_id'],
                 timestamp_ns=str(wall), observed_at_ns=str(wall),

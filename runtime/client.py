@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import http.client
 import ssl
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -69,9 +70,11 @@ class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
 class Client:
     def __init__(self, base_url: str, token: str, timeout: float = 60, headers: dict | None = None,
                  *, ca_file: str | None = None, cert_file: str | None = None,
-                 key_file: str | None = None, server_name: str | None = None):
+                 key_file: str | None = None, server_name: str | None = None,
+                 client_sent_at: bool = False):
         self.base_url, self.token, self.timeout = base_url.rstrip('/'), token, timeout
         self.headers=headers or {}
+        self.client_sent_at=client_sent_at
         hostname=urllib.parse.urlparse(base_url).hostname
         handlers=[_NoRedirectHandler()]
         if hostname in ('127.0.0.1','localhost','::1'):
@@ -87,8 +90,11 @@ class Client:
 
     def call(self, method: str, path: str, body: dict | None = None) -> dict:
         data = None if body is None else json.dumps(body).encode()
+        headers={**self.headers, 'Authorization': 'Bearer ' + self.token, 'Content-Type': 'application/json'}
+        if self.client_sent_at and method=='POST' and (path=='/v1/sessions' or path.endswith('/return-demand')):
+            headers['X-AgentCloud-Client-Sent-At-Ns']=str(time.time_ns())
         request = urllib.request.Request(self.base_url + path, data=data, method=method,
-            headers={**self.headers, 'Authorization': 'Bearer ' + self.token, 'Content-Type': 'application/json'})
+            headers=headers)
         try:
             with self.opener.open(request, timeout=self.timeout) as response:
                 return json.load(response)

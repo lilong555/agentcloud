@@ -7,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 READINESS = Path('bench/configs/research-readiness.json')
 DATASETS = Path('bench/configs/research-datasets.json')
+ADMISSION_CONFIG = Path('bench/configs/admission-semantics.json')
 REQUIRED = frozenset({
     'dataset_use_case_qualification', 'native_capture_integrity',
     'physical_cost_calibration', 'closed_loop_DAG_validation',
@@ -54,6 +55,11 @@ def inspect(root=ROOT):
             for path in receipts:
                 report = json.loads(path.read_text())
                 if report.get('status') == 'passed' and name in report.get('qualifies', []):
+                    if name=='native_capture_integrity':
+                        admission=report.get('checks',{}).get('coordinator_admission',{})
+                        if (admission.get('status')!='passed' or not admission.get('require_rpc')
+                                or not admission.get('require_capacity') or admission.get('capacity_wait_episodes',0)<1):
+                            raise ValueError('native capture qualification requires complete coordinator capacity and RPC evidence')
                     sources = report.get('source_sha256', {})
                     if not sources:
                         raise ValueError('qualification receipt requires frozen source hashes')
@@ -76,6 +82,24 @@ def require_comparison_ready(root=ROOT):
         raise ValueError('algorithm comparisons paused; pending research qualification: '
                          + ', '.join(report['remaining_gates']))
     return report
+
+
+def require_admission_semantics(config, root=ROOT):
+    """Admit the frozen capacity observation contrast while research gates remain open."""
+    frozen=json.loads((root/ADMISSION_CONFIG).read_text())
+    if config.get('purpose')!='admission_semantics' or config.get('admission_mode','legacy_fair_slots') not in ('native','legacy_fair_slots'):
+        raise ValueError('admission semantics requires an explicit purpose and supported admission mode')
+    policies=config.get('policies',[])
+    if not policies or len(set(policies))!=len(policies) or not set(policies)<=set(frozen['policies']):
+        raise ValueError('admission semantics requires a nonempty frozen policy subset')
+    allowed={'admission_mode','policies'}
+    if {k:v for k,v in config.items() if k not in allowed}!={k:v for k,v in frozen.items() if k not in allowed}:
+        raise ValueError('admission semantics workload differs from frozen configuration')
+    return dict(schema_version=1,status='passed',purpose='admission_semantics',
+        admission_mode=config.get('admission_mode','legacy_fair_slots'),
+        qualification_scope='frozen_admission_semantics_only',scheduling_comparison_admitted=False,
+        required_capture='coordinator_admission_capacity_and_rpc' if config.get('admission_mode')=='native' else 'legacy_runner_admission',
+        remaining_gates=sorted(REQUIRED))
 
 
 def main():

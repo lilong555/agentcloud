@@ -222,6 +222,12 @@ func New(ctx context.Context, cfg Config) (*Controller, error) {
 			s.State = "RECOVERY_REQUIRED"
 			s.Gate = "CLOSED"
 		}
+		for _, d := range s.Admissions {
+			if d.Status == "ATTEMPTING" {
+				d.Status, d.Reason = "OUTCOME_UNKNOWN", "coordinator restarted during admission"
+				c.admissionEventLocked(s, d, "outcome_unknown")
+			}
+		}
 		for _, r := range s.Lifecycle {
 			if r.Status == "RUNNING" {
 				r.Status = "OUTCOME_UNKNOWN"
@@ -247,10 +253,8 @@ func New(ctx context.Context, cfg Config) (*Controller, error) {
 	c.startSnapshotGC()
 	c.workers.Add(1)
 	go c.strandingLoop()
-	if cfg.EnableAutonomousScheduler {
-		c.workers.Add(1)
-		go c.autonomousLoop()
-	}
+	c.workers.Add(1)
+	go c.autonomousLoop()
 	for i := 0; i < cfg.ModelConcurrency; i++ {
 		c.workers.Add(1)
 		go c.dispatchLoop()
@@ -386,6 +390,9 @@ func (c *Controller) event(s *Session, kind, detail string) {
 	}
 	c.state.EventSequence++
 	event := Event{Sequence: c.state.EventSequence, At: time.Now().UTC(), TenantID: s.TenantID, SessionID: s.SessionID, Kind: kind, Detail: detail, State: s.State, Gate: s.Gate, Epoch: s.Epoch}
+	if strings.HasPrefix(kind, "admission.") {
+		event.AdmissionSnapshot = copyValue(s.Admissions[detail])
+	}
 	if c.evidenceClock != nil {
 		stamp := c.evidenceClock.Stamp()
 		event.EvidenceClock = &stamp
@@ -501,6 +508,8 @@ func (c *Controller) Create(ctx context.Context, tenant string, input CreateSess
 	now := time.Now().UTC()
 	s := &Session{TenantID: tenant, WorkspaceID: input.WorkspaceID, SessionID: input.SessionID, Mode: input.Mode, Profile: input.Profile, AblationGroup: input.AblationGroup, State: "CREATING", Gate: "CLOSED", Epoch: 1, Backend: c.cfg.Backend.Name(), Actor: Actor{Name: input.ActorName}, Tools: map[string]*ToolReceipt{}, Lifecycle: map[string]*LifecycleReceipt{}, CreatedAt: now, UpdatedAt: now}
 	c.state.Sessions[key(tenant, input.SessionID)] = s
+	demand := c.newAdmissionLocked(ctx, s, "initial_admission", "initial", input.SessionID)
+	c.startAdmissionLocked(s, demand)
 	c.event(s, "session.creating", "")
 	if err := c.persistContext(ctx); err != nil {
 		c.mu.Unlock()
@@ -510,28 +519,11 @@ func (c *Controller) Create(ctx context.Context, tenant string, input CreateSess
 	c.operations.Add(1)
 	defer c.operations.Done()
 	c.mu.Unlock()
-	actor, err := c.cfg.Backend.Ensure(ctx, snapshot)
+	started := time.Now()
+	actor, err := c.cfg.Backend.Ensure(c.admissionContext(ctx, s, demand.ID), snapshot)
 	c.lock()
 	defer c.mu.Unlock()
-	if err != nil {
-		s.State = "RECOVERY_REQUIRED"
-		c.event(s, "session.create_unknown", err.Error())
-		_ = c.persistContext(ctx)
-		return nil, problem(502, "create_unknown", err.Error())
-	}
-	s.Actor = actor
-	c.observeAllocationMissing(s)
-	s.ActorUID = actor.UID
-	s.ActualFidelity = actor.ActualFidelity
-	s.State = "RUNNING"
-	s.IdleSince = time.Now().UTC()
-	s.RunningSince = time.Now().UTC()
-	s.Gate = "OPEN"
-	c.event(s, "session.running", "")
-	if err = c.persistContext(ctx); err != nil {
-		return nil, err
-	}
-	return copyValue(s), nil
+	return c.finishInitialLocked(ctx, s, snapshot, actor, err, time.Since(started))
 }
 
 func (c *Controller) Tool(ctx context.Context, tenant, id string, input ToolRequest) (*ToolReceipt, error) {
@@ -599,8 +591,8 @@ func (c *Controller) Tool(ctx context.Context, tenant, id string, input ToolRequ
 	}
 	inspection := input.Kind == "file_read" && toolInspectionAllowed(s)
 	if (s.Gate != "OPEN" || s.State != "RUNNING") && !inspection {
-		if c.cfg.EnableAutonomousScheduler && s.State != "RECOVERY_REQUIRED" {
-			if _, e := c.requestReturnLocked(s, LifecycleRequest{OperationID: input.ID, ExpectedEpoch: input.Epoch}); e == nil {
+		if s.State != "RECOVERY_REQUIRED" {
+			if _, e := c.requestReturnLocked(ctx, s, LifecycleRequest{OperationID: input.ID, ExpectedEpoch: input.Epoch}); e == nil {
 				_ = c.persistContext(ctx)
 			}
 		}
@@ -806,6 +798,11 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 		c.mu.Unlock()
 		return nil, nil, problem(409, "resume_capacity_wait", "resume is waiting for Worker capacity; retry the same operation after retry_after")
 	}
+	var admission *AdmissionDemand
+	if action == "resume" {
+		admission = c.resumeAdmissionLocked(ctx, s, input.OperationID)
+		c.startAdmissionLocked(s, admission)
+	}
 	previousState, previousBarrier := s.State, s.BarrierGeneration
 	prepared := s.State == "CHECKPOINTED"
 	receipt := s.Lifecycle[input.OperationID]
@@ -868,6 +865,7 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 			break
 		}
 	}
+	var backendElapsed time.Duration
 	var actor Actor
 	var digest string
 	var manifest *Manifest
@@ -898,7 +896,8 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 				err = errors.New("committed manifest does not match Actor and receipt watermark")
 			} else {
 				started := time.Now()
-				actor, err = c.cfg.Backend.Resume(ctx, snapshot)
+				actor, err = c.cfg.Backend.Resume(c.admissionContext(ctx, s, admission.ID), snapshot)
+				backendElapsed = time.Since(started)
 				if err == nil {
 					observability.Observe(ctx, "resume_ready_ms", float64(time.Since(started))/float64(time.Millisecond), "backend_resume_attach_completion")
 				}
@@ -908,6 +907,9 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 		}
 	}
 	c.lock()
+	if admission != nil {
+		admission.BackendMS += float64(backendElapsed) / float64(time.Millisecond)
+	}
 	if err != nil {
 		if rejected := asQuiesceRejection(err); action != "resume" && !prepared && rejected != nil {
 			abortErr := c.abortQuiesceLocked(ctx, s, receipt, rejected)
@@ -920,6 +922,7 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 			receipt.CapacityWait = copyValue(&waiting.proof)
 			receipt.RetryAfter = time.Now().UTC().Add(resumeCapacityRetryDelay)
 			s.State, s.Gate, s.BarrierGeneration = previousState, "CLOSED", previousBarrier
+			c.waitAdmissionLocked(s, admission, err)
 			c.event(s, "lifecycle.resume.waiting_capacity", input.OperationID)
 			persistErr := c.persistContext(ctx)
 			out := copyValue(s)
@@ -930,11 +933,14 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 			c.signalContext(ctx, out, "SUSPENDED")
 			return nil, nil, problem(409, "resume_capacity_wait", "resume was rejected before Actor mutation; retry the same operation after retry_after")
 		}
+		s.State, s.Gate = "RECOVERY_REQUIRED", "CLOSED"
+		if admission != nil {
+			admission.Status, admission.Reason = "OUTCOME_UNKNOWN", err.Error()
+			c.admissionEventLocked(s, admission, "outcome_unknown")
+		}
 		receipt.Status = "OUTCOME_UNKNOWN"
 		c.markEntity("lifecycle", key(tenant, id)+"/"+input.OperationID)
 		receipt.Error = err.Error()
-		s.State = "RECOVERY_REQUIRED"
-		s.Gate = "CLOSED"
 		c.event(s, "lifecycle.unknown", err.Error())
 		_ = c.persistContext(ctx)
 		c.mu.Unlock()
@@ -967,6 +973,11 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 			s.State = "CHECKPOINTED"
 			s.Gate = "CLOSED"
 		}
+	}
+	if admission != nil {
+		c.readyAdmissionLocked(s, admission)
+	} else if !prepared {
+		c.admissionEventLocked(s, nil, "resource_released")
 	}
 	receipt.Status = "COMPLETED"
 	receipt.Manifest = manifest

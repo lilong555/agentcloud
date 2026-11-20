@@ -5,7 +5,7 @@ on:
       scope:
         description: 'Paired scheduling experiments; workload scopes include long tails, changing waits and open-loop arrivals'
         type: choice
-        options: [smoke, matrix, cost-smoke, cost-matrix, workload-smoke, workload-matrix, gate1, gate2, boundary-screen, boundary-confirm, joint-smoke, joint-full]
+        options: [smoke, matrix, cost-smoke, cost-matrix, workload-smoke, workload-matrix, gate1, gate2, boundary-screen, boundary-confirm, joint-smoke, joint-full, admission-semantics]
         default: smoke
       max_parallel:
         description: 'Independent GitHub hosted runners'
@@ -32,11 +32,15 @@ permissions:
   actions: read
 jobs:
   qualification:
+    if: inputs.scope != 'admission-semantics'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Require research evidence before allocating comparison runners
         run: python3 -m bench.research_gate --require-comparison
+  admission:
+    if: inputs.scope == 'admission-semantics'
+    uses: ./.github/workflows/native-admission.yml
   joint:
     needs: qualification
     if: inputs.scope == 'joint-smoke' || inputs.scope == 'joint-full'

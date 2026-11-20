@@ -25,6 +25,7 @@ type Actor struct {
 	SnapshotFidelity    string `json:"snapshot_fidelity,omitempty"`
 }
 type Session struct {
+	Admissions              map[string]*AdmissionDemand     `json:"admissions,omitempty"`
 	QuiesceRetryAfter       time.Time                       `json:"quiesce_retry_after,omitempty"`
 	QuiesceTimeouts         uint64                          `json:"quiesce_timeouts,omitempty"`
 	ToolRecovery            *ToolRecoveryHint               `json:"tool_recovery,omitempty"`
@@ -155,6 +156,7 @@ type ModelRequest struct {
 	ClaimedEpoch   uint64          `json:"claimed_epoch,omitempty"`
 }
 type Event struct {
+	AdmissionSnapshot  *AdmissionDemand             `json:"admission_snapshot,omitempty"`
 	EvidenceClock      *observability.EvidenceClock `json:"evidence_clock,omitempty"`
 	ActorUID           string                       `json:"actor_uid,omitempty"`
 	WorkerID           string                       `json:"worker_id,omitempty"`

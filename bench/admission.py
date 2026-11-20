@@ -22,7 +22,7 @@ class FairSlots:
             return
         now = time.monotonic_ns()
         try:
-            self.observe('admission.'+kind, queue_episode_id=item['episode'],
+            self.observe('admission.'+kind, source='legacy_runner_admission', queue_episode_id=item['episode'],
                 assignment_id=item['assignment'], session_id=item['name'],
                 tenant_id=item['tenant'], actor_epoch=item['epoch'], queue_kind=item['kind'],
                 requested_monotonic_ns=str(item['begin']),

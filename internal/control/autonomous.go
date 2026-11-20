@@ -208,6 +208,18 @@ func (c *Controller) autonomousLoop() {
 			var candidates []*Session
 			if c.ready() == nil {
 				for _, s := range c.state.Sessions {
+					if pendingAdmission(s) {
+						if d := s.Admissions["initial"]; s.State == "WAITING_CAPACITY" && d != nil && time.Now().Before(d.RetryAfter) {
+							continue
+						}
+						if !c.schedulerBusy[key(s.TenantID, s.SessionID)] {
+							candidates = append(candidates, schedulingSnapshot(s))
+						}
+						continue
+					}
+					if !c.cfg.EnableAutonomousScheduler {
+						continue
+					}
 					if s.AblationGroup != "" && s.AblationGroup != "E" {
 						continue
 					}
@@ -279,6 +291,9 @@ func (c *Controller) autonomousStep(snapshot *Session) {
 	observationStarted := time.Now()
 	ctx, cancel := context.WithTimeout(c.ctx, c.cfg.ModelTimeout)
 	defer cancel()
+	if c.advanceAdmission(ctx, snapshot) {
+		return
+	}
 	observer := c.cfg.QueueObserver
 	if observer == nil {
 		observer, _ = c.cfg.Signals.(QueueObserver)
@@ -475,10 +490,7 @@ type ReturnDemandReceipt struct {
 	RequestedAt       time.Time `json:"requested_at"`
 }
 
-func (c *Controller) requestReturnLocked(s *Session, input LifecycleRequest) (*ReturnDemandReceipt, error) {
-	if !c.cfg.EnableAutonomousScheduler {
-		return nil, problem(409, "autonomous_scheduler_disabled", "enable autonomous scheduler for managed return")
-	}
+func (c *Controller) requestReturnLocked(ctx context.Context, s *Session, input LifecycleRequest) (*ReturnDemandReceipt, error) {
 	if s.ReturnDemands == nil {
 		s.ReturnDemands = map[string]*ReturnDemandReceipt{}
 	}
@@ -491,7 +503,7 @@ func (c *Controller) requestReturnLocked(s *Session, input LifecycleRequest) (*R
 	if s.Epoch != input.ExpectedEpoch {
 		return nil, problem(409, "stale_epoch", "execution epoch differs")
 	}
-	if s.State == "RECOVERY_REQUIRED" || s.State == "CREATING" {
+	if s.State == "RECOVERY_REQUIRED" || s.State == "CREATING" || s.State == "WAITING_CAPACITY" {
 		return nil, problem(409, "recovery_required", "return requires a reconciled session")
 	}
 	// Check the observer's condition in the same critical section as Submit.
@@ -523,6 +535,9 @@ func (c *Controller) requestReturnLocked(s *Session, input LifecycleRequest) (*R
 		receipt.Status = "COMPLETED"
 		receipt.ResultEpoch = s.Epoch
 	}
+	if receipt.Status == "PENDING" {
+		c.resumeAdmissionLocked(ctx, s, input.OperationID)
+	}
 	s.ReturnDemands[input.OperationID] = receipt
 	c.event(s, "autonomous.return_demand", input.OperationID)
 	return copyValue(receipt), nil
@@ -541,7 +556,7 @@ func (c *Controller) ReturnDemand(ctx context.Context, tenant, id string, input 
 	if err != nil {
 		return nil, err
 	}
-	receipt, err := c.requestReturnLocked(s, input)
+	receipt, err := c.requestReturnLocked(ctx, s, input)
 	if err != nil {
 		return nil, err
 	}
