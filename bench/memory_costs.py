@@ -18,6 +18,7 @@ from types import SimpleNamespace
 import uuid
 
 from bench.postgres import connection, execute
+from bench.worker_readiness import placement_capacity
 from experiments.dynamo.native_mocker import Stack
 from runtime.client import Client
 
@@ -27,6 +28,12 @@ METRICS = {
     'snapshot_ready_ms': ('ms', 'coordinator_monotonic_events', 'per_actor_start_to_committed_snapshot'),
     'resume_ready_ms': ('ms', 'coordinator_observation', 'successful_backend_restore_and_attach'),
     'journal_commit_ms': ('ms', 'coordinator_observation', 'individual_lifecycle_journal_commits'),
+    'quiesce_ms': ('ms', 'unavailable', 'runtime_safe_point_rpc'),
+    'substrate_suspend_rpc_ms': ('ms', 'coordinator_substrate_suspend_ms_observations', 'per_actor_sum_of_SuspendActor_rpc_attempts'),
+    'snapshot_durable_wait_rpc_ms': ('ms', 'coordinator_durability_wait_ms_observations', 'per_actor_sum_of_WaitActorSnapshotDurable_rpc_attempts'),
+    'retain_tag_ms': ('ms', 'unavailable', 'snapshot_tag_reconciliation_and_retention'),
+    'post_release_to_snapshot_ready_ms': ('ms', 'coordinator_monotonic_events', 'per_actor_background_durability_retention_and_control_tail'),
+    'backend_checkpoint_total_ms': ('ms', 'coordinator_checkpoint_total_ms_observations', 'per_actor_backend_quiesce_through_retention'),
     'snapshot_logical_bytes': ('bytes', 'stat_st_size_inode_deduplicated', 'per_actor_local_checkpoint_peak'),
     'snapshot_allocated_bytes': ('bytes', 'stat_st_blocks_times_512_inode_deduplicated', 'per_actor_local_checkpoint_peak'),
     'device_write_bytes': ('bytes', 'proc_diskstats_sectors_written_times_512', 'runner_device_whole_batch'),
@@ -34,6 +41,10 @@ METRICS = {
     'disk_used_peak_delta_bytes': ('bytes', 'statvfs_sampled_used_space', 'runner_filesystem_whole_batch'),
     'actor_charge_peak_bytes': ('bytes', 'cgroup_v2_memory_current_sampled_peak', 'per_actor_host_cgroup_charge'),
     'actor_rss_peak_bytes': ('bytes', 'proc_pid_statm_resident_times_pagesize', 'per_actor_sum_of_host_process_RSS'),
+}
+MISSING_REASONS = {
+    'quiesce_ms': 'runtime quiesce has no independently exported start/end or duration in this source revision',
+    'retain_tag_ms': 'RetainSnapshot has no independently exported start/end or duration in this source revision',
 }
 
 
@@ -87,10 +98,52 @@ def stage_metrics(cycle, records):
     completed = event('lifecycle.suspend.completed', suspend)
     restore = observations('resume_ready_ms', {resume})
     commits = observations('journal_commit_ms', {suspend, resume})
+    suspend_rpc = observations('substrate_suspend_ms', {suspend})
+    durable_rpc = observations('durability_wait_ms', {suspend})
+    backend = observations('checkpoint_total_ms', {suspend})
     return dict(checkpoint_slot_ms=elapsed(started, release),
                 snapshot_ready_ms=elapsed(started, completed),
                 resume_ready_ms=restore[0] if len(restore) == 1 else None,
-                journal_commit_ms=statistics.mean(commits) if commits else None)
+                journal_commit_ms=statistics.mean(commits) if commits else None,
+                quiesce_ms=None, retain_tag_ms=None,
+                substrate_suspend_rpc_ms=sum(suspend_rpc) if suspend_rpc else None,
+                snapshot_durable_wait_rpc_ms=sum(durable_rpc) if durable_rpc else None,
+                post_release_to_snapshot_ready_ms=elapsed(release, completed),
+                backend_checkpoint_total_ms=backend[0] if len(backend) == 1 else None)
+
+
+def stage_evidence(cycle, records):
+    """Expose observed milestones and explicit gaps without subtractive phase guesses."""
+    events, observations = [], []
+    for record in records:
+        row = record.get('payload', {})
+        if record.get('record_type') != 'record' or row.get('session_id') != cycle['session_id']:
+            continue
+        if row.get('kind') in ('lifecycle.suspend.started', 'admission.resource_released',
+                               'lifecycle.suspend.completed', 'lifecycle.resume.started',
+                               'lifecycle.resume.completed'):
+            events.append(dict(stream=record.get('stream'), sequence=record['sequence'],
+                committed_revision=record.get('committed_revision'), staged_at=record.get('staged_at'),
+                kind=row['kind'], operation_id=row.get('detail'),
+                at=row.get('at'), evidence_clock=row.get('evidence_clock')))
+        if row.get('metric') in ('substrate_suspend_ms', 'durability_wait_ms', 'checkpoint_total_ms',
+                                 'substrate_resume_ms', 'resume_ready_ms', 'journal_commit_ms',
+                                 'substrate_actor_lease_retry') and row.get('operation_id') in (
+                                     cycle['suspend_operation'], cycle['resume_operation']):
+            observations.append(dict(stream=record.get('stream'), sequence=record['sequence'],
+                committed_revision=record.get('committed_revision'), metric=row['metric'],
+                operation_id=row.get('operation_id'), value=row['value'], source=row.get('source'),
+                at=row.get('at'), evidence_clock=row.get('evidence_clock')))
+    manifest = cycle.get('manifest') or {}
+    return dict(session_id=cycle['session_id'], actor_uid=cycle.get('actor_uid'),
+        cycle_status=cycle['status'], metrics=stage_metrics(cycle, records),
+        observed_events=events, observed_rpc_and_commit_samples=observations,
+        quiesce=dict(duration_ms=None, completed_at=None, missing_reason=MISSING_REASONS['quiesce_ms']),
+        retain_tag=dict(duration_ms=None, completed_at=None, missing_reason=MISSING_REASONS['retain_tag_ms'],
+            completion_receipt={key: manifest.get(key) for key in ('id', 'state', 'fidelity',
+                'snapshot_uuid', 'snapshot_generation', 'retained_tag', 'retained_tag_uid')}),
+        endpoint_semantics='Event monotonic clocks identify Coordinator-observed milestones; staging/commit metadata establishes durability provenance, not a replacement event timestamp.',
+        rpc_semantics='Durations are direct gRPC-client observations; summed attempts exclude intervening lease backoff. Observation stamps occur after RPC completion and include observer scheduling delay.')
 
 
 def worker_write_delta(first, last):
@@ -143,16 +196,19 @@ def physical_metrics(batch, samples):
     return batch_metrics, actors
 
 
-def fit(output, batches, environment):
-    capture = output/'coordinator.jsonl'
+def fit(output, batches, environment, raw_output=None):
+    raw_output = raw_output or output
+    capture = raw_output/'coordinator.jsonl'
     records = [json.loads(line) for line in capture.read_text().splitlines()] if capture.exists() else []
     derived = []
+    phase_evidence = []
     for batch in batches:
-        sample_file = output/batch['batch_id']/'physical.jsonl'
+        sample_file = raw_output/batch['batch_id']/'physical.jsonl'
         samples = [json.loads(line) for line in sample_file.read_text().splitlines()] if sample_file.exists() else []
         batch_values, actors = physical_metrics(batch, samples)
         values = {k: [] for k in METRICS}
         for cycle in batch['cycles']:
+            phase_evidence.append(dict(batch_id=batch['batch_id'], **stage_evidence(cycle, records)))
             if cycle['status'] != 'passed':
                 continue
             metric_values = stage_metrics(cycle, records)
@@ -179,22 +235,32 @@ def fit(output, batches, environment):
                 values = [d['metrics'][key] for _, d in selected if d['metrics'][key] is not None]
                 metrics[key] = dict(p50=percentile(values, .5), p95=percentile(values, .95),
                     samples=len(values), unit=unit, source=source, scope=scope,
-                    missing_reason=None if values else 'no complete eligible batch observations')
+                    missing_reason=None if values else MISSING_REASONS.get(key, 'no complete eligible batch observations'))
             entries.append(dict(workload_bytes=heap*2**20, concurrency=concurrency,
                 batches=len(selected), actor_cycles=sum(len(b['cycles']) for b, _ in selected),
                 failures=sum(c['status'] != 'passed' for b, _ in selected for c in b['cycles']),
                 metrics=metrics))
     write(output/'derived-batches.json', derived)
-    artifacts = [output/'raw.jsonl', capture]+sorted(output.glob('*/physical.jsonl'))
-    result = dict(schema_version=1, cost_id=environment['run_id'], kind='measured',
+    write(output/'stage-evidence.json', phase_evidence)
+    artifacts = [raw_output/'raw.jsonl', capture]+sorted(raw_output.glob('*/physical.jsonl'))
+    result = dict(schema_version=1, semantics_version='1.1', research_status='exploratory',
+        cost_id=environment['run_id'], kind='measured',
         environment=environment,
-        raw_artifacts=[dict(path=str(p.relative_to(output)), sha256=hashlib.sha256(p.read_bytes()).hexdigest())
+        derivation=dict(module='bench.memory_costs',
+            source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+            sampling_unit='batch', actor_metric_aggregation='within_batch_mean',
+            percentile_method='linear_interpolation_of_batch_values'),
+        raw_artifact_root=str(raw_output.resolve()),
+        raw_artifacts=[dict(path=str(p.relative_to(raw_output)), sha256=hashlib.sha256(p.read_bytes()).hexdigest())
                        for p in artifacts if p.exists()], entries=entries,
         assumptions=[
             'A batch is the sampling unit. Actor-scoped metrics are the within-batch mean; p50/p95 summarize independent batch means, not Actor tail quantiles.',
             'Three batches per cell are descriptive calibration data; statistical confidence and final tail claims require independent repetitions.',
             'Each new Actor has one random, fully touched heap and one MEMORY checkpoint/restore. Kernel/page caches are natural; no global cache flush is issued.',
             'Checkpoint slot time and snapshot ready time overlap. Resume begins only after all snapshots in the batch are durable; do not add overlapping stages.',
+            'checkpoint_slot_ms ends at admission.resource_released. post_release_to_snapshot_ready_ms measures the subsequent durability/retention/control tail and does not occupy a Worker slot.',
+            'SuspendActor and WaitActorSnapshotDurable RPC durations retain their native measurement sources. Quiesce and RetainSnapshot durations remain null until independently instrumented.',
+            'backend_checkpoint_total_ms overlaps quiesce, SuspendActor, release callback, durability and retention. Subtracting the two RPC sums does not isolate either quiesce or retention.',
             'Journal durations overlap lifecycle events and include coordinator serialization/lock reacquisition; journal_commit_ms is a separate diagnostic, not an additive storage latency.',
             'Snapshot bytes cover deduplicated regular-file inodes in the owned Actor local-checkpoint tree; staging and remote object-store copies are outside this metric.',
             'Device/Worker write counters span the whole batch including checkpoint, restore and background work. They are not per-Actor snapshot attribution.',
@@ -269,10 +335,33 @@ class Harness:
                 if caps['execution_backend'] != 'substrate' or caps['journal_backend'] != 'postgresql':
                     raise RuntimeError('Substrate + PostgreSQL precondition')
                 write(self.output/'capabilities.json', caps)
+                self.wait_empty_workers()
                 return
             except OSError:
                 time.sleep(.1)
         raise TimeoutError('Coordinator readiness')
+
+    def wait_empty_workers(self):
+        deadline = time.monotonic()+90
+        while time.monotonic() < deadline:
+            self.guard()
+            result = subprocess.run([str(ROOT/'artifacts/substrate/provision'), '--workers',
+                '--client-dir', str(self.client_dir)], cwd=ROOT, text=True,
+                capture_output=True, timeout=15, check=True)
+            fleet = json.loads(result.stdout)
+            workers = [w for w in fleet.get('workers', [])
+                       if w.get('workerPool') == 'agentcloud' and w.get('workerNamespace') == 'agentcloud']
+            capacities = [placement_capacity(dict(worker_status=w.get('status', {})),
+                dict(actor_memory_bytes=512*2**20, actor_cpu_millicores=200)) for w in workers]
+            if len(workers) == 2 and all(capacities):
+                if (sum(c['available_slots'] for c in capacities) >= 4
+                        and all(int(w.get('status', {}).get('allocated', {}).get('actors', 0)) == 0 for w in workers)):
+                    with (self.output/'worker-readiness.jsonl').open('a') as stream:
+                        stream.write(json.dumps(dict(at_ns=str(time.time_ns()),
+                            workers=workers, placement=capacities))+'\n')
+                    return
+            time.sleep(1)
+        raise TimeoutError('four free physical placements and completed prior cleanup')
 
     def state(self, session):
         value = self.client.session(session)
@@ -368,6 +457,7 @@ class Harness:
                     stdout=result.stdout, stderr=result.stderr))+'\n')
             if result.returncode:
                 raise RuntimeError('owned Actor/Tag cleanup failed')
+            self.wait_empty_workers()
 
     def batch(self, batch):
         directory = self.output/batch['batch_id']
@@ -462,7 +552,10 @@ class Harness:
                 execute(self.admin, 'DROP DATABASE '+self.database+' WITH (FORCE)')
             except Exception as exc:
                 errors.append('database cleanup: '+str(exc))
-        self.stack.close()
+        try:
+            self.stack.close()
+        except Exception as exc:
+            errors.append('native runtime cleanup: '+str(exc))
         if self.log:
             self.log.close()
         secrets = [self.token, self.admin, self.env['AGENTCLOUD_RUNTIME_TOKEN']]
@@ -501,15 +594,23 @@ def run(args):
     report = dict(status='failed', environment=environment, planned_batches=len(batches),
                   planned_actor_cycles=sum(len(b['cycles']) for b in batches))
     write(h.output/'plan.json', dict(environment=environment, batches=batches))
+    def interrupted(signum, _frame):
+        raise InterruptedError(f'owned experiment interrupted by signal {signum}')
+    previous = {sig: signal.signal(sig, interrupted) for sig in (signal.SIGINT, signal.SIGTERM)}
     try:
         h.start()
         for batch in batches:
             print(json.dumps(dict(batch_id=batch['batch_id'], status='running')), flush=True)
             h.batch(batch)
+            print(json.dumps(dict(batch_id=batch['batch_id'], status=batch['status'],
+                completed_actor_cycles=sum(c['status'] == 'passed' for c in batch['cycles']),
+                free_bytes_after_cleanup=batch.get('free_bytes_after_cleanup'))), flush=True)
         report['status'] = 'passed'
     except Exception as exc:
         report['error'] = str(exc)
     finally:
+        for sig in previous:
+            signal.signal(sig, signal.SIG_IGN)
         errors = h.close()
         if errors:
             report.update(status='failed', cleanup_errors=errors)
@@ -520,6 +621,8 @@ def run(args):
         report.update(completed_batches=sum(b['status'] == 'passed' for b in batches),
             completed_actor_cycles=sum(c['status'] == 'passed' for b in batches for c in b['cycles']))
         write(h.output/'result.json', report)
+        for sig, handler in previous.items():
+            signal.signal(sig, handler)
     print(json.dumps(report), flush=True)
     return int(report['status'] != 'passed')
 
@@ -527,12 +630,21 @@ def run(args):
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--output', type=Path, required=True)
+    p.add_argument('--refit-from', type=Path,
+                   help='derive a separate cost table from an existing raw artifact; performs no runtime operations')
     p.add_argument('--client-dir', type=Path, default=ROOT/'artifacts/substrate/client')
     p.add_argument('--batches', type=int, default=3)
     p.add_argument('--seed', type=int, default=7301)
     p.add_argument('--sample-seconds', type=float, default=.1)
     p.add_argument('--min-free-gib', type=float, default=14)
     args = p.parse_args()
+    if args.refit_from:
+        source = args.refit_from.resolve()
+        args.output.mkdir(parents=True, exist_ok=False)
+        batches = [json.loads(line) for line in (source/'raw.jsonl').read_text().splitlines()]
+        environment = json.loads((source/'plan.json').read_text())['environment']
+        fit(args.output, batches, environment, source)
+        return 0
     if os.getenv('GITHUB_ACTIONS') != 'true' or os.uname().machine != 'x86_64':
         p.error('physical MEMORY measurements run only on GitHub Actions x86')
     if args.batches not in range(1, 11) or not .05 <= args.sample_seconds <= 1 or args.min_free_gib < 14:

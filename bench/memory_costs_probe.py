@@ -84,7 +84,7 @@ def cgroup_sample(path):
         pids = [int(p) for p in (path/'cgroup.procs').read_text().split()]
     except OSError:
         return dict(missing_reason='Actor cgroup absent', charge_bytes=None,
-                    rss_bytes=None, pids=[])
+                    rss_bytes=None, pids=[], pids_available=False)
     rss = 0
     errors = []
     for pid in pids:
@@ -92,11 +92,38 @@ def cgroup_sample(path):
             rss += int((Path('/proc')/str(pid)/'statm').read_text().split()[1])*os.sysconf('SC_PAGE_SIZE')
         except (OSError, ValueError, IndexError):
             errors.append(pid)
-    # Empty leaves during restore/release do not provide a process RSS sample.
     return dict(charge_bytes=read_int(path/'memory.current'),
                 kernel_memory_peak_bytes=read_int(path/'memory.peak'),
-                rss_bytes=rss if pids and not errors else None, pids=pids,
+                rss_bytes=rss if not errors else None, pids=pids, pids_available=True,
                 rss_missing_pids=errors, path=str(path))
+
+
+def actor_memory(leaves):
+    """Sum disjoint gVisor container/sandbox/checkpoint leaves owned by one UID."""
+    if not leaves:
+        return dict(charge_bytes=None, rss_bytes=None, pids=[],
+                    missing_reason='owned gVisor cgroup leaves absent')
+    charges = [row.get('charge_bytes') for row in leaves]
+    rss = [row.get('rss_bytes') for row in leaves]
+    pids = [pid for row in leaves for pid in row.get('pids', [])]
+    complete = all(row.get('pids_available') for row in leaves)
+    return dict(charge_bytes=sum(charges) if all(v is not None for v in charges) else None,
+        rss_bytes=sum(rss) if complete and len(pids) == len(set(pids))
+            and all(v is not None for v in rss) else None,
+        pids=sorted(set(pids)), cgroup_count=len(leaves),
+        scope='sum_of_owned_disjoint_gvisor_leaves_including_checkpoint_cache',
+        missing_reason=None if complete and len(pids) == len(set(pids)) else 'incomplete or moving PID membership')
+
+
+def discover_actor_cgroups(root, actors):
+    groups = {}
+    prefixes = [(uid+'-', uid) for uid in actors]
+    for directory, dirs, _ in os.walk(root):
+        for name in dirs:
+            for prefix, uid in prefixes:
+                if name.startswith(prefix):
+                    groups.setdefault(uid, []).append(Path(directory)/name)
+    return groups
 
 
 class Sampler:
@@ -113,13 +140,9 @@ class Sampler:
         if now-self.discovery_at < .5:
             return
         self.discovery_at = now
-        self.cgroups = {}
-        names = set(self.actors)
-        for root, dirs, _ in os.walk('/sys/fs/cgroup'):
-            for name in set(dirs) & names:
-                path = Path(root)/name
-                self.cgroups.setdefault(name, []).append(path)
-                self.workers.add(path.parent)
+        self.cgroups = discover_actor_cgroups('/sys/fs/cgroup', self.actors)
+        for paths in self.cgroups.values():
+            self.workers.update(path.parent for path in paths)
 
     def sample(self):
         start = time.monotonic_ns()
@@ -128,13 +151,10 @@ class Sampler:
         actors = {}
         for uid in self.actors:
             paths = self.cgroups.get(uid, [])
-            # Across a migration, stale and current leaves can coexist. Keep the raw
-            # paths and only derive memory when one populated leaf is identifiable.
+            # gVisor uses UID-_sandbox, UID-<container>, and UID-_ckpt sibling
+            # leaves. Include charged checkpoint cache even after the PID moves.
             leaves = [cgroup_sample(p) for p in paths]
-            populated = [p for p in leaves if p.get('pids')]
-            memory = populated[0] if len(populated) == 1 else dict(
-                charge_bytes=None, rss_bytes=None,
-                missing_reason='no unique populated Actor leaf')
+            memory = actor_memory(leaves)
             base = self.node/'var/lib/ate/snapshots'/uid
             actors[uid] = dict(memory=memory, cgroup_leaves=leaves,
                 snapshot=tree_bytes(base/'local-checkpoint'),
