@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "research_status": "exploratory",
+  "run_url": "https://github.com/lilong555/agentcloud/actions/runs/44724867918",
+  "artifact_id": 14625311776,
+  "artifact_name": "memory-costs-evidence",
+  "artifact_size_bytes": 2967308,
+  "artifact_sha256": "38a065e05541c80b52b457bb5a5b4277510175ba5a6aeb075ba3822cc130740a",
+  "archive_digest_verified": true,
+  "measurement_commit": "2489f7eac7d1cbaf5aded67c929377bde44764e6",
+  "derivation_commit": "8e40d06e71a178c03b3a6f29e9f7c67ca8315d79",
+  "raw_remote_directory": "cannlab:/mnt/workspace/agentcloud-prev3-20261120/physical-44724867918/memory-costs",
+  "derived_remote_directory": "cannlab:/mnt/workspace/agentcloud-prev3-20261120/physical-44724867918/derived-v11",
+  "reproduction": [
+    "gh run download 44724867918 -n memory-costs-evidence -D RAW",
+    "python -m bench.memory_costs --refit-from RAW/memory-costs --output DERIVED",
+    "python -m bench.memory_costs_audit --raw RAW/memory-costs --derived DERIVED --output DERIVED/audit.json"
+  ],
+  "sampling_unit": "independent_batch; actor metrics use the within-batch mean",
+  "missing": [
+    "quiesce_ms and retain_tag_ms have no independent duration observation",
+    "worker_io_write_bytes, actor_charge_peak_bytes and actor_rss_peak_bytes are unavailable because the measurement revision matched bare UID cgroup names"
+  ],
+  "scope": "18 independent batches and 45 MEMORY checkpoint/restore cycles; 3 batches per cell provide descriptive quantiles. Device writes and filesystem peak cover the entire batch, including shared runtime and background activity."
+}

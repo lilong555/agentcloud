@@ -1,0 +1,174 @@
+{
+  "schema_version": 1,
+  "source_commit": "8dbd80b5fb082d94455acb628b08889063926cd6",
+  "run_url": "https://github.com/lilong555/agentcloud/actions/runs/44731926110",
+  "status": "passed",
+  "artifact": {
+    "id": 14626239265,
+    "name": "verification-evidence",
+    "sha256": "ad50795e144758c777984f697ccddbd17859c41ae334a6c29ad6f7c3000ab9b1",
+    "digest_verified": true
+  },
+  "environment": {
+    "runner_label": "ubuntu-latest",
+    "image": "ubuntu-26.04",
+    "architecture": "x86_64"
+  },
+  "scope": "engineering contracts, race checks and controlled PostgreSQL restart capture; physical MEMORY evidence lives in the ubuntu-24.04 cost runs",
+  "commands": [
+    {
+      "name": "race-tests",
+      "command": [
+        "go",
+        "test",
+        "-p",
+        "2",
+        "-race",
+        "-count=1",
+        "-json",
+        "./..."
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "vet",
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "tooling-tests",
+      "command": [
+        "/opt/hostedtoolcache/Python/3.13.18/x64/bin/python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests/tooling",
+        "-v"
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "runtime-tests",
+      "command": [
+        "/opt/hostedtoolcache/Python/3.13.18/x64/bin/python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests/python",
+        "-v"
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "python-syntax",
+      "command": [
+        "/opt/hostedtoolcache/Python/3.13.18/x64/bin/python3",
+        "-m",
+        "compileall",
+        "-q",
+        "-x",
+        "[/\\\\](\\.venv|__pycache__)[/\\\\]",
+        "scripts",
+        "experiments",
+        "runtime",
+        "adapters",
+        "bench",
+        "tests/faults"
+      ],
+      "status": "passed",
+      "exit_code": 0
+    },
+    {
+      "name": "replay",
+      "command": [
+        "go",
+        "run",
+        "./cmd/agentcloud",
+        "replay",
+        "--input",
+        "fixtures/signals/demo.jsonl",
+        "--output",
+        "artifacts/replay-demo.json"
+      ],
+      "status": "passed",
+      "exit_code": 0
+    }
+  ],
+  "go_top_level_counts": {
+    "pass": 191
+  },
+  "go_raw_sha256": "f5d8ceb7cf22a2feb9cd7e81a1cbab6d591214162db69b2a3310cc2dbf782f88",
+  "go_raw_artifact_path": "docs/evidence/logs/local-20261120T120033279255Z/race-tests.stdout.log",
+  "postgres_tests_skipped_on_arm_and_passed_here": [
+    "TestPostgresEntityTransactionRollsBackMetadataAndRowsTogether",
+    "TestResearchPostgresPreservesPrunedRecordsAndRestart",
+    "TestResearchPostgresConflictRollsBackControlAndCapture",
+    "TestResearchPostgresStartsAtRecordedFrontier",
+    "TestPostgresDurableReopenAndAdvisoryOwnership",
+    "TestPostgresRevisionConflictPoisonsWriter",
+    "TestNativeInitialAdmissionPostgresConcurrencyRestartAndRelease",
+    "TestInitialAdmissionFailedCommitKeepsOwnedActorAndUnknownIntent",
+    "TestPostgresRestartKeepsUnknownAndClosedGate",
+    "TestPostgresCostDeadlineSurvivesRestartAndToolReset",
+    "TestPostgresIncrementalEntitiesPreserveOtherSessionsAndClaims",
+    "TestPostgresCommitGateHidesUncommittedState",
+    "TestPostgresFailedRevisionKeepsDurableStateAndFailsClosed",
+    "TestPostgresLegacyDocumentMigratesAtomically",
+    "TestResearchPostgresCapturesEventClockEpochAndDecision",
+    "TestSnapshotGCPostgresSessionEntityPreservesDeleteTombstones"
+  ],
+  "python": {
+    "tooling-tests": {
+      "ran": 356,
+      "passed": 350,
+      "skipped": 6,
+      "log_sha256": "1d618f89ea9548f54bb0d02946800571c6cb048827462fb9c1c820e2cd750185",
+      "skip_lines": [
+        "test_all_states_missing_invalid_and_negative_endpoints_retained (test_agentlogs_population.PopulationSQLTests.test_all_states_missing_invalid_and_negative_endpoints_retained) ... skipped 'install scripts/research-requirements.txt to run SQL population fixtures'",
+        "test_composite_workflow_join_missing_and_ambiguous_keys_keep_denominator (test_agentlogs_population.PopulationSQLTests.test_composite_workflow_join_missing_and_ambiguous_keys_keep_denominator) ... skipped 'install scripts/research-requirements.txt to run SQL population fixtures'",
+        "test_duplicate_identifiers_are_retained_and_excluded_from_interval_cohort (test_agentlogs_population.PopulationSQLTests.test_duplicate_identifiers_are_retained_and_excluded_from_interval_cohort) ... skipped 'install scripts/research-requirements.txt to run SQL population fixtures'",
+        "test_half_open_boundaries_do_not_double_count_adjacent_sessions (test_agentlogs_population.PopulationSQLTests.test_half_open_boundaries_do_not_double_count_adjacent_sessions) ... skipped 'install scripts/research-requirements.txt to run SQL population fixtures'",
+        "test_shared_session_task_aliases_form_one_family (test_agentlogs_population.PopulationSQLTests.test_shared_session_task_aliases_form_one_family) ... skipped 'install scripts/research-requirements.txt to run SQL population fixtures'",
+        "test_metadata_query_and_synthetic_provenance (test_prev3_arrivals.ArrivalsTests.test_metadata_query_and_synthetic_provenance) ... skipped 'DuckDB required for metadata SQL'"
+      ]
+    },
+    "runtime-tests": {
+      "ran": 62,
+      "passed": 58,
+      "skipped": 4,
+      "log_sha256": "6ec3289cda4f42fbdd0002011a291bd1f1377edd6e8ed283bf49f12e116e9200",
+      "skip_lines": [
+        "test_deerflow (unittest.loader.ModuleSkipped.test_deerflow) ... skipped '\u8fd0\u884c adapters/deerflow/setup.sh \u5b89\u88c5\u771f\u5b9e\u4e0a\u6e38\u5951\u7ea6\u4f9d\u8d56'",
+        "test_deerflow_deep_graph (unittest.loader.ModuleSkipped.test_deerflow_deep_graph) ... skipped '\u5728DeerFlow venv\u8fd0\u884c\u771f\u5b9e\u4e0a\u6e38\u5b50Agent\u56fe\u6d4b\u8bd5'",
+        "test_deerflow_events (unittest.loader.ModuleSkipped.test_deerflow_events) ... skipped 'DeerFlow event lifecycle tests run in the locked adapter environment'",
+        "test_deerflow_store (unittest.loader.ModuleSkipped.test_deerflow_store) ... skipped '\u5728DeerFlow venv\u8fd0\u884c\u539f\u751f\u68c0\u67e5\u70b9\u6d4b\u8bd5'"
+      ]
+    }
+  },
+  "supplemental_dependencies": {
+    "agentlogs_population_sql": "12 checks passed in dedicated research venv within this run",
+    "prev3_arrivals_duckdb": "passed on cannlab in time-isolation-python-tests.log",
+    "deerflow": "separate deerflow-contracts job passed"
+  },
+  "native_capture": {
+    "actual_fidelity": "VOLUMES",
+    "runtime": "local-volumes",
+    "execution_kind": "controlled-local-coordinator-admission-capture",
+    "coordinator_starts": 2,
+    "final_state": "SUSPENDED",
+    "epoch_after_resume": 2,
+    "capacity_semantics": "pending_real_substrate_capacity_evidence"
+  },
+  "native_capture_raw_sha256": "9d61131dd5b4ae07ce20f04f5c180941e464cef5ccb09b70b490894bb5476c79",
+  "remote_archive": "cannlab:/mnt/workspace/agentcloud-prev3-20261120/results/verification-44731926110.zip"
+}

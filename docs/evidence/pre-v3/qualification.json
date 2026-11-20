@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "semantics_version": "1.1",
+  "implementation_commit": "8dbd80b5fb082d94455acb628b08889063926cd6",
+  "research_status": "exploratory",
+  "A": {
+    "status": "passed_for_B_and_C_semantics",
+    "freeinference_level": "B",
+    "agentlogs_level": "C",
+    "complete_causal_level_A": "pending",
+    "normalized_sessions": 1175,
+    "accepted_family_split_overlap": 0,
+    "independent_event_source_generalization": "pending",
+    "temporal_training_and_tuning_guard": "passed_adapter_and_Go_tests",
+    "accepted_families": 108,
+    "generalization_sessions": 111,
+    "excluded_early_generalization": 12
+  },
+  "B": {
+    "status": "measured_partial_coverage",
+    "primary_run": "44724867918",
+    "supplemental_run": "44729600983",
+    "raw_runs_combined": false,
+    "primary_batches": 18,
+    "primary_actor_cycles": 45,
+    "coordinates": [
+      [
+        16,
+        1
+      ],
+      [
+        16,
+        4
+      ],
+      [
+        64,
+        1
+      ],
+      [
+        64,
+        4
+      ],
+      [
+        128,
+        1
+      ],
+      [
+        128,
+        4
+      ]
+    ],
+    "quiesce_ms": null,
+    "retain_tag_ms": null,
+    "supplemental_batches": 6,
+    "supplemental_actor_cycles": 15,
+    "actor_charge_coverage": "6/6 cells in supplemental run",
+    "actor_rss_coverage": "6/6 cells in supplemental run",
+    "worker_io_write_bytes": null,
+    "missing_metrics": [
+      "quiesce_ms",
+      "retain_tag_ms",
+      "worker_io_write_bytes"
+    ]
+  },
+  "C1": {
+    "status": "passed",
+    "baseline_groups": [
+      "FixedTTL(tau)",
+      "stateful Controller v2",
+      "break-even + GDSF"
+    ],
+    "ttl_grid_ms": [
+      0,
+      500,
+      1000,
+      2000,
+      5000,
+      15000,
+      60000
+    ],
+    "tuning_split": "validation",
+    "controller_stateful_differential": "passed",
+    "native_state_stream_calibration": "pending",
+    "oracle": "restricted_binary_enumeration_and_relaxed_lower_bound"
+  },
+  "tier1": {
+    "status": "pending",
+    "remaining": [
+      "qualification of B-level active/safe-window assumptions for intended scheduling claim",
+      "physical metric coverage and cost-model uncertainty",
+      "paired Native control-state and latency calibration"
+    ]
+  },
+  "tier2": {
+    "status": "pending",
+    "remaining": [
+      "collection overhead pairing",
+      "multi-seed held-out inference",
+      "latest MEMORY crash/restart continuity",
+      "pre-registered simulator/runtime error tolerance"
+    ]
+  },
+  "C2": {
+    "status": "pending",
+    "remaining": [
+      "qualified causal windows or explicit conservative B-level scenarios",
+      "Native observation frequency, tenant/profile mapping and measured cost feedback",
+      "paired queue, restore count, reservation integral and completion-time validation"
+    ]
+  },
+  "environment": {
+    "physical": "GitHub Actions ubuntu-24.04 x86_64 gVisor MEMORY + native Dynamo CPU Mocker",
+    "offline": "cannlab arm64, dedicated /mnt/workspace/agentcloud-prev3-20261120",
+    "local_control_plane": "stopped"
+  },
+  "scope": {
+    "production_v2_behavior_changes": false,
+    "new_v3_algorithm": false,
+    "gpu_joint_primary_baseline": false
+  },
+  "verification_run": "44731926110"
+}

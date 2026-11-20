@@ -1,0 +1,899 @@
+{
+  "source_commit": "8e40d06e71a178c03b3a6f29e9f7c67ca8315d79",
+  "execution": "offline tests on cannlab arm64; runtime tests use controlled backend and Python process, no gVisor experiment",
+  "go_version": "go1.27.3",
+  "command": "GOMAXPROCS=2 GOFLAGS=-p=2 GOMEMLIMIT=1500MiB go test -json ./internal/...",
+  "raw_sha256": "eefcbf3c7ab5a9ca995fe0bc4c6d480dc54648ba29d33192c34c2f7591b70fd5",
+  "raw_remote_path": "cannlab:/mnt/workspace/agentcloud-prev3-20261120/results/go-tests.jsonl",
+  "top_level_counts": {
+    "pass": 157,
+    "skip": 16
+  },
+  "tests": [
+    {
+      "name": "TestClientReadsPrefixObservationWithoutRefreshingItsTimestamp",
+      "package": "github.com/lilong555/agentcloud/internal/adapters/dynamo",
+      "status": "pass"
+    },
+    {
+      "name": "TestClientTransportsTrustedBindingsAndReceipts",
+      "package": "github.com/lilong555/agentcloud/internal/adapters/dynamo",
+      "status": "pass"
+    },
+    {
+      "name": "TestGenerationsAreBoundedAcrossEpochsAndFreshRegistrationIsExplicit",
+      "package": "github.com/lilong555/agentcloud/internal/adapters/dynamo",
+      "status": "pass"
+    },
+    {
+      "name": "TestClientDoesNotForwardTokenAcrossRedirects",
+      "package": "github.com/lilong555/agentcloud/internal/adapters/dynamo",
+      "status": "pass"
+    },
+    {
+      "name": "TestClientRejectsMismatchedReceiptIdentity",
+      "package": "github.com/lilong555/agentcloud/internal/adapters/dynamo",
+      "status": "pass"
+    },
+    {
+      "name": "TestCoordinatorEgressWire",
+      "package": "github.com/lilong555/agentcloud/internal/adapters/substrate",
+      "status": "pass"
+    },
+    {
+      "name": "TestPublicLifecycleWire",
+      "package": "github.com/lilong555/agentcloud/internal/adapters/substrate",
+      "status": "pass"
+    },
+    {
+      "name": "TestRetainReconcilesUnknownCreate",
+      "package": "github.com/lilong555/agentcloud/internal/adapters/substrate",
+      "status": "pass"
+    },
+    {
+      "name": "TestLifecycleLeaseContentionPreservesWireIdentityAndFencing",
+      "package": "github.com/lilong555/agentcloud/internal/adapters/substrate",
+      "status": "pass"
+    },
+    {
+      "name": "TestActorLeaseRetryRequiresGuardedPreAdmissionRejection",
+      "package": "github.com/lilong555/agentcloud/internal/adapters/substrate",
+      "status": "pass"
+    },
+    {
+      "name": "TestActorLeaseRetryHasAttemptAndContextBounds",
+      "package": "github.com/lilong555/agentcloud/internal/adapters/substrate",
+      "status": "pass"
+    },
+    {
+      "name": "TestSnapshotLeaseContentionRetainsImmutableSourceAndTag",
+      "package": "github.com/lilong555/agentcloud/internal/adapters/substrate",
+      "status": "pass"
+    },
+    {
+      "name": "TestNativeGRPCTraceMetadataAndSeparateDurabilityTimings",
+      "package": "github.com/lilong555/agentcloud/internal/adapters/substrate",
+      "status": "pass"
+    },
+    {
+      "name": "TestWorkerPoolFitUsesActiveWorkersAndPreservesFragmentation",
+      "package": "github.com/lilong555/agentcloud/internal/adapters/substrate",
+      "status": "pass"
+    },
+    {
+      "name": "TestSnapshotGCAdapterFencesUIDVersionAndResumesStorageDeletion",
+      "package": "github.com/lilong555/agentcloud/internal/adapters/substrate",
+      "status": "pass"
+    },
+    {
+      "name": "TestSnapshotGCAdapterPreservesForeignIdentityAndBorrowedTags",
+      "package": "github.com/lilong555/agentcloud/internal/adapters/substrate",
+      "status": "pass"
+    },
+    {
+      "name": "TestSnapshotGCAdapterRequiresExactAtespace",
+      "package": "github.com/lilong555/agentcloud/internal/adapters/substrate",
+      "status": "pass"
+    },
+    {
+      "name": "TestPostgresEntityTransactionRollsBackMetadataAndRowsTogether",
+      "package": "github.com/lilong555/agentcloud/internal/journal",
+      "status": "skip"
+    },
+    {
+      "name": "TestResearchPostgresPreservesPrunedRecordsAndRestart",
+      "package": "github.com/lilong555/agentcloud/internal/journal",
+      "status": "skip"
+    },
+    {
+      "name": "TestResearchPostgresConflictRollsBackControlAndCapture",
+      "package": "github.com/lilong555/agentcloud/internal/journal",
+      "status": "skip"
+    },
+    {
+      "name": "TestResearchPostgresStartsAtRecordedFrontier",
+      "package": "github.com/lilong555/agentcloud/internal/journal",
+      "status": "skip"
+    },
+    {
+      "name": "TestFileJournalDurabilityAndSingleWriter",
+      "package": "github.com/lilong555/agentcloud/internal/journal",
+      "status": "pass"
+    },
+    {
+      "name": "TestInvalidFileJournalFailsClosed",
+      "package": "github.com/lilong555/agentcloud/internal/journal",
+      "status": "pass"
+    },
+    {
+      "name": "TestPostgresDurableReopenAndAdvisoryOwnership",
+      "package": "github.com/lilong555/agentcloud/internal/journal",
+      "status": "skip"
+    },
+    {
+      "name": "TestPostgresRevisionConflictPoisonsWriter",
+      "package": "github.com/lilong555/agentcloud/internal/journal",
+      "status": "skip"
+    },
+    {
+      "name": "TestKVSharedInputsForceZeroEffectAndCommonRiskCancels",
+      "package": "github.com/lilong555/agentcloud/internal/policy",
+      "status": "pass"
+    },
+    {
+      "name": "TestKVPositiveEffectUsesOnlyAdditionalExposureAndPartialLoss",
+      "package": "github.com/lilong555/agentcloud/internal/policy",
+      "status": "pass"
+    },
+    {
+      "name": "TestKVRejectsUnavailableSignalsWithFiniteAuditableFallback",
+      "package": "github.com/lilong555/agentcloud/internal/policy",
+      "status": "pass"
+    },
+    {
+      "name": "TestKVPartialResidentPricesNonlinearLossAboveCommonMissingPrefix",
+      "package": "github.com/lilong555/agentcloud/internal/policy",
+      "status": "pass"
+    },
+    {
+      "name": "TestKVObservedZeroLossHasZeroDeltaAndValidStatistics",
+      "package": "github.com/lilong555/agentcloud/internal/policy",
+      "status": "pass"
+    },
+    {
+      "name": "TestKVAlreadyLostPrefixHasIdenticalCommonRebuildingCost",
+      "package": "github.com/lilong555/agentcloud/internal/policy",
+      "status": "pass"
+    },
+    {
+      "name": "TestKVConditionalReturnsIntegratePastEventMassAndRejectUnknownTail",
+      "package": "github.com/lilong555/agentcloud/internal/policy",
+      "status": "pass"
+    },
+    {
+      "name": "TestLifecycleThresholdAndPressure",
+      "package": "github.com/lilong555/agentcloud/internal/policy",
+      "status": "pass"
+    },
+    {
+      "name": "TestLifecycleSafetyCooldownAndEstimateValidation",
+      "package": "github.com/lilong555/agentcloud/internal/policy",
+      "status": "pass"
+    },
+    {
+      "name": "TestSurvivalConditionalLongTail",
+      "package": "github.com/lilong555/agentcloud/internal/policy",
+      "status": "pass"
+    },
+    {
+      "name": "TestSurvivalCompleteMatchesEmpiricalQuantiles",
+      "package": "github.com/lilong555/agentcloud/internal/policy",
+      "status": "pass"
+    },
+    {
+      "name": "TestSurvivalRightCensoringAndTiedRiskSets",
+      "package": "github.com/lilong555/agentcloud/internal/policy",
+      "status": "pass"
+    },
+    {
+      "name": "TestSurvivalInputAndSupportValidation",
+      "package": "github.com/lilong555/agentcloud/internal/policy",
+      "status": "pass"
+    },
+    {
+      "name": "TestConditionalKeepCostFiniteIntegral",
+      "package": "github.com/lilong555/agentcloud/internal/policy",
+      "status": "pass"
+    },
+    {
+      "name": "TestConditionalKeepCostCensoringSupport",
+      "package": "github.com/lilong555/agentcloud/internal/policy",
+      "status": "pass"
+    },
+    {
+      "name": "TestConditionalKeepCostValidationAndImmediateRelease",
+      "package": "github.com/lilong555/agentcloud/internal/policy",
+      "status": "pass"
+    },
+    {
+      "name": "TestSurvivalInputRemainsUnchanged",
+      "package": "github.com/lilong555/agentcloud/internal/policy",
+      "status": "pass"
+    },
+    {
+      "name": "TestCopyCacheObservationRetainsFiniteFallbackAndIndependentValues",
+      "package": "github.com/lilong555/agentcloud/internal/signals",
+      "status": "pass"
+    },
+    {
+      "name": "TestClosedLoopParentInterventionAndJoin",
+      "package": "github.com/lilong555/agentcloud/internal/sim",
+      "status": "pass"
+    },
+    {
+      "name": "TestCheckpointSlotAndResumeQueuePropagate",
+      "package": "github.com/lilong555/agentcloud/internal/sim",
+      "status": "pass"
+    },
+    {
+      "name": "TestIdenticalObservedPrefixesHaveIdenticalDecisions",
+      "package": "github.com/lilong555/agentcloud/internal/sim",
+      "status": "pass"
+    },
+    {
+      "name": "TestMissingCostAndDiskGuard",
+      "package": "github.com/lilong555/agentcloud/internal/sim",
+      "status": "pass"
+    },
+    {
+      "name": "TestOracleBracketsRestrictedFeasiblePolicy",
+      "package": "github.com/lilong555/agentcloud/internal/sim",
+      "status": "pass"
+    },
+    {
+      "name": "TestTrainingFamilyLeakageRejected",
+      "package": "github.com/lilong555/agentcloud/internal/sim",
+      "status": "pass"
+    },
+    {
+      "name": "TestSimultaneousCheckpointsUseOneContentionCoordinate",
+      "package": "github.com/lilong555/agentcloud/internal/sim",
+      "status": "pass"
+    },
+    {
+      "name": "TestSlotReleasePrecedesDurabilityAndRestoration",
+      "package": "github.com/lilong555/agentcloud/internal/sim",
+      "status": "pass"
+    },
+    {
+      "name": "TestPressureWakeUsesEarliestSafeTime",
+      "package": "github.com/lilong555/agentcloud/internal/sim",
+      "status": "pass"
+    },
+    {
+      "name": "TestV2DESAdapterMatchesControllerReplay",
+      "package": "github.com/lilong555/agentcloud/internal/sim",
+      "status": "pass"
+    },
+    {
+      "name": "TestGDSFAndLRUOnlyChangePressureScore",
+      "package": "github.com/lilong555/agentcloud/internal/sim",
+      "status": "pass"
+    },
+    {
+      "name": "TestHistoryIsPhaseBoundedAndExcludesCurrentRequest",
+      "package": "github.com/lilong555/agentcloud/internal/sim",
+      "status": "pass"
+    },
+    {
+      "name": "TestActorLocalComputationKeepsResourcesUntilAnObservedWait",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestNativeInitialAdmissionPostgresConcurrencyRestartAndRelease",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "skip"
+    },
+    {
+      "name": "TestInitialAdmissionProofAndRetryFences",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestStaticPolicyReturnDemandResumesWithoutIdleScheduling",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestInitialAdmissionFailedCommitKeepsOwnedActorAndUnknownIntent",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "skip"
+    },
+    {
+      "name": "TestInitialAdmissionHTTPAcceptedAndArrivalClock",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestAdmissionReadyFeedbackPreservesNextEpochReturn",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestCapacityReleaseWakesBeforeSnapshotDurability",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestCapacityReleaseWakesOldestAndSurvivesRestart",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestCapacityFallbackProbesAreGloballyBounded",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestAutonomousObservedWaitSafeSuspendReturnDemandAndCooldown",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestIdleWindowClosesAcrossResumeWithOriginEpoch",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestTenantGlobalLogicalRequestIdentityAndClaim",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestGateDrainAndDuplicateInFlightTool",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestApplicationSnapshotRestoreAndOldEpoch",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestSnapshotDigestCorruptionFailsClosed",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestPostgresRestartKeepsUnknownAndClosedGate",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "skip"
+    },
+    {
+      "name": "TestHTTPIdentityStrictDecodeAndEndToEnd",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestHTTPNativeReceiptExposesBindingGenerationAndRetainsFinalSnapshot",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestPostgresCostDeadlineSurvivesRestartAndToolReset",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "skip"
+    },
+    {
+      "name": "TestCostReleasePlanUsesConditionalCostAndBoundedFallback",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestCostReleasePlanNeverRenewsAcrossForecastOrPhaseChanges",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestCostReleaseRespectsSafetyAndWaitingReturnCapacity",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestCostCapacityUsesObservedActorMemoryLimit",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestWaitHistoryContainsLiveCensoringAndNoFutureLabels",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestWaitCohortBoundedByStartAndExpiredWindowStopsPrediction",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestCostPlanPersistsAndToolAdmissionStartsNewEpisode",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestCostBoundaryExecutesAndReplaysOriginalDecision",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestSchedulingSnapshotDetachesMetadataAndOmitsHistory",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestCostBoundaryRechecksReturnDuringQueueObservation",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestCostAutonomousClosesColdIdleAndRestoresOnReturn",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestSSEFirstTokenDurableWhileStreamingAndReplay",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestSSETerminalErrorsPreserveFirstTokenAndSingleAttempt",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestSSEInterruptedRestartKeepsProgressWithoutRedispatch",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestSSEToolCallsAccumulateAndClaim",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestSSEPreservesWorkerIdentityWhenTerminalNVExtAddsTiming",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestExperimentGroupsIdentityHeadersAndFeedback",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestExperimentDefaultDisabledCapabilitiesAndTerminalIdentity",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestJointKVChangesRealV2ScoreAndRetainsFiniteDeadline",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestJointKVZeroAndInvalidEvidenceLeaveBaselineDecisionsUnchanged",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestJointKVUnknownWaitObservesCostAndKeepsTwoSecondFallback",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestJointKVSafePointAndReturnDemandHavePriority",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestJointKVChecksActualSelectedWorkerAndRank",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestJointKVResumeExposureUsesPastScopedBackendCompletions",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestJointKVIntegratesConditionalReturnsAtCurrentWaitAge",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestJointKVEpisodeAndRawObservationPersistAcrossJSONJournalRestart",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestLoadKVCalibrationVerifiesFrozenEvidenceArtifact",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestHTTPDispatchTraceCorrelationNativeAdmissionAndPrivacy",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestDiagnosticsSurviveRestartAndIsolateTenants",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestStrandedIntegralUnionToolSubtractionAndSamplingGap",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestPostgresIncrementalEntitiesPreserveOtherSessionsAndClaims",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "skip"
+    },
+    {
+      "name": "TestPostgresCommitGateHidesUncommittedState",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "skip"
+    },
+    {
+      "name": "TestPostgresFailedRevisionKeepsDurableStateAndFailsClosed",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "skip"
+    },
+    {
+      "name": "TestPostgresLegacyDocumentMigratesAtomically",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "skip"
+    },
+    {
+      "name": "TestKeyedLocksSerializeWaitersAndReleaseAllKeys",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestPressureSnapshotCurrentEpochAndImmutable",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestQuiesceTimeoutAbortsWithoutManifestAndPersistsCooldown",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestCoordinatorDrainDeadlineKeepsAdmittedToolRunning",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestUnknownToolReturnsReadOnlyRecoveryAndBlocksSafePoint",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestRuntimeQuiesceCancellationProofAndIndependentContext",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestBoundaryTimeoutIsAbortedAcrossRestart",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestQuiesceAbortAtomicallyCommitsBoundaryReceipt",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestQuiesceRPCAttemptAllowsRuntimeDrainReply",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestUnknownBoundaryReplayPreservesRecoveryIdentity",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestReadOnlyInspectionPreservesMissingFileResult",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestV2ReplayDifferentialStatefulController",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestResearchCaptureRequiresTransactionalStore",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestResearchPostgresCapturesEventClockEpochAndDecision",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "skip"
+    },
+    {
+      "name": "TestCapacityWaitPreservesSnapshotAndRetriesAcrossRestart",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestCapacityWaitPreservesIdempotencyAndEpochFences",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestCapacityWaitSerializesConcurrentResumeAttempts",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestUnverifiedCapacityAndLostResponsesRemainUnknown",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestAutonomousCapacityRetryReusesOneReceiptAndReturnDemand",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestPostgresCapacityWaitSurvivesRestartAndFailedCommit",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestConditionalReturnOrdersWithModelRegistrationAndSurvivesRestart",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestConditionalReturnRejectsUnresolvedAndForeignModelFacts",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestRuntimeToolRetryPreservesPayloadAndPendingClaim",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestRuntimeRetryStopsAtUnknownConflictAuthAndCancellation",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestRuntimeTransportRetriesAreBoundedAndClearPartialReplies",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestAttachRetryRequiresRuntimeReplayCapability",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestRealPythonRuntimeRecoversLostReceiptsAndFencesLateAttach",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestV2UnknownDeadlineIsIndependentOfCostsAndSurvivesPhaseChange",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestV2KnownCostProtectsKeepAndSelectsEarliestSafeRelease",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestV2LowSupportAndUnknownTailUseFixedFallback",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestV2UnsafeAndEpochTerminateEpisode",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestV2ModelEpisodePersistsAndToolAdmissionEndsIt",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestV2ToolCompletionAndResumeAnchorClockBeforeFirstSample",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestV2ExpiredExplicitWaitStartsNewEpisodeWithoutIntermediateSample",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestV2AutonomousAndBoundaryUseSameDeadlineAndPolicy",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestV2BoundaryRechecksReturnAndIgnoresCallerWait",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestV2AutonomousRecordsReturnDuringBoundaryRecheck",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestShadowComputesOldCostWithoutAutonomousActions",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestSchedulerDiagnosticsAreBounded",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestSchedulerShadowRequiresExplicitControlsAndReportsCapabilities",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestModelBoundarySuspendsAtSafePointAndRestoresFiles",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestModelBoundaryActiveAndUnknownToolsKeepAdmission",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestModelBoundaryQueueEvidenceAndFailureFallback",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestModelBoundaryPersistenceAndAuthenticatedEndpoint",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestInterruptedBoundaryRequiresReconciliation",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestModelBoundaryConcurrentReplayClosesToolAdmission",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestModelBoundaryOperationIDRejectsPublicLifecycleReuse",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestModelBoundaryReservationFencesPublicLifecycleBeforeActuation",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestModelBoundaryConcurrentManualSuspendKeepsKnownOutcome",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestSnapshotGCRotatesVerifiedCommittedPointsAndCommitsDeleteIntent",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestSnapshotGCKeepsOlderRecoveryPointsWhenRecentTagsAreUnavailable",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestSnapshotGCProtectsCurrentManifestAndCrossSessionReferences",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestSnapshotGCPinsPendingUnknownAndCapacityOperations",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestSnapshotGCBoundsDeletionBatchAndMetadataReads",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestSnapshotGCPinsRuntimeOnlyUnknownRecoveryAndSchedulingReferences",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestSnapshotGCDeleteFailureAndLostResponseSurviveRestart",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestSnapshotGCCollectsOnlyExpiredOwnedTerminalOrphans",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestSnapshotGCStopsOnUnhealthyJournal",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestSnapshotGCFailedDeleteIntentCommitPreservesStorage",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestSnapshotGCPostgresSessionEntityPreservesDeleteTombstones",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "skip"
+    },
+    {
+      "name": "TestSnapshotGCConfigAndRetryBackoff",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestSnapshotGCLifecyclePublishesTagIntentAndWakesRotation",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestSubstrateCapacityWaitRequiresUnchangedAuthoritativeActor",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    },
+    {
+      "name": "TestDurableToolReadKeepsSuspendedActorAndTenantIsolation",
+      "package": "github.com/lilong555/agentcloud/internal/control",
+      "status": "pass"
+    }
+  ],
+  "skips": {
+    "TestPostgresEntityTransactionRollsBackMetadataAndRowsTogether": "=== RUN   TestPostgresEntityTransactionRollsBackMetadataAndRowsTogether\n    entities_test.go:12: set AGENTCLOUD_TEST_PG_ADMIN to run real isolated PostgreSQL acceptance\n--- SKIP: TestPostgresEntityTransactionRollsBackMetadataAndRowsTogether (0.00s)\n",
+    "TestResearchPostgresPreservesPrunedRecordsAndRestart": "=== RUN   TestResearchPostgresPreservesPrunedRecordsAndRestart\n    research_test.go:17: set AGENTCLOUD_TEST_PG_ADMIN to run real isolated PostgreSQL acceptance\n--- SKIP: TestResearchPostgresPreservesPrunedRecordsAndRestart (0.00s)\n",
+    "TestResearchPostgresConflictRollsBackControlAndCapture": "=== RUN   TestResearchPostgresConflictRollsBackControlAndCapture\n    research_test.go:76: set AGENTCLOUD_TEST_PG_ADMIN to run real isolated PostgreSQL acceptance\n--- SKIP: TestResearchPostgresConflictRollsBackControlAndCapture (0.00s)\n",
+    "TestResearchPostgresStartsAtRecordedFrontier": "=== RUN   TestResearchPostgresStartsAtRecordedFrontier\n    research_test.go:106: set AGENTCLOUD_TEST_PG_ADMIN to run real isolated PostgreSQL acceptance\n--- SKIP: TestResearchPostgresStartsAtRecordedFrontier (0.00s)\n",
+    "TestPostgresDurableReopenAndAdvisoryOwnership": "=== RUN   TestPostgresDurableReopenAndAdvisoryOwnership\n    store_test.go:100: set AGENTCLOUD_TEST_PG_ADMIN to run real isolated PostgreSQL acceptance\n--- SKIP: TestPostgresDurableReopenAndAdvisoryOwnership (0.00s)\n",
+    "TestPostgresRevisionConflictPoisonsWriter": "=== RUN   TestPostgresRevisionConflictPoisonsWriter\n    store_test.go:136: set AGENTCLOUD_TEST_PG_ADMIN to run real isolated PostgreSQL acceptance\n--- SKIP: TestPostgresRevisionConflictPoisonsWriter (0.00s)\n",
+    "TestNativeInitialAdmissionPostgresConcurrencyRestartAndRelease": "=== RUN   TestNativeInitialAdmissionPostgresConcurrencyRestartAndRelease\n    admission_test.go:157: set AGENTCLOUD_TEST_PG_ADMIN for actual isolated PostgreSQL control acceptance\n--- SKIP: TestNativeInitialAdmissionPostgresConcurrencyRestartAndRelease (0.00s)\n",
+    "TestInitialAdmissionFailedCommitKeepsOwnedActorAndUnknownIntent": "=== RUN   TestInitialAdmissionFailedCommitKeepsOwnedActorAndUnknownIntent\n    admission_test.go:380: set AGENTCLOUD_TEST_PG_ADMIN for actual isolated PostgreSQL control acceptance\n--- SKIP: TestInitialAdmissionFailedCommitKeepsOwnedActorAndUnknownIntent (0.00s)\n",
+    "TestPostgresRestartKeepsUnknownAndClosedGate": "=== RUN   TestPostgresRestartKeepsUnknownAndClosedGate\n    controller_test.go:273: set AGENTCLOUD_TEST_PG_ADMIN for actual isolated PostgreSQL control acceptance\n--- SKIP: TestPostgresRestartKeepsUnknownAndClosedGate (0.00s)\n",
+    "TestPostgresCostDeadlineSurvivesRestartAndToolReset": "=== RUN   TestPostgresCostDeadlineSurvivesRestartAndToolReset\n    idle_cost_postgres_test.go:14: set AGENTCLOUD_TEST_PG_ADMIN for actual isolated PostgreSQL control acceptance\n--- SKIP: TestPostgresCostDeadlineSurvivesRestartAndToolReset (0.00s)\n",
+    "TestPostgresIncrementalEntitiesPreserveOtherSessionsAndClaims": "=== RUN   TestPostgresIncrementalEntitiesPreserveOtherSessionsAndClaims\n    persistence_test.go:26: set AGENTCLOUD_TEST_PG_ADMIN for actual isolated PostgreSQL control acceptance\n--- SKIP: TestPostgresIncrementalEntitiesPreserveOtherSessionsAndClaims (0.00s)\n",
+    "TestPostgresCommitGateHidesUncommittedState": "=== RUN   TestPostgresCommitGateHidesUncommittedState\n    persistence_test.go:82: set AGENTCLOUD_TEST_PG_ADMIN for actual isolated PostgreSQL control acceptance\n--- SKIP: TestPostgresCommitGateHidesUncommittedState (0.00s)\n",
+    "TestPostgresFailedRevisionKeepsDurableStateAndFailsClosed": "=== RUN   TestPostgresFailedRevisionKeepsDurableStateAndFailsClosed\n    persistence_test.go:119: set AGENTCLOUD_TEST_PG_ADMIN for actual isolated PostgreSQL control acceptance\n--- SKIP: TestPostgresFailedRevisionKeepsDurableStateAndFailsClosed (0.00s)\n",
+    "TestPostgresLegacyDocumentMigratesAtomically": "=== RUN   TestPostgresLegacyDocumentMigratesAtomically\n    persistence_test.go:157: set AGENTCLOUD_TEST_PG_ADMIN for actual isolated PostgreSQL control acceptance\n--- SKIP: TestPostgresLegacyDocumentMigratesAtomically (0.02s)\n",
+    "TestResearchPostgresCapturesEventClockEpochAndDecision": "=== RUN   TestResearchPostgresCapturesEventClockEpochAndDecision\n    research_test.go:20: set AGENTCLOUD_TEST_PG_ADMIN for actual isolated PostgreSQL control acceptance\n--- SKIP: TestResearchPostgresCapturesEventClockEpochAndDecision (0.00s)\n",
+    "TestSnapshotGCPostgresSessionEntityPreservesDeleteTombstones": "=== RUN   TestSnapshotGCPostgresSessionEntityPreservesDeleteTombstones\n    snapshot_gc_test.go:396: set AGENTCLOUD_TEST_PG_ADMIN for actual isolated PostgreSQL control acceptance\n--- SKIP: TestSnapshotGCPostgresSessionEntityPreservesDeleteTombstones (0.00s)\n"
+  },
+  "python_command": "python -m unittest discover -s tests/tooling -p test_prev3_*.py -v",
+  "python_log_sha256": "05776dcdc5e1e95e4c0cd684f3bcccf268e23bae4888fddd53ecee93ab209222"
+}

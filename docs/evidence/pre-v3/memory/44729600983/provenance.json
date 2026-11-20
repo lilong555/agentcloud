@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "research_status": "exploratory",
+  "run_url": "https://github.com/lilong555/agentcloud/actions/runs/44729600983",
+  "artifact_id": 14626416726,
+  "artifact_name": "memory-costs-evidence",
+  "artifact_size_bytes": 468081,
+  "artifact_sha256": "b2ba6c457d37dcaf8caede3d0308a65918fe11e1081e0d82659d627e80edcc06",
+  "archive_digest_verified": true,
+  "measurement_commit": "8e40d06e71a178c03b3a6f29e9f7c67ca8315d79",
+  "derivation_commit": "8e40d06e71a178c03b3a6f29e9f7c67ca8315d79",
+  "raw_remote_directory": "cannlab:/mnt/workspace/agentcloud-prev3-20261120/physical-44729600983/memory-costs",
+  "derived_remote_directory": "cannlab:/mnt/workspace/agentcloud-prev3-20261120/physical-44729600983/derived-v11",
+  "reproduction": [
+    "gh run download 44729600983 -n memory-costs-evidence -D RAW",
+    "python -m bench.memory_costs --refit-from RAW/memory-costs --output DERIVED",
+    "python -m bench.memory_costs_audit --raw RAW/memory-costs --derived DERIVED --output DERIVED/audit.json"
+  ],
+  "sampling_unit": "independent_batch; one batch per cell; actor metrics use the within-batch mean",
+  "missing": [
+    "quiesce_ms and retain_tag_ms have no independent duration observation",
+    "worker_io_write_bytes remains null: io.stat exposes both 259:5 and 252:0, and the registered extraction rule requires one unambiguous device layer",
+    "h16-c1-b0 also discovers a second Worker after restore; the newly observed scope has no matching initial counter"
+  ],
+  "worker_io_evidence": {
+    "file": "worker-io-coverage.json",
+    "source": "memory-costs/<batch_id>/physical.jsonl in the verified raw artifact",
+    "first": "last physical sample with monotonic_ns <= measurement_start_ns",
+    "last": "first physical sample with monotonic_ns >= measurement_end_ns",
+    "fields": "worker_io, device_write_bytes; retained verbatim at both boundaries",
+    "scope": "Worker cgroup counters for entire checkpoint/restore batch"
+  },
+  "scope": "6 independent batches and 15 MEMORY checkpoint/restore cycles. This Runner uses kernel 7.0.0-1014-aws; run 44724867918 used 7.0.0-1017-azure. Results remain separate. Actor charge sums owned gVisor sandbox/container/checkpoint leaves; RSS sums host process resident pages and can include shared-page duplication. Device writes and filesystem peak include whole-batch background activity."
+}

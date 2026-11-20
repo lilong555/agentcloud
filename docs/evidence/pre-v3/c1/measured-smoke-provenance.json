@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "research_status": "exploratory",
+  "implementation_commit": "8dbd80b5fb082d94455acb628b08889063926cd6",
+  "remote_root": "cannlab:/mnt/workspace/agentcloud-prev3-20261120/",
+  "inputs_sha256": {
+    "results/freeinference/trace.json": "ee651e348219c01b726af4d9381588dc3c72ec6c49a373ddf2e7dd0ce02dba97",
+    "physical-44724867918/derived-v11/costs.json": "810bf6a8c795e6d1e4579e4128247f91ab2783fce9115a740af65cd63261906b",
+    "tools/agentcloud-sim-current": "8b7f2e74fedc1374b26a81999c036e9f5fdc97991e32faff5cee46554fd44398"
+  },
+  "reproduction_commands": {
+    "measured_interface": [
+      "tools/agentcloud-sim-current",
+      "--trace",
+      "results/freeinference/trace.json",
+      "--costs",
+      "physical-44724867918/derived-v11/costs.json",
+      "--split",
+      "validation",
+      "--limit",
+      "8",
+      "--slots",
+      "4",
+      "--workload-mib",
+      "64",
+      "--arrival-spacing-ms",
+      "500",
+      "--output",
+      "results/measured-interface-smoke",
+      "--policies",
+      "ttl2,ttl15,v2,break-even-gdsf",
+      "--oracle-sessions",
+      "2"
+    ],
+    "lru_scoring_switch": [
+      "tools/agentcloud-sim-current",
+      "--trace",
+      "results/freeinference/trace.json",
+      "--costs",
+      "physical-44724867918/derived-v11/costs.json",
+      "--split",
+      "validation",
+      "--limit",
+      "8",
+      "--slots",
+      "4",
+      "--workload-mib",
+      "64",
+      "--arrival-spacing-ms",
+      "500",
+      "--output",
+      "results/measured-lru-switch-smoke",
+      "--policies",
+      "break-even-gdsf",
+      "--eviction-score",
+      "lru",
+      "--oracle-sessions",
+      "0"
+    ]
+  },
+  "arrival": {
+    "kind": "synthetic_capacity_sweep",
+    "generation_rule": "earliest validation sessions at deterministic 500 ms spacing",
+    "seed": null
+  },
+  "termination": "public chain end is an external synthetic termination; original terminal censoring remains unknown",
+  "calibration_status": "pending_native_paired_calibration"
+}

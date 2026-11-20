@@ -1,0 +1,1056 @@
+{
+  "schema_version": 1,
+  "semantics_version": "1.1",
+  "research_status": "exploratory",
+  "cost_id": "memory-costs-00ad3403e4164bd1",
+  "kind": "measured",
+  "environment": {
+    "architecture": "x86_64",
+    "runtime": "gvisor_MEMORY",
+    "source_commit": "8e40d06e71a178c03b3a6f29e9f7c67ca8315d79",
+    "runner_id": "44729600983",
+    "run_attempt": "1",
+    "run_id": "memory-costs-00ad3403e4164bd1",
+    "kernel": "7.0.0-1014-aws",
+    "cpu_count": 4,
+    "page_size": 4096,
+    "physical_sampling_interval_seconds": 0.1,
+    "min_free_bytes": 15032385536.0,
+    "random_order_seed": 7301,
+    "worker_count": 2,
+    "worker_memory_mib": 1536,
+    "actor_reservation_mib": 512,
+    "model_backend": "native_dynamo_frontend_cpu_mocker",
+    "gpu_execution": false
+  },
+  "derivation": {
+    "module": "bench.memory_costs",
+    "source_sha256": "ac7163a7070508f1634fae23c26964183dd03682722a93903df077b67f21d50a",
+    "sampling_unit": "batch",
+    "actor_metric_aggregation": "within_batch_mean",
+    "percentile_method": "linear_interpolation_of_batch_values"
+  },
+  "raw_artifact_root": "/mnt/workspace/agentcloud-prev3-20261120/physical-44729600983/memory-costs",
+  "raw_artifacts": [
+    {
+      "path": "raw.jsonl",
+      "sha256": "00c5eed59514a3bf60540e8eecf782b90c0c26f764a84f082bc710b54687bc65"
+    },
+    {
+      "path": "coordinator.jsonl",
+      "sha256": "f6e502204ee72adec6103bbe37e7b3fe1c40001c7658ad41b252b145ffe6d932"
+    },
+    {
+      "path": "h128-c1-b0/physical.jsonl",
+      "sha256": "a2abc11558f131d53774994a34b4af831a018b7681f0458cf3294e2db09fd862"
+    },
+    {
+      "path": "h128-c4-b0/physical.jsonl",
+      "sha256": "c6139bc66f078f64488248d642136ae091d9000a769c4030ea225adf2193cf3d"
+    },
+    {
+      "path": "h16-c1-b0/physical.jsonl",
+      "sha256": "12cc58a5ffcbea7c910e6891b91bd98e5bf9246e67c06000ffeab53458eb4d5e"
+    },
+    {
+      "path": "h16-c4-b0/physical.jsonl",
+      "sha256": "8a2a332bfeaad27c10b89b8633f82f49f09330c00ddce773568e67b86fd8204a"
+    },
+    {
+      "path": "h64-c1-b0/physical.jsonl",
+      "sha256": "d74e4827161776a10736c2e92ec783383da81c4265ca98fb8c51da8e6d7fc1fd"
+    },
+    {
+      "path": "h64-c4-b0/physical.jsonl",
+      "sha256": "dbe5c3184080e5a6ac80a4d4cc11990fb56f51389aea59315ba451780fb275d4"
+    }
+  ],
+  "entries": [
+    {
+      "workload_bytes": 16777216,
+      "concurrency": 1,
+      "batches": 1,
+      "actor_cycles": 1,
+      "failures": 0,
+      "metrics": {
+        "checkpoint_slot_ms": {
+          "p50": 211.932988,
+          "p95": 211.932988,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_monotonic_events",
+          "scope": "per_actor_start_to_resource_release",
+          "missing_reason": null
+        },
+        "snapshot_ready_ms": {
+          "p50": 1567.368936,
+          "p95": 1567.368936,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_monotonic_events",
+          "scope": "per_actor_start_to_committed_snapshot",
+          "missing_reason": null
+        },
+        "resume_ready_ms": {
+          "p50": 150.897329,
+          "p95": 150.897329,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_observation",
+          "scope": "successful_backend_restore_and_attach",
+          "missing_reason": null
+        },
+        "journal_commit_ms": {
+          "p50": 2.4568475714285714,
+          "p95": 2.4568475714285714,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_observation",
+          "scope": "individual_lifecycle_journal_commits",
+          "missing_reason": null
+        },
+        "quiesce_ms": {
+          "p50": null,
+          "p95": null,
+          "samples": 0,
+          "unit": "ms",
+          "source": "unavailable",
+          "scope": "runtime_safe_point_rpc",
+          "missing_reason": "runtime quiesce has no independently exported start/end or duration in this source revision"
+        },
+        "substrate_suspend_rpc_ms": {
+          "p50": 196.80006,
+          "p95": 196.80006,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_substrate_suspend_ms_observations",
+          "scope": "per_actor_sum_of_SuspendActor_rpc_attempts",
+          "missing_reason": null
+        },
+        "snapshot_durable_wait_rpc_ms": {
+          "p50": 1255.691856,
+          "p95": 1255.691856,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_durability_wait_ms_observations",
+          "scope": "per_actor_sum_of_WaitActorSnapshotDurable_rpc_attempts",
+          "missing_reason": null
+        },
+        "retain_tag_ms": {
+          "p50": null,
+          "p95": null,
+          "samples": 0,
+          "unit": "ms",
+          "source": "unavailable",
+          "scope": "snapshot_tag_reconciliation_and_retention",
+          "missing_reason": "RetainSnapshot has no independently exported start/end or duration in this source revision"
+        },
+        "post_release_to_snapshot_ready_ms": {
+          "p50": 1355.435948,
+          "p95": 1355.435948,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_monotonic_events",
+          "scope": "per_actor_background_durability_retention_and_control_tail",
+          "missing_reason": null
+        },
+        "backend_checkpoint_total_ms": {
+          "p50": 1562.78372,
+          "p95": 1562.78372,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_checkpoint_total_ms_observations",
+          "scope": "per_actor_backend_quiesce_through_retention",
+          "missing_reason": null
+        },
+        "snapshot_logical_bytes": {
+          "p50": 50368899.0,
+          "p95": 50368899.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "stat_st_size_inode_deduplicated",
+          "scope": "per_actor_local_checkpoint_peak",
+          "missing_reason": null
+        },
+        "snapshot_allocated_bytes": {
+          "p50": 50401280.0,
+          "p95": 50401280.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "stat_st_blocks_times_512_inode_deduplicated",
+          "scope": "per_actor_local_checkpoint_peak",
+          "missing_reason": null
+        },
+        "device_write_bytes": {
+          "p50": 110694400.0,
+          "p95": 110694400.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "proc_diskstats_sectors_written_times_512",
+          "scope": "runner_device_whole_batch",
+          "missing_reason": null
+        },
+        "worker_io_write_bytes": {
+          "p50": null,
+          "p95": null,
+          "samples": 0,
+          "unit": "bytes",
+          "source": "worker_cgroup_v2_io_stat_wbytes",
+          "scope": "worker_cgroup_whole_batch",
+          "missing_reason": "no complete eligible batch observations"
+        },
+        "disk_used_peak_delta_bytes": {
+          "p50": 74911744.0,
+          "p95": 74911744.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "statvfs_sampled_used_space",
+          "scope": "runner_filesystem_whole_batch",
+          "missing_reason": null
+        },
+        "actor_charge_peak_bytes": {
+          "p50": 66408448.0,
+          "p95": 66408448.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "cgroup_v2_memory_current_sampled_peak",
+          "scope": "per_actor_host_cgroup_charge",
+          "missing_reason": null
+        },
+        "actor_rss_peak_bytes": {
+          "p50": 169074688.0,
+          "p95": 169074688.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "proc_pid_statm_resident_times_pagesize",
+          "scope": "per_actor_sum_of_host_process_RSS",
+          "missing_reason": null
+        }
+      }
+    },
+    {
+      "workload_bytes": 16777216,
+      "concurrency": 4,
+      "batches": 1,
+      "actor_cycles": 4,
+      "failures": 0,
+      "metrics": {
+        "checkpoint_slot_ms": {
+          "p50": 309.38124325,
+          "p95": 309.38124325,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_monotonic_events",
+          "scope": "per_actor_start_to_resource_release",
+          "missing_reason": null
+        },
+        "snapshot_ready_ms": {
+          "p50": 2222.924185,
+          "p95": 2222.924185,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_monotonic_events",
+          "scope": "per_actor_start_to_committed_snapshot",
+          "missing_reason": null
+        },
+        "resume_ready_ms": {
+          "p50": 571.39724575,
+          "p95": 571.39724575,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_observation",
+          "scope": "successful_backend_restore_and_attach",
+          "missing_reason": null
+        },
+        "journal_commit_ms": {
+          "p50": 2.9837801785714286,
+          "p95": 2.9837801785714286,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_observation",
+          "scope": "individual_lifecycle_journal_commits",
+          "missing_reason": null
+        },
+        "quiesce_ms": {
+          "p50": null,
+          "p95": null,
+          "samples": 0,
+          "unit": "ms",
+          "source": "unavailable",
+          "scope": "runtime_safe_point_rpc",
+          "missing_reason": "runtime quiesce has no independently exported start/end or duration in this source revision"
+        },
+        "substrate_suspend_rpc_ms": {
+          "p50": 270.575654,
+          "p95": 270.575654,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_substrate_suspend_ms_observations",
+          "scope": "per_actor_sum_of_SuspendActor_rpc_attempts",
+          "missing_reason": null
+        },
+        "snapshot_durable_wait_rpc_ms": {
+          "p50": 1771.2161605000001,
+          "p95": 1771.2161605000001,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_durability_wait_ms_observations",
+          "scope": "per_actor_sum_of_WaitActorSnapshotDurable_rpc_attempts",
+          "missing_reason": null
+        },
+        "retain_tag_ms": {
+          "p50": null,
+          "p95": null,
+          "samples": 0,
+          "unit": "ms",
+          "source": "unavailable",
+          "scope": "snapshot_tag_reconciliation_and_retention",
+          "missing_reason": "RetainSnapshot has no independently exported start/end or duration in this source revision"
+        },
+        "post_release_to_snapshot_ready_ms": {
+          "p50": 1913.54294175,
+          "p95": 1913.54294175,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_monotonic_events",
+          "scope": "per_actor_background_durability_retention_and_control_tail",
+          "missing_reason": null
+        },
+        "backend_checkpoint_total_ms": {
+          "p50": 2216.17374925,
+          "p95": 2216.17374925,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_checkpoint_total_ms_observations",
+          "scope": "per_actor_backend_quiesce_through_retention",
+          "missing_reason": null
+        },
+        "snapshot_logical_bytes": {
+          "p50": 50370835.75,
+          "p95": 50370835.75,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "stat_st_size_inode_deduplicated",
+          "scope": "per_actor_local_checkpoint_peak",
+          "missing_reason": null
+        },
+        "snapshot_allocated_bytes": {
+          "p50": 50403328.0,
+          "p95": 50403328.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "stat_st_blocks_times_512_inode_deduplicated",
+          "scope": "per_actor_local_checkpoint_peak",
+          "missing_reason": null
+        },
+        "device_write_bytes": {
+          "p50": 429436928.0,
+          "p95": 429436928.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "proc_diskstats_sectors_written_times_512",
+          "scope": "runner_device_whole_batch",
+          "missing_reason": null
+        },
+        "worker_io_write_bytes": {
+          "p50": null,
+          "p95": null,
+          "samples": 0,
+          "unit": "bytes",
+          "source": "worker_cgroup_v2_io_stat_wbytes",
+          "scope": "worker_cgroup_whole_batch",
+          "missing_reason": "no complete eligible batch observations"
+        },
+        "disk_used_peak_delta_bytes": {
+          "p50": 381652992.0,
+          "p95": 381652992.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "statvfs_sampled_used_space",
+          "scope": "runner_filesystem_whole_batch",
+          "missing_reason": null
+        },
+        "actor_charge_peak_bytes": {
+          "p50": 66890752.0,
+          "p95": 66890752.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "cgroup_v2_memory_current_sampled_peak",
+          "scope": "per_actor_host_cgroup_charge",
+          "missing_reason": null
+        },
+        "actor_rss_peak_bytes": {
+          "p50": 168747008.0,
+          "p95": 168747008.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "proc_pid_statm_resident_times_pagesize",
+          "scope": "per_actor_sum_of_host_process_RSS",
+          "missing_reason": null
+        }
+      }
+    },
+    {
+      "workload_bytes": 67108864,
+      "concurrency": 1,
+      "batches": 1,
+      "actor_cycles": 1,
+      "failures": 0,
+      "metrics": {
+        "checkpoint_slot_ms": {
+          "p50": 323.765335,
+          "p95": 323.765335,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_monotonic_events",
+          "scope": "per_actor_start_to_resource_release",
+          "missing_reason": null
+        },
+        "snapshot_ready_ms": {
+          "p50": 2041.558333,
+          "p95": 2041.558333,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_monotonic_events",
+          "scope": "per_actor_start_to_committed_snapshot",
+          "missing_reason": null
+        },
+        "resume_ready_ms": {
+          "p50": 163.607092,
+          "p95": 163.607092,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_observation",
+          "scope": "successful_backend_restore_and_attach",
+          "missing_reason": null
+        },
+        "journal_commit_ms": {
+          "p50": 2.144640857142857,
+          "p95": 2.144640857142857,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_observation",
+          "scope": "individual_lifecycle_journal_commits",
+          "missing_reason": null
+        },
+        "quiesce_ms": {
+          "p50": null,
+          "p95": null,
+          "samples": 0,
+          "unit": "ms",
+          "source": "unavailable",
+          "scope": "runtime_safe_point_rpc",
+          "missing_reason": "runtime quiesce has no independently exported start/end or duration in this source revision"
+        },
+        "substrate_suspend_rpc_ms": {
+          "p50": 308.059988,
+          "p95": 308.059988,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_substrate_suspend_ms_observations",
+          "scope": "per_actor_sum_of_SuspendActor_rpc_attempts",
+          "missing_reason": null
+        },
+        "snapshot_durable_wait_rpc_ms": {
+          "p50": 1515.989988,
+          "p95": 1515.989988,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_durability_wait_ms_observations",
+          "scope": "per_actor_sum_of_WaitActorSnapshotDurable_rpc_attempts",
+          "missing_reason": null
+        },
+        "retain_tag_ms": {
+          "p50": null,
+          "p95": null,
+          "samples": 0,
+          "unit": "ms",
+          "source": "unavailable",
+          "scope": "snapshot_tag_reconciliation_and_retention",
+          "missing_reason": "RetainSnapshot has no independently exported start/end or duration in this source revision"
+        },
+        "post_release_to_snapshot_ready_ms": {
+          "p50": 1717.792998,
+          "p95": 1717.792998,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_monotonic_events",
+          "scope": "per_actor_background_durability_retention_and_control_tail",
+          "missing_reason": null
+        },
+        "backend_checkpoint_total_ms": {
+          "p50": 2037.414261,
+          "p95": 2037.414261,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_checkpoint_total_ms_observations",
+          "scope": "per_actor_backend_quiesce_through_retention",
+          "missing_reason": null
+        },
+        "snapshot_logical_bytes": {
+          "p50": 100704532.0,
+          "p95": 100704532.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "stat_st_size_inode_deduplicated",
+          "scope": "per_actor_local_checkpoint_peak",
+          "missing_reason": null
+        },
+        "snapshot_allocated_bytes": {
+          "p50": 100741120.0,
+          "p95": 100741120.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "stat_st_blocks_times_512_inode_deduplicated",
+          "scope": "per_actor_local_checkpoint_peak",
+          "missing_reason": null
+        },
+        "device_write_bytes": {
+          "p50": 280510464.0,
+          "p95": 280510464.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "proc_diskstats_sectors_written_times_512",
+          "scope": "runner_device_whole_batch",
+          "missing_reason": null
+        },
+        "worker_io_write_bytes": {
+          "p50": null,
+          "p95": null,
+          "samples": 0,
+          "unit": "bytes",
+          "source": "worker_cgroup_v2_io_stat_wbytes",
+          "scope": "worker_cgroup_whole_batch",
+          "missing_reason": "no complete eligible batch observations"
+        },
+        "disk_used_peak_delta_bytes": {
+          "p50": 248590336.0,
+          "p95": 248590336.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "statvfs_sampled_used_space",
+          "scope": "runner_filesystem_whole_batch",
+          "missing_reason": null
+        },
+        "actor_charge_peak_bytes": {
+          "p50": 117235712.0,
+          "p95": 117235712.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "cgroup_v2_memory_current_sampled_peak",
+          "scope": "per_actor_host_cgroup_charge",
+          "missing_reason": null
+        },
+        "actor_rss_peak_bytes": {
+          "p50": 269381632.0,
+          "p95": 269381632.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "proc_pid_statm_resident_times_pagesize",
+          "scope": "per_actor_sum_of_host_process_RSS",
+          "missing_reason": null
+        }
+      }
+    },
+    {
+      "workload_bytes": 67108864,
+      "concurrency": 4,
+      "batches": 1,
+      "actor_cycles": 4,
+      "failures": 0,
+      "metrics": {
+        "checkpoint_slot_ms": {
+          "p50": 451.12232075,
+          "p95": 451.12232075,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_monotonic_events",
+          "scope": "per_actor_start_to_resource_release",
+          "missing_reason": null
+        },
+        "snapshot_ready_ms": {
+          "p50": 2995.80165825,
+          "p95": 2995.80165825,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_monotonic_events",
+          "scope": "per_actor_start_to_committed_snapshot",
+          "missing_reason": null
+        },
+        "resume_ready_ms": {
+          "p50": 667.42240075,
+          "p95": 667.42240075,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_observation",
+          "scope": "successful_backend_restore_and_attach",
+          "missing_reason": null
+        },
+        "journal_commit_ms": {
+          "p50": 2.8212499642857143,
+          "p95": 2.8212499642857143,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_observation",
+          "scope": "individual_lifecycle_journal_commits",
+          "missing_reason": null
+        },
+        "quiesce_ms": {
+          "p50": null,
+          "p95": null,
+          "samples": 0,
+          "unit": "ms",
+          "source": "unavailable",
+          "scope": "runtime_safe_point_rpc",
+          "missing_reason": "runtime quiesce has no independently exported start/end or duration in this source revision"
+        },
+        "substrate_suspend_rpc_ms": {
+          "p50": 414.60590625,
+          "p95": 414.60590625,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_substrate_suspend_ms_observations",
+          "scope": "per_actor_sum_of_SuspendActor_rpc_attempts",
+          "missing_reason": null
+        },
+        "snapshot_durable_wait_rpc_ms": {
+          "p50": 2207.33562025,
+          "p95": 2207.33562025,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_durability_wait_ms_observations",
+          "scope": "per_actor_sum_of_WaitActorSnapshotDurable_rpc_attempts",
+          "missing_reason": null
+        },
+        "retain_tag_ms": {
+          "p50": null,
+          "p95": null,
+          "samples": 0,
+          "unit": "ms",
+          "source": "unavailable",
+          "scope": "snapshot_tag_reconciliation_and_retention",
+          "missing_reason": "RetainSnapshot has no independently exported start/end or duration in this source revision"
+        },
+        "post_release_to_snapshot_ready_ms": {
+          "p50": 2544.6793374999997,
+          "p95": 2544.6793374999997,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_monotonic_events",
+          "scope": "per_actor_background_durability_retention_and_control_tail",
+          "missing_reason": null
+        },
+        "backend_checkpoint_total_ms": {
+          "p50": 2988.86821875,
+          "p95": 2988.86821875,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_checkpoint_total_ms_observations",
+          "scope": "per_actor_backend_quiesce_through_retention",
+          "missing_reason": null
+        },
+        "snapshot_logical_bytes": {
+          "p50": 100702242.0,
+          "p95": 100702242.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "stat_st_size_inode_deduplicated",
+          "scope": "per_actor_local_checkpoint_peak",
+          "missing_reason": null
+        },
+        "snapshot_allocated_bytes": {
+          "p50": 100733952.0,
+          "p95": 100733952.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "stat_st_blocks_times_512_inode_deduplicated",
+          "scope": "per_actor_local_checkpoint_peak",
+          "missing_reason": null
+        },
+        "device_write_bytes": {
+          "p50": 1036898304.0,
+          "p95": 1036898304.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "proc_diskstats_sectors_written_times_512",
+          "scope": "runner_device_whole_batch",
+          "missing_reason": null
+        },
+        "worker_io_write_bytes": {
+          "p50": null,
+          "p95": null,
+          "samples": 0,
+          "unit": "bytes",
+          "source": "worker_cgroup_v2_io_stat_wbytes",
+          "scope": "worker_cgroup_whole_batch",
+          "missing_reason": "no complete eligible batch observations"
+        },
+        "disk_used_peak_delta_bytes": {
+          "p50": 1019285504.0,
+          "p95": 1019285504.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "statvfs_sampled_used_space",
+          "scope": "runner_filesystem_whole_batch",
+          "missing_reason": null
+        },
+        "actor_charge_peak_bytes": {
+          "p50": 117192704.0,
+          "p95": 117192704.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "cgroup_v2_memory_current_sampled_peak",
+          "scope": "per_actor_host_cgroup_charge",
+          "missing_reason": null
+        },
+        "actor_rss_peak_bytes": {
+          "p50": 269137920.0,
+          "p95": 269137920.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "proc_pid_statm_resident_times_pagesize",
+          "scope": "per_actor_sum_of_host_process_RSS",
+          "missing_reason": null
+        }
+      }
+    },
+    {
+      "workload_bytes": 134217728,
+      "concurrency": 1,
+      "batches": 1,
+      "actor_cycles": 1,
+      "failures": 0,
+      "metrics": {
+        "checkpoint_slot_ms": {
+          "p50": 489.308451,
+          "p95": 489.308451,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_monotonic_events",
+          "scope": "per_actor_start_to_resource_release",
+          "missing_reason": null
+        },
+        "snapshot_ready_ms": {
+          "p50": 2378.464889,
+          "p95": 2378.464889,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_monotonic_events",
+          "scope": "per_actor_start_to_committed_snapshot",
+          "missing_reason": null
+        },
+        "resume_ready_ms": {
+          "p50": 383.056673,
+          "p95": 383.056673,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_observation",
+          "scope": "successful_backend_restore_and_attach",
+          "missing_reason": null
+        },
+        "journal_commit_ms": {
+          "p50": 1.8676638571428572,
+          "p95": 1.8676638571428572,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_observation",
+          "scope": "individual_lifecycle_journal_commits",
+          "missing_reason": null
+        },
+        "quiesce_ms": {
+          "p50": null,
+          "p95": null,
+          "samples": 0,
+          "unit": "ms",
+          "source": "unavailable",
+          "scope": "runtime_safe_point_rpc",
+          "missing_reason": "runtime quiesce has no independently exported start/end or duration in this source revision"
+        },
+        "substrate_suspend_rpc_ms": {
+          "p50": 469.177059,
+          "p95": 469.177059,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_substrate_suspend_ms_observations",
+          "scope": "per_actor_sum_of_SuspendActor_rpc_attempts",
+          "missing_reason": null
+        },
+        "snapshot_durable_wait_rpc_ms": {
+          "p50": 1505.765931,
+          "p95": 1505.765931,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_durability_wait_ms_observations",
+          "scope": "per_actor_sum_of_WaitActorSnapshotDurable_rpc_attempts",
+          "missing_reason": null
+        },
+        "retain_tag_ms": {
+          "p50": null,
+          "p95": null,
+          "samples": 0,
+          "unit": "ms",
+          "source": "unavailable",
+          "scope": "snapshot_tag_reconciliation_and_retention",
+          "missing_reason": "RetainSnapshot has no independently exported start/end or duration in this source revision"
+        },
+        "post_release_to_snapshot_ready_ms": {
+          "p50": 1889.156438,
+          "p95": 1889.156438,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_monotonic_events",
+          "scope": "per_actor_background_durability_retention_and_control_tail",
+          "missing_reason": null
+        },
+        "backend_checkpoint_total_ms": {
+          "p50": 2368.769691,
+          "p95": 2368.769691,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_checkpoint_total_ms_observations",
+          "scope": "per_actor_backend_quiesce_through_retention",
+          "missing_reason": null
+        },
+        "snapshot_logical_bytes": {
+          "p50": 167816658.0,
+          "p95": 167816658.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "stat_st_size_inode_deduplicated",
+          "scope": "per_actor_local_checkpoint_peak",
+          "missing_reason": null
+        },
+        "snapshot_allocated_bytes": {
+          "p50": 167845888.0,
+          "p95": 167845888.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "stat_st_blocks_times_512_inode_deduplicated",
+          "scope": "per_actor_local_checkpoint_peak",
+          "missing_reason": null
+        },
+        "device_write_bytes": {
+          "p50": 467673088.0,
+          "p95": 467673088.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "proc_diskstats_sectors_written_times_512",
+          "scope": "runner_device_whole_batch",
+          "missing_reason": null
+        },
+        "worker_io_write_bytes": {
+          "p50": null,
+          "p95": null,
+          "samples": 0,
+          "unit": "bytes",
+          "source": "worker_cgroup_v2_io_stat_wbytes",
+          "scope": "worker_cgroup_whole_batch",
+          "missing_reason": "no complete eligible batch observations"
+        },
+        "disk_used_peak_delta_bytes": {
+          "p50": 454094848.0,
+          "p95": 454094848.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "statvfs_sampled_used_space",
+          "scope": "runner_filesystem_whole_batch",
+          "missing_reason": null
+        },
+        "actor_charge_peak_bytes": {
+          "p50": 184582144.0,
+          "p95": 184582144.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "cgroup_v2_memory_current_sampled_peak",
+          "scope": "per_actor_host_cgroup_charge",
+          "missing_reason": null
+        },
+        "actor_rss_peak_bytes": {
+          "p50": 403062784.0,
+          "p95": 403062784.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "proc_pid_statm_resident_times_pagesize",
+          "scope": "per_actor_sum_of_host_process_RSS",
+          "missing_reason": null
+        }
+      }
+    },
+    {
+      "workload_bytes": 134217728,
+      "concurrency": 4,
+      "batches": 1,
+      "actor_cycles": 4,
+      "failures": 0,
+      "metrics": {
+        "checkpoint_slot_ms": {
+          "p50": 652.943517,
+          "p95": 652.943517,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_monotonic_events",
+          "scope": "per_actor_start_to_resource_release",
+          "missing_reason": null
+        },
+        "snapshot_ready_ms": {
+          "p50": 6376.42896125,
+          "p95": 6376.42896125,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_monotonic_events",
+          "scope": "per_actor_start_to_committed_snapshot",
+          "missing_reason": null
+        },
+        "resume_ready_ms": {
+          "p50": 1103.3662005,
+          "p95": 1103.3662005,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_observation",
+          "scope": "successful_backend_restore_and_attach",
+          "missing_reason": null
+        },
+        "journal_commit_ms": {
+          "p50": 2.623388321428571,
+          "p95": 2.623388321428571,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_observation",
+          "scope": "individual_lifecycle_journal_commits",
+          "missing_reason": null
+        },
+        "quiesce_ms": {
+          "p50": null,
+          "p95": null,
+          "samples": 0,
+          "unit": "ms",
+          "source": "unavailable",
+          "scope": "runtime_safe_point_rpc",
+          "missing_reason": "runtime quiesce has no independently exported start/end or duration in this source revision"
+        },
+        "substrate_suspend_rpc_ms": {
+          "p50": 617.59344425,
+          "p95": 617.59344425,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_substrate_suspend_ms_observations",
+          "scope": "per_actor_sum_of_SuspendActor_rpc_attempts",
+          "missing_reason": null
+        },
+        "snapshot_durable_wait_rpc_ms": {
+          "p50": 4022.29641575,
+          "p95": 4022.29641575,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_durability_wait_ms_observations",
+          "scope": "per_actor_sum_of_WaitActorSnapshotDurable_rpc_attempts",
+          "missing_reason": null
+        },
+        "retain_tag_ms": {
+          "p50": null,
+          "p95": null,
+          "samples": 0,
+          "unit": "ms",
+          "source": "unavailable",
+          "scope": "snapshot_tag_reconciliation_and_retention",
+          "missing_reason": "RetainSnapshot has no independently exported start/end or duration in this source revision"
+        },
+        "post_release_to_snapshot_ready_ms": {
+          "p50": 5723.48544425,
+          "p95": 5723.48544425,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_monotonic_events",
+          "scope": "per_actor_background_durability_retention_and_control_tail",
+          "missing_reason": null
+        },
+        "backend_checkpoint_total_ms": {
+          "p50": 6370.87757375,
+          "p95": 6370.87757375,
+          "samples": 1,
+          "unit": "ms",
+          "source": "coordinator_checkpoint_total_ms_observations",
+          "scope": "per_actor_backend_quiesce_through_retention",
+          "missing_reason": null
+        },
+        "snapshot_logical_bytes": {
+          "p50": 167812255.25,
+          "p95": 167812255.25,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "stat_st_size_inode_deduplicated",
+          "scope": "per_actor_local_checkpoint_peak",
+          "missing_reason": null
+        },
+        "snapshot_allocated_bytes": {
+          "p50": 167847936.0,
+          "p95": 167847936.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "stat_st_blocks_times_512_inode_deduplicated",
+          "scope": "per_actor_local_checkpoint_peak",
+          "missing_reason": null
+        },
+        "device_write_bytes": {
+          "p50": 1854902272.0,
+          "p95": 1854902272.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "proc_diskstats_sectors_written_times_512",
+          "scope": "runner_device_whole_batch",
+          "missing_reason": null
+        },
+        "worker_io_write_bytes": {
+          "p50": null,
+          "p95": null,
+          "samples": 0,
+          "unit": "bytes",
+          "source": "worker_cgroup_v2_io_stat_wbytes",
+          "scope": "worker_cgroup_whole_batch",
+          "missing_reason": "no complete eligible batch observations"
+        },
+        "disk_used_peak_delta_bytes": {
+          "p50": 1826603008.0,
+          "p95": 1826603008.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "statvfs_sampled_used_space",
+          "scope": "runner_filesystem_whole_batch",
+          "missing_reason": null
+        },
+        "actor_charge_peak_bytes": {
+          "p50": 338475008.0,
+          "p95": 338475008.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "cgroup_v2_memory_current_sampled_peak",
+          "scope": "per_actor_host_cgroup_charge",
+          "missing_reason": null
+        },
+        "actor_rss_peak_bytes": {
+          "p50": 403644416.0,
+          "p95": 403644416.0,
+          "samples": 1,
+          "unit": "bytes",
+          "source": "proc_pid_statm_resident_times_pagesize",
+          "scope": "per_actor_sum_of_host_process_RSS",
+          "missing_reason": null
+        }
+      }
+    }
+  ],
+  "assumptions": [
+    "A batch is the sampling unit. Actor-scoped metrics are the within-batch mean; p50/p95 summarize independent batch means, not Actor tail quantiles.",
+    "Three batches per cell are descriptive calibration data; statistical confidence and final tail claims require independent repetitions.",
+    "Each new Actor has one random, fully touched heap and one MEMORY checkpoint/restore. Kernel/page caches are natural; no global cache flush is issued.",
+    "Checkpoint slot time and snapshot ready time overlap. Resume begins only after all snapshots in the batch are durable; do not add overlapping stages.",
+    "checkpoint_slot_ms ends at admission.resource_released. post_release_to_snapshot_ready_ms measures the subsequent durability/retention/control tail and does not occupy a Worker slot.",
+    "SuspendActor and WaitActorSnapshotDurable RPC durations retain their native measurement sources. Quiesce and RetainSnapshot durations remain null until independently instrumented.",
+    "backend_checkpoint_total_ms overlaps quiesce, SuspendActor, release callback, durability and retention. Subtracting the two RPC sums does not isolate either quiesce or retention.",
+    "Journal durations overlap lifecycle events and include coordinator serialization/lock reacquisition; journal_commit_ms is a separate diagnostic, not an additive storage latency.",
+    "Snapshot bytes cover deduplicated regular-file inodes in the owned Actor local-checkpoint tree; staging and remote object-store copies are outside this metric.",
+    "Device/Worker write counters span the whole batch including checkpoint, restore and background work. They are not per-Actor snapshot attribution.",
+    "Filesystem and memory peaks are sampled at the recorded interval. Host-process RSS sums can count shared pages more than once; cgroup charge includes charged file cache.",
+    "All Actors use the same 512 MiB reservation; Worker placement and runtime overhead remain measured environment conditions."
+  ]
+}

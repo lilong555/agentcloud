@@ -14,7 +14,9 @@
 
 FreeInference 固定 4 周的第 0/3/6 天，共 12 个完整日分片。压缩文件按 Hugging Face LFS SHA256 校验，解压内容按官方 manifest 的 SHA256、字节和行数校验。输出记录完整筛选分母、成功人口选择和右删失未知状态。同轮 gap 的保守场景为全段活跃，区间内实际活跃量上下界为 `[0, gap]`。跨用户轮 gap 保留混合时间语义，安全点属于显式场景假设。
 
-切分固定日期边界，并用账号代理 task family。跨时间边界只保留最早集合，后续记录列入排除分母。opencode 家族整体预留，构成同采集源的跨 Harness 切片。AgentLogs 到达按稳定排名配对到 FreeInference 会话，再做 1/4/16 倍时间压缩；每份配置记录规则和种子 7301。真实发布子集重叠、跨源组合与合成压力均有独立标记。
+C1 在公开请求链末端结束回放，并释放模拟 Actor；这个终止点属于外生场景设定。原始输入保留未知删失标记，在线策略在末端事件完成后才收到结束状态。
+
+切分固定日期边界，并用账号代理 task family。跨时间边界只保留最早集合，后续记录列入排除分母。opencode 家族整体预留，仅使用留出期起点之后的请求，构成同采集源的跨 Harness 切片。Python 适配器与 Go 输入层同时核验训练／验证标签完成时刻先于后续集合到达。AgentLogs 到达按稳定排名配对到 FreeInference 会话，再做 1/4/16 倍时间压缩；每份配置记录规则和种子 7301。真实发布子集重叠、跨源组合与合成压力均有独立标记。
 
 ## 三组在线基线
 
@@ -54,6 +56,16 @@ DES 将 Checkpoint dispatch、Slot Release、Snapshot Durable 分开。槽位在
 
 WSL 下载后，将 raw 数据及源码通过 rsync 传至 cannlab 独立目录。原始数据留在 Git 外。
 
+| 组件 | 文件入口 |
+|---|---|
+| 输入契约 | `bench/contracts/pre_v3.md` |
+| A：下载、清洗、切分与到达场景 | `scripts/prepare_prev3_trace.py`、`scripts/prev3_arrivals.py` |
+| B：隔离测量、采样与审计 | `.github/workflows/memory-costs.yml`、`bench/memory_costs.py`、`bench/memory_costs_probe.py`、`bench/memory_costs_audit.py` |
+| 控制面只读聚合与 v2 适配 | `internal/control/pressure_snapshot.go`、`internal/control/replay_v2.go` |
+| DES、三组策略与 Oracle | `internal/sim/`、`cmd/agentcloud-sim/main.go` |
+| C1 场景与 validation 选参 | `scripts/prev3_cost_prior.py`、`scripts/run_prev3_c1.py` |
+| 验收 | `internal/control/*_test.go`、`internal/sim/*_test.go`、`tests/tooling/test_prev3_*.py`、`tests/tooling/test_memory_costs.py` |
+
 ```bash
 python3 scripts/prepare_prev3_trace.py download --raw RAW/freeinference
 # 以下命令在 cannlab 执行；需要 zstandard 与 duckdb。
@@ -81,3 +93,5 @@ python3 scripts/run_prev3_c1.py --binary BIN/agentcloud-sim \
 | 研究资格 | C1 完成用于解锁集成检查；Tier-1/Tier-2 结果独立记录 |
 
 当前冷启动参数、压缩到达、工作集、初次启动、GC 延迟与并发 2/3→4 档映射均为显式场景输入。成本查表拒绝缺失必需指标和未覆盖坐标，实测表限定 x86 gVisor MEMORY。仿真收益需经 C2 校准后进入实机结论。
+
+本次运行的输入摘要、测量表、测试回执与资格状态见 [pre-v3 证据](evidence/pre-v3/README.md)。
