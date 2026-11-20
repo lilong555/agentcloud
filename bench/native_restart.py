@@ -35,8 +35,8 @@ def run(args):
     output=args.output.resolve();output.mkdir(parents=True,exist_ok=False)
     admin=os.environ['AGENTCLOUD_TEST_PG_ADMIN']
     client_dir=args.client_dir.resolve()
-    run_id='restart_'+uuid.uuid4().hex
-    database='ac_'+run_id
+    run_id='restart-'+uuid.uuid4().hex
+    database='ac_'+run_id.replace('-','_')
     token=uuid.uuid4().hex
     with socket.socket() as sock:
         sock.bind(('127.0.0.1',0));port=sock.getsockname()[1]
