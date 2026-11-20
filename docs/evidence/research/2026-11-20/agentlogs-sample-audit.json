@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "audit_scope": "official_demonstration_sample_metadata_only",
+  "sample_design": "upstream_demo_selection; inclusion_probability_unreported",
+  "source_commit": "c99285177c4fdf38aa25ded3d9d11a07157a6f9f",
+  "dataset_release": "1.0-20261008",
+  "dataset_license": "CC-BY-4.0",
+  "source_file_sha256": {
+    "agent_sessions": "863e8cca5968a67c8929b4ca136e32170db27a790e2031bbc1963770499967ba",
+    "workflow_runs": "e86415a62a2194ffa0b92957366f330f5dc50fd250173e202629a047f3475392",
+    "agent_tasks": "b14729282801679764cb4ab62209497aa60c27bf6aaf06798c701aba36f4e5f9"
+  },
+  "query_engine": "duckdb-1.1.3",
+  "queries": {
+    "counts": "SELECT (SELECT count(*) FROM agent_sessions) AS sessions,\n            (SELECT count(*) FROM agent_tasks) AS tasks,\n            (SELECT count(*) FROM workflow_runs) AS workflow_runs",
+    "session_quality": "SELECT count(DISTINCT id) AS distinct_sessions,\n            count(DISTINCT task.id) AS task_families, count(DISTINCT user.id) AS users,\n            count(created_at) AS created_at_present, count(completed_at) AS completed_at_present,\n            count(workflow_run) AS workflow_references, count(error) AS error_present,\n            count(*) FILTER (WHERE log_found) AS log_found,\n            count(*) FILTER (WHERE completed_at<created_at) AS negative_lifetime,\n            min(created_at) AS earliest_created_at, max(completed_at) AS latest_completed_at\n            FROM agent_sessions",
+    "workflow_join": "SELECT count(*) AS session_denominator,\n            count(w.id) AS matched_workflows,\n            count(*) FILTER (WHERE s.workflow_run IS NOT NULL AND w.id IS NULL) AS unresolved_references,\n            count(*) FILTER (WHERE w.session.id=s.id) AS matching_back_references\n            FROM agent_sessions s LEFT JOIN workflow_runs w\n            ON s.workflow_run.id=w.id AND s.workflow_run.repository.full_name=w.repository.full_name",
+    "task_join": "SELECT count(*) AS sessions, count(t.id) AS matching_tasks\n            FROM agent_sessions s LEFT JOIN agent_tasks t ON s.task.id=t.id",
+    "states": "SELECT state,count(*) AS sessions FROM agent_sessions GROUP BY state ORDER BY state",
+    "workflow_outcomes": "SELECT status,conclusion,count(*) AS runs FROM workflow_runs GROUP BY status,conclusion ORDER BY status,conclusion",
+    "published_subset_overlap": "WITH edges AS (\n            SELECT created_at AS t,1 AS delta FROM agent_sessions WHERE completed_at>created_at\n            UNION ALL SELECT completed_at AS t,-1 AS delta FROM agent_sessions WHERE completed_at>created_at),\n            grouped AS (SELECT t,sum(delta) AS delta FROM edges GROUP BY t),\n            active AS (SELECT sum(delta) OVER (ORDER BY t ROWS UNBOUNDED PRECEDING) AS n FROM grouped)\n            SELECT max(n) AS maximum_half_open_session_overlap FROM active"
+  },
+  "results": {
+    "counts": [
+      {
+        "sessions": 4,
+        "tasks": 4,
+        "workflow_runs": 1
+      }
+    ],
+    "session_quality": [
+      {
+        "distinct_sessions": 4,
+        "task_families": 4,
+        "users": 3,
+        "created_at_present": 4,
+        "completed_at_present": 4,
+        "workflow_references": 3,
+        "error_present": 0,
+        "log_found": 4,
+        "negative_lifetime": 0,
+        "earliest_created_at": "2025-08-11 09:06:03.337000",
+        "latest_completed_at": "2026-03-17 05:18:35.313000"
+      }
+    ],
+    "workflow_join": [
+      {
+        "session_denominator": 4,
+        "matched_workflows": 1,
+        "unresolved_references": 2,
+        "matching_back_references": 1
+      }
+    ],
+    "task_join": [
+      {
+        "sessions": 4,
+        "matching_tasks": 4
+      }
+    ],
+    "states": [
+      {
+        "state": "completed",
+        "sessions": 4
+      }
+    ],
+    "workflow_outcomes": [
+      {
+        "status": "completed",
+        "conclusion": "success",
+        "runs": 1
+      }
+    ],
+    "published_subset_overlap": [
+      {
+        "maximum_half_open_session_overlap": 2
+      }
+    ]
+  },
+  "failure_population": "schema_supports_error_and_state; sampled_states_listed_explicitly",
+  "scheduling_use": "schema_and_join_qualification; population_arrival_and_tail_estimation_pending_full_metadata_scan",
+  "raw_content_exported": false
+}

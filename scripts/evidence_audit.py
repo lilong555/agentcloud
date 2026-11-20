@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Check report integrity; a valid blocked report remains a blocked experiment."""
+import hashlib
 import json
 from pathlib import Path
 import re
@@ -8,6 +9,7 @@ import sys
 from check import source_digest
 from source_overlay import apply
 from import_live_artifact import verify_archive
+from research_audit import verify_bundle
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -162,6 +164,15 @@ def inspect_joint_evidence(directory, errors):
 
 def inspect_links(value, errors: list[str], label: str) -> None:
     if isinstance(value, dict):
+        evidence = value.get("evidence")
+        digest = value.get("sha256")
+        if isinstance(evidence, str) and evidence.startswith("docs/evidence/") and digest is not None:
+            path = (ROOT / evidence).resolve()
+            if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+                errors.append(f"{label}: 无效 SHA256 {evidence}")
+            elif path.is_relative_to(ROOT) and path.is_file():
+                if hashlib.sha256(path.read_bytes()).hexdigest() != digest:
+                    errors.append(f"{label}: SHA256 不一致 {evidence}")
         for key, entry in value.items():
             if key in {"stdout", "stderr", "stdout_path", "stderr_path", "log_path", "evidence"} and isinstance(entry, str) and entry.startswith("docs/evidence/"):
                 path = (ROOT / entry).resolve()
@@ -175,6 +186,8 @@ def inspect_links(value, errors: list[str], label: str) -> None:
 
 def main() -> int:
     errors = []
+    bundle = verify_bundle()
+    errors.extend("research bundle: " + error for error in bundle["errors"])
     directory = ROOT / "docs/evidence"
     lock = json.loads((directory / "upstream-lock.json").read_text())
     for path in sorted(directory.rglob("*.json")):
@@ -184,7 +197,7 @@ def main() -> int:
             continue
         report = json.loads(path.read_text())
         inspect_links(report, errors, name)
-        if isinstance(report, dict) and (report.get('execution_kind') in {'github-actions-evidence-archive', 'local-cuda-evidence-archive', 'public-trace-quality-evidence-archive', 'remote-cpu-evidence-archive'} or
+        if isinstance(report, dict) and (report.get('execution_kind') in {'github-actions-evidence-archive', 'local-cuda-evidence-archive', 'public-trace-quality-evidence-archive', 'remote-cpu-evidence-archive', 'research-evidence-archive'} or
                 report.get('execution_kind') == 'github-actions-workflow-launch' and 'files' in report):
             try:
                 verify_archive(report)

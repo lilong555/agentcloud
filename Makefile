@@ -2,7 +2,7 @@ SHELL := /bin/bash
 GO ?= $(if $(wildcard $(HOME)/.local/share/agentcloud/go/bin/go),$(HOME)/.local/share/agentcloud/go/bin/go,go)
 PYTHON ?= python3
 
-.PHONY: help bootstrap doctor upstream verify-upstream build test vet replay check p0 p0-substrate p0-fencing p0-dynamo evidence-audit verify-delivery demo serve smoke bench native-build native-verify native-bench live-bench live-suite disk-check
+.PHONY: help bootstrap doctor upstream verify-upstream build test vet replay check p0 p0-substrate p0-fencing p0-dynamo evidence-audit research-audit verify-delivery demo serve smoke bench native-build native-verify native-bench live-bench live-suite disk-check
 
 help:
 	@echo 'bootstrap       安装并校验 Go 1.27.3 用户空间工具链'
@@ -18,6 +18,7 @@ help:
 	@echo 'disk-check      检查快照与编译所需磁盘余量'
 	@echo 'p0              运行两组真实上游测试并汇总证据'
 	@echo 'evidence-audit  校验证据引用与日志完整性'
+	@echo 'research-audit  校验研究契约与正式 Gate 2 算术（依赖 scripts/research-requirements.txt）'
 
 bootstrap:
 	$(PYTHON) scripts/bootstrap.py
@@ -62,6 +63,9 @@ p0-dynamo:
 
 evidence-audit:
 	$(PYTHON) scripts/evidence_audit.py
+
+research-audit:
+	$(PYTHON) scripts/research_audit.py
 
 verify-delivery:
 	$(PYTHON) scripts/repro_sources.py

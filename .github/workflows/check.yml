@@ -40,6 +40,11 @@ jobs:
         run: make check GO=go
       - name: Verify complete source delivery
         run: make verify-delivery
+      - name: Verify research contracts and archived Gate 2 arithmetic
+        run: |
+          python3 -m venv artifacts/research-venv
+          artifacts/research-venv/bin/pip install -r scripts/research-requirements.txt
+          make research-audit PYTHON=artifacts/research-venv/bin/python
       - name: Audit archived evidence
         run: make evidence-audit
       - name: Build service
@@ -53,6 +58,7 @@ jobs:
             docs/evidence/replay-demo.json
             docs/evidence/source-reproduction.json
             docs/evidence/upstream-patches-reproduction.json
+            docs/evidence/research/2026-11-20/contract-validation.json
             docs/evidence/logs/local-*/
           retention-days: 7
   deerflow-contracts:

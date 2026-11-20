@@ -1,5 +1,7 @@
 # 实验与验证
 
+[调度研究证据与验收条件](SCHEDULING_RESEARCH_EVIDENCE.md)汇总当前算法、具名测试和各次 Run。[研究核验回执](evidence/research/2026-11-20/contract-validation.json)验证正式 Gate 2 的 50 份原始 SHA、14,400 请求、50 个交互 P95 及八组配对均值，最低资源采样覆盖率 98.2956%；资源积分和 bootstrap 沿用封存分析。新数据源、合成等待份额与因果回放资格见 [数据集审计](DATASET_RESEARCH_AUDIT.md)和[事件契约](RESEARCH_EVENT_CONTRACT.md)。
+
 真实模型、规模调度、故障恢复与资源热力图分别保存原始证据。Azure CPA 的真实 `gpt-6-luna` 已完成两类 Agent 功能任务；规模与故障矩阵由独立 GitHub Actions 执行，当前运行结果由 [STATUS](STATUS.md)索引。
 
 ## 在线 KV 与沙箱生命周期联合策略
@@ -10,8 +12,10 @@
 
 | 验证对象 | 当前事实与原始身份 |
 | --- | --- |
-| 当前本地契约 | [JSON](evidence/local-contract.json)记录于 `2026-11-12T07:50:37.673775+00:00`，Go 源码摘要 `2937d38aec9b6b08a6db051dd8ae344df82a4e5f4f5baf450d8a03b4886dffeb`、152 个 Go 顶层测试通过，六条验证命令退出码均为 0。[Go 日志](evidence/logs/local-20261112T074951159690Z/race-tests.stdout.log)保留 10 个 PostgreSQL 顶层测试和两个子项的数据库缺配跳过；[tooling](evidence/logs/local-20261112T074951159690Z/tooling-tests.stderr.log)为 262 项全部通过，[runtime](evidence/logs/local-20261112T074951159690Z/runtime-tests.stderr.log)为 62 项中 58 通过、四个模块跳过。 |
-| 当前 609a58d9 CI／冒烟 | 源码 `609a58d9` 的 [CI 43178102644](https://github.com/lilong555/agentcloud/actions/runs/43178102644)与 [冒烟 43178192157](https://github.com/lilong555/agentcloud/actions/runs/43178192157)已启动，结果待验收；新预检分别核验真实首事件与后续策略执行。 |
+| 当前本地契约 | [JSON](evidence/local-contract.json)记录于 `2026-11-20T05:24:47.953610+00:00`，Go 源码摘要 `2937d38aec9b6b08a6db051dd8ae344df82a4e5f4f5baf450d8a03b4886dffeb`、152 个 Go 顶层测试通过，六条验证命令退出码均为 0。[Go 日志](evidence/logs/local-20261120T052358987613Z/race-tests.stdout.log)保留 10 个 PostgreSQL 顶层测试和两个子项的数据库缺配跳过；[tooling](evidence/logs/local-20261120T052358987613Z/tooling-tests.stderr.log)为 283 项全部通过，[runtime](evidence/logs/local-20261120T052358987613Z/runtime-tests.stderr.log)为 62 项中 58 通过、四个模块跳过。 |
+| 当前 609a58d9 CI | 源码 `609a58d9` 的 [CI 43178102644](evidence/ci-run-43178102644.json)为 `passed`：162 个 Go 顶层／零跳过，含 11 个真实 PostgreSQL 测试；262 项 tooling 通过，runtime 为 58 通过／四模块跳过，独立 DeerFlow 为 20/20／零跳过，两个 job 均 success。[原始日志计数](evidence/live-runs/43178102644/test-counts.json)保留具名测试和计数来源。 |
+| 当前 609a58d9 冒烟 | [冒烟 43178192157](evidence/joint-kv/43178192157/summary.json)为 `complete`：测量与工作流源码均为 `609a58d9`，5/5 策略、120/120 请求完成，四组原生路由全部通过，全部 trial 清理成功。五策略恢复次数为 TTL2／TTL15／v2／cache／joint＝14／4／13／13／12，共 56 次；joint 的 110 个预测中有效 79、无效 31、应用 24、非零成本应用 0，成本差额全部为 0 ms。[原始路由](evidence/joint-kv/43178192157/13925084885/routing/summary.json)与 [最终执行归档](evidence/joint-kv/43178192157/execution/archive.json)保存真实 ZMQ 测试步骤 success、Run／job 原文及输入摘要。 |
+| 独立 N64／7303 回归 | 独立 [N64／7303 回归 43180786047](evidence/joint-kv/43180786047/summary.json)为 `complete`：测量源码 `609a58d9`、工作流 `92727d4`、门禁冒烟 `43178192157`，5/5 策略、1,905/1,905 请求完成，全部清理成功。每策略 381 个请求的 RAM／Token 验证均通过、64 条轨迹完成，合计 320 条；joint 的 w31 后两轮均为 `COMPLETED`，TTFT 为 6.9321／6.5314 s。[单种子表](evidence/joint-kv/43180786047/execution/policy-table.json)的 joint−cache 交互 P95 差 +35.6974 s、Actor 预留差 +33.2212 GB·s，种子区间为 `[null,null]`、原因为 `exploratory_seed_units_insufficient`。首轮全量继续保留 49/50、14,278/14,280 与原失败身份。 |
 | 已归档 7d39f654 CI | 源码 `7d39f654c5c9718c9e27b95e311443b8242310aa`、源码摘要 `2937d38aec9b6b08a6db051dd8ae344df82a4e5f4f5baf450d8a03b4886dffeb`；[43175566019 摘要](evidence/ci-run-43175566019.json)及 [contracts job 131038888402](https://github.com/lilong555/agentcloud/actions/runs/43175566019/job/131038888402)记录 162 个 Go 顶层通过／零跳过、11 个真实 PostgreSQL 测试、262 项 tooling 通过、runtime 58 通过／四个模块跳过；独立 [deerflow-contracts job 131038888674](https://github.com/lilong555/agentcloud/actions/runs/43175566019/job/131038888674)为 20/20／零跳过、实际 PostgreSQL 执行。[API 与原始日志归档](evidence/live-runs/43175566019/api/archive.json)及两个 artifact 摘要保存校验身份。 |
 | 已归档 43164478512 CI | 源码 `c24b619dc6bbd0d0d3ff5019a951696f0178b9e6` 的 [摘要](evidence/ci-run-43164478512.json)记录 Go 162／PostgreSQL 11／tooling 248／runtime 58 通过与四模块跳过，独立 DeerFlow 20/20；两 job success。 |
 | 已归档 Go CI | 源码 `293e19f97ee06df90c7b5e9cdd44b8cdb2c742a6` 的 [43155952398／contracts job 130975803254](https://github.com/lilong555/agentcloud/actions/runs/43155952398/job/130975803254)记录 161 项顶层测试通过，PostgreSQL 契约实际执行；该 CI 与当前本地验证各自保留源码身份。 |
@@ -20,8 +24,8 @@
 | 真实请求结构 | [joint-workload.json](evidence/agent-traces/joint-workload.json)冻结 432 条轨迹、150 个任务组；[SOURCE_AUDIT](evidence/agent-traces/SOURCE_AUDIT.json)与 [VALIDATION](evidence/agent-traces/VALIDATION.json)记录来源、摘要与确定性选择。每任务选择一个 attempt，60.88% 非末轮等待为缺测模型 3s，时间代表性按该构造报告。 |
 | 远端 ARM Go 契约 | `c24b619`、Go 1.27.3／arm64、Python 3.11.4，CPU 0–3／RSS guard 4 GiB；race 152 个顶层通过、10 个 PostgreSQL 顶层跳过、零失败，数据竞争报告为 0，11.37 s／峰值 RSS 1.16 GiB；vet 退出码 0、0.32 s。实际数据库 11 项通过采用当前 CI。[最终回执](evidence/remote-cpu/cannlab-c24b619/final/validation.json)／[原文与 SHA 归档](evidence/remote-cpu/cannlab-c24b619/artifact.json)／[复现脚本](evidence/remote-cpu/cannlab-c24b619/reproduce.sh)。 |
 | 远端 ARM CPU 复算 | cannlab 的 aarch64／Python 3.11.4 在 CPU 4–5、4 GiB 地址空间上限下核验 818 份输入 SHA，分析耗时 1.48 s、峰值 RSS 42.4 MiB；20 项分析回归全部通过。生成 summary 与本机参考逐字一致，分析代码为 `c24b619`、测量源码仍为 `55120d52`。[三种 Python／两架构对账](evidence/joint-kv/43161092995/cannlab/comparison.json)／[完整分析归档](evidence/joint-kv/43161092995/cannlab/archive.json)／[输入清单](evidence/joint-kv/43161092995/cannlab/inputs.json)／[测试日志](evidence/joint-kv/43161092995/cannlab/unittest.log)。 |
-| 当前联合冒烟 43161092995 | 源码 `55120d52e1be0fef3ab443af66f81baa046cc320`；[摘要](evidence/joint-kv/43161092995/summary.json)为 `complete`，5/5 策略、120/120 请求、55 次 MEMORY 恢复，全部 trial 清理通过；四组原生路由案例全部通过。[完整产物 manifest](evidence/joint-kv/43161092995/13918507753/artifact.json)。 |
-| 7d39f654 独立冒烟失败 | 源码 `7d39f654` 的 CI 已通过。已归档冒烟 [43175601451](https://github.com/lilong555/agentcloud/actions/runs/43175601451)在首个 `off-assigned` 原生路由预检报告 `RuntimeError: worker-1-native-events`；后三组路由与五个预创建 trial 均为 `NOT_STARTED`，120 条请求均为 `NOT_OFFERED`，生命周期策略启动数为 0；Kind 准备与串行策略步骤跳过。路由进程全部结束、剩余 RSS 为 0，工作流 `Stop containers` 通过。[执行语义与原文](evidence/joint-kv/43175601451/preflight/execution.json)保留完整分母。失败检查的事件 batch、sequence gaps 与 errors 均为空；[Observer 启动审查](evidence/joint-kv/43175601451/review/observer-startup.json)确认异步重连与订阅就绪竞态最符合现有原文。N64／7303 的完整五策略定向验证采用独立 Run、5 trial／1,905 个计划请求，实机策略尚未开始；首轮 50 trial 保留原身份与失败分母。 |
+| 已归档联合冒烟 43161092995 | 源码 `55120d52e1be0fef3ab443af66f81baa046cc320`；[摘要](evidence/joint-kv/43161092995/summary.json)为 `complete`，5/5 策略、120/120 请求、55 次 MEMORY 恢复，全部 trial 清理通过；四组原生路由案例全部通过。[完整产物 manifest](evidence/joint-kv/43161092995/13918507753/artifact.json)。 |
+| 7d39f654 独立冒烟失败 | 源码 `7d39f654` 的 CI 已通过。已归档冒烟 [43175601451](https://github.com/lilong555/agentcloud/actions/runs/43175601451)在首个 `off-assigned` 原生路由预检报告 `RuntimeError: worker-1-native-events`；后三组路由与五个预创建 trial 均为 `NOT_STARTED`，120 条请求均为 `NOT_OFFERED`，生命周期策略启动数为 0；Kind 准备与串行策略步骤跳过。路由进程全部结束、剩余 RSS 为 0，工作流 `Stop containers` 通过。[执行语义与原文](evidence/joint-kv/43175601451/preflight/execution.json)保留完整分母。失败检查的事件 batch、sequence gaps 与 errors 均为空；[Observer 启动审查](evidence/joint-kv/43175601451/review/observer-startup.json)确认异步重连与订阅就绪竞态最符合现有原文。N64／7303 的独立 Run `43180786047` 完成 5/5 trial、1,905/1,905 请求，全部清理成功；首轮 50 trial 保留原身份与失败分母。 |
 | 首轮全量联合 43163231106 | [Actions](https://github.com/lilong555/agentcloud/actions/runs/43163231106)执行结束：49/50 trial 通过、14,278/14,280 请求完成，全部清理成功；N32 25/25、4,755/4,755，唯一失败为 N64／7303 joint 379/381。执行源码 `55120d52e1be0fef3ab443af66f81baa046cc320`，工作流源码 `a7c0bbff006cfbaf4308b834988689a56fae97ed`。原失败保留，N64 的 joint 相关比较采用 7301／7302／7304／7305 四个完整种子对：joint−cache 的 Actor 预留差 +24.4476 GB·s，探索区间 [+17.0535,+31.4217]；交互 P95 差 −0.1492 s，区间 [−18.5614,+11.7871]，首轮 Gateway 等待与轨迹 JCT P95 分别增加 22.4163／26.6813 s。cache−v2 保留五个完整种子对，资源与交互 P95 区间均跨零。[失败时序](evidence/joint-kv/43163231106/review/failure-admission-race.json)。 |
 | 联合冒烟 43157107777 | [Actions](https://github.com/lilong555/agentcloud/actions/runs/43157107777)为 `failure`；计划源码 `19c5f98659794f03237791a1443e38215aadbb2c`。工作流输入校验报告 `live-scale.yml:40` 的 `Unexpected value '1'`，联合 job 未创建，源码与 trial 未执行；五个计划 trial、120 个计划请求保留，完成请求为 0。[摘要](evidence/joint-kv/43157107777/summary.json)／[原始注解](evidence/joint-kv/43157107777/launch-1/diagnostics/workflow-annotations.json)。 |
 | 联合冒烟 43157987378 | [Actions](https://github.com/lilong555/agentcloud/actions/runs/43157987378)为 `failure`；日志确认执行源码 `848a3f232347475e850053b2fe92679d47f7c2e4`。首个 `static-15` trial 报 `session failure`，其余四策略报前序清理失败；公开证据 staging 随后出现相对路径 `ValueError`，请求级／路由 artifact 缺失。五个计划 trial、120 个计划请求保留，完成与失败请求计数为 `null`，原生路由步骤为 success、逐请求验收待原始产物。[摘要](evidence/joint-kv/43157987378/summary.json)／[执行观察](evidence/joint-kv/43157987378/launch-1/diagnostics/job-log-observations.json)／[job 原始日志](evidence/joint-kv/43157987378/launch-1/diagnostics/job-130982580550.log.gz)。 |
@@ -30,9 +34,33 @@
 
 [Observer 启动审查](evidence/joint-kv/43175601451/review/observer-startup.json)对原始 ZIP 路由成员逐字节核验：原预检 13/14 项检查通过，Worker 0 的 PUB 绑定至首请求为 437.431 ms，Worker 1 为 122.913 ms；Worker 0 收到 sequence 0／1，Worker 1 的观察器为空，独立 KVIndexer 已收到 Worker 1 的 1,024 Token 前缀。历史原文的握手与订阅传播时间为未采集，精确首批丢失时点保留该测量范围。
 
-当前交付源码 `609a58d9081b3340ab57f99b2c249be24871d376` 的 [Observer](../experiments/dynamo/lifecycle_kv_mocker.py#L95)记录 socket 初始化的 `ready` 和真实 `EVENT_HANDSHAKE_SUCCEEDED` 的 `connected`；[Stack](../experiments/dynamo/lifecycle_kv_mocker.py#L255)在 Mocker PUB 启动后等待连接握手，再开始推理。快照保留握手历史、连接状态与 `first_sequence`，缺少初始 batch 的序列计入 gap。[真实本地 ZMQ 两项测试](../tests/dynamo/test_event_transport.py)在 5.278 s 内通过：20 次晚启动 PUB 均从 sequence 0 观察首事件，另验证初始 gap 与断连清除状态；30 项相关 tooling 通过；[原始失败、源码审查与本地执行记录](evidence/joint-kv/43175601451/review/observer-startup.json)保留各自验证范围。源码 `609a58d9` 的 [CI 43178102644](https://github.com/lilong555/agentcloud/actions/runs/43178102644)与 [冒烟 43178192157](https://github.com/lilong555/agentcloud/actions/runs/43178192157)已启动，结果待验收；新预检分别核验真实首事件与后续策略执行。
+当前交付源码 `609a58d9081b3340ab57f99b2c249be24871d376` 的 [Observer](../experiments/dynamo/lifecycle_kv_mocker.py#L95)记录 socket 初始化的 `ready` 和真实 `EVENT_HANDSHAKE_SUCCEEDED` 的 `connected`；[Stack](../experiments/dynamo/lifecycle_kv_mocker.py#L255)在 Mocker PUB 启动后等待连接握手，再开始推理。快照保留握手历史、连接状态与 `first_sequence`，缺少初始 batch 的序列计入 gap。[真实本地 ZMQ 两项测试](../tests/dynamo/test_event_transport.py)在 5.278 s 内通过：20 次晚启动 PUB 均从 sequence 0 观察首事件，另验证初始 gap 与断连清除状态；30 项相关 tooling 通过；[原始失败、源码审查与本地执行记录](evidence/joint-kv/43175601451/review/observer-startup.json)保留各自验证范围。
 
-N=4／seed 7101 的冒烟结果如下，五策略各完成 24 个计划请求。Token 对账来自官方 Mocker 引擎响应，恢复次数按 trial 原文汇总。
+源码 `609a58d9` 的 [CI 43178102644](evidence/ci-run-43178102644.json)为 `passed`：162 个 Go 顶层／零跳过，含 11 个真实 PostgreSQL 测试；262 项 tooling 通过，runtime 为 58 通过／四模块跳过，独立 DeerFlow 为 20/20／零跳过，两个 job 均 success。[原始日志计数](evidence/live-runs/43178102644/test-counts.json)保留具名测试和计数来源。
+
+[冒烟 43178192157](evidence/joint-kv/43178192157/summary.json)为 `complete`：测量与工作流源码均为 `609a58d9`，5/5 策略、120/120 请求完成，四组原生路由全部通过，全部 trial 清理成功。五策略恢复次数为 TTL2／TTL15／v2／cache／joint＝14／4／13／13／12，共 56 次；joint 的 110 个预测中有效 79、无效 31、应用 24、非零成本应用 0，成本差额全部为 0 ms。[原始路由](evidence/joint-kv/43178192157/13925084885/routing/summary.json)与 [最终执行归档](evidence/joint-kv/43178192157/execution/archive.json)保存真实 ZMQ 测试步骤 success、Run／job 原文及输入摘要。
+
+独立 [N64／7303 回归 43180786047](evidence/joint-kv/43180786047/summary.json)为 `complete`：测量源码 `609a58d9`、工作流 `92727d4`、门禁冒烟 `43178192157`，5/5 策略、1,905/1,905 请求完成，全部清理成功。每策略 381 个请求的 RAM／Token 验证均通过、64 条轨迹完成，合计 320 条；joint 的 w31 后两轮均为 `COMPLETED`，TTFT 为 6.9321／6.5314 s。[单种子表](evidence/joint-kv/43180786047/execution/policy-table.json)的 joint−cache 交互 P95 差 +35.6974 s、Actor 预留差 +33.2212 GB·s，种子区间为 `[null,null]`、原因为 `exploratory_seed_units_insufficient`。首轮全量继续保留 49/50、14,278/14,280 与原失败身份。
+
+### 609a58d9 联合冒烟完整验收
+
+[43178192157 摘要](evidence/joint-kv/43178192157/summary.json)覆盖 N=4／seed 7101，五策略各完成 24 个请求；原始主归档 [13925084885](evidence/joint-kv/43178192157/13925084885/artifact.json)的来源核验为 `complete`，raw [13925243990](evidence/joint-kv/43178192157/13925243990/artifact.json)补充相同字节原文。完整摘要 SHA 为 `d8e86035109dafcd0fb0a1383e93d57b9238f4d47db8c5f3b7deb481de3f5214`。真实 ZMQ 传输测试与四路由检查均通过；生命周期准入与缓存决策的专项审查采用其独立原始证据。
+
+[准入与 Observer 专项审查](evidence/joint-kv/43178192157/review/admission-observer.json)为 `passed`：120 个请求的工具执行与逻辑模型注册各一次，100/100 个前序 cohort 在注册成功后闭合一次。实机准入拒绝与准入恢复均为 0，恢复分支由 12 项 CI fixture 核验；18 条 Worker 流均记录握手，17 条有事件流从 sequence 0 开始，另一个 joint Worker 承接请求 0／事件 0，全部 errors／gaps 为空。
+
+| 策略 | 完成请求 | 恢复次数 | 命中／重算 Token |
+| --- | ---: | ---: | ---: |
+| `static-2` | 24/24 | 14 | 19,936／6,722 |
+| `static-15` | 24/24 | 4 | 19,936／6,722 |
+| `agentcloud-v2` | 24/24 | 13 | 19,936／6,722 |
+| `agentcloud-v2-cache` | 24/24 | 13 | 19,152／7,506 |
+| `agentcloud-v2-joint` | 24/24 | 12 | 19,936／6,722 |
+
+joint 的调度事件集合为 110 个唯一预测、79 有效／31 无效、24 次应用、非零成本应用 0；110 个差额均为 0 ms。回退原因为 `no_cache_observation=21`、`no_feedback=2`、`low_support=8`。当前冒烟覆盖真实首序列接收、双 Mocker 路由、请求完成与零差额决策路径；后续 N64／7303 的 1,905 请求回归使用独立 Run `43180786047`。
+
+### 55120d52 已归档联合冒烟
+
+已归档 43161092995 的 N=4／seed 7101 冒烟结果如下，五策略各完成 24 个计划请求。Token 对账来自官方 Mocker 引擎响应，恢复次数按 trial 原文汇总。
 
 | 策略 | 完成请求 | 恢复次数 | 命中／重算 Token |
 | --- | ---: | ---: | ---: |
@@ -158,9 +186,40 @@ N64 的注册 `events.jsonl` 集合为 16,615 个唯一预测、10,629 次应用
 
 N64 对 1／1,207 个非零应用完成单步反事实，预算增加 1 ms、期限变化、动作翻转 0；另有三个零差额 SUSPEND 回放保持原动作。完整过去状态的覆盖范围按核验 JSON 保存，整条策略轨迹反事实为 `null`。[全量 Go 核验](evidence/joint-kv/43163231106/review/full-summary.json)合计十个 joint trial：注册事件为 24,123 个预测／14,438 次应用／2,576 次非零成本应用，并集为 24,894／14,448／2,579；3／2,579 个非零单步回放各增加 1 ms 预算、期限变化、动作翻转 0，另有四个零差额 SUSPEND 回放。2,854 个完成 joint 请求、1,235 次 MEMORY 恢复、479 个终态快照与 2,375/2,375 个原生活跃绑定已对账，时序／数值／身份问题计数为 0。两集合与单步范围按各自分母报告。
 
-最终 [ARM 分析回执](evidence/joint-kv/43163231106/cannlab/final/receipt.json)记录 aarch64／Python 3.11.4、CPU 4–5／4 GiB 地址空间上限；8,850 份输入 SHA 核验通过，118.18 s／峰值 RSS 233.64 MiB。[16 成员归档](evidence/joint-kv/43163231106/cannlab/final/archive.json)封存最终表、上下文和输入／输出摘要；最终 summary SHA 为 `b8d05b1c0b1667b36fe847f01c91c35fc39a02ccc2491f4f25f24a42e2f200ec`。跨机参考字段 `reference_summary_sha256／byte_identical_to_reference=null`，最终包采用输入与输出 SHA 核验。独立 25 trial 阶段归档继续保留，冒烟的三种 Python／两架构逐字一致结论使用其自身原文。
+最终 [ARM 分析回执](evidence/joint-kv/43163231106/cannlab/final/receipt.json)记录 aarch64／Python 3.11.4、CPU 4–5／4 GiB 地址空间上限；8,850 份输入 SHA 核验通过，118.18 s／峰值 RSS 233.64 MiB。[37 成员归档](evidence/joint-kv/43163231106/cannlab/final/archive.json)封存最终表、上下文和输入／输出摘要；最终 summary SHA 为 `b8d05b1c0b1667b36fe847f01c91c35fc39a02ccc2491f4f25f24a42e2f200ec`。跨机参考字段 `reference_summary_sha256／byte_identical_to_reference=null`，最终包采用输入与输出 SHA 核验。独立 25 trial 阶段归档继续保留，冒烟的三种 Python／两架构逐字一致结论使用其自身原文。
 
 首轮全量的 TTL2／TTL15／v2／cache／joint 五策略分别记录缓存重选和 KV 成本比较，N32 五对、N64 joint 四对及失败分母保持冻结计划身份。机制与入口见 [JOINT_KV_SCHEDULING](JOINT_KV_SCHEDULING.md)。以下历史 Gate 1／2、TraceLab 和 GPU 结果保持各自源码与运行身份。
+
+<a id="n64-7303-independent-regression"></a>
+
+## N64／7303 独立五策略回归
+
+**Run 43180786047 完成 5/5 trial、1,905/1,905 请求，失败／未投递请求为 0，全部清理成功。** [摘要](evidence/joint-kv/43180786047/summary.json)的测量源码为 `609a58d9081b3340ab57f99b2c249be24871d376`，工作流为 `92727d48128d5496a4be17895199ebae69efd34a`，门禁采用冒烟 `43178192157`；摘要 SHA 为 `25a595dbe8f0236f87552e6bdb9e565f7192a4ff2bb07128564a56cb4ef2ab58`。missing／duplicate trial 均为空。[注册原文](evidence/joint-kv/43180786047/registration/registration.json)保留完整十组／50 trial／14,280 请求计划，显式 `N64／7303` 筛选形成独立一组／五策略／1,905 请求计划；该次回归与首轮 43163231106 的 49/50、14,278/14,280 分别归档。
+
+[验收回执](evidence/joint-kv/43180786047/execution/receipt.json)逐策略记录 381/381 个 RAM 连续性与 Token 轨迹验证通过、64/64 条轨迹完成，总计 1,905 个有效请求与 320 条完整轨迹。joint 的 ReproPatch w31 第五／第六轮（round 4／5）均 `COMPLETED`，RAM 与 Token 验证通过，TTFT 为 6.932111502／6.531446457 s。joint 最终 64 项会话的 `dynamo_finalized=true`，64 条轨迹完整；原生 phase／lifecycle 字段为 `null`。
+
+| 策略 | 完成请求 | 交互 P95 s | Actor 预留 GB·s | Stranded GB·s | 恢复次数 | 命中率 | 首轮 Gateway 等待 P95 s | 轨迹 JCT P95 s |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| TTL2 | 381/381 | 171.1816 | 540.1761 | 203.4206 | 303 | 17.46% | 169.9434 | 779.9394 |
+| TTL15 | 381/381 | 368.8862 | 475.1653 | 221.4458 | 64 | 75.36% | 437.3436 | 467.3652 |
+| v2 | 381/381 | 373.7292 | 530.7534 | 223.1839 | 147 | 75.36% | 554.4427 | 595.3034 |
+| cache | 381/381 | 382.0055 | 521.9874 | 222.1702 | 148 | 73.20% | 539.2264 | 574.9701 |
+| joint | 381/381 | 417.7029 | 555.2085 | 231.3579 | 148 | 73.25% | 582.5297 | 629.7126 |
+
+下表为独立单种子的候选减基线差值。所有探索性 bootstrap 区间均为 `[null,null]`，`null_reason=exploratory_seed_units_insufficient`；完整种子对计数为 1。
+
+| 配对 | 交互 P95 差 s | Actor 预留差 GB·s | 恢复次数差 | 命中率差（百分点） | 首轮 Gateway 等待差 s | 轨迹 JCT P95 差 s |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| joint − cache | +35.6974 | +33.2212 | +0 | +0.0475 | +43.3033 | +54.7425 |
+| cache − v2 | +8.2762 | -8.7660 | +1 | -2.1586 | -15.2163 | -20.3332 |
+| joint − TTL2 | +246.5213 | +15.0325 | -155 | +55.7865 | +412.5862 | -150.2268 |
+| joint − TTL15 | +48.8167 | +80.0432 | +84 | -2.1111 | +145.1861 | +162.3474 |
+
+**该单种子完成请求回归，同时显示 joint 的资源与尾延迟增加。** joint−cache 的交互 P95 增加 35.6974 s、Actor 预留增加 33.2212 GB·s、首轮 Gateway 等待增加 43.3033 s、轨迹 JCT P95 增加 54.7425 s；双方恢复次数均为 148，命中率差为 +0.0475 个百分点。该单种子比较保留本次源码、Runner 与请求分母，原首轮四对 joint 比较继续采用各自封存数据。[单种子原表](evidence/joint-kv/43180786047/execution/policy-table.json)与 [执行归档](evidence/joint-kv/43180786047/execution/archive.json)保存输入摘要、注册筛选与全部结果。
+
+joint 的注册事件集合为 2,933 个唯一预测、1,680 次应用、413 次非零成本输入；非零成本差额最大为 0.000555690 ms。非零成本输入与性能差各自按来源报告，动作翻转采用独立反事实范围。
+
+[独立回归专项审查](evidence/joint-kv/43180786047/review/admission-observer.json)为 `passed`、问题计数 0：1,905 个请求的原生准入、完成工具回执、逻辑提交与 Actor turn 链完整；1,585 个 cohort 闭合一次，其中 574 个保留直接 Go 注册时间，另 1,011 个采用成功提交区间和冻结源码顺序核验。直接 Go 模型注册／工具执行原事件分别覆盖 660／655 个请求，其余 1,245／1,250 个位于有界历史之外。18 条 Worker 流均从 sequence 0 连续，握手完整、errors／gaps 为空；每策略 64 个 FINAL 事件、原生终态与 final-state 快照，总计 320；每策略 active bindings 为 0、retired 为 64。实机 423 拒绝与准入恢复均为 0，恢复分支由同源码 12 项 CI fixture 验证。[封存引用](evidence/joint-kv/43180786047/execution/independent-review-reference.json)记录审查源码与摘要。审查 SHA 为 `4e3b99bfaa7996499e2590528a420244492c2fbacdee5080d312ba0f4a044301`，53 份审查输入的 SHA／字节数核验通过。
 
 ## 三项性能边界与归因
 

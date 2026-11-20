@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "execution_kind": "discrete-event-simulation",
+  "actor_slots": 4,
+  "model_slots": 2,
+  "resume_seconds": 0.08,
+  "snapshot_seconds": 0.06,
+  "harness_memory_gb": 0.05,
+  "acting_token_weight": 0.5,
+  "feedback_acting_weight": 0.1,
+  "feedback_ttl_seconds": 5.0,
+  "slo_seconds": 4.0,
+  "sessions_per_profile": 24,
+  "test_seeds": [
+    7101,
+    7102,
+    7103,
+    7104,
+    7105
+  ],
+  "training_seeds": [
+    1201,
+    1202,
+    1203
+  ],
+  "ttl_candidates_seconds": [
+    0,
+    0.1,
+    0.5,
+    1,
+    2,
+    5
+  ],
+  "selection_objective": "mean actor GB*s + 4 GB*s per unsuccessful offered session",
+  "groups": {
+    "A": {
+      "idle_suspend": false,
+      "logical_admission": false,
+      "wait_coordination": false,
+      "logical_state_feedback": false
+    },
+    "B": {
+      "idle_suspend": true,
+      "logical_admission": false,
+      "wait_coordination": false,
+      "logical_state_feedback": false
+    },
+    "C": {
+      "idle_suspend": true,
+      "logical_admission": true,
+      "wait_coordination": false,
+      "logical_state_feedback": false
+    },
+    "D": {
+      "idle_suspend": true,
+      "logical_admission": true,
+      "wait_coordination": true,
+      "logical_state_feedback": false
+    },
+    "E": {
+      "idle_suspend": true,
+      "logical_admission": true,
+      "wait_coordination": true,
+      "logical_state_feedback": true
+    },
+    "T-only": {
+      "idle_suspend": false,
+      "logical_admission": true,
+      "wait_coordination": false,
+      "logical_state_feedback": false
+    },
+    "C+logical-feedback": {
+      "idle_suspend": true,
+      "logical_admission": true,
+      "wait_coordination": false,
+      "logical_state_feedback": true
+    }
+  },
+  "logical_token_capacity": 16384
+}
