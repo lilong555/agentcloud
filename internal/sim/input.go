@@ -67,6 +67,7 @@ func (t Trace) Validate() error {
 		return fmt.Errorf("invalid trace identity")
 	}
 	ids, families := map[string]bool{}, map[string]string{}
+	starts, finishes := map[string]float64{}, map[string]float64{}
 	for _, s := range t.Sessions {
 		if s.ID == "" || s.Family == "" || ids[s.ID] || !valid(s.Arrival) || s.Arrival < 0 {
 			return fmt.Errorf("invalid session %q", s.ID)
@@ -79,6 +80,8 @@ func (t Trace) Validate() error {
 			families[s.Family] = s.Split
 		}
 		seen := map[string]bool{}
+		ends := map[string]float64{}
+		finish := s.Arrival
 		if len(s.Events) == 0 {
 			return fmt.Errorf("empty session %s", s.ID)
 		}
@@ -94,7 +97,28 @@ func (t Trace) Validate() error {
 					return fmt.Errorf("non-topological parent %s", p)
 				}
 			}
+			start := s.Arrival
+			for _, p := range e.Parents {
+				start = math.Max(start, ends[p])
+			}
+			ends[e.ID] = start + *e.Duration
+			finish = math.Max(finish, ends[e.ID])
 			seen[e.ID] = true
+		}
+		if s.Split != "excluded" {
+			if old, ok := starts[s.Split]; !ok || s.Arrival < old {
+				starts[s.Split] = s.Arrival
+			}
+			finishes[s.Split] = math.Max(finishes[s.Split], finish)
+		}
+	}
+	// Validate source chronology before the CLI remaps arrivals into a scenario.
+	// Both training labels and validation-selected parameters precede evaluation.
+	for _, pair := range [][2]string{{"train", "validation"}, {"train", "holdout"}, {"train", "generalization"}, {"validation", "holdout"}, {"validation", "generalization"}} {
+		end, hasEnd := finishes[pair[0]]
+		start, hasStart := starts[pair[1]]
+		if hasEnd && hasStart && end > start {
+			return fmt.Errorf("temporal split leakage: %s overlaps %s", pair[0], pair[1])
 		}
 	}
 	return nil

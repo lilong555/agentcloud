@@ -32,7 +32,7 @@ FreeInference 的工具 latency 是模型请求间 gap：保存 B 类 gap，保�
 
 B 级 gap 附 `tool_duration_ms: null`、`tool_boundary: "unknown"`、`gap_active_lower_ms: 0`、`gap_active_upper_ms: duration_ms`。上下界描述该请求间隔内的 Actor 活跃占用；后台工具跨越间隔时，其完整执行时长仍为 unknown。保守场景将整段 gap 设为 active；原始时间、跨源匹配与合成缩放分别保存 `arrival_kind`、`generation_rule`、`seed`。
 
-时间切分使用冻结日期边界；跨边界 family 排除或整体分配到最早集合并排除其未来记录。跨 Harness 泛化切片与训练家族隔离。禁止从 holdout/generalization 估计预测器、成本、阈值。右删失与成功人口选择分开记录。
+时间切分使用冻结日期边界；跨边界 family 排除或整体分配到最早集合并排除其未来记录。跨 Harness 泛化切片与训练家族隔离，且始于留出期，保证训练标签与验证期选出的阈值先于泛化请求。适配器和模拟器输入层均检查训练／验证完成水位早于后续集合的首次到达。禁止从 holdout/generalization 估计预测器、成本、阈值。右删失与成功人口选择分开记录。
 
 在线策略仅接收已开始／已完成事件、当前已等待时长、既往训练样本、已观测资源和队列快照；完整 DAG、当前事件持续时长、未来到达和最终 tokens 只属于回放引擎／Oracle。公开 trace 的后验 Token 字段默认只在模型完成后公开。
 
@@ -69,4 +69,4 @@ B 级 gap 附 `tool_duration_ms: null`、`tool_boundary: "unknown"`、`gap_activ
 
 DES 使用相同工作集与当前并发档位的表项，禁止静默外推。缺测时显式允许采用独立 prior，输出逐字段 fallback 来源。Checkpoint 完成、释放槽位、快照可恢复分开建模；发生重叠的阶段按依赖取最大值，禁止重复相加。物理写入与分配占用分别输出。
 
-这两份接口冻结于本轮编码开始前。任何消费端扩展保持 v1 必需字段含义，补充字段允许消费端忽略。
+消费端扩展保持 v1 必需字段含义，补充字段允许消费端忽略。

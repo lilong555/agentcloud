@@ -18,7 +18,7 @@ WEEKS = ["2026-05-17_2026-05-23", "2026-06-14_2026-06-20",
 SPLITS = {"validation_at": "2026-06-14", "holdout_at": "2026-07-12",
           "generalization_harness": "opencode", "family_proxy": "user_id",
           "cross_boundary_rule": "earliest_split_only; later records excluded",
-          "generalization_rule": "reserve all families ever observed with opencode; use only opencode rows"}
+          "generalization_rule": "reserve all families ever observed with opencode; use only opencode rows starting at or after holdout_at"}
 
 
 def sha(path):
@@ -177,6 +177,8 @@ def assign_splits(sessions):
         if f in general:
             part = "generalization" if s["harness"] == SPLITS["generalization_harness"] else "excluded"
             reason = "generalization_family_other_harness" if part == "excluded" else None
+            if part == "generalization" and s["source_started_at"][:10] < SPLITS["holdout_at"]:
+                part, reason = "excluded", "generalization_precedes_frozen_tuning_cutoff"
         elif part != earliest[f]:
             part, reason = "excluded", "family_crosses_time_boundary"
         # Sessions crossing a training/validation cutoff are wholly excluded.
@@ -200,12 +202,18 @@ def quantiles(values):
 
 def validate(trace):
     seen, family_splits = set(), defaultdict(set)
+    starts, ends = {}, {}
     for s in trace["sessions"]:
         if s["session_id"] in seen:
             raise ValueError("duplicate session identity")
         seen.add(s["session_id"])
         if s["split"] != "excluded":
             family_splits[s["family_id"]].add(s["split"])
+            part = s["split"]
+            start = datetime.fromisoformat(s["source_started_at"].replace("Z", "+00:00"))
+            end = datetime.fromisoformat(s["source_ended_at"].replace("Z", "+00:00"))
+            starts[part] = min(starts.get(part, start), start)
+            ends[part] = max(ends.get(part, end), end)
         ids = set()
         for e in s["events"]:
             if e["id"] in ids or any(p not in ids for p in e["parents"]):
@@ -215,7 +223,13 @@ def validate(trace):
                 raise ValueError("invalid duration")
     if any(len(v) != 1 for v in family_splits.values()):
         raise ValueError("family leakage")
-    return {"sessions": len(seen), "families": len(family_splits), "family_split_overlap": 0}
+    for later, earlier in (("validation", ("train",)), ("holdout", ("train", "validation")),
+                           ("generalization", ("train", "validation"))):
+        for part in earlier:
+            if part in ends and later in starts and ends[part] > starts[later]:
+                raise ValueError(f"temporal split leakage: {part} overlaps {later}")
+    return {"sessions": len(seen), "families": len(family_splits), "family_split_overlap": 0,
+            "temporal_split_order": "passed"}
 
 
 def prepare(root, output):

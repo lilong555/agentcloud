@@ -145,6 +145,23 @@ func TestTrainingFamilyLeakageRejected(t *testing.T) {
 	}
 }
 
+func TestTemporalTrainingAndTuningLeakageRejected(t *testing.T) {
+	trace := Trace{SchemaVersion: 1, TraceID: "time-split", Sessions: []Session{
+		{ID: "train", Family: "train", Split: "train", Events: []Event{node("m", "model_wait", 10)}},
+		{ID: "tune", Family: "tune", Split: "validation", Arrival: 10, Events: []Event{node("m", "model_wait", 10)}},
+		{ID: "eval", Family: "eval", Split: "generalization", Arrival: 20, Events: []Event{node("m", "model_wait", 10)}},
+	}}
+	if err := trace.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	for _, arrival := range []float64{5, 15} {
+		trace.Sessions[2].Arrival = arrival
+		if err := trace.Validate(); err == nil {
+			t.Fatalf("evaluation at %g accepted future training/tuning labels", arrival)
+		}
+	}
+}
+
 func TestSimultaneousCheckpointsUseOneContentionCoordinate(t *testing.T) {
 	trace := fixture(node("m", "model_wait", 100), node("tool", "active", 10, "m"))
 	b := trace.Sessions[0]

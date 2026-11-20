@@ -30,7 +30,8 @@ class TraceContractTests(unittest.TestCase):
     def test_temporal_family_split_and_generalization(self):
         a=normalize(row(),'x'); b=copy.deepcopy(a); c=copy.deepcopy(a)
         b.update(session_id='b',source_started_at='2026-07-20T00:00:00+00:00',source_ended_at='2026-07-20T00:01:00+00:00')
-        c.update(session_id='c',family_id='family2',harness='opencode')
+        c.update(session_id='c',family_id='family2',harness='opencode',
+                 source_started_at='2026-07-20T00:00:00+00:00',source_ended_at='2026-07-20T00:01:00+00:00')
         assign_splits([a,b,c])
         self.assertEqual(a['split'],'train'); self.assertEqual(b['split'],'excluded'); self.assertEqual(c['split'],'generalization')
         self.assertEqual(validate({'sessions':[a,b,c]})['family_split_overlap'],0)
@@ -44,6 +45,25 @@ class TraceContractTests(unittest.TestCase):
     def test_future_family_record_does_not_enter_training(self):
         a=normalize(row(),'x'); a['source_ended_at']='2026-06-15T00:00:00Z'
         assign_splits([a]); self.assertEqual(a['split'],'excluded')
+
+    def test_generalization_starts_after_frozen_training_and_tuning(self):
+        a=normalize(row(),'train')
+        early=copy.deepcopy(a)
+        early.update(session_id='early',family_id='opencode-family',harness='opencode')
+        late=copy.deepcopy(early)
+        late.update(session_id='late',source_started_at='2026-07-12T00:00:00Z',
+                    source_ended_at='2026-07-12T00:01:00Z')
+        validation=copy.deepcopy(a)
+        validation.update(session_id='validation',family_id='validation-family',
+                          source_started_at='2026-06-14T00:00:00Z',source_ended_at='2026-06-14T00:01:00Z')
+        sessions=[a,early,late,validation]
+        assign_splits(sessions)
+        self.assertEqual(early['exclusion_reason'],'generalization_precedes_frozen_tuning_cutoff')
+        self.assertEqual(late['split'],'generalization')
+        self.assertEqual(validate({'sessions':sessions})['temporal_split_order'],'passed')
+        early['split']='generalization'
+        with self.assertRaisesRegex(ValueError,'temporal split leakage'):
+            validate({'sessions':sessions})
 
 
 if __name__=='__main__': unittest.main()
