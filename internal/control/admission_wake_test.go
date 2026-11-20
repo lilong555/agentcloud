@@ -4,7 +4,84 @@ import (
 	"context"
 	"testing"
 	"time"
+
+	substrateapi "github.com/lilong555/agentcloud/internal/adapters/substrate"
 )
+
+type delayedDurabilityBackend struct {
+	*initialFixtureBackend
+	released, durable chan struct{}
+}
+
+func (b *delayedDurabilityBackend) Checkpoint(ctx context.Context, s *Session, op string) (Actor, string, error) {
+	a, digest, err := b.initialFixtureBackend.Checkpoint(ctx, s, op)
+	if err != nil {
+		return a, digest, err
+	}
+	released := ctx.Value(capacityReleaseKey{}).(func(substrateapi.Summary) error)
+	proof := substrateapi.Summary{UID: s.Actor.UID, State: "SUSPENDED"}
+	if err = released(proof); err != nil {
+		return Actor{}, "", err
+	}
+	if err = released(proof); err != nil { // Duplicate receipts remain idempotent.
+		return Actor{}, "", err
+	}
+	close(b.released)
+	select {
+	case <-b.durable:
+	case <-ctx.Done():
+		return Actor{}, "", ctx.Err()
+	}
+	return a, digest, nil
+}
+
+func TestCapacityReleaseWakesBeforeSnapshotDurability(t *testing.T) {
+	cfg := testConfig(t)
+	cfg.SchedulerInterval = time.Hour
+	backend, upstream := admissionFixture(t)
+	upstream.capacity = 1
+	b := &delayedDurabilityBackend{initialFixtureBackend: &initialFixtureBackend{
+		SubstrateBackend: backend, local: cfg.Backend.(*LocalBackend), server: upstream},
+		released: make(chan struct{}), durable: make(chan struct{})}
+	cfg.Backend = b
+	c := newTestController(t, cfg)
+	defer close(b.durable)
+	createTestSession(t, c, "tenant-a", "holder")
+	createTestSession(t, c, "tenant-b", "waiter")
+	done := make(chan error, 1)
+	go func() {
+		_, _, err := c.Lifecycle(context.Background(), "tenant-a", "holder", "suspend", LifecycleRequest{OperationID: "release", ExpectedEpoch: 1})
+		done <- err
+	}()
+	select {
+	case <-b.released:
+	case <-time.After(2 * time.Second):
+		t.Fatal("Substrate release was not recorded")
+	}
+	waitFor(t, func() bool {
+		s, _ := c.Get("tenant-b", "waiter")
+		return s.State == "RUNNING" && s.Admissions["initial"].AttemptCount == 2
+	})
+	holder, _ := c.Get("tenant-a", "holder")
+	if holder.State != "QUIESCING" || holder.Manifest != nil || holder.Lifecycle["release"].ResourceReleaseSequence == 0 {
+		t.Fatalf("release implied snapshot durability: %+v", holder)
+	}
+	b.durable <- struct{}{}
+	if err := <-done; err != nil {
+		t.Fatal(err)
+	}
+	c.lock()
+	defer c.mu.Unlock()
+	releases := 0
+	for _, e := range c.state.Events {
+		if e.Kind == "admission.resource_released" {
+			releases++
+		}
+	}
+	if releases != 1 {
+		t.Fatalf("duplicate release: %d", releases)
+	}
+}
 
 func TestCapacityReleaseWakesOldestAndSurvivesRestart(t *testing.T) {
 	for _, restart := range []bool{false, true} {

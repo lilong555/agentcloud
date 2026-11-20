@@ -277,6 +277,12 @@ func (b *SubstrateBackend) Checkpoint(ctx context.Context, s *Session, operation
 	if err != nil {
 		return Actor{}, "", err
 	}
+	if released, ok := ctx.Value(capacityReleaseKey{}).(func(substrateapi.Summary) error); ok {
+		if err = released(current); err != nil {
+			return Actor{}, "", err
+		}
+	}
+	// Physical placement is free while the snapshot becomes durable.
 	current, err = b.cfg.Client.AwaitDurable(ctx, current.Name, current.UID, current.SnapshotUUID, current.SnapshotGeneration)
 	if err != nil {
 		return Actor{}, "", err

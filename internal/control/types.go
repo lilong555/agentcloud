@@ -121,18 +121,19 @@ type LifecycleRequest struct {
 	AfterModelRequest string `json:"after_model_request,omitempty"`
 }
 type LifecycleReceipt struct {
-	ErrorCode     string               `json:"error_code,omitempty"`
-	OperationID   string               `json:"operation_id"`
-	Action        string               `json:"action"`
-	Epoch         uint64               `json:"epoch"`
-	PayloadHash   string               `json:"payload_hash"`
-	Status        string               `json:"status"`
-	AttemptCount  uint64               `json:"attempt_count,omitempty"`
-	LastAttemptAt time.Time            `json:"last_attempt_at,omitempty"`
-	RetryAfter    time.Time            `json:"retry_after,omitempty"`
-	CapacityWait  *ResumeCapacityProof `json:"capacity_wait,omitempty"`
-	Error         string               `json:"error,omitempty"`
-	Manifest      *Manifest            `json:"manifest,omitempty"`
+	ResourceReleaseSequence uint64               `json:"resource_release_sequence,omitempty"`
+	ErrorCode               string               `json:"error_code,omitempty"`
+	OperationID             string               `json:"operation_id"`
+	Action                  string               `json:"action"`
+	Epoch                   uint64               `json:"epoch"`
+	PayloadHash             string               `json:"payload_hash"`
+	Status                  string               `json:"status"`
+	AttemptCount            uint64               `json:"attempt_count,omitempty"`
+	LastAttemptAt           time.Time            `json:"last_attempt_at,omitempty"`
+	RetryAfter              time.Time            `json:"retry_after,omitempty"`
+	CapacityWait            *ResumeCapacityProof `json:"capacity_wait,omitempty"`
+	Error                   string               `json:"error,omitempty"`
+	Manifest                *Manifest            `json:"manifest,omitempty"`
 }
 type ModelRequest struct {
 	TraceParent    string          `json:"trace_parent,omitempty"`

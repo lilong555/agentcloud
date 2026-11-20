@@ -28,13 +28,15 @@
 
 每行覆盖 8 个需求，累计值相加跨越并发区间。释放至下一次等待需求尝试的 P95 为 TTL2 0.666 s、v2 1.215 s，各有 7／6 个释放机会。这些是同一次历史运行的描述性归因；有容量区间包含 Worker 选择、资源可放置性及采样误差，性能收益使用独立干预验证。
 
-当前控制路径在释放事务内给最早的未通知需求登记 `retry_notified`、释放序号和 `slot_release` 触发来源，事务提交后唤醒。通知按持久需求保存，重启后继续消费；Substrate 验证实际放置。原生准入并发沿用 Coordinator RPC 并发上限，兜底探测每个 Coordinator 最多每秒一次，并轮流检查等待者。v2 的 KEEP／SUSPEND 决策函数沿用既有实现。
+当前控制路径在 Substrate Suspend 回执确认同一 Actor 已挂起且无 Worker assignment 后，持久登记释放，为最早的未通知需求保存 `retry_notified`、释放序号和 `slot_release` 来源，事务提交后唤醒。释放证明和快照 durable／retained tag 分别记录；生命周期回执保存释放序号以保证幂等。通知随持久需求保存，重启后继续消费；Substrate 验证实际放置。原生准入并发沿用 Coordinator RPC 并发上限，兜底探测间隔为 5 秒，启动和本地释放后重新计时，轮流检查等待者。v2 的 KEEP／SUSPEND 决策函数沿用既有实现。
 
 本次运行前冻结的去噪预算为：释放至通知需求尝试的 P95 ≤100 ms、最大值 ≤250 ms，兜底占全部容量重试的比例 ≤0.5，各租户已收到释放通知的需求最长等待 ≤250 ms。100 ms 对应 TTL2 阈值的 5%；250 ms 为单次异常容忍。兜底比例用于确认事件推进覆盖主要重试。租户指标统计获通知后的派发延迟，完整容量等待与总队列公平性同时独立报告。预算超出时该资格继续保持 pending，并据原始事件定位原因。
 
 验收入口包含两部分：固定 Legacy／Native × TTL2／v2 语义负载，以及 `bench.native_restart` 的真实 MEMORY 检查。后者持有运行 Actor、保存初次 WAITING_CAPACITY、对 Coordinator 注入 SIGKILL、核验重启后的 Actor 身份与需求起点、释放后激活，随后验证恢复容量等待和 RAM nonce／PID／heap／AST／context 连续性。该专项关闭定时探测，单独检验事件推进；常规负载用于测量正常定时配置。
 
-退出条件：逐需求耗时守恒；采样未知与时钟范围明确；事件唤醒延迟和兜底占比满足预冻结预算；最新源码的 MEMORY 重启验收及资源清理通过。当前原始诊断已归档，事件唤醒实现通过本地验收，目标运行时结果以独立运行回执为准。
+退出条件：逐需求耗时守恒；采样未知与时钟范围明确；事件唤醒延迟和兜底占比满足预冻结预算；最新源码的 MEMORY 重启验收及资源清理通过。
+
+[运行 44706448532](evidence/native-admission/44706448532/artifact.json) 的四组对照完成 64/64 请求；TTL2／v2 的释放通知至尝试 P95 为 17.835／50.819 ms，兜底比例为 86.84%／83.33%，预算检查失败。MEMORY 重启专项在 holder 容量前提检查失败，实际执行尚未到 SIGKILL。所属资源清理成功。完整[分段归因与预算回执](evidence/native-admission/diagnostics/44706448532.json)保留失败分母。当前释放时点与 Actor 模板已按权威回执对齐，本地 176 个 Go 顶层测试通过，阶段一等待目标运行时复验。
 
 ```bash
 python3 -m bench.admission_diagnostics docs/evidence/native-admission/44696576156 \

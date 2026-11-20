@@ -1,0 +1,1760 @@
+{
+  "schema_version": 1,
+  "scope": "single_seed_admission_semantics",
+  "source_commit": "84886c7dfd417026595bca50446a1ad279eb1293",
+  "github_run_id": "44706448532",
+  "github_run_attempt": "1",
+  "runner": {
+    "os": "Linux",
+    "arch": "X64",
+    "name": "GitHub Actions 1000004052"
+  },
+  "host": {
+    "cpu_count": 4,
+    "affinity": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "cpu_model": "AMD EPYC 7763 64-Core Processor",
+    "cgroup": {
+      "cpuset.cpus.effective": "0-3"
+    }
+  },
+  "status": "passed",
+  "gpu_execution": false,
+  "workload": {
+    "schema_version": 1,
+    "purpose": "admission_semantics",
+    "execution_kind": "real-substrate-memory-native-dynamo-cpu-mocker",
+    "concurrency": [
+      8
+    ],
+    "paired_seeds": [
+      7101
+    ],
+    "randomized_order_seed": 9031,
+    "policies": [
+      "static-2",
+      "agentcloud-v2"
+    ],
+    "context_tokens": [
+      1024,
+      2048
+    ],
+    "output_tokens": 8,
+    "worker_slots": 4,
+    "actor_memory_bytes": 268435456,
+    "heap_mib": 16,
+    "actor_cpu_millicores": 200,
+    "num_gpu_blocks": 2048,
+    "max_model_len": 32768,
+    "mocker_speedup_ratio": 1,
+    "model_concurrency": 64,
+    "poll_seconds": 0.1,
+    "request_deadline_seconds": 1800,
+    "interactive_slo_seconds": 30,
+    "think_seconds": {
+      "interactive": 6,
+      "coding": 6,
+      "research": 6,
+      "batch": 6
+    },
+    "bootstrap_samples": 2000,
+    "tenants": 4,
+    "workers": 2,
+    "comparison_protocol": "symmetric-program-v1",
+    "trial_deadline_seconds": 1500,
+    "cleanup_deadline_seconds": 300,
+    "workload_scenario": "admission-semantics",
+    "experiment_stage": "admission_semantics"
+  },
+  "host_observations": {
+    "legacy_fair_slots": {
+      "cpu_count": 4,
+      "affinity": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "cpu_model": "AMD EPYC 7763 64-Core Processor",
+      "cgroup": {
+        "cpu.stat": "usage_usec 75624000\nuser_usec 50837000\nsystem_usec 24787000\nnice_usec 23000\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpuset.cpus.effective": "0-3"
+      }
+    },
+    "native": {
+      "cpu_count": 4,
+      "affinity": [
+        0,
+        1,
+        2,
+        3
+      ],
+      "cpu_model": "AMD EPYC 7763 64-Core Processor",
+      "cgroup": {
+        "cpu.stat": "usage_usec 75746000\nuser_usec 50946000\nsystem_usec 24800000\nnice_usec 23000\ncore_sched.force_idle_usec 0\nnr_periods 0\nnr_throttled 0\nthrottled_usec 0\nnr_bursts 0\nburst_usec 0",
+        "cpuset.cpus.effective": "0-3"
+      }
+    }
+  },
+  "planned_requests": 64,
+  "host_boot_ids": [
+    "98a75057-f032-4b53-a9ec-862870bb92f5"
+  ],
+  "runtime_cleanup": {
+    "recorded_at": "2026-11-20T09:12:43.433662+00:00",
+    "status": "passed",
+    "github_run_id": "44706448532",
+    "github_run_attempt": "1",
+    "port_forwards": [
+      "ci-api.pid",
+      "ci-router.pid"
+    ],
+    "cluster_release_exit_code": 0,
+    "remaining_containers": [],
+    "errors": []
+  },
+  "controlled_capacity_capture": {
+    "schema_version": 1,
+    "status": "passed",
+    "checks": {
+      "coordinator": {
+        "run_id": "native-admission-capacity",
+        "status": "passed",
+        "errors": [],
+        "incomplete": [],
+        "records": 383,
+        "streams": {
+          "events": 251,
+          "observations": 132
+        },
+        "source_instances": 2,
+        "scope": "committed_records; staged_at is transaction staging, export snapshot proves visibility"
+      },
+      "coordinator_admission": {
+        "run_id": "native-admission-capacity",
+        "status": "passed",
+        "errors": [],
+        "incomplete": [],
+        "source": "coordinator_admission",
+        "demands": 12,
+        "capacity_wait_episodes": 12,
+        "releases": 12,
+        "counts": {
+          "admission.request_received": 12,
+          "admission.demand_persisted": 12,
+          "admission.attempt_started": 24,
+          "admission.rpc_started": 36,
+          "admission.rpc_completed": 36,
+          "admission.actor_created": 12,
+          "admission.capacity_rejected": 12,
+          "admission.waiting_capacity_entered": 12,
+          "admission.waiting_capacity_exited": 12,
+          "admission.actor_ready": 12,
+          "admission.resource_released": 12,
+          "admission.retry_notified": 11
+        },
+        "rpc_methods": {
+          "CreateActor": 12,
+          "ResumeActor": 24
+        },
+        "require_capacity": true,
+        "require_rpc": true,
+        "timing_ms": {
+          "initial_admission": {
+            "demands": 12,
+            "ready": 12,
+            "attempts": 24,
+            "capacity_rejections": 12,
+            "outcome_unknown": 0,
+            "wait_age": {
+              "samples": 12,
+              "total": 17076.920788,
+              "p50": 1402.615417,
+              "p95": 1629.496277,
+              "maximum": 1629.496277
+            },
+            "capacity_wait": {
+              "samples": 12,
+              "total": 14172.869835,
+              "p50": 1139.16677,
+              "p95": 1450.787427,
+              "maximum": 1450.787427
+            },
+            "backend": {
+              "samples": 12,
+              "total": 2773.668759,
+              "p50": 206.981679,
+              "p95": 321.868315,
+              "maximum": 321.868315
+            }
+          },
+          "resume_admission": {
+            "demands": 0,
+            "ready": 0,
+            "attempts": 0,
+            "capacity_rejections": 0,
+            "outcome_unknown": 0,
+            "wait_age": {
+              "samples": 0,
+              "total": 0,
+              "p50": null,
+              "p95": null,
+              "maximum": null
+            },
+            "capacity_wait": {
+              "samples": 0,
+              "total": 0,
+              "p50": null,
+              "p95": null,
+              "maximum": null
+            },
+            "backend": {
+              "samples": 0,
+              "total": 0,
+              "p50": null,
+              "p95": null,
+              "maximum": null
+            }
+          },
+          "rpc": {
+            "CreateActor": {
+              "duration": {
+                "samples": 12,
+                "total": 10.392519,
+                "p50": 0.733127,
+                "p95": 2.145622,
+                "maximum": 2.145622
+              },
+              "codes": {
+                "OK": 12
+              }
+            },
+            "ResumeActor": {
+              "duration": {
+                "samples": 24,
+                "total": 482.968483,
+                "p50": 1.166021,
+                "p95": 83.365477,
+                "maximum": 171.908936
+              },
+              "codes": {
+                "ResourceExhausted": 12,
+                "OK": 12
+              }
+            }
+          }
+        },
+        "client_to_received": {
+          "samples": 0,
+          "estimated_ms": [],
+          "clock_quality": "cross-clock wall-time estimate; no clock synchronization bound measured"
+        },
+        "qualification_scope": "coordinator_capacity_semantics"
+      }
+    },
+    "admission_mode": "native",
+    "qualification_scope": "coordinator_admission_capture",
+    "qualifies": [],
+    "scheduling_comparison_admitted": false,
+    "remaining_gates": [
+      "dataset_use_case_qualification",
+      "native_capture_integrity",
+      "physical_cost_calibration",
+      "closed_loop_DAG_validation",
+      "complete_online_feature_lineage",
+      "independent_statistical_design"
+    ]
+  },
+  "analysis_source": {
+    "evidence": "docs/evidence/native-admission/analyze.py",
+    "sha256": "2ef9463549fccf9ba32939684a06bd0e3eda3d9555f337a6cd884d46b90244af"
+  },
+  "completed_requests": 64,
+  "trials": [
+    {
+      "mode": "legacy_fair_slots",
+      "seed": 7101,
+      "concurrency": 8,
+      "policy": "static-2",
+      "order": 0,
+      "paired_order": 0,
+      "paired_policy_order": [
+        "static-2",
+        "agentcloud-v2"
+      ],
+      "trial_id": "scale-7101-8-static-2-aec31c2a4899",
+      "status": "passed",
+      "error": null,
+      "planned": 16,
+      "offered": 16,
+      "completed": 16,
+      "admission_capture": "passed",
+      "capture_quality": {
+        "schema_version": 1,
+        "status": "passed",
+        "checks": {
+          "coordinator": {
+            "run_id": "scale-7101-8-static-2-aec31c2a4899",
+            "status": "passed",
+            "errors": [],
+            "incomplete": [],
+            "records": 2329,
+            "streams": {
+              "events": 862,
+              "observations": 1467
+            },
+            "source_instances": 1,
+            "scope": "committed_records; staged_at is transaction staging, export snapshot proves visibility"
+          },
+          "admission": {
+            "run_id": "scale-7101-8-static-2-aec31c2a4899",
+            "status": "passed",
+            "errors": [],
+            "incomplete": [],
+            "records": 96,
+            "episodes": 24,
+            "counts": {
+              "admission.requested": 24,
+              "admission.enqueued": 24,
+              "admission.granted": 24,
+              "admission.released": 24
+            },
+            "capture_write_ns": "144698679",
+            "source": "legacy_runner_admission",
+            "interpretation": "legacy runner permit; physical Actor release requires runtime receipt"
+          },
+          "coordinator_admission": {
+            "run_id": "scale-7101-8-static-2-aec31c2a4899",
+            "status": "passed",
+            "errors": [],
+            "incomplete": [],
+            "source": "coordinator_admission",
+            "demands": 24,
+            "capacity_wait_episodes": 0,
+            "releases": 24,
+            "counts": {
+              "admission.request_received": 24,
+              "admission.demand_persisted": 24,
+              "admission.attempt_started": 24,
+              "admission.rpc_started": 32,
+              "admission.rpc_completed": 32,
+              "admission.actor_created": 8,
+              "admission.actor_ready": 24,
+              "admission.resource_released": 24
+            },
+            "rpc_methods": {
+              "CreateActor": 8,
+              "ResumeActor": 24
+            },
+            "require_capacity": false,
+            "require_rpc": true,
+            "timing_ms": {
+              "initial_admission": {
+                "demands": 8,
+                "ready": 8,
+                "attempts": 8,
+                "capacity_rejections": 0,
+                "outcome_unknown": 0,
+                "wait_age": {
+                  "samples": 8,
+                  "total": 55482.825468,
+                  "p50": 6746.630247,
+                  "p95": 7904.341328,
+                  "maximum": 7904.341328
+                },
+                "capacity_wait": {
+                  "samples": 8,
+                  "total": 0,
+                  "p50": 0,
+                  "p95": 0,
+                  "maximum": 0
+                },
+                "backend": {
+                  "samples": 8,
+                  "total": 55385.924826999995,
+                  "p50": 6743.113681,
+                  "p95": 7885.333965,
+                  "maximum": 7885.333965
+                }
+              },
+              "resume_admission": {
+                "demands": 16,
+                "ready": 16,
+                "attempts": 16,
+                "capacity_rejections": 0,
+                "outcome_unknown": 0,
+                "wait_age": {
+                  "samples": 16,
+                  "total": 14023.904673000001,
+                  "p50": 841.036931,
+                  "p95": 1172.454809,
+                  "maximum": 1172.454809
+                },
+                "capacity_wait": {
+                  "samples": 16,
+                  "total": 0,
+                  "p50": 0,
+                  "p95": 0,
+                  "maximum": 0
+                },
+                "backend": {
+                  "samples": 16,
+                  "total": 13555.362051,
+                  "p50": 810.388029,
+                  "p95": 1142.714041,
+                  "maximum": 1142.714041
+                }
+              },
+              "rpc": {
+                "CreateActor": {
+                  "duration": {
+                    "samples": 8,
+                    "total": 180.50445200000001,
+                    "p50": 18.268319,
+                    "p95": 41.927489,
+                    "maximum": 41.927489
+                  },
+                  "codes": {
+                    "OK": 8
+                  }
+                },
+                "ResumeActor": {
+                  "duration": {
+                    "samples": 24,
+                    "total": 63089.19409599999,
+                    "p50": 699.158524,
+                    "p95": 7506.680152,
+                    "maximum": 7524.989446
+                  },
+                  "codes": {
+                    "OK": 24
+                  }
+                }
+              }
+            },
+            "client_to_received": {
+              "samples": 0,
+              "estimated_ms": [],
+              "clock_quality": "cross-clock wall-time estimate; no clock synchronization bound measured"
+            },
+            "qualification_scope": "coordinator_admission_capture"
+          }
+        },
+        "admission_mode": "legacy_fair_slots",
+        "qualification_scope": "legacy_runner_capture",
+        "qualifies": [],
+        "scheduling_comparison_admitted": false,
+        "remaining_gates": [
+          "dataset_use_case_qualification",
+          "native_capture_integrity",
+          "physical_cost_calibration",
+          "closed_loop_DAG_validation",
+          "complete_online_feature_lineage",
+          "independent_statistical_design"
+        ]
+      },
+      "arrival_trace_sha256": "8be74be3d48887026aac71ab6796687405e32c5b0e39dc0feb3e0853b422d157",
+      "ttft_p95_seconds": 13.217276573181152,
+      "first_ttft_p95_seconds": 13.350154864788054,
+      "later_ttft_p95_seconds": 12.735327458381652,
+      "interactive_ttft_p95_seconds": 12.01832081079483,
+      "legacy_fifo_wait_seconds": 92.34187755600001,
+      "legacy_fifo": {
+        "first_actor_admission": {
+          "grants": 8,
+          "total_seconds": 0.020711454,
+          "p95_seconds": 0.006639815699999998
+        },
+        "resume_actor_admission": {
+          "grants": 16,
+          "total_seconds": 92.330905225,
+          "p95_seconds": 9.21281747775
+        }
+      },
+      "initial_admission": {
+        "demands": 8,
+        "ready": 8,
+        "attempts": 8,
+        "capacity_rejections": 0,
+        "outcome_unknown": 0,
+        "wait_age": {
+          "samples": 8,
+          "total": 55482.825468,
+          "p50": 6746.630247,
+          "p95": 7904.341328,
+          "maximum": 7904.341328
+        },
+        "capacity_wait": {
+          "samples": 8,
+          "total": 0,
+          "p50": 0,
+          "p95": 0,
+          "maximum": 0
+        },
+        "backend": {
+          "samples": 8,
+          "total": 55385.924826999995,
+          "p50": 6743.113681,
+          "p95": 7885.333965,
+          "maximum": 7885.333965
+        }
+      },
+      "resume_admission": {
+        "demands": 16,
+        "ready": 16,
+        "attempts": 16,
+        "capacity_rejections": 0,
+        "outcome_unknown": 0,
+        "wait_age": {
+          "samples": 16,
+          "total": 14023.904673000001,
+          "p50": 841.036931,
+          "p95": 1172.454809,
+          "maximum": 1172.454809
+        },
+        "capacity_wait": {
+          "samples": 16,
+          "total": 0,
+          "p50": 0,
+          "p95": 0,
+          "maximum": 0
+        },
+        "backend": {
+          "samples": 16,
+          "total": 13555.362051,
+          "p50": 810.388029,
+          "p95": 1142.714041,
+          "maximum": 1142.714041
+        }
+      },
+      "rpc": {
+        "CreateActor": {
+          "duration": {
+            "samples": 8,
+            "total": 180.50445200000001,
+            "p50": 18.268319,
+            "p95": 41.927489,
+            "maximum": 41.927489
+          },
+          "codes": {
+            "OK": 8
+          }
+        },
+        "ResumeActor": {
+          "duration": {
+            "samples": 24,
+            "total": 63089.19409599999,
+            "p50": 699.158524,
+            "p95": 7506.680152,
+            "maximum": 7524.989446
+          },
+          "codes": {
+            "OK": 24
+          }
+        }
+      },
+      "rpc_by_admission_ms": {
+        "initial_admission": {
+          "CreateActor": {
+            "samples": 8,
+            "total": 180.50445200000001,
+            "p95": 38.930186649999996,
+            "by_code": {
+              "OK": {
+                "samples": 8,
+                "total": 180.50445200000001,
+                "p95": 38.930186649999996
+              }
+            }
+          },
+          "ResumeActor": {
+            "samples": 8,
+            "total": 53589.814017000004,
+            "p95": 7518.5811931,
+            "by_code": {
+              "OK": {
+                "samples": 8,
+                "total": 53589.814017000004,
+                "p95": 7518.5811931
+              }
+            }
+          }
+        },
+        "resume_admission": {
+          "ResumeActor": {
+            "samples": 16,
+            "total": 9499.380079,
+            "p95": 860.38010775,
+            "by_code": {
+              "OK": {
+                "samples": 16,
+                "total": 9499.380079,
+                "p95": 860.38010775
+              }
+            }
+          }
+        }
+      },
+      "client_to_received": {
+        "samples": 0,
+        "estimated_ms": [],
+        "clock_quality": "cross-clock wall-time estimate; no clock synchronization bound measured"
+      },
+      "resume_count": 16,
+      "runner_observed_resumes": 16,
+      "actor_reserved_gb_s": 22.098957311999957,
+      "resource_coverage_fraction": 0.9807486813799725,
+      "max_assigned_actors": 4,
+      "memory_restore_events": 16,
+      "memory_fidelity_verified": true,
+      "database_released": true,
+      "process_cleanup": {
+        "observed_pids": [],
+        "remaining_pids": [],
+        "errors": [],
+        "cleanup_success": true
+      },
+      "cleanup_success": true
+    },
+    {
+      "mode": "legacy_fair_slots",
+      "seed": 7101,
+      "concurrency": 8,
+      "policy": "agentcloud-v2",
+      "order": 1,
+      "paired_order": 1,
+      "paired_policy_order": [
+        "static-2",
+        "agentcloud-v2"
+      ],
+      "trial_id": "scale-7101-8-agentcloud-v2-a48e4250f2c1",
+      "status": "passed",
+      "error": null,
+      "planned": 16,
+      "offered": 16,
+      "completed": 16,
+      "admission_capture": "passed",
+      "capture_quality": {
+        "schema_version": 1,
+        "status": "passed",
+        "checks": {
+          "coordinator": {
+            "run_id": "scale-7101-8-agentcloud-v2-a48e4250f2c1",
+            "status": "passed",
+            "errors": [],
+            "incomplete": [],
+            "records": 2628,
+            "streams": {
+              "events": 1026,
+              "observations": 1602
+            },
+            "source_instances": 1,
+            "scope": "committed_records; staged_at is transaction staging, export snapshot proves visibility"
+          },
+          "admission": {
+            "run_id": "scale-7101-8-agentcloud-v2-a48e4250f2c1",
+            "status": "passed",
+            "errors": [],
+            "incomplete": [],
+            "records": 96,
+            "episodes": 24,
+            "counts": {
+              "admission.requested": 24,
+              "admission.enqueued": 24,
+              "admission.granted": 24,
+              "admission.released": 24
+            },
+            "capture_write_ns": "74223424",
+            "source": "legacy_runner_admission",
+            "interpretation": "legacy runner permit; physical Actor release requires runtime receipt"
+          },
+          "coordinator_admission": {
+            "run_id": "scale-7101-8-agentcloud-v2-a48e4250f2c1",
+            "status": "passed",
+            "errors": [],
+            "incomplete": [],
+            "source": "coordinator_admission",
+            "demands": 24,
+            "capacity_wait_episodes": 0,
+            "releases": 24,
+            "counts": {
+              "admission.request_received": 24,
+              "admission.demand_persisted": 24,
+              "admission.attempt_started": 24,
+              "admission.rpc_started": 32,
+              "admission.rpc_completed": 32,
+              "admission.actor_created": 8,
+              "admission.actor_ready": 24,
+              "admission.resource_released": 24
+            },
+            "rpc_methods": {
+              "CreateActor": 8,
+              "ResumeActor": 24
+            },
+            "require_capacity": false,
+            "require_rpc": true,
+            "timing_ms": {
+              "initial_admission": {
+                "demands": 8,
+                "ready": 8,
+                "attempts": 8,
+                "capacity_rejections": 0,
+                "outcome_unknown": 0,
+                "wait_age": {
+                  "samples": 8,
+                  "total": 50237.792159000004,
+                  "p50": 6103.063244,
+                  "p95": 7031.934875,
+                  "maximum": 7031.934875
+                },
+                "capacity_wait": {
+                  "samples": 8,
+                  "total": 0,
+                  "p50": 0,
+                  "p95": 0,
+                  "maximum": 0
+                },
+                "backend": {
+                  "samples": 8,
+                  "total": 50130.958324,
+                  "p50": 6099.597661,
+                  "p95": 6998.401228,
+                  "maximum": 6998.401228
+                }
+              },
+              "resume_admission": {
+                "demands": 16,
+                "ready": 16,
+                "attempts": 16,
+                "capacity_rejections": 0,
+                "outcome_unknown": 0,
+                "wait_age": {
+                  "samples": 16,
+                  "total": 15952.95329,
+                  "p50": 980.687021,
+                  "p95": 1279.837174,
+                  "maximum": 1279.837174
+                },
+                "capacity_wait": {
+                  "samples": 16,
+                  "total": 0,
+                  "p50": 0,
+                  "p95": 0,
+                  "maximum": 0
+                },
+                "backend": {
+                  "samples": 16,
+                  "total": 15127.232246999998,
+                  "p50": 882.585965,
+                  "p95": 1171.005892,
+                  "maximum": 1171.005892
+                }
+              },
+              "rpc": {
+                "CreateActor": {
+                  "duration": {
+                    "samples": 8,
+                    "total": 136.114281,
+                    "p50": 11.334459,
+                    "p95": 42.295703,
+                    "maximum": 42.295703
+                  },
+                  "codes": {
+                    "OK": 8
+                  }
+                },
+                "ResumeActor": {
+                  "duration": {
+                    "samples": 24,
+                    "total": 58832.43220300001,
+                    "p50": 660.12081,
+                    "p95": 6369.449669,
+                    "maximum": 6854.671174
+                  },
+                  "codes": {
+                    "OK": 24
+                  }
+                }
+              }
+            },
+            "client_to_received": {
+              "samples": 0,
+              "estimated_ms": [],
+              "clock_quality": "cross-clock wall-time estimate; no clock synchronization bound measured"
+            },
+            "qualification_scope": "coordinator_admission_capture"
+          }
+        },
+        "admission_mode": "legacy_fair_slots",
+        "qualification_scope": "legacy_runner_capture",
+        "qualifies": [],
+        "scheduling_comparison_admitted": false,
+        "remaining_gates": [
+          "dataset_use_case_qualification",
+          "native_capture_integrity",
+          "physical_cost_calibration",
+          "closed_loop_DAG_validation",
+          "complete_online_feature_lineage",
+          "independent_statistical_design"
+        ]
+      },
+      "arrival_trace_sha256": "8be74be3d48887026aac71ab6796687405e32c5b0e39dc0feb3e0853b422d157",
+      "ttft_p95_seconds": 14.490532338619232,
+      "first_ttft_p95_seconds": 14.554552400112152,
+      "later_ttft_p95_seconds": 13.998623085021972,
+      "interactive_ttft_p95_seconds": 13.970254933834074,
+      "legacy_fifo_wait_seconds": 96.70208948700001,
+      "legacy_fifo": {
+        "first_actor_admission": {
+          "grants": 8,
+          "total_seconds": 0.030968427,
+          "p95_seconds": 0.010040413599999997
+        },
+        "resume_actor_admission": {
+          "grants": 16,
+          "total_seconds": 96.690469714,
+          "p95_seconds": 10.8878320085
+        }
+      },
+      "initial_admission": {
+        "demands": 8,
+        "ready": 8,
+        "attempts": 8,
+        "capacity_rejections": 0,
+        "outcome_unknown": 0,
+        "wait_age": {
+          "samples": 8,
+          "total": 50237.792159000004,
+          "p50": 6103.063244,
+          "p95": 7031.934875,
+          "maximum": 7031.934875
+        },
+        "capacity_wait": {
+          "samples": 8,
+          "total": 0,
+          "p50": 0,
+          "p95": 0,
+          "maximum": 0
+        },
+        "backend": {
+          "samples": 8,
+          "total": 50130.958324,
+          "p50": 6099.597661,
+          "p95": 6998.401228,
+          "maximum": 6998.401228
+        }
+      },
+      "resume_admission": {
+        "demands": 16,
+        "ready": 16,
+        "attempts": 16,
+        "capacity_rejections": 0,
+        "outcome_unknown": 0,
+        "wait_age": {
+          "samples": 16,
+          "total": 15952.95329,
+          "p50": 980.687021,
+          "p95": 1279.837174,
+          "maximum": 1279.837174
+        },
+        "capacity_wait": {
+          "samples": 16,
+          "total": 0,
+          "p50": 0,
+          "p95": 0,
+          "maximum": 0
+        },
+        "backend": {
+          "samples": 16,
+          "total": 15127.232246999998,
+          "p50": 882.585965,
+          "p95": 1171.005892,
+          "maximum": 1171.005892
+        }
+      },
+      "rpc": {
+        "CreateActor": {
+          "duration": {
+            "samples": 8,
+            "total": 136.114281,
+            "p50": 11.334459,
+            "p95": 42.295703,
+            "maximum": 42.295703
+          },
+          "codes": {
+            "OK": 8
+          }
+        },
+        "ResumeActor": {
+          "duration": {
+            "samples": 24,
+            "total": 58832.43220300001,
+            "p50": 660.12081,
+            "p95": 6369.449669,
+            "maximum": 6854.671174
+          },
+          "codes": {
+            "OK": 24
+          }
+        }
+      },
+      "rpc_by_admission_ms": {
+        "initial_admission": {
+          "CreateActor": {
+            "samples": 8,
+            "total": 136.114281,
+            "p95": 37.69776595,
+            "by_code": {
+              "OK": {
+                "samples": 8,
+                "total": 136.114281,
+                "p95": 37.69776595
+              }
+            }
+          },
+          "ResumeActor": {
+            "samples": 8,
+            "total": 48786.647387,
+            "p95": 6684.84364725,
+            "by_code": {
+              "OK": {
+                "samples": 8,
+                "total": 48786.647387,
+                "p95": 6684.84364725
+              }
+            }
+          }
+        },
+        "resume_admission": {
+          "ResumeActor": {
+            "samples": 16,
+            "total": 10045.784816000001,
+            "p95": 901.463525,
+            "by_code": {
+              "OK": {
+                "samples": 16,
+                "total": 10045.784816000001,
+                "p95": 901.463525
+              }
+            }
+          }
+        }
+      },
+      "client_to_received": {
+        "samples": 0,
+        "estimated_ms": [],
+        "clock_quality": "cross-clock wall-time estimate; no clock synchronization bound measured"
+      },
+      "resume_count": 16,
+      "runner_observed_resumes": 16,
+      "actor_reserved_gb_s": 23.057113856,
+      "resource_coverage_fraction": 0.9777441742970472,
+      "max_assigned_actors": 4,
+      "memory_restore_events": 16,
+      "memory_fidelity_verified": true,
+      "database_released": true,
+      "process_cleanup": {
+        "observed_pids": [],
+        "remaining_pids": [],
+        "errors": [],
+        "cleanup_success": true
+      },
+      "cleanup_success": true
+    },
+    {
+      "mode": "native",
+      "seed": 7101,
+      "concurrency": 8,
+      "policy": "static-2",
+      "order": 0,
+      "paired_order": 0,
+      "paired_policy_order": [
+        "static-2",
+        "agentcloud-v2"
+      ],
+      "trial_id": "scale-7101-8-static-2-b1935370c408",
+      "status": "passed",
+      "error": null,
+      "planned": 16,
+      "offered": 16,
+      "completed": 16,
+      "admission_capture": "passed",
+      "capture_quality": {
+        "schema_version": 1,
+        "status": "passed",
+        "checks": {
+          "coordinator": {
+            "run_id": "scale-7101-8-static-2-b1935370c408",
+            "status": "passed",
+            "errors": [],
+            "incomplete": [],
+            "records": 2527,
+            "streams": {
+              "events": 1051,
+              "observations": 1476
+            },
+            "source_instances": 1,
+            "scope": "committed_records; staged_at is transaction staging, export snapshot proves visibility"
+          },
+          "coordinator_admission": {
+            "run_id": "scale-7101-8-static-2-b1935370c408",
+            "status": "passed",
+            "errors": [],
+            "incomplete": [],
+            "source": "coordinator_admission",
+            "demands": 16,
+            "capacity_wait_episodes": 8,
+            "releases": 16,
+            "counts": {
+              "admission.request_received": 16,
+              "admission.demand_persisted": 16,
+              "admission.attempt_started": 54,
+              "admission.rpc_started": 62,
+              "admission.rpc_completed": 62,
+              "admission.actor_created": 8,
+              "admission.capacity_rejected": 38,
+              "admission.waiting_capacity_entered": 38,
+              "admission.waiting_capacity_exited": 38,
+              "admission.actor_ready": 16,
+              "admission.resource_released": 16,
+              "admission.retry_notified": 5
+            },
+            "rpc_methods": {
+              "CreateActor": 8,
+              "ResumeActor": 54
+            },
+            "require_capacity": true,
+            "require_rpc": true,
+            "timing_ms": {
+              "initial_admission": {
+                "demands": 8,
+                "ready": 8,
+                "attempts": 36,
+                "capacity_rejections": 28,
+                "outcome_unknown": 0,
+                "wait_age": {
+                  "samples": 8,
+                  "total": 152693.35800500002,
+                  "p50": 7209.398001,
+                  "p95": 44600.333445,
+                  "maximum": 44600.333445
+                },
+                "capacity_wait": {
+                  "samples": 8,
+                  "total": 94379.462122,
+                  "p50": 0,
+                  "p95": 36757.216818,
+                  "maximum": 36757.216818
+                },
+                "backend": {
+                  "samples": 8,
+                  "total": 57899.417786,
+                  "p50": 7194.20639,
+                  "p95": 8227.305923,
+                  "maximum": 8227.305923
+                }
+              },
+              "resume_admission": {
+                "demands": 8,
+                "ready": 8,
+                "attempts": 18,
+                "capacity_rejections": 10,
+                "outcome_unknown": 0,
+                "wait_age": {
+                  "samples": 8,
+                  "total": 30010.950651,
+                  "p50": 1167.520891,
+                  "p95": 15370.8186,
+                  "maximum": 15370.8186
+                },
+                "capacity_wait": {
+                  "samples": 8,
+                  "total": 21302.825483,
+                  "p50": 0,
+                  "p95": 13256.332322999999,
+                  "maximum": 13256.332322999999
+                },
+                "backend": {
+                  "samples": 8,
+                  "total": 8015.847174999999,
+                  "p50": 1050.322032,
+                  "p95": 1779.316636,
+                  "maximum": 1779.316636
+                }
+              },
+              "rpc": {
+                "CreateActor": {
+                  "duration": {
+                    "samples": 8,
+                    "total": 163.17255899999998,
+                    "p50": 19.330331,
+                    "p95": 27.791701,
+                    "maximum": 27.791701
+                  },
+                  "codes": {
+                    "OK": 8
+                  }
+                },
+                "ResumeActor": {
+                  "duration": {
+                    "samples": 54,
+                    "total": 57246.39302299999,
+                    "p50": 27.979542,
+                    "p95": 6385.418175,
+                    "maximum": 6961.76964
+                  },
+                  "codes": {
+                    "ResourceExhausted": 38,
+                    "OK": 16
+                  }
+                }
+              }
+            },
+            "client_to_received": {
+              "samples": 16,
+              "estimated_ms": [
+                1.595947265625,
+                4.299072265625,
+                1.73486328125,
+                1.55908203125,
+                1.179443359375,
+                3.099365234375,
+                4.64990234375,
+                1.95703125,
+                0.2919921875,
+                2.747314453125,
+                0.6630859375,
+                0.56103515625,
+                0.58056640625,
+                0.461669921875,
+                3.711669921875,
+                0.265380859375
+              ],
+              "clock_quality": "cross-clock wall-time estimate; no clock synchronization bound measured"
+            },
+            "qualification_scope": "coordinator_capacity_semantics"
+          }
+        },
+        "admission_mode": "native",
+        "qualification_scope": "coordinator_admission_capture",
+        "qualifies": [],
+        "scheduling_comparison_admitted": false,
+        "remaining_gates": [
+          "dataset_use_case_qualification",
+          "native_capture_integrity",
+          "physical_cost_calibration",
+          "closed_loop_DAG_validation",
+          "complete_online_feature_lineage",
+          "independent_statistical_design"
+        ]
+      },
+      "arrival_trace_sha256": "8be74be3d48887026aac71ab6796687405e32c5b0e39dc0feb3e0853b422d157",
+      "ttft_p95_seconds": 42.10926514863968,
+      "first_ttft_p95_seconds": 48.79088793992995,
+      "later_ttft_p95_seconds": 17.23089973926544,
+      "interactive_ttft_p95_seconds": 33.21603361368179,
+      "legacy_fifo_wait_seconds": 0.0,
+      "legacy_fifo": null,
+      "initial_admission": {
+        "demands": 8,
+        "ready": 8,
+        "attempts": 36,
+        "capacity_rejections": 28,
+        "outcome_unknown": 0,
+        "wait_age": {
+          "samples": 8,
+          "total": 152693.35800500002,
+          "p50": 7209.398001,
+          "p95": 44600.333445,
+          "maximum": 44600.333445
+        },
+        "capacity_wait": {
+          "samples": 8,
+          "total": 94379.462122,
+          "p50": 0,
+          "p95": 36757.216818,
+          "maximum": 36757.216818
+        },
+        "backend": {
+          "samples": 8,
+          "total": 57899.417786,
+          "p50": 7194.20639,
+          "p95": 8227.305923,
+          "maximum": 8227.305923
+        }
+      },
+      "resume_admission": {
+        "demands": 8,
+        "ready": 8,
+        "attempts": 18,
+        "capacity_rejections": 10,
+        "outcome_unknown": 0,
+        "wait_age": {
+          "samples": 8,
+          "total": 30010.950651,
+          "p50": 1167.520891,
+          "p95": 15370.8186,
+          "maximum": 15370.8186
+        },
+        "capacity_wait": {
+          "samples": 8,
+          "total": 21302.825483,
+          "p50": 0,
+          "p95": 13256.332322999999,
+          "maximum": 13256.332322999999
+        },
+        "backend": {
+          "samples": 8,
+          "total": 8015.847174999999,
+          "p50": 1050.322032,
+          "p95": 1779.316636,
+          "maximum": 1779.316636
+        }
+      },
+      "rpc": {
+        "CreateActor": {
+          "duration": {
+            "samples": 8,
+            "total": 163.17255899999998,
+            "p50": 19.330331,
+            "p95": 27.791701,
+            "maximum": 27.791701
+          },
+          "codes": {
+            "OK": 8
+          }
+        },
+        "ResumeActor": {
+          "duration": {
+            "samples": 54,
+            "total": 57246.39302299999,
+            "p50": 27.979542,
+            "p95": 6385.418175,
+            "maximum": 6961.76964
+          },
+          "codes": {
+            "ResourceExhausted": 38,
+            "OK": 16
+          }
+        }
+      },
+      "rpc_by_admission_ms": {
+        "initial_admission": {
+          "CreateActor": {
+            "samples": 8,
+            "total": 163.17255899999998,
+            "p95": 27.3206164,
+            "by_code": {
+              "OK": {
+                "samples": 8,
+                "total": 163.17255899999998,
+                "p95": 27.3206164
+              }
+            }
+          },
+          "ResumeActor": {
+            "samples": 36,
+            "total": 51916.511018,
+            "p95": 6467.5888945,
+            "by_code": {
+              "OK": {
+                "samples": 8,
+                "total": 50831.435885,
+                "p95": 6875.085634550001
+              },
+              "ResourceExhausted": {
+                "samples": 28,
+                "total": 1085.075133,
+                "p95": 48.85408639999997
+              }
+            }
+          }
+        },
+        "resume_admission": {
+          "ResumeActor": {
+            "samples": 18,
+            "total": 5329.8820049999995,
+            "p95": 779.1955330499999,
+            "by_code": {
+              "OK": {
+                "samples": 8,
+                "total": 4737.329582,
+                "p95": 825.6827965499999
+              },
+              "ResourceExhausted": {
+                "samples": 10,
+                "total": 592.552423,
+                "p95": 196.5942295499998
+              }
+            }
+          }
+        }
+      },
+      "client_to_received": {
+        "samples": 16,
+        "estimated_ms": [
+          1.595947265625,
+          4.299072265625,
+          1.73486328125,
+          1.55908203125,
+          1.179443359375,
+          3.099365234375,
+          4.64990234375,
+          1.95703125,
+          0.2919921875,
+          2.747314453125,
+          0.6630859375,
+          0.56103515625,
+          0.58056640625,
+          0.461669921875,
+          3.711669921875,
+          0.265380859375
+        ],
+        "clock_quality": "cross-clock wall-time estimate; no clock synchronization bound measured"
+      },
+      "resume_count": 8,
+      "runner_observed_resumes": 8,
+      "actor_reserved_gb_s": 51.00967763199996,
+      "resource_coverage_fraction": 0.9859115591958663,
+      "max_assigned_actors": 4,
+      "memory_restore_events": 8,
+      "memory_fidelity_verified": true,
+      "database_released": true,
+      "process_cleanup": {
+        "observed_pids": [],
+        "remaining_pids": [],
+        "errors": [],
+        "cleanup_success": true
+      },
+      "cleanup_success": true
+    },
+    {
+      "mode": "native",
+      "seed": 7101,
+      "concurrency": 8,
+      "policy": "agentcloud-v2",
+      "order": 1,
+      "paired_order": 1,
+      "paired_policy_order": [
+        "static-2",
+        "agentcloud-v2"
+      ],
+      "trial_id": "scale-7101-8-agentcloud-v2-80d1ad138f77",
+      "status": "passed",
+      "error": null,
+      "planned": 16,
+      "offered": 16,
+      "completed": 16,
+      "admission_capture": "passed",
+      "capture_quality": {
+        "schema_version": 1,
+        "status": "passed",
+        "checks": {
+          "coordinator": {
+            "run_id": "scale-7101-8-agentcloud-v2-80d1ad138f77",
+            "status": "passed",
+            "errors": [],
+            "incomplete": [],
+            "records": 2731,
+            "streams": {
+              "events": 1156,
+              "observations": 1575
+            },
+            "source_instances": 1,
+            "scope": "committed_records; staged_at is transaction staging, export snapshot proves visibility"
+          },
+          "coordinator_admission": {
+            "run_id": "scale-7101-8-agentcloud-v2-80d1ad138f77",
+            "status": "passed",
+            "errors": [],
+            "incomplete": [],
+            "source": "coordinator_admission",
+            "demands": 16,
+            "capacity_wait_episodes": 8,
+            "releases": 16,
+            "counts": {
+              "admission.request_received": 16,
+              "admission.demand_persisted": 16,
+              "admission.attempt_started": 52,
+              "admission.rpc_started": 60,
+              "admission.rpc_completed": 60,
+              "admission.actor_created": 8,
+              "admission.capacity_rejected": 36,
+              "admission.waiting_capacity_entered": 36,
+              "admission.waiting_capacity_exited": 36,
+              "admission.actor_ready": 16,
+              "admission.resource_released": 16,
+              "admission.retry_notified": 6
+            },
+            "rpc_methods": {
+              "CreateActor": 8,
+              "ResumeActor": 52
+            },
+            "require_capacity": true,
+            "require_rpc": true,
+            "timing_ms": {
+              "initial_admission": {
+                "demands": 8,
+                "ready": 8,
+                "attempts": 35,
+                "capacity_rejections": 27,
+                "outcome_unknown": 0,
+                "wait_age": {
+                  "samples": 8,
+                  "total": 148693.635083,
+                  "p50": 6833.182002,
+                  "p95": 44631.309696,
+                  "maximum": 44631.309696
+                },
+                "capacity_wait": {
+                  "samples": 8,
+                  "total": 93508.12681700001,
+                  "p50": 0,
+                  "p95": 36830.149464,
+                  "maximum": 36830.149464
+                },
+                "backend": {
+                  "samples": 8,
+                  "total": 54794.85516000001,
+                  "p50": 6571.264507,
+                  "p95": 7682.021181,
+                  "maximum": 7682.021181
+                }
+              },
+              "resume_admission": {
+                "demands": 8,
+                "ready": 8,
+                "attempts": 17,
+                "capacity_rejections": 9,
+                "outcome_unknown": 0,
+                "wait_age": {
+                  "samples": 8,
+                  "total": 39399.677389000004,
+                  "p50": 1599.274696,
+                  "p95": 15469.611405,
+                  "maximum": 15469.611405
+                },
+                "capacity_wait": {
+                  "samples": 8,
+                  "total": 26413.437164000003,
+                  "p50": 0,
+                  "p95": 14196.89844,
+                  "maximum": 14196.89844
+                },
+                "backend": {
+                  "samples": 8,
+                  "total": 6899.07717,
+                  "p50": 724.108031,
+                  "p95": 1147.722976,
+                  "maximum": 1147.722976
+                }
+              },
+              "rpc": {
+                "CreateActor": {
+                  "duration": {
+                    "samples": 8,
+                    "total": 251.16179,
+                    "p50": 23.212441,
+                    "p95": 47.101327,
+                    "maximum": 47.101327
+                  },
+                  "codes": {
+                    "OK": 8
+                  }
+                },
+                "ResumeActor": {
+                  "duration": {
+                    "samples": 52,
+                    "total": 56062.742176,
+                    "p50": 44.978552,
+                    "p95": 6503.135478,
+                    "maximum": 6635.47998
+                  },
+                  "codes": {
+                    "ResourceExhausted": 36,
+                    "OK": 16
+                  }
+                }
+              }
+            },
+            "client_to_received": {
+              "samples": 16,
+              "estimated_ms": [
+                0.9833984375,
+                1.001708984375,
+                0.983154296875,
+                1.4345703125,
+                1.18994140625,
+                0.602783203125,
+                0.682861328125,
+                1.46240234375,
+                0.261962890625,
+                1.733154296875,
+                0.298095703125,
+                0.271484375,
+                0.4443359375,
+                0.49658203125,
+                0.793701171875,
+                0.512939453125
+              ],
+              "clock_quality": "cross-clock wall-time estimate; no clock synchronization bound measured"
+            },
+            "qualification_scope": "coordinator_capacity_semantics"
+          }
+        },
+        "admission_mode": "native",
+        "qualification_scope": "coordinator_admission_capture",
+        "qualifies": [],
+        "scheduling_comparison_admitted": false,
+        "remaining_gates": [
+          "dataset_use_case_qualification",
+          "native_capture_integrity",
+          "physical_cost_calibration",
+          "closed_loop_DAG_validation",
+          "complete_online_feature_lineage",
+          "independent_statistical_design"
+        ]
+      },
+      "arrival_trace_sha256": "8be74be3d48887026aac71ab6796687405e32c5b0e39dc0feb3e0853b422d157",
+      "ttft_p95_seconds": 43.577461302280426,
+      "first_ttft_p95_seconds": 49.12370086908339,
+      "later_ttft_p95_seconds": 16.497078418731686,
+      "interactive_ttft_p95_seconds": 16.774881899356842,
+      "legacy_fifo_wait_seconds": 0.0,
+      "legacy_fifo": null,
+      "initial_admission": {
+        "demands": 8,
+        "ready": 8,
+        "attempts": 35,
+        "capacity_rejections": 27,
+        "outcome_unknown": 0,
+        "wait_age": {
+          "samples": 8,
+          "total": 148693.635083,
+          "p50": 6833.182002,
+          "p95": 44631.309696,
+          "maximum": 44631.309696
+        },
+        "capacity_wait": {
+          "samples": 8,
+          "total": 93508.12681700001,
+          "p50": 0,
+          "p95": 36830.149464,
+          "maximum": 36830.149464
+        },
+        "backend": {
+          "samples": 8,
+          "total": 54794.85516000001,
+          "p50": 6571.264507,
+          "p95": 7682.021181,
+          "maximum": 7682.021181
+        }
+      },
+      "resume_admission": {
+        "demands": 8,
+        "ready": 8,
+        "attempts": 17,
+        "capacity_rejections": 9,
+        "outcome_unknown": 0,
+        "wait_age": {
+          "samples": 8,
+          "total": 39399.677389000004,
+          "p50": 1599.274696,
+          "p95": 15469.611405,
+          "maximum": 15469.611405
+        },
+        "capacity_wait": {
+          "samples": 8,
+          "total": 26413.437164000003,
+          "p50": 0,
+          "p95": 14196.89844,
+          "maximum": 14196.89844
+        },
+        "backend": {
+          "samples": 8,
+          "total": 6899.07717,
+          "p50": 724.108031,
+          "p95": 1147.722976,
+          "maximum": 1147.722976
+        }
+      },
+      "rpc": {
+        "CreateActor": {
+          "duration": {
+            "samples": 8,
+            "total": 251.16179,
+            "p50": 23.212441,
+            "p95": 47.101327,
+            "maximum": 47.101327
+          },
+          "codes": {
+            "OK": 8
+          }
+        },
+        "ResumeActor": {
+          "duration": {
+            "samples": 52,
+            "total": 56062.742176,
+            "p50": 44.978552,
+            "p95": 6503.135478,
+            "maximum": 6635.47998
+          },
+          "codes": {
+            "ResourceExhausted": 36,
+            "OK": 16
+          }
+        }
+      },
+      "rpc_by_admission_ms": {
+        "initial_admission": {
+          "CreateActor": {
+            "samples": 8,
+            "total": 251.16179,
+            "p95": 46.25018755,
+            "by_code": {
+              "OK": {
+                "samples": 8,
+                "total": 251.16179,
+                "p95": 46.25018755
+              }
+            }
+          },
+          "ResumeActor": {
+            "samples": 35,
+            "total": 51560.81289599999,
+            "p95": 6533.3747604,
+            "by_code": {
+              "OK": {
+                "samples": 8,
+                "total": 49386.02732499999,
+                "p95": 6624.4385671
+              },
+              "ResourceExhausted": {
+                "samples": 27,
+                "total": 2174.785571,
+                "p95": 488.1716353999997
+              }
+            }
+          }
+        },
+        "resume_admission": {
+          "ResumeActor": {
+            "samples": 17,
+            "total": 4501.929279999999,
+            "p95": 631.714238,
+            "by_code": {
+              "OK": {
+                "samples": 8,
+                "total": 4139.940329,
+                "p95": 659.94827975
+              },
+              "ResourceExhausted": {
+                "samples": 9,
+                "total": 361.988951,
+                "p95": 85.6788752
+              }
+            }
+          }
+        }
+      },
+      "client_to_received": {
+        "samples": 16,
+        "estimated_ms": [
+          0.9833984375,
+          1.001708984375,
+          0.983154296875,
+          1.4345703125,
+          1.18994140625,
+          0.602783203125,
+          0.682861328125,
+          1.46240234375,
+          0.261962890625,
+          1.733154296875,
+          0.298095703125,
+          0.271484375,
+          0.4443359375,
+          0.49658203125,
+          0.793701171875,
+          0.512939453125
+        ],
+        "clock_quality": "cross-clock wall-time estimate; no clock synchronization bound measured"
+      },
+      "resume_count": 8,
+      "runner_observed_resumes": 8,
+      "actor_reserved_gb_s": 51.17126080000016,
+      "resource_coverage_fraction": 0.9856188182725292,
+      "max_assigned_actors": 4,
+      "memory_restore_events": 8,
+      "memory_fidelity_verified": true,
+      "database_released": true,
+      "process_cleanup": {
+        "observed_pids": [],
+        "remaining_pids": [],
+        "errors": [],
+        "cleanup_success": true
+      },
+      "cleanup_success": true
+    }
+  ],
+  "native_minus_legacy": [
+    {
+      "policy": "static-2",
+      "direction": "native_minus_legacy",
+      "paired_complete": true,
+      "ttft_p95_seconds": 28.891988575458527,
+      "first_ttft_p95_seconds": 35.4407330751419,
+      "later_ttft_p95_seconds": 4.495572280883787,
+      "interactive_ttft_p95_seconds": 21.197712802886958,
+      "actor_reserved_gb_s": 28.910720320000006,
+      "resume_count": -8
+    },
+    {
+      "policy": "agentcloud-v2",
+      "direction": "native_minus_legacy",
+      "paired_complete": true,
+      "ttft_p95_seconds": 29.086928963661194,
+      "first_ttft_p95_seconds": 34.56914846897124,
+      "later_ttft_p95_seconds": 2.498455333709714,
+      "interactive_ttft_p95_seconds": 2.8046269655227682,
+      "actor_reserved_gb_s": 28.11414694400016,
+      "resume_count": -8
+    }
+  ],
+  "v2_minus_ttl2": [
+    {
+      "mode": "legacy_fair_slots",
+      "direction": "v2_minus_ttl2",
+      "paired_complete": true,
+      "ttft_p95_seconds": 1.2732557654380798,
+      "first_ttft_p95_seconds": 1.204397535324098,
+      "later_ttft_p95_seconds": 1.2632956266403195,
+      "interactive_ttft_p95_seconds": 1.9519341230392442,
+      "actor_reserved_gb_s": 0.9581565440000439,
+      "resume_count": 0
+    },
+    {
+      "mode": "native",
+      "direction": "v2_minus_ttl2",
+      "paired_complete": true,
+      "ttft_p95_seconds": 1.468196153640747,
+      "first_ttft_p95_seconds": 0.33281292915344096,
+      "later_ttft_p95_seconds": -0.7338213205337532,
+      "interactive_ttft_p95_seconds": -16.441151714324945,
+      "actor_reserved_gb_s": 0.1615831680001989,
+      "resume_count": 0
+    }
+  ],
+  "population": "synthetic_capacity_validation",
+  "causal_performance_claim": false,
+  "percentile_estimators": {
+    "ttft_and_rpc_by_admission": "linear_interpolation_(n-1)*p",
+    "coordinator_timing": "nearest_rank_ceil(n*p)",
+    "differences": "difference_of_each_trial_percentile"
+  },
+  "timing_scope": "Legacy provision precedes TTFT/resource window; Native initial Create/setup occurs inside it",
+  "null_semantics": "missing measurement or incomplete pair; no zero imputation"
+}

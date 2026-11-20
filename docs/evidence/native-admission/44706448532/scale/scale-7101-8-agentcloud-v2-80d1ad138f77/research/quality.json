@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "status": "passed",
+  "checks": {
+    "coordinator": {
+      "run_id": "scale-7101-8-agentcloud-v2-80d1ad138f77",
+      "status": "passed",
+      "errors": [],
+      "incomplete": [],
+      "records": 2731,
+      "streams": {
+        "events": 1156,
+        "observations": 1575
+      },
+      "source_instances": 1,
+      "scope": "committed_records; staged_at is transaction staging, export snapshot proves visibility"
+    },
+    "coordinator_admission": {
+      "run_id": "scale-7101-8-agentcloud-v2-80d1ad138f77",
+      "status": "passed",
+      "errors": [],
+      "incomplete": [],
+      "source": "coordinator_admission",
+      "demands": 16,
+      "capacity_wait_episodes": 8,
+      "releases": 16,
+      "counts": {
+        "admission.request_received": 16,
+        "admission.demand_persisted": 16,
+        "admission.attempt_started": 52,
+        "admission.rpc_started": 60,
+        "admission.rpc_completed": 60,
+        "admission.actor_created": 8,
+        "admission.capacity_rejected": 36,
+        "admission.waiting_capacity_entered": 36,
+        "admission.waiting_capacity_exited": 36,
+        "admission.actor_ready": 16,
+        "admission.resource_released": 16,
+        "admission.retry_notified": 6
+      },
+      "rpc_methods": {
+        "CreateActor": 8,
+        "ResumeActor": 52
+      },
+      "require_capacity": true,
+      "require_rpc": true,
+      "timing_ms": {
+        "initial_admission": {
+          "demands": 8,
+          "ready": 8,
+          "attempts": 35,
+          "capacity_rejections": 27,
+          "outcome_unknown": 0,
+          "wait_age": {
+            "samples": 8,
+            "total": 148693.635083,
+            "p50": 6833.182002,
+            "p95": 44631.309696,
+            "maximum": 44631.309696
+          },
+          "capacity_wait": {
+            "samples": 8,
+            "total": 93508.12681700001,
+            "p50": 0,
+            "p95": 36830.149464,
+            "maximum": 36830.149464
+          },
+          "backend": {
+            "samples": 8,
+            "total": 54794.85516,
+            "p50": 6571.264507,
+            "p95": 7682.021181,
+            "maximum": 7682.021181
+          }
+        },
+        "resume_admission": {
+          "demands": 8,
+          "ready": 8,
+          "attempts": 17,
+          "capacity_rejections": 9,
+          "outcome_unknown": 0,
+          "wait_age": {
+            "samples": 8,
+            "total": 39399.677389,
+            "p50": 1599.274696,
+            "p95": 15469.611405,
+            "maximum": 15469.611405
+          },
+          "capacity_wait": {
+            "samples": 8,
+            "total": 26413.437164000003,
+            "p50": 0,
+            "p95": 14196.89844,
+            "maximum": 14196.89844
+          },
+          "backend": {
+            "samples": 8,
+            "total": 6899.07717,
+            "p50": 724.108031,
+            "p95": 1147.722976,
+            "maximum": 1147.722976
+          }
+        },
+        "rpc": {
+          "CreateActor": {
+            "duration": {
+              "samples": 8,
+              "total": 251.16179,
+              "p50": 23.212441,
+              "p95": 47.101327,
+              "maximum": 47.101327
+            },
+            "codes": {
+              "OK": 8
+            }
+          },
+          "ResumeActor": {
+            "duration": {
+              "samples": 52,
+              "total": 56062.742176,
+              "p50": 44.978552,
+              "p95": 6503.135478,
+              "maximum": 6635.47998
+            },
+            "codes": {
+              "ResourceExhausted": 36,
+              "OK": 16
+            }
+          }
+        }
+      },
+      "client_to_received": {
+        "samples": 16,
+        "estimated_ms": [
+          0.9833984375,
+          1.001708984375,
+          0.983154296875,
+          1.4345703125,
+          1.18994140625,
+          0.602783203125,
+          0.682861328125,
+          1.46240234375,
+          0.261962890625,
+          1.733154296875,
+          0.298095703125,
+          0.271484375,
+          0.4443359375,
+          0.49658203125,
+          0.793701171875,
+          0.512939453125
+        ],
+        "clock_quality": "cross-clock wall-time estimate; no clock synchronization bound measured"
+      },
+      "qualification_scope": "coordinator_capacity_semantics"
+    }
+  },
+  "admission_mode": "native",
+  "qualification_scope": "coordinator_admission_capture",
+  "qualifies": [],
+  "scheduling_comparison_admitted": false,
+  "remaining_gates": [
+    "dataset_use_case_qualification",
+    "native_capture_integrity",
+    "physical_cost_calibration",
+    "closed_loop_DAG_validation",
+    "complete_online_feature_lineage",
+    "independent_statistical_design"
+  ]
+}

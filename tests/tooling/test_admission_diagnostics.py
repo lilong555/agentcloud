@@ -1,7 +1,7 @@
 import unittest
 from pathlib import Path
 
-from bench.admission_diagnostics import analyze, partition_wait, wake_metrics
+from bench.admission_diagnostics import analyze, check_wake_budget, partition_wait, wake_metrics
 
 
 class AdmissionDiagnosticsTests(unittest.TestCase):
@@ -20,6 +20,14 @@ class AdmissionDiagnosticsTests(unittest.TestCase):
         self.assertEqual(got['eligible_wait_ms_by_tenant']['t']['max'],5)
         self.assertEqual(got['fallback_attempt_fraction'],.5)
         self.assertEqual(got['pending_notifications'],0)
+        limits=dict(release_to_eligible_attempt_p95_ms=10,release_to_eligible_attempt_max_ms=10,
+            fallback_attempt_fraction=.5,eligible_wait_max_ms=10)
+        trial=dict(trial_id='test',policy='static-2',event_wake=got)
+        self.assertEqual(check_wake_budget([trial],limits)['trials'][0]['violations'],['multiple_tenant_coverage'])
+        got['eligible_wait_ms_by_tenant']['other']=dict(samples=1,p95=5,max=5)
+        self.assertEqual(check_wake_budget([trial],limits)['status'],'passed')
+        limits['fallback_attempt_fraction']=.4
+        self.assertEqual(check_wake_budget([trial],limits)['trials'][0]['violations'],['fallback_attempt_fraction'])
         rows[2]['admission_snapshot']['session_id']='other'
         with self.assertRaises(ValueError): wake_metrics(rows)
 

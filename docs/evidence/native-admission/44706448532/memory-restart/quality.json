@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "status": "failed",
+  "checks": {
+    "coordinator": {
+      "run_id": "restart-a425db12ee0341f492e06d4ba20f2832",
+      "status": "passed",
+      "errors": [],
+      "incomplete": [],
+      "records": 19,
+      "streams": {
+        "events": 11,
+        "observations": 8
+      },
+      "source_instances": 1,
+      "scope": "committed_records; staged_at is transaction staging, export snapshot proves visibility"
+    },
+    "coordinator_admission": {
+      "run_id": "restart-a425db12ee0341f492e06d4ba20f2832",
+      "status": "incomplete",
+      "errors": [],
+      "incomplete": [
+        "capacity_retry_ready_coverage_missing",
+        "open_admission_at_close"
+      ],
+      "source": "coordinator_admission",
+      "demands": 1,
+      "capacity_wait_episodes": 1,
+      "releases": 0,
+      "counts": {
+        "admission.request_received": 1,
+        "admission.demand_persisted": 1,
+        "admission.attempt_started": 1,
+        "admission.rpc_started": 2,
+        "admission.rpc_completed": 2,
+        "admission.actor_created": 1,
+        "admission.capacity_rejected": 1,
+        "admission.waiting_capacity_entered": 1
+      },
+      "rpc_methods": {
+        "CreateActor": 1,
+        "ResumeActor": 1
+      },
+      "require_capacity": true,
+      "require_rpc": true,
+      "timing_ms": {
+        "initial_admission": {
+          "demands": 1,
+          "ready": 0,
+          "attempts": 1,
+          "capacity_rejections": 1,
+          "outcome_unknown": 0,
+          "wait_age": {
+            "samples": 1,
+            "total": 45.342406,
+            "p50": 45.342406,
+            "p95": 45.342406,
+            "maximum": 45.342406
+          },
+          "capacity_wait": {
+            "samples": 1,
+            "total": 0,
+            "p50": 0,
+            "p95": 0,
+            "maximum": 0
+          },
+          "backend": {
+            "samples": 1,
+            "total": 37.888355,
+            "p50": 37.888355,
+            "p95": 37.888355,
+            "maximum": 37.888355
+          }
+        },
+        "resume_admission": {
+          "demands": 0,
+          "ready": 0,
+          "attempts": 0,
+          "capacity_rejections": 0,
+          "outcome_unknown": 0,
+          "wait_age": {
+            "samples": 0,
+            "total": 0,
+            "p50": null,
+            "p95": null,
+            "maximum": null
+          },
+          "capacity_wait": {
+            "samples": 0,
+            "total": 0,
+            "p50": null,
+            "p95": null,
+            "maximum": null
+          },
+          "backend": {
+            "samples": 0,
+            "total": 0,
+            "p50": null,
+            "p95": null,
+            "maximum": null
+          }
+        },
+        "rpc": {
+          "CreateActor": {
+            "duration": {
+              "samples": 1,
+              "total": 4.799445,
+              "p50": 4.799445,
+              "p95": 4.799445,
+              "maximum": 4.799445
+            },
+            "codes": {
+              "OK": 1
+            }
+          },
+          "ResumeActor": {
+            "duration": {
+              "samples": 1,
+              "total": 5.126642,
+              "p50": 5.126642,
+              "p95": 5.126642,
+              "maximum": 5.126642
+            },
+            "codes": {
+              "ResourceExhausted": 1
+            }
+          }
+        }
+      },
+      "client_to_received": {
+        "samples": 1,
+        "estimated_ms": [
+          0.42431640625
+        ],
+        "clock_quality": "cross-clock wall-time estimate; no clock synchronization bound measured"
+      },
+      "qualification_scope": "coordinator_capacity_semantics"
+    }
+  },
+  "admission_mode": "native",
+  "qualification_scope": "coordinator_admission_capture",
+  "qualifies": [],
+  "scheduling_comparison_admitted": false,
+  "remaining_gates": [
+    "dataset_use_case_qualification",
+    "native_capture_integrity",
+    "physical_cost_calibration",
+    "closed_loop_DAG_validation",
+    "complete_online_feature_lineage",
+    "independent_statistical_design"
+  ]
+}

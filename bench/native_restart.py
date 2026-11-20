@@ -46,7 +46,7 @@ def run(args):
         AGENTCLOUD_DATABASE_URL=connection(admin,database),
         AGENTCLOUD_RUNTIME_TOKEN=(client_dir/'runtime-token').read_text().strip())
     command=[str(ROOT/'bin/agentcloud'),'serve','--listen',f'127.0.0.1:{port}',
-        '--backend','substrate','--actor-template','agentcloud-tools','--data-dir',str(private/'coordinator'),
+        '--backend','substrate','--actor-template',args.actor_template,'--data-dir',str(private/'coordinator'),
         '--substrate-ca',str(client_dir/'ca.pem'),'--substrate-token-file',str(client_dir/'token'),
         '--substrate-client-cert',str(client_dir/'router-cert.pem'),'--substrate-client-key',str(client_dir/'router-key.pem'),
         '--model-url','mock://deterministic','--research-run-id',run_id,
@@ -210,6 +210,7 @@ def run(args):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--client-dir',type=Path,default=ROOT/'artifacts/substrate/client')
+    parser.add_argument('--actor-template',default='agentcloud-matrix')
     parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--holders',type=int,default=4)
     args=parser.parse_args()

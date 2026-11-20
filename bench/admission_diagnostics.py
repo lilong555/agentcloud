@@ -88,6 +88,37 @@ def percentile(values, p=.95):
     return values[lo] + (values[min(lo + 1, len(values) - 1)] - values[lo]) * (x - lo)
 
 
+def check_wake_budget(trials, limits):
+    """Apply the pre-run budget independently to every trial, retaining failures."""
+    checks = []
+    for trial in trials:
+        metrics = trial['event_wake']
+        violations = []
+        latency = metrics['release_to_eligible_attempt_ms']
+        if not latency['samples']:
+            violations.append('release_latency_missing')
+        else:
+            for statistic in ('p95', 'max'):
+                if latency[statistic] > limits['release_to_eligible_attempt_' + statistic + '_ms']:
+                    violations.append('release_latency_' + statistic)
+        fraction = metrics['fallback_attempt_fraction']
+        if fraction is None or fraction > limits['fallback_attempt_fraction']:
+            violations.append('fallback_attempt_fraction')
+        tenants = metrics['eligible_wait_ms_by_tenant']
+        if len(tenants) < 2:
+            violations.append('multiple_tenant_coverage')
+        for tenant, row in tenants.items():
+            if row['max'] > limits['eligible_wait_max_ms']:
+                violations.append('eligible_wait:' + tenant)
+        if metrics['pending_notifications']:
+            violations.append('unconsumed_notification')
+        checks.append(dict(trial_id=trial['trial_id'],policy=trial['policy'],
+            status='failed' if violations else 'passed',violations=violations))
+    return dict(status='passed' if checks and all(c['status']=='passed' for c in checks) else 'failed',
+        acceptance_limits=limits,trials=checks,
+        scope='queue_noise_budget_only; restart and capture integrity are separate receipts')
+
+
 def fleet_intervals(events, config, max_gap=.5):
     observations = defaultdict(dict)
     markers = {}
@@ -281,8 +312,14 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('artifact',type=Path)
     parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--readiness',type=Path,help='registry frozen at the experiment source commit')
     args=parser.parse_args()
     report=analyze(args.artifact)
+    if args.readiness:
+        raw=args.readiness.read_bytes()
+        limits=json.loads(raw)['tier1_gates']['native_queue_without_polling_noise']['acceptance_limits']
+        report['queue_noise_budget']=check_wake_budget(report['trials'],limits)
+        report['frozen_readiness_sha256']=hashlib.sha256(raw).hexdigest()
     args.output.parent.mkdir(parents=True,exist_ok=True)
     args.output.write_text(json.dumps(report,indent=2)+'\n')
     print(json.dumps({r['policy']:r['totals'] for r in report['trials']},indent=2))

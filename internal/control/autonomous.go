@@ -309,7 +309,7 @@ func (c *Controller) autonomousLoop() {
 				select {
 				case semaphore <- struct{}{}:
 					if fallback {
-						c.nextAdmissionProbe = now.Add(resumeCapacityRetryDelay)
+						c.nextAdmissionProbe = now.Add(capacityProbeInterval)
 						d.RetryTrigger, d.ReleaseSequence = "fallback", 0
 					}
 					k := key(s.TenantID, s.SessionID)

@@ -358,10 +358,17 @@ func TestStaticPolicyReturnDemandResumesWithoutIdleScheduling(t *testing.T) {
 		return false
 	})
 	backend.allowed.Store(true)
-	waitFor(t, func() bool {
+	deadline := time.Now().Add(capacityProbeInterval + time.Second)
+	for {
 		s, _ := c.Get("tenant-a", "capacity")
-		return s.State == "RUNNING" && s.Epoch == 2 && s.ReturnDemands["return"].Status == "COMPLETED"
-	})
+		if s.State == "RUNNING" && s.Epoch == 2 && s.ReturnDemands["return"].Status == "COMPLETED" {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("external capacity change was not picked up by bounded fallback")
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
 	s, _ := c.Get("tenant-a", "capacity")
 	if len(s.Scheduling) != 0 {
 		t.Fatal("static policy invoked idle scheduling")

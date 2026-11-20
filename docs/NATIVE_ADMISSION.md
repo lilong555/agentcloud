@@ -33,7 +33,7 @@ AgentCloud 的首次启动和快照恢复共享持久容量等待机制。物理
 | `admission.resource_released` | Coordinator 确认 checkpoint/suspend 成功；通过 Session、Epoch、Actor UID 关联 Ready |
 | `admission.outcome_unknown` | 准入操作进入结果未知状态 |
 
-`rpc_started` 是持久调用意图；发生崩溃时，以 `rpc_completed` 与后端回执确认执行结果。资源释放事件使用控制面确认时刻，Substrate 的实际释放可能更早。该事件支持准入状态守恒核验，物理内存积分仍使用 Worker 采样。
+`rpc_started` 是持久调用意图；发生崩溃时，以 `rpc_completed` 与后端回执确认执行结果。资源释放在 Substrate Suspend 返回同一 Actor UID、`SUSPENDED` 且 Worker assignment 为空后持久登记。该时刻先于快照 durable／retained tag 完成，生命周期回执保存释放序号以保证幂等。事件时间表示控制面接收释放证明的时刻，物理内存积分使用 Worker 采样。
 
 耗时分解按需求种类分别报告：
 
@@ -58,7 +58,7 @@ Legacy 首次 provision 位于交互计时窗口之前，Native 首次启动位�
 
 `bench.research_quality` 校验需求身份、Epoch、尝试序号、RPC 配对、容量拒绝、等待进出、Ready/释放守恒，以及 PostgreSQL 导出序号和重启连续性。Native 验收要求 Coordinator 数据；Legacy 采集单独接受历史 FIFO 审计。`bench.research_gate` 使用[两级研究资格](SCHEDULING_RESEARCH_PATH.md)：Tier-1 接受事件级负载、分层 MEMORY 成本与排队去噪回执；Tier-2 检查最终实机比较的重启、开销、校准和统计证据。
 
-资源释放与 `admission.retry_notified` 在同一事务内持久化，通知携带释放事件序号，选择最早的未通知需求。事务提交和 Coordinator 重启会唤醒准入循环，下一次尝试记录 `slot_release` 来源并消费通知。全局兜底探测最多每秒一次，按上次尝试时间轮转等待者；RPC 并发沿用 `SchedulerConcurrency`。物理放置由 Substrate 决定，v2 策略按原有 tick 执行。验收同时核对通知来源、单次消费和 shadow 模式行为。
+资源释放与 `admission.retry_notified` 在同一事务内持久化，通知携带释放事件序号，选择最早的未通知需求。事务提交和 Coordinator 重启会唤醒准入循环，下一次尝试记录 `slot_release` 来源并消费通知。全局兜底探测间隔为 5 秒，启动和本地释放后重新计时，按上次尝试时间轮转等待者；RPC 并发沿用 `SchedulerConcurrency`。物理放置由 Substrate 决定，v2 策略按原有 tick 执行。验收同时核对通知来源、单次消费、快照持久化期间的准入推进和 shadow 模式行为。
 
 固定的 `admission_semantics` 仅开放 `bench/configs/admission-semantics.json`：8 会话、4 个物理槽位、2 Workers、同种子、`static-2` 与 `agentcloud-v2`，两个模式共 4 个 trial。该合成负载用于生产准入路径与采集语义验收。
 
@@ -94,7 +94,7 @@ gh workflow run live-scale.yml --ref experiment/joint-kv-gate2 \
 
 受控容量测试使用 gRPC fixture 和本地 VOLUMES checkpoint。真实 MEMORY、Worker 放置、恢复次数与耗时结论采用 GitHub Actions 的独立实测结果。单种子小规模验收用于功能与观测完整性，性能研究另需独立统计设计。
 
-本地验收记录见 [完整检查](evidence/local-contract.json) 与 [准入采集清单](evidence/native-admission/local/manifest.json)：175 个 Go 顶层测试通过；Python tooling 共 342 项、跳过 5 项，runtime 共 62 项、跳过 4 项。`make check`、`make verify-delivery` 和 `make evidence-audit` 通过。严格容量采集覆盖 12 个首次需求及 Coordinator 重启；独立 VOLUMES 采集覆盖首次和恢复需求、Epoch 2、两次 Coordinator 启动及数据库清理。
+本地验收记录见 [完整检查](evidence/local-contract.json) 与 [准入采集清单](evidence/native-admission/local/manifest.json)：176 个 Go 顶层测试通过；Python tooling 共 342 项、跳过 5 项，runtime 共 62 项、跳过 4 项。`make check` 通过。交付与证据校验使用 `make verify-delivery` 和 `make evidence-audit`。严格容量采集覆盖 12 个首次需求及 Coordinator 重启；独立 VOLUMES 采集覆盖首次和恢复需求、Epoch 2、两次 Coordinator 启动及数据库清理。
 
 ## 真实 MEMORY 对照结果
 
@@ -148,6 +148,19 @@ python3 docs/evidence/native-admission/analyze.py \
 
 分析脚本核验原始 inventory、配置／到达轨迹、GitHub 身份、物理 host boot ID，重新审计 PG 与 Legacy 流，并对账 MEMORY 恢复、请求分母及资源清理。压缩文件保留原始字节摘要；浮点复算仅容忍 Python 版本求和舍入差异。
 
+## 事件唤醒验收
+
+[Actions 44706448532](https://github.com/lilong555/agentcloud/actions/runs/44706448532) 使用源码 `84886c7dfd417026595bca50446a1ad279eb1293`，四组 Legacy／Native × TTL2／v2 对照完成 64/64 请求。整体 workflow 为失败：独立 MEMORY 重启专项在首个 holder 创建时遇到容量不足，尚未执行 SIGKILL。专项选用的模板资源超出 Worker 配额；当前入口使用与对照相同的 `agentcloud-matrix` 模板。所属 Actor、数据库和 Kind 集群清理均成功。
+
+| Native 策略 | release→attempt P95 / max | 通知样本 | 兜底／全部重试 | 获通知租户数 |
+|---|---:|---:|---:|---:|
+| TTL2 | 17.835 / 18.613 ms | 5 | 33/38（86.84%） | 1 |
+| v2 | 50.819 / 50.965 ms | 6 | 30/36（83.33%） | 3 |
+
+延迟满足冻结预算，兜底占比超过 50%，TTL2 的多租户通知覆盖也待通过。TTL2 的五次释放通知均再次收到容量拒绝，v2 的六次通知中两次成功、四次被拒。该版本在 AwaitDurable／RetainSnapshot 之后通知，空位已被期间的兜底尝试使用。当前入口按 Suspend 释放回执立即通知；去噪资格继续保持 `pending`，由独立目标运行时回执验收。
+
+[原始归档](evidence/native-admission/44706448532/artifact.json)、[四组复算](evidence/native-admission/44706448532/summary.json)、[排队与预算诊断](evidence/native-admission/diagnostics/44706448532.json)分别保存整体状态、请求分母和逐项预算；原始失败记录完整保留。
+
 ## 验收范围
 
 | 项目 | 状态与证据 |
@@ -157,7 +170,7 @@ python3 docs/evidence/native-admission/analyze.py \
 | Native 计划到达 | PASS：直接提交 API，32/32 Native 请求完成 |
 | 控制面事务观测 | PASS：四组共 80 个准入需求，PG 顺序、RPC、等待及 Ready／释放闭合 |
 | 研究准入闸门 | PASS：固定语义验收可执行；算法仿真与最终实机比较分别检查 Tier-1／Tier-2 |
-| 并发、重启与异常保护 | PASS：175 个 Go 顶层测试及受控 PG／gRPC 重启采集；MEMORY 重启覆盖见下文 |
+| 并发、重启与异常保护 | PASS：176 个 Go 顶层测试及受控 PG／gRPC 重启采集；MEMORY 重启覆盖见下文 |
 | Legacy／Native 最小对照 | PASS：同 Runner、同到达、四 trial、64/64 请求，原始证据和复算脚本已归档 |
 
 真实 MEMORY 的 Coordinator 崩溃／重启、CreateActor 自身返回 ResourceExhausted、未知 RPC 回执和失败提交分支，目前使用受控 gRPC／真实 PG 测试验证。首次 `CREATING/WAITING_CAPACITY → PARKED` 反馈映射，以及旧自主路径由 Ready 事务统一完成回执的实现，通过当前源码的本地 race 全检；Actions `739e24b` 的覆盖范围以该固定提交为准。这些项仍需目标 MEMORY 环境的专项验收。

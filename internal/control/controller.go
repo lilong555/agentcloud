@@ -185,7 +185,7 @@ func New(ctx context.Context, cfg Config) (*Controller, error) {
 			return nil, err
 		}
 	}
-	c := &Controller{cfg: cfg, store: store, evidenceClock: evidenceClock, telemetry: telemetry, ownTelemetry: ownTelemetry, stranded: map[string]*strandedInterval{}, schedulerBusy: map[string]bool{}, admissionWake: make(chan struct{}, 1)}
+	c := &Controller{cfg: cfg, store: store, evidenceClock: evidenceClock, telemetry: telemetry, ownTelemetry: ownTelemetry, stranded: map[string]*strandedInterval{}, schedulerBusy: map[string]bool{}, admissionWake: make(chan struct{}, 1), nextAdmissionProbe: time.Now().Add(capacityProbeInterval)}
 	c.commitCond = sync.NewCond(&c.mu)
 	c.ctx, c.cancel = context.WithCancel(ctx)
 	if err = store.Load(&c.state); err != nil {
@@ -885,7 +885,7 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 		switch action {
 		case "checkpoint":
 			started := time.Now()
-			actor, digest, err = c.cfg.Backend.Checkpoint(ctx, snapshot, input.OperationID)
+			actor, digest, err = c.cfg.Backend.Checkpoint(c.capacityReleaseContext(ctx, s, receipt), snapshot, input.OperationID)
 			observability.Observe(ctx, "checkpoint_total_ms", float64(time.Since(started))/float64(time.Millisecond), "backend_checkpoint_completion")
 		case "suspend":
 			if prepared {
@@ -893,7 +893,7 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 				digest = snapshot.Manifest.WorkspaceDigest
 			} else {
 				started := time.Now()
-				actor, digest, err = c.cfg.Backend.Checkpoint(ctx, snapshot, input.OperationID)
+				actor, digest, err = c.cfg.Backend.Checkpoint(c.capacityReleaseContext(ctx, s, receipt), snapshot, input.OperationID)
 				observability.Observe(ctx, "checkpoint_total_ms", float64(time.Since(started))/float64(time.Millisecond), "backend_checkpoint_completion")
 			}
 			if err == nil {
@@ -986,8 +986,7 @@ func (c *Controller) lifecycle(ctx context.Context, tenant, id, action string, i
 	if admission != nil {
 		c.readyAdmissionLocked(s, admission)
 	} else if !prepared {
-		c.admissionEventLocked(s, nil, "resource_released")
-		c.notifyCapacityReleaseLocked(c.state.EventSequence)
+		c.recordCapacityReleaseLocked(s, receipt)
 	}
 	receipt.Status = "COMPLETED"
 	receipt.Manifest = manifest

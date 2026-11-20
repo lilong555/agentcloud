@@ -47,6 +47,10 @@ type requestArrival struct {
 	clientNS string
 }
 
+// Fallback covers external capacity changes and missed local notifications.
+// Releases drive the fast path; keep background probes below request cadence.
+const capacityProbeInterval = 5 * time.Second
+
 func (c *Controller) newAdmissionLocked(ctx context.Context, s *Session, kind, id, operation string) *AdmissionDemand {
 	if s.Admissions == nil {
 		s.Admissions = map[string]*AdmissionDemand{}
@@ -116,6 +120,33 @@ func (c *Controller) wakeAdmission() {
 	}
 }
 
+type capacityReleaseKey struct{}
+
+func (c *Controller) capacityReleaseContext(ctx context.Context, s *Session, receipt *LifecycleReceipt) context.Context {
+	return context.WithValue(ctx, capacityReleaseKey{}, func(actor substrateapi.Summary) error {
+		c.lock()
+		defer c.mu.Unlock()
+		if err := c.ready(); err != nil {
+			return err
+		}
+		if actor.UID != s.Actor.UID || actor.State != "SUSPENDED" || actor.AssignedWorker != "" {
+			return errors.New("capacity release requires an unassigned suspended Actor receipt")
+		}
+		c.recordCapacityReleaseLocked(s, receipt)
+		return c.persistContext(ctx)
+	})
+}
+
+func (c *Controller) recordCapacityReleaseLocked(s *Session, receipt *LifecycleReceipt) {
+	if receipt.ResourceReleaseSequence != 0 {
+		return
+	}
+	c.admissionEventLocked(s, nil, "resource_released")
+	receipt.ResourceReleaseSequence = c.state.EventSequence
+	c.markEntity("lifecycle", key(s.TenantID, s.SessionID)+"/"+receipt.OperationID)
+	c.notifyCapacityReleaseLocked(receipt.ResourceReleaseSequence)
+}
+
 func activeAdmission(s *Session) *AdmissionDemand {
 	if s == nil || !pendingAdmission(s) {
 		return nil
@@ -131,6 +162,7 @@ func activeAdmission(s *Session) *AdmissionDemand {
 // One committed release wakes the oldest durable demand. It is an opportunity
 // to ask Substrate, not a reservation or a statement about physical capacity.
 func (c *Controller) notifyCapacityReleaseLocked(sequence uint64) {
+	c.nextAdmissionProbe = time.Now().Add(capacityProbeInterval)
 	var selected *Session
 	var oldest *AdmissionDemand
 	for _, s := range c.state.Sessions {
