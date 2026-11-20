@@ -41,6 +41,7 @@ func serve(args []string, stdout, stderr io.Writer) error {
 	listen := flags.String("listen", "127.0.0.1:8090", "HTTP listen address")
 	data := flags.String("data-dir", "artifacts/local", "durable local state and workspaces")
 	database := flags.String("database-url", os.Getenv("AGENTCLOUD_DATABASE_URL"), "PostgreSQL URL; empty uses fsync JSON")
+	researchRun := flags.String("research-run-id", "", "retain committed research events in PostgreSQL under this run identity")
 	tokens := flags.String("tokens", os.Getenv("AGENTCLOUD_TOKENS"), "comma-separated token=tenant bindings")
 	backend := flags.String("backend", "local", "local or substrate")
 	snapshotKeep := flags.Int("snapshot-retention", 2, "每个Workspace保留的已验证COMMITTED恢复点数")
@@ -189,7 +190,7 @@ func serve(args []string, stdout, stderr io.Writer) error {
 		}
 		sink = bridge
 	}
-	c, err := control.New(ctx, control.Config{EnableAutonomousScheduler: *autonomous, SchedulerInterval: *schedulerInterval, SchedulerStableFor: *schedulerStable, SchedulerIdlePrior: *schedulerIdlePrior, SchedulerPolicy: *schedulerPolicy, SchedulerShadow: *schedulerShadow, KVCalibration: kvCalibration, KVObservationMaxAge: *kvObservationMaxAge, KVResumeMaxAge: *kvResumeMaxAge, KVMinimumSamples: *kvMinimumSamples, KVMaxReleaseDelay: *kvMaxReleaseDelay, Observability: telemetry, Signals: sink, DataDir: *data, DatabaseURL: *database, Backend: execution, ModelURL: *modelURL, ModelAPIKey: os.Getenv("AGENTCLOUD_MODEL_API_KEY"), ModelConcurrency: *modelConcurrency, ModelTimeout: *modelTimeout, Tokens: bindings, EnableExperimentControls: *experimentControls, SnapshotGC: control.SnapshotGCConfig{Disabled: *snapshotGCDisabled, Keep: *snapshotKeep, Interval: *snapshotGCInterval, Batch: *snapshotGCBatch, OrphanGrace: *snapshotOrphanGrace}})
+	c, err := control.New(ctx, control.Config{ResearchRunID: *researchRun, EnableAutonomousScheduler: *autonomous, SchedulerInterval: *schedulerInterval, SchedulerStableFor: *schedulerStable, SchedulerIdlePrior: *schedulerIdlePrior, SchedulerPolicy: *schedulerPolicy, SchedulerShadow: *schedulerShadow, KVCalibration: kvCalibration, KVObservationMaxAge: *kvObservationMaxAge, KVResumeMaxAge: *kvResumeMaxAge, KVMinimumSamples: *kvMinimumSamples, KVMaxReleaseDelay: *kvMaxReleaseDelay, Observability: telemetry, Signals: sink, DataDir: *data, DatabaseURL: *database, Backend: execution, ModelURL: *modelURL, ModelAPIKey: os.Getenv("AGENTCLOUD_MODEL_API_KEY"), ModelConcurrency: *modelConcurrency, ModelTimeout: *modelTimeout, Tokens: bindings, EnableExperimentControls: *experimentControls, SnapshotGC: control.SnapshotGCConfig{Disabled: *snapshotGCDisabled, Keep: *snapshotKeep, Interval: *snapshotGCInterval, Batch: *snapshotGCBatch, OrphanGrace: *snapshotOrphanGrace}})
 	if err != nil {
 		return err
 	}

@@ -66,6 +66,8 @@ evidence-audit:
 
 research-audit:
 	$(PYTHON) scripts/research_audit.py
+	$(PYTHON) scripts/agentlogs_population_audit.py --check-evidence
+	$(PYTHON) -m bench.research_gate
 
 verify-delivery:
 	$(PYTHON) scripts/repro_sources.py

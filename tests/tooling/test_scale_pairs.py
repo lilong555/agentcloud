@@ -177,6 +177,26 @@ class ScalePairsTests(unittest.TestCase):
             (folder/'environ').write_bytes(f'PRIVATE_TOKEN=never-output\0{PROCESS_OWNER_ENV}={trial}\0'.encode())
         self.assertEqual(owned_trial_processes(['mine'],root),{901:dict(trial_id='mine',start_ticks=123)})
 
+    def test_failed_research_export_and_supervisor_preserve_database(self):
+        schedule=self.prepare();item=schedule['order'][0]
+        self.args.client_dir.mkdir();(self.args.client_dir/'coordinator-token').write_text('test-token')
+        with patch('bench.scale.ROOT',self.args.output_dir):
+            trial=Trial(self.config,self.args,item['seed'],item['concurrency'],item['policy'],item['order'],item['trial_id'])
+        trial.created_db=True;trial.cleanup=Mock(return_value=None)
+        report=self.report(item);report['trial_execution_status']='FAILED'
+        with patch('bench.scale.subprocess.run',side_effect=OSError('controlled export failure')),\
+                patch('bench.scale.execute') as execute,patch('bench.scale.inspect',return_value={}):
+            trial.finish(report)
+            execute.assert_not_called()
+        self.assertEqual(report['preserved_research_database'],trial.db)
+        self.assertFalse(report['cleanup_success'])
+        (self.args.output_dir/item['trial_id']/'result.json').write_text(json.dumps(report))
+        with patch('bench.scale.cleanup_trial_processes',return_value=dict(cleanup_success=True,errors=[])),\
+                patch('bench.scale.execute') as execute:
+            self.assertEqual(cleanup_schedule(schedule,self.args),1)
+            execute.assert_not_called()
+        trial.ev.close()
+
     def test_pid_reuse_is_checked_after_opening_pidfd(self):
         identity=dict(trial_id='mine',start_ticks=123)
         with patch('bench.scale.os.pidfd_open',return_value=7),patch('bench.scale.os.close') as close,\

@@ -31,7 +31,14 @@ permissions:
   contents: read
   actions: read
 jobs:
+  qualification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require research evidence before allocating comparison runners
+        run: python3 -m bench.research_gate --require-comparison
   joint:
+    needs: qualification
     if: inputs.scope == 'joint-smoke' || inputs.scope == 'joint-full'
     uses: ./.github/workflows/joint-kv-gate2.yml
     with:
@@ -41,6 +48,7 @@ jobs:
       smoke_run_id: ${{ inputs.smoke_run_id }}
       trial_filter: ${{ inputs.trial_filter }}
   plan:
+    needs: qualification
     if: inputs.scope != 'joint-smoke' && inputs.scope != 'joint-full'
     runs-on: ubuntu-latest
     outputs:
@@ -62,6 +70,7 @@ jobs:
           print(json.dumps(selected))
           PY
   native:
+    needs: plan
     if: ${{ !inputs.native_run_id && inputs.scope != 'joint-smoke' && inputs.scope != 'joint-full' }}
     uses: ./.github/workflows/native-validation.yml
   experiment:

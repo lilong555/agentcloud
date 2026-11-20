@@ -45,10 +45,15 @@ jobs:
           python3 -m venv artifacts/research-venv
           artifacts/research-venv/bin/pip install -r scripts/research-requirements.txt
           make research-audit PYTHON=artifacts/research-venv/bin/python
+          artifacts/research-venv/bin/python -m unittest discover -s tests/tooling -p test_agentlogs_population.py -v
+          python3 scripts/agentlogs_population_audit.py --check-evidence
+          python3 -m bench.research_gate
       - name: Audit archived evidence
         run: make evidence-audit
       - name: Build service
         run: go build -o bin/agentcloud ./cmd/agentcloud
+      - name: Verify native capture with isolated PostgreSQL and coordinator restart
+        run: python3 -m bench.research_acceptance --output artifacts/research-capture-acceptance
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -60,6 +65,7 @@ jobs:
             docs/evidence/upstream-patches-reproduction.json
             docs/evidence/research/2026-11-20/contract-validation.json
             docs/evidence/logs/local-*/
+            artifacts/research-capture-acceptance/
           retention-days: 7
   deerflow-contracts:
     runs-on: ubuntu-latest

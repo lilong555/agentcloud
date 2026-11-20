@@ -1,6 +1,6 @@
 # 研究事件契约与离线验收
 
-研究契约 v1.1.0 定义 318 个叶字段、71 类事件、25 张 DuckDB 表和 40 项指标。[原始包](research/2026-11-20/package_manifest.json)及其 38 个文件按原字节封存；当前运行时使用已有控制与实验协议，研究契约的原生采集和 ETL 状态为 `pending`。
+研究契约 v1.1.0 定义 318 个叶字段、71 类事件、25 张 DuckDB 表和 40 项指标。[原始包](research/2026-11-20/package_manifest.json)及其 38 个文件按原字节封存；当前运行时提供 PostgreSQL 事务事件保留、外部协调器时钟和 FairSlots 准入流，使用独立版本的 native envelope。完整契约 ETL、恢复进程身份握手和在线可见性水位仍待接线；实际覆盖见[原生观测验收](RESEARCH_OBSERVABILITY.md)。
 
 [`research_audit.py`](../scripts/research_audit.py)验证文件大小与 SHA256、Draft 2020-12 Schema、人工示例、DuckDB DDL，并复算正式 Gate 2。`make evidence-audit` 验证附件摘要及证据引用中的 SHA256；普通 `make check` 运行离线语义与摘要回归测试。[验收回执](evidence/research/2026-11-20/contract-validation.json)保留具体覆盖范围。
 
@@ -28,7 +28,7 @@ python3 -m bench.research_events <events.jsonl> --output artifacts/event-audit.j
 
 原始 `example_decision.json` 是人工 C 类示例。Schema／DDL 通过；完整事件语义输出为 `incomplete`，原因明确列出缺少 `illustrative-wait-start-001` 与 `illustrative-historical-cost-001`。[示例检查原文](evidence/research/2026-11-20/example-semantics.json)保留这些未解析引用。
 
-## 原生采集的最小闭环
+## 原生采集契约的完整验收目标
 
 首次与恢复准入均记录 requested、enqueued、granted、cancelled／failed，关联 queue_episode、assignment、Session、Actor Epoch；前置 FairSlots 也保存 tenant backlog 和 age。四种时间分别为发生、观察、入库、对决策可见，采集水位与特征快照同时封存。
 

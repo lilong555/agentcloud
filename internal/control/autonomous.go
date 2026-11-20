@@ -401,11 +401,14 @@ func (c *Controller) autonomousStep(snapshot *Session) {
 	c.recordSchedulerDiagnosticLocked(s, evidence, computedAction, computedReason, action, reason,
 		observationMS, float64(time.Since(decisionStarted))/float64(time.Millisecond), now)
 	a.LastAction, a.Reason = action, reason
+	if c.evidenceClock != nil {
+		c.event(s, "autonomous.evaluation", "")
+	}
 	if action == "KEEP" {
 		if action != previousAction || reason != previousReason {
 			c.event(s, "autonomous.keep", reason)
 			_ = c.persistContext(c.operationContext(ctx, snapshot.TenantID, snapshot.SessionID, "autonomous"))
-		} else if c.conditionalScheduler() && c.dirty["sessions"][key(s.TenantID, s.SessionID)] {
+		} else if (c.conditionalScheduler() || c.evidenceClock != nil) && c.dirty["sessions"][key(s.TenantID, s.SessionID)] {
 			_ = c.persistContext(c.operationContext(ctx, snapshot.TenantID, snapshot.SessionID, "autonomous"))
 		}
 		c.mu.Unlock()

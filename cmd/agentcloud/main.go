@@ -76,6 +76,9 @@ func main() {
 }
 
 func run(args []string, stdout, stderr io.Writer) error {
+	if len(args) > 0 && args[0] == "research-export" {
+		return researchExport(args[1:], stdout, stderr)
+	}
 	if len(args) > 0 && (args[0] == "status" || args[0] == "trace") {
 		return diagnostics(args[0], args[1:], stdout, stderr)
 	}

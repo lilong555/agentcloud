@@ -25,6 +25,7 @@ type Store struct {
 	data         []byte
 	poisoned     bool
 	entityFormat bool
+	researchRun  string
 }
 
 func Open(ctx context.Context, path, databaseURL string) (*Store, error) {

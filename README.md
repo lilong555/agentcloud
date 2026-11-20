@@ -6,7 +6,7 @@ Go 协调器通过 PostgreSQL 保存请求、回执和恢复 manifest；Substrat
 
 **在线 KV 联合策略：**`agentcloud-v2-joint` 读取官方 KVIndexer 的当前前缀驻留与首次损失统计，将 SUSPEND 和 KEEP 的预期重算成本差额计入生命周期切换成本；`cache_reselect` 将前缀命中、prefill／decode 负载和原子容量预留共同用于 Worker 选择。Hard affinity 保持目标，Off／Soft 提供候选空间。观测过期、事件缺口或支持不足时回退到基础成本；未知等待保留两秒释放期限。[机制、动作条件与实验身份](docs/JOINT_KV_SCHEDULING.md) · [原生缓存路由合同](integrations/dynamo/CACHE_ROUTING.md)
 
-源码 `609a58d9` 的 [CI 43178102644](docs/evidence/ci-run-43178102644.json)记录 **162 个 Go 顶层测试通过、零跳过，含 11 个真实 PostgreSQL 测试**；独立 DeerFlow 为 **20/20、零跳过**，CI tooling 为 262 项。当前 [本地契约](docs/evidence/local-contract.json)记录于 `2026-11-20T05:24:47.953610+00:00`：152 个 Go 顶层、283 个 tooling 通过，10 个 PostgreSQL 顶层测试因本地数据库缺配跳过，runtime 为 58 通过／四个模块跳过。
+源码 `609a58d9` 的 [CI 43178102644](docs/evidence/ci-run-43178102644.json)记录 **162 个 Go 顶层测试通过、零跳过，含 11 个真实 PostgreSQL 测试**；独立 DeerFlow 为 **20/20、零跳过**，CI tooling 为 262 项。当前[本地契约](docs/evidence/local-contract.json)通过 167 个 Go 顶层测试，含真实 PostgreSQL，具名 Go 测试零跳过；tooling 为 309 通过／5 项 DuckDB 依赖测试跳过，这 5 项已在研究 venv 的 AgentLogs 12/12 专项测试中覆盖；runtime 为 58 通过／四个 DeerFlow 专用环境模块跳过。
 
 当前联合冒烟 [43178192157](docs/evidence/joint-kv/43178192157/summary.json)完成 **5/5 策略、120/120 请求**，四组路由与全部 trial 清理通过；五策略共 56 次恢复。joint 的 110 个预测差额全部为零，24 次应用、非零成本应用为 0；测量与工作流源码均为 `609a58d9`。
 
@@ -27,7 +27,7 @@ flowchart LR
 
 [最终 Checklist 与 Top 12](docs/FINAL_RELEASE_CHECKLIST.md) · [三分钟答辩与源码](docs/INTERVIEW_DEFENSE.md) · [验收状态](docs/STATUS.md) · [证据与源码索引](docs/evidence/validation-index.json) · [上游贡献](docs/UPSTREAM_PRS.md)
 
-[调度研究证据与验收条件](docs/SCHEDULING_RESEARCH_EVIDENCE.md)汇总动作条件化 KV 公式、强基线负面结果与下一轮测量门槛；[数据集审计](docs/DATASET_RESEARCH_AUDIT.md)覆盖 AgentLogs、Alibaba、FreeInference 和 TraceLab；[研究事件契约](docs/RESEARCH_EVENT_CONTRACT.md)提供可运行的时序、来源与因果检查。正式 Gate 2 的 50 份原始结果、14,400 请求及八组配对均值已离线复核。
+[调度研究证据与验收条件](docs/SCHEDULING_RESEARCH_EVIDENCE.md)汇总动作条件化 KV 公式、强基线负面结果与下一轮测量门槛；[数据集审计](docs/DATASET_RESEARCH_AUDIT.md)覆盖 AgentLogs、Alibaba、FreeInference 和 TraceLab；[研究事件契约](docs/RESEARCH_EVENT_CONTRACT.md)提供可运行的时序、来源与因果检查。正式 Gate 2 的 50 份原始结果、14,400 请求及八组配对均值已离线复核。 当前优先完善数据与观测：AgentLogs 正式发布的 635,886 个 Session 已全量扫描；[原生观测](docs/RESEARCH_OBSERVABILITY.md)覆盖事务事件、准入队列与协调器重启验收，算法对照由研究资格闸门控制。
 
 | P2 GPU 与 Token 成本速览 | 已验证结果 | 证据范围 |
 | --- | --- | --- |
@@ -179,7 +179,7 @@ make demo
 | Kind／gVisor MEMORY 与真实 Agent | [Substrate 部署](deploy/substrate/)，[DeerFlow 接入](adapters/deerflow/)；`make live-suite` |
 | 同 Runner 配对、故障与 GPU | [v2 实验入口](docs/V2_EVALUATION.md#复现)、[实验报告](docs/EXPERIMENTS.md)、[GPU 复现](docs/GPU_VALIDATION.md) |
 
-远端 cannlab 提供 aarch64／Python 3.11.4 CPU 核验环境：契约核验使用 CPU 0–3／RSS 4 GiB，分析使用 CPU 4–5／地址空间 4 GiB，合计预算六核／8 GiB。[ARM Go 核验](docs/evidence/remote-cpu/cannlab-c24b619/final/validation.json)为 152 个顶层通过／10 个 PostgreSQL 顶层跳过，race 零失败、vet 通过；数据库 11 项通过采用当前 CI。已归档的冒烟复算核验 818 份输入 SHA，20 项回归通过，摘要与本机参考逐字一致；十个 Actions Runner 继续执行 Kind／gVisor MEMORY 配对回放。最终全量 ARM 复算核验 8,850 份输入 SHA，118.18 s／233.64 MiB RSS，跨机参考字段为 `null`；[最终回执与归档](docs/evidence/joint-kv/43163231106/cannlab/final/receipt.json)保留输入与输出 SHA。[冒烟远端复算回执](docs/evidence/joint-kv/43161092995/cannlab/receipt.json) · [工作分工与实验身份](docs/JOINT_KV_SCHEDULING.md#运行)
+远端 cannlab 提供 aarch64／Python 3.11.4 CPU 核验环境：契约核验使用 CPU 0–3／RSS 4 GiB，分析使用 CPU 4–5／地址空间 4 GiB，合计预算六核／8 GiB。[ARM Go 核验](docs/evidence/remote-cpu/cannlab-c24b619/final/validation.json)为 152 个顶层通过／10 个 PostgreSQL 顶层跳过，race 零失败、vet 通过；数据库 11 项通过采用当前 CI。已归档的冒烟复算核验 818 份输入 SHA，20 项回归通过，摘要与本机参考逐字一致；该历史配对回放由十个 Actions Runner 执行 Kind／gVisor MEMORY。最终全量 ARM 复算核验 8,850 份输入 SHA，118.18 s／233.64 MiB RSS，跨机参考字段为 `null`；[最终回执与归档](docs/evidence/joint-kv/43163231106/cannlab/final/receipt.json)保留输入与输出 SHA。[冒烟远端复算回执](docs/evidence/joint-kv/43161092995/cannlab/receipt.json) · [工作分工与实验身份](docs/JOINT_KV_SCHEDULING.md#运行)
 
 各实验记录源码 SHA、配置、种子、完整请求分母和资源清理。规模与故障运行使用独立 Actions；CPU Mocker 的执行路径与真实 GPU 数据按实验类型分别归档。
 

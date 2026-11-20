@@ -2,7 +2,7 @@
 
 FreeInference、TraceLab、AgentLogs 和 Alibaba 2017 分别覆盖 Agent 等待、工具因果窗口、云端会话和物理容量竞争。AgentCloud 的 MEMORY、安全点、准入排队和成本由原生测量提供。多源组合形成真实数据驱动的混合工作负载，各来源的统计范围、推导和合成设定分别保留。
 
-本审计固定日期 2026-11-20。[来源清单](evidence/research/2026-11-20/sources/github-sources.json)、[样本摘要与下载地址](evidence/research/2026-11-20/agentlogs-downloads.json)、[可复算统计](evidence/research/2026-11-20/agentlogs-sample-audit.json)及[原研究附件](research/2026-11-20/package_manifest.json)提供版本与证据入口。
+本审计固定日期 2026-11-20。[来源清单](evidence/research/2026-11-20/sources/github-sources.json)、[全量下载清单](evidence/research/2026-11-20/agentlogs-population-inputs.json)、[全量元数据统计](evidence/research/2026-11-20/agentlogs-population-audit.json)及[原研究附件](research/2026-11-20/package_manifest.json)提供版本与证据入口。
 
 ## 数据源与研究用途
 
@@ -10,13 +10,13 @@ FreeInference、TraceLab、AgentLogs 和 Alibaba 2017 分别覆盖 Agent 等待�
 | --- | --- | --- | --- |
 | FreeInference | 附件首日 25 Session／1,375 请求；1,416 个非空工具 latency 都等于下一请求开始减当前结束 | 成功筛选人口的 API 等待、上下文、跨 Harness 描述 | 工具 gap 包含人工、网络和 Harness 等等待；Session 和起点含重建；完整生存样本需自采 |
 | TraceLab v0.0.2 | 附件全扫描 8,058 Session／665,453 rounds／743,819 tools／52 contributors；现有合格回放 33 窗口、26 单轮 | 独立来源的工具行为与局部因果窗口 | 后台工具终止、安全点和模型服务边界逐窗口核验；七个 holdout 窗口保留小样本范围 |
-| AgentLogs 1.0 | 官方发布 635,886 Session／75,631,136 日志／554,496 Workflow Run；本地解析官方演示样本 | 云端任务家族、Session 时间、重试／状态和发布子集重叠 | 生产采样概率、失败分母及全量关联需按发布版本扫描 |
+| AgentLogs 1.0 | 本地扫描正式发布的全部 635,886 Session／363,624 Task／554,496 Workflow；日志表扫描数为 0 | 云端任务家族、Session 时间、重试／状态和发布子集重叠 | 发布人口、状态和关联分母完整；总体采样概率及工具／模型事件另行核验 |
 | Alibaba 2017 | 官方 Schema、时间／资源说明和获取方式 | 机器放置、容器生命周期、共置压力、容量映射 | 内存／磁盘归一化；60 s 采样、300 s 聚合；2017 许可与原始数据统计待核实 |
 | Copilot 2026 | 附件 500 Session 完整 shard；12,063 batch 中仅 7 个唯一父调用匹配 | 调用结构、Token 和数据质量 | 精确时间回放等待时间端点与多匹配关联澄清 |
 | ARIES | 附件原始 Schema 与样本 | engine 与 harness 各自的资源和行为分析 | 两类数据来自不同时间／环境，分别分析 |
 | ReproPatch＋OpenHands | [冻结 workload audit](evidence/joint-kv-workload-audit.json)：136 task／200 trajectory／101 repo | 可重复请求链、缓存形状与系统压力 | N64 ReproPatch 种子任务 Jaccard 0.9091；81.89% 等待次数、99.76% 时间采用建模值 |
 
-附件数据审计沿用其下载 manifest 与审计身份。当前自动检查额外验证附件字节、正式 Gate 2 算术、AgentLogs 三份样本的摘要与 SQL 统计。
+附件数据审计沿用其下载 manifest 与审计身份。当前自动检查验证附件字节、正式 Gate 2 算术、AgentLogs 正式发布源清单、冻结 SQL、资格判定及分母守恒。[用途注册表](../bench/configs/research-datasets.json)按数据源保存已核验用途与待验收用途。
 
 ## AgentLogs：云端 Session 元数据
 
@@ -26,26 +26,37 @@ FreeInference、TraceLab、AgentLogs 和 Alibaba 2017 分别覆盖 Agent 等待�
 
 [SessionExporter](evidence/research/2026-11-20/sources/agentlogs-sessions-export.py)保留 payload 的 `state`、`error` 和可空完成时间，排除标记为 unattached 的记录，并要求任务／用户／日志关联元数据。导出层支持失败状态；失败人口比例由完整数据扫描确定。
 
-三份官方演示 Parquet 合计 33,519 字节，仅用于字段和关联资格检查：
+正式发布的三个 Session shard、一个 Task shard、一个 Workflow shard 共 **410,011,454 字节**，全部通过官方 LFS SHA256 校验。[审计脚本](../scripts/agentlogs_population_audit.py)使用 DuckDB、2 线程、512 MiB 内存和独立 spill 目录，按白名单投影读取元数据。原始 Parquet 包含 Prompt 和其他正文列，完整文件保存在忽略提交的 `artifacts/research-agentlogs-population/raw/`；公开交付为聚合统计、SQL、来源摘要和资格结论。
 
-| 核查项 | 样本结果 |
+| 核查项 | 全量结果 |
 | --- | --- |
-| Session／task／workflow | 4／4／1；3 个 user |
-| 状态与时间 | 4 completed；创建、完成时间均有值；负时长 0 |
-| Workflow 引用 | 3 个 Session 有引用；实际匹配 1，缺少对应行 2；一条匹配的反向 Session ID 一致 |
-| Task 关联 | 4/4 匹配 |
-| 已发布样本重叠 | 半开区间 `[created_at, completed_at)` 的最大重叠为 2 |
-| 失败与代表性 | 样本 error 为 0；抽样概率未公布，样本状态及重叠只描述这四条记录 |
+| 原始人口 | 635,886 Session；363,624 Task；554,496 Workflow |
+| 用户／仓库覆盖 | Session 覆盖 37,405 user、40,252 repo；Task 表覆盖 40,565 repo |
+| Session 时间 | ID 重复 0、负时长 0；完整起止 635,061，缺终点 825 |
+| 原始状态 | completed 582,289；cancelled 25,450；failed 25,064；timed_out 2,426；queued 456；in_progress 12；waiting_for_user 189 |
+| 缺终点状态 | completed 5；failed 163；queued 456；in_progress 12；waiting_for_user 189 |
+| Task 关联 | Session 唯一匹配 635,886/635,886，反向引用一致 |
+| Workflow 关联 | 无引用 42,505；有引用但缺行 38,885；唯一且双向一致 554,496；按 `(id, repository)` 关联 |
+| 任务家族 | 353,432 个有 Session 的引用连通家族；5,684 跨用户、32,978 跨 UTC 日期；留出时整体分组 |
+| 发布子集重叠 | 635,061 个完整区间，以 `[created_at, completed_at)` 扫描，峰值 191、边界增减净和 0 |
+| 时间异常 | 52 Task 的 updated_at 早于 created_at；5 Workflow 的 updated_at 早于 created_at／run_started_at；原记录保留 |
+| 日志覆盖语义 | `log_found=true` 为 635,885；README 报告有日志 Session 为 624,668，差额 11,217；日志表与解析覆盖的对账待完成 |
 
-数据为 [CC BY 4.0](evidence/research/2026-11-20/sources/agentlogs-DATA_LICENSE.txt)，代码为 [MIT](evidence/research/2026-11-20/sources/agentlogs-CODE_LICENSE.txt)。归属：AgentLogs dataset by RISEN Lab，https://creativecommons.org/licenses/by/4.0/ 。仓库保存由元数据计算的聚合统计和官方文档／源码引用；Prompt、代码和日志正文留在上游数据源。
+会话跨度采用 API 的创建与完成时刻。峰值 191 描述已发布完整终点子集的会话重叠；采样概率、完整观察窗口和未观察人口由上游采集协议另行提供。825 条缺终点按缺测保留，生存分析还需每个会话的停止观察时刻和删失原因。
+
+数据为 [CC BY 4.0](evidence/research/2026-11-20/sources/agentlogs-DATA_LICENSE.txt)，代码为 [MIT](evidence/research/2026-11-20/sources/agentlogs-CODE_LICENSE.txt)。归属：AgentLogs dataset by RISEN Lab，https://creativecommons.org/licenses/by/4.0/ 。三份演示样本的[独立审计](evidence/research/2026-11-20/agentlogs-sample-audit.json)保留原有样本身份。
 
 ```bash
 python3 -m venv artifacts/research-venv
 artifacts/research-venv/bin/pip install -r scripts/research-requirements.txt
-artifacts/research-venv/bin/python scripts/research_dataset_audit.py --fetch
+# 下载五个固定原文件，并重新扫描完整元数据；预算小于 1 GiB。
+artifacts/research-venv/bin/python scripts/agentlogs_population_audit.py --fetch
+# 已封存报告的来源、SQL、资格及分母一致性检查。
+python3 scripts/agentlogs_population_audit.py --check-evidence
+artifacts/research-venv/bin/python -m unittest discover -s tests/tooling -p test_agentlogs_population.py -v
 ```
 
-后续全量元数据审计按 task／root family 去重，按时间与用户／仓库划分留出；报告 planned、可解析、有起点、有终点、右删失、各状态、关联成功与排除分母。发布时间、采集时间和事件时间分别登记。任务结束、重试和 Workflow 结果保持原始状态，避免仅保留成功任务的人口偏差。
+12 项回归测试覆盖完整状态人口、缺失和异常端点、重复 ID、复合关联歧义、半开边界、任务家族传递闭包、冻结源库存和下载摘要。CI 执行封存报告检查与受控 SQL 测试；全量扫描以本地固定原文件的独立回执为准。Session 日志的模型／工具边界、原生运行资源及完整删失信息保持独立采集资格。
 
 ## Alibaba 2017：容器与容量竞争
 

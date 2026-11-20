@@ -501,7 +501,12 @@ def main():
     parser.add_argument('--order-seed',type=int,default=9031)
     parser.add_argument('--plan-only',action='store_true'); parser.add_argument('--cleanup-schedule',action='store_true')
     parser.add_argument('--execute-trial',help=argparse.SUPPRESS)
-    args=parser.parse_args(); args.summary.parent.mkdir(parents=True,exist_ok=True)
+    args=parser.parse_args()
+    if not args.plan_only and not args.cleanup_schedule:
+        from bench.research_gate import require_comparison_ready
+        try: require_comparison_ready()
+        except (OSError,ValueError,KeyError,TypeError) as exc: parser.error(str(exc))
+    args.summary.parent.mkdir(parents=True,exist_ok=True)
     if args.cleanup_schedule and not args.schedule.exists(): return 0
     if args.schedule.exists():
         if args.plan_only: parser.error('schedule exists; select a fresh path')

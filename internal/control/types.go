@@ -7,6 +7,7 @@ import (
 
 	"github.com/lilong555/agentcloud/internal/adapters/dynamo"
 	"github.com/lilong555/agentcloud/internal/observability"
+	"github.com/lilong555/agentcloud/internal/policy"
 )
 
 type Actor struct {
@@ -154,16 +155,36 @@ type ModelRequest struct {
 	ClaimedEpoch   uint64          `json:"claimed_epoch,omitempty"`
 }
 type Event struct {
-	State      string    `json:"state,omitempty"`
-	Gate       string    `json:"gate,omitempty"`
-	Epoch      uint64    `json:"epoch,omitempty"`
-	ManifestID string    `json:"manifest_id,omitempty"`
-	Sequence   uint64    `json:"sequence"`
-	At         time.Time `json:"at"`
-	TenantID   string    `json:"tenant_id"`
-	SessionID  string    `json:"session_id"`
-	Kind       string    `json:"kind"`
-	Detail     string    `json:"detail,omitempty"`
+	EvidenceClock      *observability.EvidenceClock `json:"evidence_clock,omitempty"`
+	ActorUID           string                       `json:"actor_uid,omitempty"`
+	WorkerID           string                       `json:"worker_id,omitempty"`
+	ExecutionEpochID   string                       `json:"execution_epoch_id,omitempty"`
+	DecisionSnapshot   *ResearchDecision            `json:"decision_snapshot,omitempty"`
+	AutonomousSnapshot *ResearchEvaluation          `json:"autonomous_snapshot,omitempty"`
+	State              string                       `json:"state,omitempty"`
+	Gate               string                       `json:"gate,omitempty"`
+	Epoch              uint64                       `json:"epoch,omitempty"`
+	ManifestID         string                       `json:"manifest_id,omitempty"`
+	Sequence           uint64                       `json:"sequence"`
+	At                 time.Time                    `json:"at"`
+	TenantID           string                       `json:"tenant_id"`
+	SessionID          string                       `json:"session_id"`
+	Kind               string                       `json:"kind"`
+	Detail             string                       `json:"detail,omitempty"`
+}
+
+// ResearchDecision freezes numeric inputs and the action at the event boundary.
+// Model payloads, tool commands/results and inference credentials are excluded.
+type ResearchDecision struct {
+	Decision         policy.LifecycleDecision `json:"decision"`
+	ServerEvidence   *ServerEstimateEvidence  `json:"server_evidence,omitempty"`
+	QueueObservation *QueueObservation        `json:"queue_observation,omitempty"`
+	Status           string                   `json:"status"`
+}
+type ResearchEvaluation struct {
+	Evidence            *ServerEstimateEvidence `json:"evidence,omitempty"`
+	Diagnostic          *SchedulerDiagnostic    `json:"diagnostic,omitempty"`
+	ObservationSequence uint64                  `json:"observation_sequence"`
 }
 type State struct {
 	ObservationSequence uint64                   `json:"observation_sequence,omitempty"`
@@ -195,8 +216,9 @@ type SignalSink interface {
 }
 
 type RecordedMeasurement struct {
-	Sequence  uint64 `json:"sequence"`
-	TenantID  string `json:"tenant_id"`
-	SessionID string `json:"session_id"`
+	EvidenceClock *observability.EvidenceClock `json:"evidence_clock,omitempty"`
+	Sequence      uint64                       `json:"sequence"`
+	TenantID      string                       `json:"tenant_id"`
+	SessionID     string                       `json:"session_id"`
 	observability.Measurement
 }

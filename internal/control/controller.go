@@ -21,6 +21,7 @@ import (
 )
 
 type Config struct {
+	ResearchRunID             string
 	QuiesceDrainTimeout       time.Duration
 	QuiesceCooldown           time.Duration
 	EnableAutonomousScheduler bool
@@ -66,6 +67,7 @@ func problem(status int, code, message string) error {
 }
 
 type Controller struct {
+	evidenceClock       *observability.Clock
 	dirty               map[string]map[string]bool
 	pendingEvents       map[string]Event
 	pendingObservations map[string]RecordedMeasurement
@@ -162,6 +164,16 @@ func New(ctx context.Context, cfg Config) (*Controller, error) {
 	if err != nil {
 		return nil, err
 	}
+	var evidenceClock *observability.Clock
+	if cfg.ResearchRunID != "" {
+		if err = store.EnableResearch(ctx, cfg.ResearchRunID); err == nil {
+			evidenceClock, err = observability.NewClock()
+		}
+		if err != nil {
+			store.Close()
+			return nil, err
+		}
+	}
 	telemetry := cfg.Observability
 	ownTelemetry := telemetry == nil
 	if telemetry == nil {
@@ -171,7 +183,7 @@ func New(ctx context.Context, cfg Config) (*Controller, error) {
 			return nil, err
 		}
 	}
-	c := &Controller{cfg: cfg, store: store, telemetry: telemetry, ownTelemetry: ownTelemetry, stranded: map[string]*strandedInterval{}, schedulerBusy: map[string]bool{}}
+	c := &Controller{cfg: cfg, store: store, evidenceClock: evidenceClock, telemetry: telemetry, ownTelemetry: ownTelemetry, stranded: map[string]*strandedInterval{}, schedulerBusy: map[string]bool{}}
 	c.commitCond = sync.NewCond(&c.mu)
 	c.ctx, c.cancel = context.WithCancel(ctx)
 	if err = store.Load(&c.state); err != nil {
@@ -374,6 +386,24 @@ func (c *Controller) event(s *Session, kind, detail string) {
 	}
 	c.state.EventSequence++
 	event := Event{Sequence: c.state.EventSequence, At: time.Now().UTC(), TenantID: s.TenantID, SessionID: s.SessionID, Kind: kind, Detail: detail, State: s.State, Gate: s.Gate, Epoch: s.Epoch}
+	if c.evidenceClock != nil {
+		stamp := c.evidenceClock.Stamp()
+		event.EvidenceClock = &stamp
+		event.ActorUID, event.WorkerID = s.Actor.UID, s.Actor.AssignedWorker
+		event.ExecutionEpochID = fmt.Sprintf("%s/%s/%s/%d/%s", c.cfg.ResearchRunID, s.TenantID, s.SessionID, s.Epoch, s.Actor.UID)
+		if kind == "autonomous.evaluation" && s.Autonomous != nil {
+			snapshot := &ResearchEvaluation{Evidence: s.Autonomous.Evidence, ObservationSequence: c.state.ObservationSequence}
+			if n := len(s.Autonomous.Diagnostics); n > 0 {
+				snapshot.Diagnostic = &s.Autonomous.Diagnostics[n-1]
+			}
+			event.AutonomousSnapshot = copyValue(snapshot)
+		}
+		if strings.HasPrefix(kind, "scheduling.") {
+			if decision := s.Scheduling[detail]; decision != nil {
+				event.DecisionSnapshot = copyValue(&ResearchDecision{Decision: decision.Decision, ServerEvidence: decision.ServerEvidence, QueueObservation: decision.QueueObservation, Status: decision.Status})
+			}
+		}
+	}
 	if s.Manifest != nil {
 		event.ManifestID = s.Manifest.ID
 	}

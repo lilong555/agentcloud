@@ -186,6 +186,20 @@ def inspect_links(value, errors: list[str], label: str) -> None:
 
 def main() -> int:
     errors = []
+    from agentlogs_population_audit import load_manifest, check_evidence
+    population = ROOT / 'docs/evidence/research/2026-11-20'
+    try:
+        manifest_path = population / 'agentlogs-population-inputs.json'
+        check_evidence(json.loads((population/'agentlogs-population-audit.json').read_text()),
+                       load_manifest(manifest_path), manifest_path)
+        sys.path.insert(0, str(ROOT))
+        from bench.research_gate import inspect
+        inspect()
+        from bench.research_quality import audit_capture
+        if audit_capture(population/'native-capture-local')['status'] != 'passed':
+            raise ValueError('archived native capture failed structural qualification')
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        errors.append('research foundation: ' + str(exc))
     bundle = verify_bundle()
     errors.extend("research bundle: " + error for error in bundle["errors"])
     directory = ROOT / "docs/evidence"

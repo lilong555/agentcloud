@@ -2,6 +2,8 @@
 
 AgentCloud 已具备可运行的动作条件化 KV 成本模型、真实 MEMORY 生命周期及双 Mocker 联合实验。当前最清晰的研究问题是首次准入等待、异构恢复成本和快照 I/O；现有联合 Gate 2 显示资源开销增加，调度收益需要更完整的观测与独立负载验证。
 
+**当前执行范围：权威数据审计与观测基础验收。** 算法对照由[机器可检验资格注册](../bench/configs/research-readiness.json)控制；六项资格齐备后才开放运行。当前可运行全量元数据审计、离线契约检查和 CPU 原生采集验收。
+
 证据入口：[最终 Checklist](FINAL_RELEASE_CHECKLIST.md) · [数据集审计](DATASET_RESEARCH_AUDIT.md) · [事件契约与检查器](RESEARCH_EVENT_CONTRACT.md) · [完整外部研究报告](research/2026-11-20/AgentCloud_Research_Audit_2026-11-20.html)。外部报告固定源码 `d9ed974d22a0d56cc36f4507f7236128c842bc49`；当前联合实测固定源码 `609a58d9081b3340ab57f99b2c249be24871d376`。每组结果使用自身的源码、环境和请求分母。
 
 ## 算法、测试与运行证据
@@ -10,7 +12,7 @@ AgentCloud 已具备可运行的动作条件化 KV 成本模型、真实 MEMORY 
 | --- | --- | --- |
 | 条件等待与 KEEP 积分 | [`ConditionalRemaining`](../internal/policy/survival.go#L37)、[`ConditionalKeepCost`](../internal/policy/survival.go#L78)；`TestConditionalKeepCostCensoringSupport`、`TestV2LowSupportAndUnknownTailUseFixedFallback` | 历史 Gate 2 的五策略、50/50 Trial 和 14,400/14,400 请求；当前材料保存成功筛选、删失及未知尾部的适用范围 |
 | KV 在线差额 | [`jointKVCostLocked`](../internal/control/kv_cost.go#L86)、[`EstimateKV`](../internal/policy/kv_cost.go#L164)、[`v2DecisionLocked`](../internal/control/scheduler_v2.go#L124)；`TestJointKVChangesRealV2ScoreAndRetainsFiniteDeadline`、`TestKVSharedInputsForceZeroEffectAndCommonRiskCancels` | [联合首轮](evidence/joint-kv/43163231106/summary.json)49/50、14,278/14,280；独立 [N64／7303](evidence/joint-kv/43180786047/summary.json)5/5、1,905/1,905；均为真实控制与 MEMORY、模拟 GPU 服务 |
-| 过去观测与恢复作用域 | [`kvResumeExposureLocked`](../internal/control/kv_cost.go#L53)；`TestJointKVResumeExposureUsesPastScopedBackendCompletions`、`TestJointKVIntegratesConditionalReturnsAtCurrentWaitAge` | 当前推断有观测 TTL、Worker／Epoch、校准身份与失效原因；完整研究事件流的采集仍待落地 |
+| 过去观测与恢复作用域 | [`kvResumeExposureLocked`](../internal/control/kv_cost.go#L53)；`TestJointKVResumeExposureUsesPastScopedBackendCompletions`、`TestJointKVIntegratesConditionalReturnsAtCurrentWaitAge` | 当前推断有观测 TTL、Worker／Epoch、校准身份与失效原因；原生事务流已保存；逐字段在线可见性和跨源水位仍待接线 |
 | 长前缀与会话绑定 | [路由合同](../integrations/dynamo/CACHE_ROUTING.md)、[`joint_routing.py`](../experiments/dynamo/joint_routing.py)；`test_minimal_affinity_and_assignment_controls`、`test_conflict_requires_two_distinct_observed_prefix_lengths` | [43178192157 四组原生路由](evidence/joint-kv/43178192157/13925084885/routing/summary.json)通过；off／保留 assignment、off／重选、hard／重选、soft／重选各有请求与 Sent 回执 |
 | 安全优先与未知回退 | [`scheduler_v2.go`](../internal/control/scheduler_v2.go#L183)；`TestJointKVUnknownWaitObservesCostAndKeepsTwoSecondFallback`、`TestJointKVSafePointAndReturnDemandHavePriority` | 当前冒烟 110 个预测，24 次应用，非零成本应用 0；零差额路径保留原始计数 |
 
@@ -36,7 +38,7 @@ hard affinity 表达绑定约束，CACHE／LOAD 评分在约束允许的候选�
 
 [本地算术核验](evidence/research/2026-11-20/contract-validation.json)验证正式 Gate 2 的 50 份原始 JSON 摘要、14,400 请求、50 个交互 P95、八组配对均值及同 Runner 身份。最低资源采样覆盖率为 98.2956%。资源积分和 bootstrap 区间沿用封存分析，逐请求 P95 与配对均值由 [`research_audit.py`](../scripts/research_audit.py)复算。
 
-首次队列的具体证据位于 [`FairSlots.acquire`](../bench/scale.py#L156) 和 [`Trial.resume`](../bench/scale.py#L425)：Runner 获取 permit 后才向协调器登记 ReturnDemand，KEEP 的 HoldingRate 使用已登记需求。这个可见性缺口与尾延迟回退方向相符；各机制的贡献量需要队列事件和干预实验。64 MiB／3 s 的少恢复结果具有独立坐标，恢复次数为 143.333 对 384，同时交互 P95 增加 313.307 s。128 MiB 的 434～436 Tag 与磁盘保护对应存储压力边界。
+首次队列的具体证据位于 [`FairSlots.acquire`](../bench/admission.py) 和 [`Trial.resume`](../bench/scale.py)：Runner 获取 permit 后才向协调器登记 ReturnDemand，KEEP 的 HoldingRate 使用已登记需求。这个可见性缺口与尾延迟回退方向相符；各机制的贡献量需要队列事件和干预实验。64 MiB／3 s 的少恢复结果具有独立坐标，恢复次数为 143.333 对 384，同时交互 P95 增加 313.307 s。128 MiB 的 434～436 Tag 与磁盘保护对应存储压力边界。
 
 ## 负载资格
 
@@ -49,11 +51,13 @@ FreeInference 用于筛选成功人口的 API 等待与上下文增长；TraceLa
 | 闸门 | 交付与验收 | 当前状态 |
 | --- | --- | --- |
 | G0 证据与身份 | 冻结原报告、契约、数据 revision；原始哈希可核验；失败保留 | [PASS] 附件 38 个文件；原封版回执按内容摘要保存；AgentLogs 与 Alibaba 一手版本固定 |
-| G1 数据与在线可见性 | family／时间留出、完整筛选分母；决策 `available_at ≤ decision_time`；无未来标签混入 | [PASS] 离线语义检查器；[BOUNDARY_DOCUMENTED] 全量数据适配与原生事件接线待完成 |
-| G2 成本、安全与队列 | first／resume requested→enqueued→granted；安全点；物理 C/R、RSS、I/O、失败分层 | [BOUNDARY_DOCUMENTED] 现有账本与 MEMORY 可复核；前置队列与异构物理曲线待采集 |
+| G1 数据与在线可见性 | family／时间留出、完整筛选分母；决策 `available_at ≤ decision_time`；无未来标签混入 | [PASS] AgentLogs 全量发布元数据与离线语义检查；[BOUNDARY_DOCUMENTED] 在线特征水位、原生恢复身份及调度等待数据资格待完成 |
+| G2 成本、安全与队列 | first／resume requested→enqueued→granted；安全点；物理 C/R、RSS、I/O、失败分层 | [PASS] PostgreSQL 原子采集与 first／resume 队列受控验收；[BOUNDARY_DOCUMENTED] 目标 MEMORY 环境的完整观测及异构物理曲线待采集 |
 | G3 因果闭环 | 父模型延迟传播、并行 all／any join、恢复排队传播、FINAL 先验敏感性 | [PASS] 事件级依赖干预测试；[BOUNDARY_DOCUMENTED] live replay 完整 DAG 执行与校准待验收 |
 | G4 统计与推广 | 完整配对、失败率、首轮等待、资源、SLO、任务家族留出；误差小于目标收益 | [BOUNDARY_DOCUMENTED] 当前固定池探索结果齐全；新 population 的收益仍待验证 |
 | G5 算法贡献 | 相同约束、校准和调参预算下，对强 TTL 与 cache 消融证明收益 | [BOUNDARY_DOCUMENTED] 当前 joint 负面结果作为研究输入；实现复杂度由已验证收益空间决定 |
+
+[原生观测验收](RESEARCH_OBSERVABILITY.md)给出当前采集范围、CPU 验收回执和缺失项。`python3 -m bench.research_gate` 检查注册及证据摘要，`--require-comparison` 验证算法运行资格；当前返回阻断状态。`bench.scale`、公开轨迹回放 CLI，以及 joint／scale／public-trace 三个 Actions 工作流在资源准备前检查资格，计划生成和清理入口保持可用。
 
 CPU 下一批成本筛查可采用 16／64／128／512 MiB × 可压缩／伪随机 × 冷／热 × 并发 1／4，共 32 配置，每配置 10 批，共 320 批、800 个 Actor C/R 周期。各批是统计单元，记录逻辑快照、分配空间、设备读写、队列和失败；预注册重点配置再做重复。这是待执行预算，纳入实测结论需独立运行身份。
 

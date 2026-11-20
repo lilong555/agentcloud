@@ -10,7 +10,14 @@ permissions:
   contents: read
   actions: read
 jobs:
+  qualification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require research evidence before replay comparison
+        run: python3 -m bench.research_gate --require-comparison
   replay:
+    needs: qualification
     runs-on: ubuntu-latest
     timeout-minutes: 90
     services:

@@ -52,7 +52,14 @@ env:
   LIFECYCLE_KV_WHEEL_RUN_ID: '43012181604'
 
 jobs:
+  qualification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require research evidence before allocating comparison runners
+        run: python3 -m bench.research_gate --require-comparison
   plan:
+    needs: qualification
     runs-on: ubuntu-24.04
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}

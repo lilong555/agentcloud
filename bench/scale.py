@@ -17,6 +17,8 @@ from types import SimpleNamespace
 import uuid
 
 from bench.analysis.resources import integrate
+from bench.admission import FairSlots
+from bench.research_capture import AdmissionCapture
 from bench.scale_validation import autonomous_evidence, record_failure, validate_program_protocol
 from bench.postgres import connection, execute
 from bench.substrate_live import Evidence, clean, quantile, timestamp, write_json
@@ -111,6 +113,11 @@ def cleanup_schedule(schedule,args):
             try:
                 database=item['trial_id'].replace('-','_')
                 if not database.replace('_','').isalnum() or not database.startswith('scale_'): raise ValueError('invalid trial database name')
+                if (folder/'research').exists():
+                    from bench.research_quality import audit_capture
+                    if audit_capture(folder/'research')['status']!='passed':
+                        cleanup['preserved_research_database']=database
+                        raise RuntimeError('research capture incomplete; database retained for export and inspection')
                 execute(os.getenv('AGENTCLOUD_TEST_PG_ADMIN','postgresql:///postgres?host=/var/run/postgresql'),
                         'DROP DATABASE IF EXISTS '+database+' WITH (FORCE)')
                 cleanup['ephemeral_postgres_database_released']=True
@@ -149,28 +156,6 @@ class BudgetClient(Client):
     def timeout(self,value): self._timeout=value
 
 
-class FairSlots:
-    """All strategies share the same FIFO gate before actual Actor placement."""
-    def __init__(self,count,stop=None):
-        self.stop=stop;self.capacity=count;self.active=0;self.queue=[];self.cv=threading.Condition()
-    def acquire(self,name,timeout):
-        begin=time.monotonic();marker=object()
-        with self.cv:
-            self.queue.append(marker)
-            while self.queue[0] is not marker or self.active>=self.capacity:
-                remaining=timeout-(time.monotonic()-begin)
-                if remaining<=0 or self.stop and self.stop.is_set():
-                    self.queue.remove(marker);self.cv.notify_all()
-                    raise TimeoutError('Actor capacity queue deadline: '+name)
-                self.cv.wait(min(remaining,1))
-            self.queue.pop(0);self.active+=1;self.cv.notify_all()
-        return time.monotonic()-begin
-    def release(self):
-        with self.cv:
-            if self.active<=0: raise RuntimeError('slot released without ownership')
-            self.active-=1;self.cv.notify_all()
-
-
 class Trial:
     def __init__(self,config,args,seed,concurrency,policy,order,trial_id=None):
         self.config,self.args=config,args
@@ -181,7 +166,9 @@ class Trial:
         self.private=ROOT/'artifacts/scale'/self.id;self.private.mkdir(parents=True)
         self.output=args.output_dir/self.id;self.output.mkdir(parents=True,exist_ok=True)
         write_json(self.output/'arrival-trace.json',self.arrivals.document)
-        self.ev=Evidence(self.output/'events.jsonl');self.stopped=threading.Event();self.slots=FairSlots(config['worker_slots'],self.stopped)
+        self.ev=Evidence(self.output/'events.jsonl');self.stopped=threading.Event()
+        self.research_capture=AdmissionCapture(self.output/'research',self.id,config)
+        self.slots=FairSlots(config['worker_slots'],self.stopped,self.research_capture.event)
         self.lock=threading.Lock();self.samples=[];self.resumes=[];self.idle=[];self.tools=[];self.sessions=[];self.service_samples=[]
         self.rows=request_rows(config,self.id,concurrency,self.arrivals)
         base=(args.client_dir/'coordinator-token').read_text().strip()
@@ -247,6 +234,7 @@ class Trial:
             '--substrate-client-cert',str(self.args.client_dir/'router-cert.pem'),'--substrate-client-key',str(self.args.client_dir/'router-key.pem'),
             '--model-url',self.model_url(),'--dynamo-control-url',self.native.control,
             '--dynamo-tenant-tokens-file',str(self.native.runtime_dir/'tenant-tokens.json'),'--enable-experiment-controls']
+        command+=['--research-run-id',self.id]
         flags,expected_policy=scheduler_options(self.policy);command+=flags
         if self.policy=='agentcloud-v2-joint':
             command+=['--kv-calibration-file',str(ROOT/'bench/configs/joint-kv-calibration.json'),
@@ -318,7 +306,7 @@ class Trial:
         if state['state']=='RECOVERY_REQUIRED': raise RuntimeError('session requires recovery reconciliation')
         if state['state']=='SUSPENDED' and entry['resident'] and not entry.get('return_pending'):
             if state['manifest']['fidelity']!='MEMORY': raise RuntimeError('MEMORY fidelity required')
-            entry['resident']=False;self.slots.release()
+            entry['resident']=False;self.slots.release(entry['id'])
         if before and (before['state'],before['epoch'])!=(state['state'],state['epoch']):
             self.event('observed_lifecycle',session_id=entry['id'],tenant=entry['tenant'],state=state['state'],epoch=state['epoch'],manifest=state.get('manifest'))
         return state
@@ -416,7 +404,7 @@ class Trial:
                     if state['epoch']!=epoch or state['state']!='SUSPENDED' or (state.get('manifest') or {}).get('fidelity')!='MEMORY' or state.get('gate')!='CLOSED' or state.get('active_tools')!=0:
                         raise RuntimeError('MEMORY suspension was not committed at the expected epoch')
                     entry['state']=state
-                    if entry['resident']: entry['resident']=False;self.slots.release()
+                    if entry['resident']: entry['resident']=False;self.slots.release(entry['id'])
                     self.event('suspend',session_id=entry['id'],start=begin,end=time.time(),manifest=state['manifest'])
                     return state
             remaining=deadline-time.monotonic()
@@ -432,7 +420,7 @@ class Trial:
             if deadline is not None:
                 timeout=min(timeout,deadline-time.monotonic())
                 if timeout<=0: raise TimeoutError('operation admission deadline')
-            queue=self.slots.acquire(entry['id'],timeout);entry['resident']=True;acquired=True
+            queue=self.slots.acquire(entry['id'],timeout,kind='resume_actor_admission',tenant=entry.get('tenant',''),epoch=state['epoch']);entry['resident']=True;acquired=True
         begin=time.time();entry['return_pending']=True
         try:
             if acquired: state=self.refresh(entry)
@@ -471,7 +459,7 @@ class Trial:
             self.event('resume',session_id=entry['id'],epoch=state['epoch'],seconds=time.time()-begin,queue_seconds=queue,actual_fidelity=state['actual_fidelity'])
             return queue
         except BaseException:
-            if entry['resident']: entry['resident']=False;self.slots.release()
+            if entry['resident']: entry['resident']=False;self.slots.release(entry['id'])
             raise
         finally: entry['return_pending']=False
     def provision(self,index):
@@ -479,13 +467,13 @@ class Trial:
         except BaseException:
             self.stopped.set()
             entry=next((e for e in self.sessions if e['index']==index),None)
-            if entry and entry['resident']: entry['resident']=False;self.slots.release()
+            if entry and entry['resident']: entry['resident']=False;self.slots.release(entry['id'])
             raise
     def _provision(self,index):
         self.guard()
         name=f'{self.id}-w{index}';tenant=f'tenant-{chr(97+(index//len(KINDS)+index)%self.config["tenants"])}'
         entry=dict(id=name,tenant=tenant,index=index,kind=KINDS[index%len(KINDS)],resident=False,state=None)
-        self.sessions.append(entry);self.slots.acquire(name,self.remaining(self.config['request_deadline_seconds']));entry['resident']=True
+        self.sessions.append(entry);self.slots.acquire(name,self.remaining(self.config['request_deadline_seconds']),kind='first_actor_admission',tenant=tenant);entry['resident']=True
         entry['state']=self.client(entry).call('POST','/v1/sessions',dict(session_id=name,workspace_id=name,actor_name='ac-'+name,
             mode='external',profile=entry['kind'],ablation_group=self.ablation_group()))
         installed=self.client(entry).tool(name,1,'install-workload','file_write',path='actor_mix.py',content=(ROOT/'bench/workloads/actor_mix.py').read_text())
@@ -682,6 +670,11 @@ class Trial:
             finally:
                 signal.setitimer(signal.ITIMER_REAL,0);signal.signal(signal.SIGALRM,previous_alarm)
                 report['trial_execution_status']='COMPLETED' if report['status']=='passed' else 'FAILED'
+                if getattr(self,'research_capture',None):
+                    try: self.research_capture.close()
+                    except Exception as exc:
+                        record_failure(report,'research capture close: '+str(exc))
+                        report['trial_execution_status']='FAILED';report['cleanup_success']=False
                 atomic_json(self.output/'result.json',report);self.ev.close()
                 for sig,handler in prior_handlers.items(): signal.signal(sig,handler)
         return report
@@ -752,9 +745,26 @@ class Trial:
                     (self.output/path.name).write_text(content)
                 attempt('control log export',export_control_log)
         if self.created_db:
+            def research_export():
+                from bench.research_quality import audit_capture
+                self.research_capture.close()
+                subprocess.run([str(ROOT/'bin/agentcloud'),'research-export','--run-id',self.id,
+                    '--output',str(self.output/'research/coordinator.jsonl')],
+                    env=dict(os.environ,AGENTCLOUD_DATABASE_URL=connection(self.admin,self.db)),
+                    check=True,capture_output=True,text=True,timeout=self.remaining(60))
+                quality=audit_capture(self.output/'research')
+                atomic_json(self.output/'research/quality.json',quality)
+                report['research_capture']=quality
+                if quality['status']!='passed': raise RuntimeError('research capture qualification failed')
+                return True
+            exported=attempt('research capture export',research_export)
             def drop():
                 execute(self.admin,'DROP DATABASE '+self.db+' WITH (FORCE)');report['ephemeral_postgres_database_released']=True
-            attempt('database cleanup',drop)
+            if exported:
+                attempt('database cleanup',drop)
+            else:
+                report['preserved_research_database']=self.db
+                report['ephemeral_postgres_database_released']=False
         report['disk_after']=attempt('disk observation',lambda:inspect('/',6))
         for error in errors: record_failure(report,error)
         report['cleanup_errors']=errors;report['cleanup_success']=not errors
@@ -771,6 +781,9 @@ def prepare_schedule(config,args):
             config['agent_trace_workload']['manifest']]
         source.update({name:hashlib.sha256((ROOT/name).read_bytes()).hexdigest() for name in paths})
     source['selected_config']=hashlib.sha256(args.config.read_bytes()).hexdigest()
+    for name in ('bench/admission.py','bench/research_capture.py','bench/research_quality.py',
+                 'internal/journal/research.go','internal/journal/entities.go','internal/observability/clock.go'):
+        source[name]=hashlib.sha256((ROOT/name).read_bytes()).hexdigest()
     metadata=dict(schema_version=1,comparison_protocol=config.get('comparison_protocol','legacy-ablation-v1'),paired_runner_id=runner_id,
         host=host,runner=dict(os=os.getenv('RUNNER_OS'),arch=os.getenv('RUNNER_ARCH'),name=os.getenv('RUNNER_NAME')),
         github_run_id=os.getenv('GITHUB_RUN_ID'),github_run_attempt=os.getenv('GITHUB_RUN_ATTEMPT'),source_sha256=source,
@@ -896,6 +909,10 @@ def main():
     parser.add_argument('--schedule',type=Path);parser.add_argument('--plan-only',action='store_true')
     parser.add_argument('--cleanup-schedule',action='store_true')
     parser.add_argument('--execute-trial',help=argparse.SUPPRESS);args=parser.parse_args()
+    if not args.plan_only and not args.cleanup_schedule:
+        from bench.research_gate import require_comparison_ready
+        try: require_comparison_ready()
+        except (OSError,ValueError,KeyError,TypeError) as exc: parser.error(str(exc))
     args.output_dir.mkdir(parents=True,exist_ok=True)
     if args.cleanup_schedule and (not args.schedule or not args.schedule.exists()): return 0
     if args.schedule and args.schedule.exists():

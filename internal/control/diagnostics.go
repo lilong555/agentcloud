@@ -29,6 +29,10 @@ func (c *Controller) operationContext(ctx context.Context, tenant, id, operation
 func (c *Controller) appendObservationLocked(tenant, id string, m observability.Measurement) {
 	c.state.ObservationSequence++
 	item := RecordedMeasurement{Sequence: c.state.ObservationSequence, TenantID: tenant, SessionID: id, Measurement: m}
+	if c.evidenceClock != nil {
+		stamp := c.evidenceClock.Stamp()
+		item.EvidenceClock = &stamp
+	}
 	c.state.Observations = append(c.state.Observations, item)
 	observationKey := fmt.Sprintf("%020d", item.Sequence)
 	c.markEntity("observations", observationKey)

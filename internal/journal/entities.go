@@ -62,6 +62,15 @@ func (s *Store) SaveEntities(ctx context.Context, changes EntityChanges) error {
 	batch := &pgx.Batch{}
 	for _, entity := range changes.Entities {
 		batch.Queue(`INSERT INTO agentcloud.journal_entities(kind,entity_key,data,sequence,updated_revision) VALUES($1,$2,$3,$4,$5) ON CONFLICT(kind,entity_key) DO UPDATE SET data=EXCLUDED.data,sequence=EXCLUDED.sequence,updated_revision=EXCLUDED.updated_revision`, entity.Kind, entity.Key, entity.Data, int64(entity.Sequence), s.revision+1)
+		if s.researchRun != "" && (entity.Kind == "events" || entity.Kind == "observations") {
+			// Existing records are immutable. Replayed migration writes must match.
+			batch.Queue(`INSERT INTO agentcloud.research_records(run_id,stream,sequence,payload,committed_revision)
+SELECT $1,$2,$3,$4,$5 FROM agentcloud.research_runs WHERE run_id=$1
+AND $3 > CASE WHEN $2='events' THEN initial_events ELSE initial_observations END
+ON CONFLICT(run_id,stream,sequence) DO UPDATE SET payload=
+CASE WHEN research_records.payload=EXCLUDED.payload THEN research_records.payload ELSE NULL END`,
+				s.researchRun, entity.Kind, int64(entity.Sequence), entity.Data, s.revision+1)
+		}
 	}
 	for _, entity := range changes.Deletes {
 		batch.Queue("DELETE FROM agentcloud.journal_entities WHERE kind=$1 AND entity_key=$2", entity.Kind, entity.Key)
