@@ -117,6 +117,9 @@ def prepare(trace, trace_sha, costs_sha, count=8, model_limit=5):
 
 
 def compare(native, simulated, tolerances):
+    if any(not isinstance(receipt.get(key), str) or not receipt[key]
+           for receipt in (native, simulated) for key in ('trace_sha256', 'cost_sha256')):
+        raise ValueError('Native/DES input identity is missing')
     if native.get('trace_sha256') != simulated.get('trace_sha256'):
         raise ValueError('Native/DES trace identity differs')
     if native.get('cost_sha256') != simulated.get('cost_sha256'):
@@ -143,8 +146,9 @@ def compare(native, simulated, tolerances):
     for metric, bound in tolerances.items():
         observed = [native['policies'][n].get(metric) for n in ('ttl2', 'v2')]
         predicted = [simulated['policies'][n].get(metric) for n in ('ttl2', 'v2')]
-        if any(x is None for x in observed + predicted):
-            rankings[metric] = dict(status='missing')
+        if any(not isinstance(x, (int, float)) or isinstance(x, bool)
+               or not math.isfinite(x) or x < 0 for x in observed + predicted):
+            rankings[metric] = dict(status='missing_or_invalid')
             continue
         delta = observed[1] - observed[0]
         threshold = max(bound['absolute'], max(observed)*bound['relative'])
@@ -152,7 +156,7 @@ def compare(native, simulated, tolerances):
             des_v2_minus_ttl2=predicted[1]-predicted[0],
             status='unresolved_within_tolerance' if abs(delta) <= threshold else
                    'consistent' if delta*(predicted[1]-predicted[0]) > 0 else 'mismatch')
-    passed = all(r['passed'] for r in rows) and all(r['status'] not in ('missing', 'mismatch') for r in rankings.values())
+    passed = all(r['passed'] for r in rows) and all(r['status'] not in ('missing_or_invalid', 'mismatch') for r in rankings.values())
     return dict(schema_version=1, research_status='exploratory',
         status='within_preregistered_tolerance' if passed else 'calibration_required',
         trace_sha256=native['trace_sha256'], cost_sha256=native['cost_sha256'],
@@ -176,8 +180,10 @@ def main():
     if args.command == 'prepare':
         result = prepare(json.loads(args.trace.read_text()), sha(args.trace), sha(args.costs))
     else:
-        result = compare(json.loads(args.native.read_text()), json.loads(args.simulated.read_text()),
-                         json.loads(args.plan.read_text())['tolerances'])
+        native, simulated = json.loads(args.native.read_text()), json.loads(args.simulated.read_text())
+        if native.get('trace_sha256') != sha(args.plan):
+            parser.error('receipt differs from the frozen plan')
+        result = compare(native, simulated, json.loads(args.plan.read_text())['tolerances'])
     save(args.output, result)
 
 

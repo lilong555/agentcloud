@@ -55,6 +55,7 @@ class CalibrationTrial(Trial):
     def __init__(self, config, args, item, plan):
         self.plan, self.proxy = plan, None
         self.node_records = []
+        self.retirement_records = []
         super().__init__(config, args, item['seed'], len(plan['sessions']), item['policy'],
                          item['order'], item['trial_id'])
         self.arrivals = Arrivals(plan)
@@ -208,7 +209,6 @@ class CalibrationTrial(Trial):
                 entry['workload_completed_at'] = time.time()
                 entry['safe_since'] = None
                 self.finish_ttl(entry)
-                self.client(entry).call('POST', self.client(entry).path(entry['id']) + '/finalize', {})
                 self.suspend(entry, 'terminal-release')
                 entry['released_at'] = time.time()
                 entry['status'] = 'passed'
@@ -219,6 +219,36 @@ class CalibrationTrial(Trial):
                 entry['safe_since'] = None
                 self.finish_ttl(entry)
 
+    def cleanup(self):
+        # The pinned native protocol retires Programs through terminal inference.
+        # Run retirement after the measurement window, without Actor activation.
+        for entry in self.sessions:
+            if entry.get('status') != 'passed' or self.finished is None:
+                continue
+            record = dict(session_id=entry['id'], started_at=time.time(),
+                measured_window_end=self.finished, status='FAILED',
+                scope='post-measurement native Program retirement; no Actor admission')
+            self.retirement_records.append(record)
+            try:
+                snapshot = self.client(entry).call('GET', self.client(entry).path(entry['id'])+'/native')
+                if snapshot['snapshot'].get('session_active_requests', 0):
+                    raise RuntimeError('retirement requires resolved native model requests')
+                if snapshot['snapshot'].get('program_present'):
+                    status, receipt = self.native.control_call('bindings',
+                        dict(protocol_version=1, **snapshot['binding']))
+                    if status != 200:
+                        raise RuntimeError('native retirement binding registration failed')
+                    status, result = self.native.infer(receipt, tokens=1, max_tokens=1, final=True)
+                    if status != 200 or not result.get('choices'):
+                        raise RuntimeError('native terminal retirement request failed')
+                    record['usage'] = result.get('usage')
+                self.client(entry).call('POST', self.client(entry).path(entry['id'])+'/finalize', {})
+                record.update(status='COMPLETED', finished_at=time.time())
+            except Exception as exc:
+                record.update(error=str(exc), finished_at=time.time())
+                self.event('native_retirement_failed', session_id=entry['id'], error=str(exc))
+        return super().cleanup()
+
     def finish(self, report):
         try:
             super().finish(report)
@@ -227,6 +257,7 @@ class CalibrationTrial(Trial):
                 self.proxy.close()
                 report['native_source_timing'] = self.proxy.records
             report['calibration_events'] = self.node_records
+            report['post_measurement_retirement'] = self.retirement_records
             report['calibration_sessions'] = [dict(
                 session_id=e['source']['session_id'], live_session_id=e['id'], tenant=e['tenant'],
                 client_arrival_at=e.get('client_arrival_at'), setup_ready_at=e.get('setup_ready_at'),
@@ -260,6 +291,7 @@ def prepare(args, plan):
         paired_runner_id=str(uuid.uuid4()), source_commit=subprocess.check_output(
             ['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
         github_run_id=os.getenv('GITHUB_RUN_ID'), host=host_metadata(),
+        github_run_attempt=os.getenv('GITHUB_RUN_ATTEMPT'),
         trace_sha256=sha(args.plan), cost_sha256=plan['physical_cost_sha256'],
         config_path=str(args.plan), order=[])
     for i, policy in enumerate(policies):
@@ -328,6 +360,8 @@ def main():
         p.error('frozen trace changed')
     if schedule.get('github_run_id') != os.getenv('GITHUB_RUN_ID'):
         p.error('schedule belongs to another workflow run')
+    if schedule.get('github_run_attempt') != os.getenv('GITHUB_RUN_ATTEMPT'):
+        p.error('schedule belongs to another workflow attempt')
     if args.execute_trial:
         item = next(x for x in schedule['order'] if x['trial_id'] == args.execute_trial)
         result = CalibrationTrial(schedule['config'], args, item, plan).run()

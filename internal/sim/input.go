@@ -17,6 +17,7 @@ type Session struct {
 	ID       string  `json:"session_id"`
 	Family   string  `json:"family_id"`
 	Tenant   string  `json:"tenant_id"`
+	Profile  string  `json:"profile,omitempty"`
 	Harness  string  `json:"harness"`
 	Split    string  `json:"split"`
 	Arrival  float64 `json:"arrival_ms"`

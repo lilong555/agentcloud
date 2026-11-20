@@ -101,3 +101,28 @@ func TestHistoryIsPhaseBoundedAndExcludesCurrentRequest(t *testing.T) {
 		}
 	}
 }
+
+func TestTrainingAndLiveHistoryRespectTenantProfile(t *testing.T) {
+	trace := Trace{SchemaVersion: 1, TraceID: "cohort", Sessions: []Session{
+		{ID: "same", Tenant: "tenant-a", Family: "same", Split: "train", Events: []Event{node("m", "model_wait", 100)}},
+		{ID: "other-tenant", Tenant: "tenant-b", Family: "other-tenant", Split: "train", Events: []Event{node("m", "model_wait", 900)}},
+		{ID: "other-profile", Tenant: "tenant-a", Profile: "L1", Family: "other-profile", Split: "train", Events: []Event{node("m", "model_wait", 800)}},
+	}}
+	a := &actor{source: Session{ID: "a", Tenant: "tenant-a", Events: []Event{node("m", "model_wait", 10000)}}, states: []int{2}, startTimes: []float64{0}}
+	peer := &actor{source: Session{ID: "b", Tenant: "tenant-b", Events: []Event{node("m", "model_wait", 10000)}}, states: []int{2}, startTimes: []float64{0}}
+	e := &engine{cfg: Config{HistoryMode: "tenant_profile"}, now: 20, actors: []*actor{a, peer}, samples: TrainingHistory(trace)}
+	e.retainHistory()
+	got := e.waitSamples(a, "model_wait", "m")
+	if len(got) != 1 || got[0].DurationMS != 100 || !got[0].Completed {
+		t.Fatalf("mixed history %+v", got)
+	}
+	e.cfg.HistoryMode = "synthetic_shared"
+	if got = e.waitSamples(a, "model_wait", "m"); len(got) != 4 {
+		t.Fatalf("shared history %v", got)
+	}
+	for _, row := range e.samples {
+		if row.Profile == "" {
+			t.Fatal("training profile default absent")
+		}
+	}
+}

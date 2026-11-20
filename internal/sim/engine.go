@@ -5,9 +5,19 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
+
+	"github.com/lilong555/agentcloud/internal/control"
 )
 
 type Config struct {
+	ObservationMode       string  `json:"observation_mode"`
+	HistoryMode           string  `json:"history_mode"`
+	IdleMode              string  `json:"idle_mode"`
+	IdleTTLMS             float64 `json:"idle_ttl_ms"`
+	SchedulerIntervalMS   float64 `json:"scheduler_interval_ms"`
+	TrainingHistory       bool    `json:"training_history"`
+	TerminalCheckpoint    bool    `json:"terminal_checkpoint"`
 	Slots                 int     `json:"slots"`
 	WorkloadBytes         int64   `json:"workload_bytes"`
 	ReservationBytes      int64   `json:"reservation_bytes"`
@@ -21,12 +31,15 @@ type Config struct {
 	MaxEvents             int     `json:"max_events"`
 }
 type Decision struct {
-	At      float64 `json:"at_ms"`
-	Session string  `json:"session_id"`
-	Event   string  `json:"event_id"`
-	Age     float64 `json:"wait_age_ms"`
-	Action  string  `json:"action"`
-	Reason  string  `json:"reason"`
+	At       float64                         `json:"at_ms"`
+	Session  string                          `json:"session_id"`
+	Event    string                          `json:"event_id"`
+	Age      float64                         `json:"wait_age_ms"`
+	Action   string                          `json:"action"`
+	Reason   string                          `json:"reason"`
+	Deadline float64                         `json:"deadline_ms,omitempty"`
+	Episode  *control.WaitEpisode            `json:"episode,omitempty"`
+	Evidence *control.ServerEstimateEvidence `json:"evidence,omitempty"`
 }
 type EventResult struct {
 	Session string  `json:"session_id"`
@@ -57,6 +70,7 @@ type Result struct {
 	Completed              int               `json:"completed"`
 	Restores               int               `json:"restores"`
 	Checkpoints            int               `json:"checkpoints"`
+	TerminalCheckpoints    int               `json:"terminal_checkpoints"`
 	DiskDenied             int               `json:"disk_denied"`
 	MaxOccupied            int               `json:"max_occupied_slots"`
 	ReservedGBSeconds      float64           `json:"actor_reserved_gb_seconds"`
@@ -69,6 +83,7 @@ type Result struct {
 	Sessions               []SessionResult   `json:"sessions"`
 	Events                 []EventResult     `json:"events"`
 	Decisions              []Decision        `json:"decisions,omitempty"`
+	Evaluations            []Decision        `json:"evaluations,omitempty"`
 	Assumptions            []string          `json:"assumptions"`
 	ConcurrencyCoordinates map[int]int       `json:"concurrency_coordinate_uses"`
 }
@@ -96,11 +111,15 @@ type actor struct {
 	epoch                                                            uint64
 	accesses                                                         int
 	lastAccess                                                       float64
+	initialReady                                                     bool
 	source                                                           Session
 	arrived, resident, ready, checkpointing, snapshotReady, finished bool
 	queued                                                           string
 	queueAt, waitStarted, lastReady, deadline                        float64
 	waiting                                                          bool
+	terminalPending                                                  bool
+	returnDemand                                                     bool
+	returnAt                                                         float64
 	currentWait                                                      string
 	generation                                                       int
 	states                                                           []int
@@ -121,6 +140,7 @@ type engine struct {
 	occupied, io, sequence          int
 	samples                         []WaitSample
 	result                          Result
+	schedulerTick                   bool
 }
 
 func Run(t Trace, costs Costs, cfg Config, p OnlinePolicy, history []WaitSample) (Result, error) {
@@ -136,24 +156,66 @@ func run(t Trace, costs Costs, cfg Config, p OnlinePolicy, history []WaitSample)
 	if err := t.Validate(); err != nil {
 		return Result{}, err
 	}
-	if cfg.Slots < 1 || cfg.WorkloadBytes < 1 || cfg.ReservationBytes < 1 || cfg.DiskBudgetBytes < 0 || cfg.StableMS < 0 || cfg.MinimumResidenceMS < 0 || cfg.InitialReadyMS < 0 || cfg.GCMS < 0 || cfg.SnapshotKeep < 1 {
+	if cfg.ObservationMode == "" {
+		cfg.ObservationMode = "c1"
+	}
+	if cfg.HistoryMode == "" {
+		cfg.HistoryMode = "synthetic_shared"
+		if cfg.ObservationMode == "native" {
+			cfg.HistoryMode = "tenant_profile"
+		}
+	}
+	if cfg.IdleMode == "" {
+		cfg.IdleMode = "implicit"
+		if cfg.ObservationMode == "native" {
+			cfg.IdleMode = "explicit"
+		}
+	}
+	if cfg.IdleTTLMS == 0 {
+		cfg.IdleTTLMS = 600000
+	}
+	if cfg.ObservationMode == "native" && cfg.SchedulerIntervalMS == 0 {
+		cfg.SchedulerIntervalMS = 250
+	}
+	if cfg.ObservationMode == "native" && !cfg.TrainingHistory {
+		history = nil
+	}
+	if cfg.Slots < 1 || cfg.WorkloadBytes < 1 || cfg.ReservationBytes < 1 || cfg.DiskBudgetBytes < 0 || cfg.StableMS < 0 || cfg.MinimumResidenceMS < 0 || cfg.InitialReadyMS < 0 || cfg.GCMS < 0 || cfg.SnapshotKeep < 1 ||
+		(cfg.ObservationMode != "c1" && cfg.ObservationMode != "native") ||
+		(cfg.HistoryMode != "synthetic_shared" && cfg.HistoryMode != "tenant_profile") ||
+		(cfg.IdleMode != "implicit" && cfg.IdleMode != "explicit") || cfg.IdleTTLMS < 1 || cfg.IdleTTLMS > 600000 || cfg.SchedulerIntervalMS < 0 ||
+		(cfg.ObservationMode == "native" && cfg.IdleMode != "explicit") {
 		return Result{}, fmt.Errorf("invalid simulation config")
+	}
+	for _, value := range []float64{cfg.DiskBudgetBytes, cfg.StableMS, cfg.MinimumResidenceMS, cfg.InitialReadyMS, cfg.GCMS, cfg.IdleTTLMS, cfg.SchedulerIntervalMS} {
+		if !valid(value) {
+			return Result{}, fmt.Errorf("non-finite simulation config")
+		}
 	}
 	if cfg.MaxEvents == 0 {
 		cfg.MaxEvents = 2_000_000
 	}
 	e := &engine{cfg: cfg, costs: costs, policy: p, samples: append([]WaitSample(nil), history...)}
 	e.retainHistory()
+	if v2, ok := p.(*V2ControllerPolicy); ok {
+		v2.configure(cfg, e.samples)
+	}
 	e.result = Result{ResearchStatus: "exploratory", Status: "complete", TraceID: t.TraceID, CostID: costs.ID, CostKind: costs.Kind, Config: cfg, Offered: len(t.Sessions), ConcurrencyCoordinates: map[int]int{},
 		Assumptions: []string{"L0 external API durations include historical service/queue; no additional inference queue is added",
-			"stateful v2 calls the unmodified Controller; observation reconstruction, native interval, RPC and placement await C2 calibration",
-			"phase-specific history uses the 64 most recently started waits, excludes the current request, and discloses only past completions/current peer exposure; one synthetic tenant/profile",
+			"stateful v2 calls the unmodified Controller; RPC, placement and simulated service timing remain subject to paired native calibration",
+			"phase history uses the 64 most recently started waits, excludes the current request, and discloses only past completions/current peer exposure; grouping is configured explicitly",
 			"v2-joint is an uncalibrated extension excluded from the primary matrix",
 			"initial service time, stable/minimum residence and GC delay are explicit scenario parameters",
 			"checkpoint occupies a slot until release; snapshot readiness can occur later; journal overlaps measured stages",
 			"costs are point estimates of batch means; device writes are not inferred from snapshot bytes",
 			"snapshot inventory retains configured generations and uses explicit delayed GC",
 			"concurrent operations use cost coordinates at dispatch; mixed checkpoint/restore contention awaits calibration"}}
+	if cfg.ObservationMode == "native" {
+		e.result.Assumptions = append(e.result.Assumptions,
+			"native observation uses production tenant/profile cohorts, explicit idle TTL and recent 32-observation P75; cold startup costs are 500/500/50 ms",
+			"periodic scheduler ticks start at the configured interval after replay time zero; simulated service durations remain cost-table P50",
+			"journal measurements are emitted at simulated initial/lifecycle commits; coordinator per-request commit frequency and RPC overhead require conditioned replay")
+	}
 	if cfg.AllowConcurrencyBands {
 		e.result.Assumptions = append(e.result.Assumptions, "explicit band model: concurrency 2/3 uses measured coordinate 4; concurrency above 4 is rejected")
 	}
@@ -183,12 +245,16 @@ func run(t Trace, costs Costs, cfg Config, p OnlinePolicy, history []WaitSample)
 		e.actors = append(e.actors, a)
 		e.push(s.Arrival, "arrival", len(e.actors)-1, 0, 0, 0)
 	}
+	if cfg.SchedulerIntervalMS > 0 {
+		e.push(cfg.SchedulerIntervalMS, "scheduler", 0, 0, 0, 0)
+	}
 	steps := 0
 	for len(e.heap) > 0 {
 		at := e.heap[0].at
 		e.occupiedMS += (at - e.previous) * float64(e.occupied)
 		e.previous = at
 		e.now = at
+		e.schedulerTick = false
 		// Drain simultaneous completions before any decisions at this timestamp.
 		for len(e.heap) > 0 && e.heap[0].at == at {
 			item := heap.Pop(&e.heap).(scheduled)
@@ -208,6 +274,14 @@ func run(t Trace, costs Costs, cfg Config, p OnlinePolicy, history []WaitSample)
 		}
 		if err := e.decide(); err != nil {
 			return e.result, err
+		}
+		if e.schedulerTick {
+			for _, a := range e.actors {
+				if !a.finished {
+					e.push(e.now+cfg.SchedulerIntervalMS, "scheduler", 0, 0, 0, 0)
+					break
+				}
+			}
 		}
 		if e.occupied < 0 || e.occupied > cfg.Slots || e.disk < -0.01 || e.disk > cfg.DiskBudgetBytes+.01 {
 			return e.result, fmt.Errorf("capacity conservation violated")
@@ -247,11 +321,21 @@ func (e *engine) push(at float64, kind string, s, n, g int, value float64) {
 	heap.Push(&e.heap, scheduled{at, e.sequence, kind, s, n, g, value})
 }
 func (e *engine) handle(x scheduled) error {
+	if x.kind == "scheduler" {
+		e.schedulerTick = true
+		return nil
+	}
 	if x.kind == "gc" {
 		e.disk -= x.value
 		return nil
 	}
 	a := e.actors[x.session]
+	if strings.HasPrefix(x.kind, "metric:") {
+		if observer, ok := e.policy.(MeasurementObserver); ok {
+			observer.ObserveMeasurement(e.actorState(a), strings.TrimPrefix(x.kind, "metric:"), x.value)
+		}
+		return nil
+	}
 	switch x.kind {
 	case "arrival":
 		a.arrived = true
@@ -262,16 +346,23 @@ func (e *engine) handle(x scheduled) error {
 			a.epoch++
 		}
 		a.ready = true
+		a.returnDemand = false
 		a.lastReady = e.now
 		if x.event == 0 {
+			a.initialReady = true
 			a.result.Ready = e.now
 		}
 	case "node":
 		a.states[x.event] = 3
 		a.endTimes[x.event] = e.now
 		n := a.source.Events[x.event]
+		e.observeEvent(a, x.event, true)
 		if n.Kind == "model_wait" || n.Kind == "user_idle" {
-			e.samples = append(e.samples, WaitSample{a.source.ID + "/" + n.ID, n.Kind, a.startTimes[x.event], e.now - a.startTimes[x.event], true})
+			duration, completed := e.now-a.startTimes[x.event], true
+			if n.Kind == "user_idle" && e.cfg.IdleMode == "explicit" && duration >= e.cfg.IdleTTLMS {
+				duration, completed = e.cfg.IdleTTLMS, false
+			}
+			e.samples = append(e.samples, WaitSample{ID: a.source.ID + "/" + n.ID, Phase: n.Kind, Tenant: a.source.Tenant, Profile: profile(a.source.Profile), Started: a.startTimes[x.event], Duration: duration, Completed: completed})
 			e.retainHistory()
 		}
 	case "release":
@@ -301,7 +392,32 @@ func (e *engine) enqueue(i int, kind string) {
 	}
 	a.queued = kind
 	a.queueAt = e.now
+	if kind == "resume" && e.cfg.ObservationMode == "native" && a.returnDemand {
+		a.queueAt = a.returnAt
+	}
 	e.queue = append(e.queue, i)
+}
+
+func (e *engine) actorState(a *actor) ActorState {
+	safe, running := true, false
+	for j, n := range a.source.Events {
+		if a.states[j] == 2 {
+			running = true
+			if n.Kind == "active" || n.Safe == nil || !*n.Safe {
+				safe = false
+			}
+		}
+	}
+	return ActorState{ID: a.source.ID, Tenant: a.source.Tenant, Profile: profile(a.source.Profile), Now: e.now, Created: a.source.Arrival,
+		LastReady: a.lastReady, Epoch: a.epoch, Safe: safe && running, Waiting: a.waiting, Ready: a.ready,
+		Resident: a.resident, Checkpointing: a.checkpointing, Finished: a.finished, ReturnDemand: a.queued == "resume" || a.returnDemand}
+}
+
+func (e *engine) observeEvent(a *actor, j int, completed bool) {
+	if observer, ok := e.policy.(EventObserver); ok {
+		n := a.source.Events[j]
+		observer.ObserveEvent(EventObservation{Actor: e.actorState(a), ID: n.ID, Phase: n.Kind, Started: a.startTimes[j], At: e.now, Completed: completed})
+	}
 }
 
 func (e *engine) advance() error {
@@ -332,7 +448,7 @@ func (e *engine) advance() error {
 				a.states[j] = 1
 				a.readyTimes[j] = e.now
 			}
-			if n.Kind != "user_idle" && (!a.ready || a.checkpointing) {
+			if (n.Kind != "user_idle" || e.cfg.ObservationMode == "native" && !a.initialReady) && (!a.ready || a.checkpointing) {
 				need = true
 				continue
 			}
@@ -349,10 +465,15 @@ func (e *engine) advance() error {
 				}
 			}
 			a.startTimes[j] = e.now
+			e.observeEvent(a, j, false)
 			running = true
 			e.push(e.now+*n.Duration, "node", i, j, 0, 0)
 		}
 		if allDone && !a.checkpointing {
+			if e.cfg.TerminalCheckpoint && a.resident {
+				a.terminalPending = true
+				continue
+			}
 			a.finished = true
 			e.eviction.evict(a.source.ID, false)
 			a.result.Finish = e.now
@@ -368,7 +489,15 @@ func (e *engine) advance() error {
 				e.push(e.now+e.cfg.GCMS, "gc", i, 0, 0, size)
 			}
 			a.tags = nil
+			if e.cfg.ObservationMode == "native" {
+				if observer, ok := e.policy.(StateObserver); ok {
+					observer.Observe(e.actorState(a))
+				}
+			}
 			continue
+		}
+		if e.cfg.ObservationMode == "native" && need && !a.ready && a.initialReady && !a.returnDemand {
+			a.returnDemand, a.returnAt = true, e.now
 		}
 		if need && !a.resident && !a.checkpointing && a.snapshotReady {
 			e.enqueue(i, "resume")
@@ -396,7 +525,9 @@ func (e *engine) advance() error {
 			e.finishWait(a, true)
 		}
 		if observer, ok := e.policy.(StateObserver); ok {
-			observer.Observe(ActorState{ID: a.source.ID, Now: e.now, Created: a.source.Arrival, LastReady: a.lastReady, Epoch: a.epoch, Safe: safe, Waiting: a.waiting, Ready: a.ready, ReturnDemand: a.queued == "resume"})
+			state := e.actorState(a)
+			state.Safe = safe
+			observer.Observe(state)
 		}
 	}
 	return nil
@@ -451,6 +582,13 @@ func (e *engine) admit() error {
 		if kind == "initial" {
 			a.result.InitialQueue = e.now - a.queueAt
 			e.push(e.now+e.cfg.InitialReadyMS, "ready", i, 0, 0, 0)
+			if e.cfg.ObservationMode == "native" {
+				c, err := e.cost(a, 1)
+				if err != nil {
+					return err
+				}
+				e.push(e.now+e.cfg.InitialReadyMS+c.Journal, "metric:journal_commit_ms", i, 0, 0, c.Journal)
+			}
 		} else {
 			a.result.ResumeQueues = append(a.result.ResumeQueues, e.now-a.queueAt)
 			c, err := e.cost(a, waveIO)
@@ -460,6 +598,15 @@ func (e *engine) admit() error {
 			e.io++
 			e.result.Restores++
 			e.push(e.now+c.Resume, "ready", i, 1, 0, 0)
+			if e.cfg.ObservationMode == "native" {
+				e.push(e.now+c.Resume, "metric:resume_ready_ms", i, 0, 0, c.Resume)
+				e.push(e.now+c.Resume+c.Journal, "metric:journal_commit_ms", i, 0, 0, c.Journal)
+			}
+		}
+		if e.cfg.ObservationMode == "native" {
+			if observer, ok := e.policy.(StateObserver); ok {
+				observer.Observe(e.actorState(a))
+			}
 		}
 	}
 	return nil
@@ -485,6 +632,13 @@ func (e *engine) decide() error {
 	}
 	var suspends []pending
 	for i, a := range e.actors {
+		if a.terminalPending && !a.checkpointing {
+			suspends = append(suspends, pending{i, Action{Suspend: true, Reason: "terminal_checkpoint"}, 0})
+			continue
+		}
+		if e.cfg.SchedulerIntervalMS > 0 && !e.schedulerTick {
+			continue
+		}
 		if !a.waiting || !a.ready || !a.resident || a.checkpointing || a.finished {
 			continue
 		}
@@ -501,18 +655,34 @@ func (e *engine) decide() error {
 				break
 			}
 		}
+		if phase == "user_idle" && e.cfg.IdleMode == "explicit" && e.now-phaseStart >= e.cfg.IdleTTLMS {
+			if _, isV2 := e.policy.(*V2ControllerPolicy); !isV2 {
+				continue
+			}
+		}
 		samples := e.waitSamples(a, phase, event)
-		o := Observation{Now: e.now, WaitStarted: a.waitStarted, Earliest: math.Max(a.waitStarted+e.cfg.StableMS, a.lastReady+e.cfg.MinimumResidenceMS), Age: e.now - a.waitStarted, SessionID: a.source.ID, EventID: a.currentWait, Phase: phase,
+		observedEvent := a.currentWait
+		if e.cfg.ObservationMode == "native" || e.cfg.IdleMode == "explicit" {
+			observedEvent = event
+		}
+		o := Observation{Now: e.now, WaitStarted: a.waitStarted, Earliest: math.Max(a.waitStarted+e.cfg.StableMS, a.lastReady+e.cfg.MinimumResidenceMS), Age: e.now - a.waitStarted, SessionID: a.source.ID, EventID: observedEvent, Phase: phase,
 			PhaseStarted: phaseStart, PhaseAge: e.now - phaseStart,
-			InitialQueue: initN, ResumeQueue: resumeN, InitialOldestMS: initAge, ResumeOldestMS: resumeAge, Slots: e.cfg.Slots,
+			InitialQueue: initN, ResumeQueue: resumeN, InitialOldestMS: initAge, ResumeOldestMS: resumeAge, Slots: e.cfg.Slots, Occupied: e.occupied,
 			SwitchCostMS: c.SnapshotCost + c.Resume + c.Journal, SnapshotMS: c.SnapshotCost, ResumeMS: c.Resume, JournalMS: c.Journal, Samples: samples}
 		d := e.policy.Decide(o)
 		if d.Error != "" {
 			return fmt.Errorf("policy: %s", d.Error)
 		}
+		if e.cfg.ObservationMode == "native" {
+			action := "KEEP"
+			if d.Suspend {
+				action = "SUSPEND"
+			}
+			e.result.Evaluations = append(e.result.Evaluations, Decision{At: e.now, Session: a.source.ID, Event: event, Age: o.Age, Action: action, Reason: d.Reason, Deadline: d.RevisitAt, Episode: d.Episode, Evidence: d.Evidence})
+		}
 		if d.Suspend {
 			suspends = append(suspends, pending{i, d, o.Age})
-		} else if d.RevisitAt > e.now && (a.deadline == 0 || d.RevisitAt < a.deadline) {
+		} else if e.cfg.SchedulerIntervalMS == 0 && d.RevisitAt > e.now && (a.deadline == 0 || d.RevisitAt < a.deadline) {
 			a.deadline = d.RevisitAt
 			e.push(d.RevisitAt, "tick", i, 0, a.generation, 0)
 		}
@@ -561,7 +731,11 @@ func (e *engine) decide() error {
 			e.result.DiskDenied++
 			continue
 		}
-		e.result.Decisions = append(e.result.Decisions, Decision{e.now, a.source.ID, a.currentWait, item.age, "SUSPEND", item.action.Reason})
+		e.result.Decisions = append(e.result.Decisions, Decision{At: e.now, Session: a.source.ID, Event: a.currentWait, Age: item.age, Action: "SUSPEND", Reason: item.action.Reason, Deadline: item.action.RevisitAt, Episode: item.action.Episode})
+		if a.terminalPending {
+			e.result.TerminalCheckpoints++
+			a.terminalPending = false
+		}
 		e.eviction.evict(a.source.ID, item.action.Reason == "pressure_gdsf")
 		a.ready = false
 		a.checkpointing = true
@@ -581,7 +755,13 @@ func (e *engine) decide() error {
 		}
 		e.push(e.now+c.Checkpoint, "release", i, 0, 0, 0)
 		e.push(e.now+c.SnapshotReady, "durable", i, 0, 0, 0)
-		e.push(e.now+math.Max(c.Checkpoint, c.SnapshotReady), "checkpoint_done", i, 0, 0, 0)
+		completion := math.Max(c.Checkpoint, c.SnapshotReady)
+		if e.cfg.ObservationMode == "native" {
+			completion = math.Max(completion, c.SnapshotCost)
+			e.push(e.now+completion, "metric:checkpoint_total_ms", i, 0, 0, completion)
+			e.push(e.now+completion+c.Journal, "metric:journal_commit_ms", i, 0, 0, c.Journal)
+		}
+		e.push(e.now+completion, "checkpoint_done", i, 0, 0, 0)
 	}
 	return nil
 }

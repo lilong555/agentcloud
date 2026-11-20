@@ -9,6 +9,7 @@ import (
 // Histories are phase-specific and bounded by the 64 most recently started waits.
 type WaitSample struct {
 	ID, Phase         string
+	Tenant, Profile   string
 	Started, Duration float64
 	Completed         bool
 }
@@ -23,9 +24,10 @@ func (e *engine) retainHistory() {
 	counts := map[string]int{}
 	kept := e.samples[:0]
 	for _, r := range e.samples {
-		if counts[r.Phase] < 64 {
+		group := e.historyKey(r.Tenant, r.Profile, r.Phase)
+		if counts[group] < 64 {
 			kept = append(kept, r)
-			counts[r.Phase]++
+			counts[group]++
 		}
 	}
 	e.samples = kept
@@ -51,7 +53,7 @@ func TrainingHistory(t Trace) []WaitSample {
 			ends[n.ID] = end
 			latest = max(latest, end)
 			if n.Kind == "model_wait" || n.Kind == "user_idle" {
-				rows = append(rows, WaitSample{"train/" + s.ID + "/" + n.ID, n.Kind, start, *n.Duration, true})
+				rows = append(rows, WaitSample{ID: "train/" + s.ID + "/" + n.ID, Phase: n.Kind, Tenant: s.Tenant, Profile: profile(s.Profile), Started: start, Duration: *n.Duration, Completed: true})
 			}
 		}
 	}
@@ -62,18 +64,25 @@ func TrainingHistory(t Trace) []WaitSample {
 }
 
 func (e *engine) waitSamples(subject *actor, phase, event string) []policy.SurvivalSample {
+	group := e.historyKey(subject.source.Tenant, subject.source.Profile, phase)
 	rows := make([]WaitSample, 0, len(e.samples)+len(e.actors))
 	for _, r := range e.samples {
-		if r.Phase == phase && r.Started <= e.now {
+		if e.historyKey(r.Tenant, r.Profile, r.Phase) == group && r.Started <= e.now {
 			rows = append(rows, r)
 		}
 	}
 	for _, a := range e.actors {
+		if e.historyKey(a.source.Tenant, a.source.Profile, phase) != group {
+			continue
+		}
 		for j, n := range a.source.Events {
 			if a.states[j] != 2 || n.Kind != phase || a == subject && n.ID == event {
 				continue
 			}
-			rows = append(rows, WaitSample{a.source.ID + "/" + n.ID, phase, a.startTimes[j], e.now - a.startTimes[j], false})
+			rows = append(rows, WaitSample{ID: a.source.ID + "/" + n.ID, Phase: phase, Tenant: a.source.Tenant, Profile: profile(a.source.Profile), Started: a.startTimes[j], Duration: e.now - a.startTimes[j]})
+			if phase == "user_idle" && e.cfg.IdleMode == "explicit" {
+				rows[len(rows)-1].Duration = min(rows[len(rows)-1].Duration, e.cfg.IdleTTLMS)
+			}
 		}
 	}
 	sort.Slice(rows, func(i, j int) bool {
@@ -88,4 +97,18 @@ func (e *engine) waitSamples(subject *actor, phase, event string) []policy.Survi
 		result[i] = policy.SurvivalSample{DurationMS: int64(r.Duration), Completed: r.Completed}
 	}
 	return result
+}
+
+func profile(value string) string {
+	if value == "" {
+		return "L0"
+	}
+	return value
+}
+
+func (e *engine) historyKey(tenant, p, phase string) string {
+	if e.cfg.HistoryMode == "synthetic_shared" {
+		return phase
+	}
+	return tenant + "\x00" + profile(p) + "\x00" + phase
 }

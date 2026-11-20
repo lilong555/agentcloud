@@ -31,7 +31,48 @@ func main() {
 	policies := flag.String("policies", "ttl2,ttl15,v2,break-even-gdsf", "baseline set")
 	ttl := flag.Float64("ttl-ms", 2000, "FixedTTL tau in ms, chosen on validation only")
 	eviction := flag.String("eviction-score", "gdsf", "pressure score: gdsf or lru")
+	observationMode := flag.String("observation-mode", "c1", "c1 or native production observation reconstruction")
+	historyMode := flag.String("history-mode", "", "tenant_profile or synthetic_shared; mode default when empty")
+	idleMode := flag.String("idle-mode", "", "explicit or implicit; mode default when empty")
+	idleTTL := flag.Float64("idle-ttl-ms", 600000, "explicit idle registration TTL, independent of event duration")
+	stable := flag.Float64("stable-ms", -1, "stable wait; c1=200, native=500 ms when omitted")
+	minimum := flag.Float64("minimum-residence-ms", 1000, "configured minimum residence before pressure scaling")
+	interval := flag.Float64("scheduler-interval-ms", -1, "c1=event-driven, native=250 ms when omitted")
+	ttlPoll := flag.Float64("ttl-poll-ms", 100, "native FixedTTL driver polling interval")
+	reservation := flag.Int64("reservation-mib", 512, "Actor reserved memory per occupied slot")
+	initialReady := flag.Float64("initial-ready-ms", 500, "initial provisioning service time")
+	gc := flag.Float64("gc-ms", -1, "snapshot GC delay; c1=1000, native=30000 ms when omitted")
+	training := flag.Bool("training-history", true, "use frozen training history; native defaults to cold history")
+	terminal := flag.Bool("terminal-checkpoint", false, "checkpoint resident Actors at trace termination; native defaults true")
 	flag.Parse()
+	explicit := map[string]bool{}
+	flag.Visit(func(f *flag.Flag) { explicit[f.Name] = true })
+	if *observationMode == "native" {
+		if !explicit["training-history"] {
+			*training = false
+		}
+		if !explicit["terminal-checkpoint"] {
+			*terminal = true
+		}
+	}
+	if *stable == -1 {
+		*stable = 200
+		if *observationMode == "native" {
+			*stable = 500
+		}
+	}
+	if *interval == -1 {
+		*interval = 0
+		if *observationMode == "native" {
+			*interval = 250
+		}
+	}
+	if *gc == -1 {
+		*gc = 1000
+		if *observationMode == "native" {
+			*gc = 30000
+		}
+	}
 	if *ttl < 0 || (*eviction != "gdsf" && *eviction != "lru") {
 		fail(fmt.Errorf("invalid TTL/eviction config"))
 	}
@@ -50,6 +91,9 @@ func main() {
 		fail(err)
 	}
 	history := sim.TrainingHistory(full)
+	if !*training {
+		history = nil
+	}
 	trace := sim.Trace{SchemaVersion: 1, TraceID: full.TraceID}
 	for _, s := range full.Sessions {
 		if s.Split == *split {
@@ -102,11 +146,17 @@ func main() {
 			fail(fmt.Errorf("arrival scenario absent"))
 		}
 	}
-	cfg := sim.Config{Slots: *slots, WorkloadBytes: *workload << 20, ReservationBytes: 512 << 20, DiskBudgetBytes: float64(*disk << 20), StableMS: 200, MinimumResidenceMS: 1000, InitialReadyMS: 500, GCMS: 1000, SnapshotKeep: 2, AllowConcurrencyBands: true}
+	cfg := sim.Config{ObservationMode: *observationMode, HistoryMode: *historyMode, IdleMode: *idleMode, IdleTTLMS: *idleTTL, SchedulerIntervalMS: *interval,
+		TrainingHistory: *training, TerminalCheckpoint: *terminal, Slots: *slots, WorkloadBytes: *workload << 20, ReservationBytes: *reservation << 20,
+		DiskBudgetBytes: float64(*disk << 20), StableMS: *stable, MinimumResidenceMS: *minimum, InitialReadyMS: *initialReady, GCMS: *gc, SnapshotKeep: 2, AllowConcurrencyBands: true}
 	if err := os.MkdirAll(*out, 0700); err != nil {
 		fail(err)
 	}
 	reports := map[string]any{"research_status": "exploratory", "phase": "C1", "trace_id": trace.TraceID, "cost_id": costs.ID, "cost_kind": costs.Kind, "split": *split, "sessions": len(trace.Sessions), "training_samples": len(history), "arrival_spacing_ms": *arrival, "calibration_status": "pending_native_paired_calibration"}
+	if *observationMode == "native" {
+		reports["phase"] = "C2"
+	}
+	reports["observation_mode"] = *observationMode
 	reports["arrival_scenario"] = *scenarioID
 	failed := false
 	for _, name := range strings.Split(*policies, ",") {
@@ -116,12 +166,19 @@ func main() {
 			fail(fmt.Errorf("unknown baseline %s", name))
 		}
 		var online sim.OnlinePolicy = sim.Baseline{Name: name, TTL: *ttl, Eviction: *eviction}
+		policyConfig := cfg
+		if *observationMode == "native" && (name == "ttl2" || name == "ttl15" || name == "fixed-ttl") {
+			if *ttlPoll <= 0 {
+				fail(fmt.Errorf("native TTL polling interval must be positive"))
+			}
+			policyConfig.SchedulerIntervalMS = *ttlPoll
+		}
 		if name == "v2" {
 			online = sim.NewV2(cfg.StableMS, cfg.MinimumResidenceMS)
 		}
-		r, err := sim.Run(trace, costs, cfg, online, history)
+		r, err := sim.Run(trace, costs, policyConfig, online, history)
 		write(filepath.Join(*out, name+".json"), r)
-		row := map[string]any{"status": r.Status, "completed": r.Completed, "offered": r.Offered, "actor_reserved_gb_seconds": r.ReservedGBSeconds, "checkpoints": r.Checkpoints, "restores": r.Restores, "initial_queue_p95_ms": r.InitialP95, "resume_queue_p95_ms": r.ResumeP95, "session_e2e_p95_ms": r.E2EP95, "snapshot_allocated_peak_bytes": r.DiskPeak, "objective_gbs_plus_0_1_e2e_s": sim.Objective(r, .1)}
+		row := map[string]any{"status": r.Status, "completed": r.Completed, "offered": r.Offered, "actor_reserved_gb_seconds": r.ReservedGBSeconds, "checkpoints": r.Checkpoints, "terminal_checkpoints": r.TerminalCheckpoints, "restores": r.Restores, "initial_queue_p95_ms": r.InitialP95, "resume_queue_p95_ms": r.ResumeP95, "session_e2e_p95_ms": r.E2EP95, "snapshot_allocated_peak_bytes": r.DiskPeak, "objective_gbs_plus_0_1_e2e_s": sim.Objective(r, .1)}
 		if err != nil {
 			row["error"] = err.Error()
 			failed = true

@@ -1,12 +1,14 @@
 import copy
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from pathlib import Path
 import tempfile
 from types import SimpleNamespace
 
 from scripts.prev3_calibration import prepare, compare, TOLERANCES
 from bench.prev3_calibration import model_rows, proxy_windows, prepare as schedule_plan, CalibrationTrial
+from scripts.audit_prev3_calibration import audit_nodes
+from scripts.run_prev3_c2 import nearest_rank_p95
 
 
 def source(split='validation', identity='s', arrival=0, tenant='real-user'):
@@ -19,6 +21,10 @@ def source(split='validation', identity='s', arrival=0, tenant='real-user'):
 
 
 class CalibrationTests(unittest.TestCase):
+    def test_small_queue_sample_quantile_matches_native_receipt(self):
+        self.assertEqual(nearest_rank_p95([0, 1, 2, 3, 4, 5, 6, 100]), 100)
+        self.assertIsNone(nearest_rank_p95([]))
+
     def test_freeze_validation_only_preserves_observed_duration_and_unknown_tool(self):
         trace = dict(schema_version=1, sessions=[source('holdout', 'h'), source(), source('train', 't')])
         result = prepare(trace, 'trace-sha', 'cost-sha', count=1)
@@ -75,10 +81,11 @@ class CalibrationTests(unittest.TestCase):
             args.plan.write_text('{}')
             args.client_dir.mkdir()
             (args.client_dir/'coordinator-token').write_text('isolated-test-token')
-            with patch('bench.prev3_calibration.subprocess.check_output', return_value='frozen-sha\n'):
+            with patch('bench.prev3_calibration.subprocess.check_output', return_value='frozen-sha\n'), patch.dict('os.environ', {'GITHUB_RUN_ATTEMPT': '2'}):
                 schedule = schedule_plan(args, plan)
             self.assertEqual(schedule['admission_mode'], 'native')
             self.assertEqual(schedule['purpose'], 'runtime_calibration')
+            self.assertEqual(schedule['github_run_attempt'], '2')
             # Trial constructor only creates owned evidence files, with no runtime.
             with patch('bench.scale.ROOT', root):
                 trial = CalibrationTrial(schedule['config'], args, schedule['order'][0], plan)
@@ -89,6 +96,75 @@ class CalibrationTests(unittest.TestCase):
                     self.assertEqual(trial.session_entry(0)['kind'], 'L0')
                 finally:
                     trial.ev.close()
+
+    def test_program_retirement_runs_after_window_without_actor_resume(self):
+        trial = object.__new__(CalibrationTrial)
+        trial.sessions = [dict(id='s', status='passed')]
+        trial.retirement_records = []
+        trial.finished = None
+        trial.native = Mock()
+        trial.resume = Mock(side_effect=AssertionError('cleanup must preserve Actor release'))
+        client = Mock()
+        trial.client = Mock(return_value=client)
+        trial.event = Mock()
+        client.path.return_value = '/v1/sessions/s'
+        client.call.side_effect = [dict(binding=dict(tenant_id='t'),
+            snapshot=dict(program_present=True, session_active_requests=0)), {}]
+        trial.native.control_call.return_value = (200, dict(inference_lease='private-test-lease'))
+        trial.native.infer.return_value = (200, dict(choices=[{}], usage=dict(completion_tokens=1)))
+        with patch('bench.scale.Trial.cleanup', return_value='released'):
+            self.assertEqual(trial.cleanup(), 'released')
+            trial.native.infer.assert_not_called()
+            trial.finished = 1
+            self.assertEqual(trial.cleanup(), 'released')
+        trial.native.infer.assert_called_once_with(dict(inference_lease='private-test-lease'), tokens=1, max_tokens=1, final=True)
+        self.assertEqual(trial.retirement_records[0]['status'], 'COMPLETED')
+        self.assertGreater(trial.retirement_records[0]['started_at'], trial.finished)
+        self.assertNotIn('private-test-lease', str(trial.retirement_records))
+        trial.resume.assert_not_called()
+
+    def test_invalid_metric_or_missing_identity_never_passes(self):
+        row = dict(status='passed', completed=1, offered=1,
+            **{key: 1 for key in TOLERANCES})
+        native = dict(trace_sha256='t', cost_sha256='c', policies={key: copy.deepcopy(row) for key in ('ttl2', 'v2')})
+        simulated = copy.deepcopy(native)
+        for receipt in simulated['policies'].values():
+            receipt['status'] = 'complete'
+        for value in (False, 'unknown', -1, float('nan'), float('inf')):
+            with self.subTest(value=value):
+                simulated['policies']['v2']['restores'] = value
+                result = compare(native, simulated, TOLERANCES)
+                self.assertEqual(result['status'], 'calibration_required')
+                self.assertEqual(result['rankings']['restores']['status'], 'missing_or_invalid')
+        for receipt in (native, simulated):
+            receipt.pop('cost_sha256')
+        with self.assertRaisesRegex(ValueError, 'identity is missing'):
+            compare(native, simulated, TOLERANCES)
+
+    def test_native_node_audit_checks_causality_identity_and_ram(self):
+        plan = prepare(dict(schema_version=1, sessions=[source()]), 't', 'c', count=1)
+        records, clock = [], 0
+        for node in plan['sessions'][0]['events']:
+            finish = clock + node['duration_ms']/1000
+            records.append(dict(session_id='s', event_id=node['id'], kind=node['kind'],
+                source_duration_ms=node['duration_ms'], parents=node['parents'],
+                ready_at=clock, finished_at=finish, status='COMPLETED', ram_verified=True))
+            clock = finish
+        requests = model_rows(plan, 'trial')
+        for row in requests:
+            row.update(status='COMPLETED', ram_continuity=True)
+        proxy = [dict(status='COMPLETED', source_service_seconds=d, actual_service_seconds=d+.01)
+                 for d in (7, 11)]
+        report = dict(calibration_events=records, requests=requests, native_source_timing=proxy)
+        self.assertEqual(audit_nodes(plan, report)['status'], 'passed')
+        records[1]['ready_at'] = 6.9
+        self.assertIn('parent_completion:s/g1', audit_nodes(plan, report)['errors'])
+        records[1]['ready_at'] = 7
+        requests[1]['source_event_id'] = 'm0'
+        self.assertIn('model_identity_or_denominator', audit_nodes(plan, report)['errors'])
+        requests[1]['source_event_id'] = 'm1'
+        records[1]['ram_verified'] = False
+        self.assertIn('active_ram_receipt:s/g1', audit_nodes(plan, report)['errors'])
 
 
 if __name__ == '__main__':

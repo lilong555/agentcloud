@@ -95,3 +95,45 @@ python3 scripts/run_prev3_c1.py --binary BIN/agentcloud-sim \
 当前冷启动参数、压缩到达、工作集、初次启动、GC 延迟与并发 2/3→4 档映射均为显式场景输入。成本查表拒绝缺失必需指标和未覆盖坐标，实测表限定 x86 gVisor MEMORY。仿真收益需经 C2 校准后进入实机结论。
 
 本次运行的输入摘要、测量表、测试回执与资格状态见 [pre-v3 证据](evidence/pre-v3/README.md)。
+
+## Native／DES 配对校准
+
+校准输入为 [prev3-calibration-plan.json](../bench/configs/prev3-calibration-plan.json)。从 265 条 validation 会话中，按源到达时间与会话 ID 排序，筛得 246 个满足预算的串行前缀，取最早 8 个；19 条超出事件预算，238 条符合资格但未选中。每个前缀最多 5 次模型调用，总计 38 次模型调用、29 段 active gap、1 段 user idle，来自 3 个账号代理租户。该切片用于系统校准，保留短前缀选择条件和 benchmark 子人口。
+
+模型时长保持原值，Dynamo CPU Mocker 产生真实 SSE，驱动器私有代理将响应推迟到源 API 时长下界。active gap 在受控工具内保持占槽，真实工具边界继续为 unknown；user idle 使用固定 600 秒安全窗口。8 会话同时到达为合成压力，原始到达时间另存。每个请求发送 `terminal_turn=false`，实际完成切片后执行终止挂起。RAM nonce、PID、heap hash 与 AST 身份通过每次模型调用前的工具校验。
+
+测量窗口覆盖全部 Actor 的终止释放。窗口关闭后，驱动器直接向原生 Dynamo 发送每会话一次独立的单 token FINAL 清理请求，再调用 Coordinator Finalize 退役绑定；Actor 保持挂起。该清理符合固定 Dynamo 版本的 Program 退役协议，具有单独回执和分母，时长位于资源与完成时间的测量窗口之外。实际轨迹模型调用的分母保持 38。
+
+物理路径固定 GitHub Actions `ubuntu-24.04` x86 gVisor MEMORY，16 MiB 工作集、512 MiB Actor reservation、4 个 Substrate 实际可用放置位，TTL2 与 v2 使用同一 Runner 和同一冻结输入。控制面默认 stable=500ms、scheduler interval=250ms、minimum residence 配置=1000ms；v2 根据实测 Worker 压力计算有效最小驻留。首次启动 500ms 为 DES 显式先验，实机 Create/attach/工作集初始化开销单独记录。运行始终保留 14 GiB 磁盘余量。
+
+Native 输出包含 PG 准入事务、Worker 资源采样、源节点与实际请求/工具操作映射、实际模型服务时长、RAM 回执及清理结果。`calibration_scheduler_observation` 记录客户端采到的控制面状态，覆盖率受轮询间隔影响；事务事件使用已有 PostgreSQL 出口。
+
+DES 的 Native 观测模式直接调用生产 `serverEstimateLocked()`、`waitHistoryLocked()` 与 `v2DecisionLocked()`，使用真实 tenant/profile 分组、明确 idle 窗口、近期 32 个成本样本的 P75 和冷启动先验。TTL2 按驱动器 100ms 观察周期触发，v2 按控制面 250ms 周期触发。每次评估输出动作、原因、Deadline 与完整 Episode。槽位释放、快照可恢复、Backend 完成分别推进；终止挂起纳入成本与资源积分。
+
+| 对账指标 | 相对容忍 | 绝对容忍 |
+|---|---:|---:|
+| 首次／恢复容量等待 P95 | 20% | 500ms |
+| Actor 预留 GB·s | 15% | 1 GB·s |
+| 总完成时间 | 15% | 1000ms |
+| 恢复次数 | 10% | 1 次 |
+
+逐项采用两种容忍中的较大值，阈值在实机执行前冻结。这是集成校准阈值；用于正式算法判优时，误差还需小于待证明的收益。缺测、完成分母缺失与误差超限均进入 `calibration_required`。策略差值落在容忍范围内时，排序标为 `unresolved_within_tolerance`。所有结果保持 exploratory，Tier-1/Tier-2 分别验收。
+
+配对摘要中的 P95 统一采用 nearest-rank，与 PG 准入摘要一致；原始 DES 输出继续保留插值分位数。Native 容量等待统计 `WAITING_CAPACITY` 区间，DES 恢复队列从 ReturnDemand 开始，包含快照可恢复前的等待；对账同时保留此口径差异。离线预测输出记录执行时刻、输入与二进制 SHA，独立目录保护已保存的预测。
+
+```bash
+# cannlab：生成输入；完整真实轨迹留在 Git 外。
+python3 scripts/prev3_calibration.py prepare --trace RESULTS/freeinference/trace.json \
+  --costs docs/evidence/pre-v3/memory/44724867918/costs.json --output RESULTS/c2/plan.json
+# GitHub Actions：prev3-calibration.yml 执行已冻结的 Native 配对。
+# cannlab：先保存生产观测口径的离线预测。
+python3 -m scripts.run_prev3_c2 --binary BIN/agentcloud-sim \
+  --plan bench/configs/prev3-calibration-plan.json \
+  --costs docs/evidence/pre-v3/memory/44724867918/costs.json \
+  --output RESULTS/c2/des
+# 实机完成后检查原始回执，再对已冻结的预测进行比较。
+python3 -m scripts.audit_prev3_calibration --evidence RAW/evidence --output RESULTS/c2/native-audit.json
+python3 -m scripts.prev3_calibration compare --native RAW/evidence/native-summary.json \
+  --simulated RESULTS/c2/des/des-summary.json --plan bench/configs/prev3-calibration-plan.json \
+  --output RESULTS/c2/comparison.json
+```
