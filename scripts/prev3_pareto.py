@@ -101,6 +101,7 @@ def main():
         groups=['FixedTTL scan/Tuned TTL','stateful Controller v2','Break-even + GDSF (LRU score switch)','small restricted Oracle'],
         harness_overhead=False,observation_mode='native',pareto_axes=PARETO_AXES,
         semantics=['B-level observed API durations and request gaps; unknown tools; conservative full-active gap scenario',
+                   'selected trace endpoints release the Actor and retire inventory; the native calibration-only terminal snapshot protocol is disabled',
                    'AgentLogs metadata shape and independent source-rank composition are synthetic capacity pressure',
                    'external API durations are fixed L0 inputs; model node ready-to-end is an interaction latency proxy',
                    'physical costs use measured 16/64/128 MiB x 1/4 with derived interpolation at 2/3',

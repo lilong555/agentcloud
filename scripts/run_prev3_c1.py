@@ -61,7 +61,8 @@ def main():
         fixed += ["--environment-model", str(a.environment_model.resolve())]
     if a.native_observations:
         fixed += ["--observation-mode", "native", "--queue-scope", "capacity_wait",
-                  "--concurrency-model", "linear", "--park-inactive-ticks", "--discard-evaluations", "--max-events", "20000000"]
+                  "--concurrency-model", "linear", "--park-inactive-ticks", "--discard-evaluations",
+                  "--terminal-checkpoint=false", "--max-events", "20000000"]
     commands = []
     def run(split, label, policies, ttl=2000, oracle=0, eviction="gdsf"):
         out = a.output / split / label
