@@ -6,6 +6,7 @@ import json
 import math
 from pathlib import Path
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
 
 TTL_GRID_MS = (0, 500, 1000, 2000, 5000, 15000, 60000)
 OBJECTIVE = "reserved_GB_seconds + 0.1 * sum_session_E2E_seconds"
@@ -44,24 +45,37 @@ def main():
     p.add_argument("--sessions", type=int, choices=[32, 64], default=32)
     p.add_argument("--compression", type=int, choices=[1, 4, 16], default=16)
     p.add_argument("--workload-mib", type=int, choices=[16, 64, 128], default=64)
+    p.add_argument("--environment-model", type=Path)
+    p.add_argument("--native-observations", action="store_true")
+    p.add_argument("--jobs", type=int, default=1, choices=range(1,14))
+    p.add_argument("--qualification", type=Path)
     a = p.parse_args()
+    gate = json.loads(a.qualification.read_text()) if a.qualification else None
+    if gate and gate.get("tier1") != "passed":
+        p.error("the supplied qualification has not passed Tier-1")
     scenario = f"agentlogs-shape-n{a.sessions}-compress{a.compression}"
     fixed = [str(a.binary.resolve()), "--trace", str(a.trace.resolve()), "--costs", str(a.costs.resolve()),
              "--arrival-configs", str(a.arrivals.resolve()), "--scenario", scenario,
              "--limit", str(a.sessions), "--slots", "4", "--workload-mib", str(a.workload_mib)]
+    if a.environment_model:
+        fixed += ["--environment-model", str(a.environment_model.resolve())]
+    if a.native_observations:
+        fixed += ["--observation-mode", "native", "--queue-scope", "capacity_wait",
+                  "--concurrency-model", "linear", "--park-inactive-ticks", "--discard-evaluations", "--max-events", "20000000"]
     commands = []
-    def run(split, label, policies, ttl=2000, oracle=0):
+    def run(split, label, policies, ttl=2000, oracle=0, eviction="gdsf"):
         out = a.output / split / label
         command = fixed + ["--split", split, "--output", str(out), "--policies", policies,
-                           "--ttl-ms", str(ttl), "--oracle-sessions", str(oracle)]
+                           "--ttl-ms", str(ttl), "--oracle-sessions", str(oracle), "--eviction-score", eviction]
         commands.append(command)
         subprocess.run(command, check=True)
         return json.loads((out / "summary.json").read_text())
 
-    rows = []
-    for ttl in TTL_GRID_MS:
+    def tuning_row(ttl):
         result = run("validation", f"ttl-{ttl}", "fixed-ttl", ttl)
-        rows.append(dict(result["fixed-ttl"], split="validation", ttl_ms=ttl, offered=result["sessions"]))
+        return dict(result["fixed-ttl"], split="validation", ttl_ms=ttl, offered=result["sessions"])
+    with ThreadPoolExecutor(max_workers=a.jobs) as pool:
+        rows = list(pool.map(tuning_row, TTL_GRID_MS))
     tuned = select_ttl(rows)
     # Freeze the choice on disk before any held-out results are read.
     selection = dict(research_status="exploratory", objective=OBJECTIVE,
@@ -69,11 +83,15 @@ def main():
                      tie_break="smaller TTL", rows=rows)
     save(a.output / "ttl-selection.json", selection)
     reports = {}
-    for split in ("holdout", "generalization"):
+    def evaluation(split):
         report = run(split, "main", "ttl2,ttl15,v2,break-even-gdsf", oracle=2)
         tuned_report = run(split, "tuned-ttl", "fixed-ttl", ttl=tuned)
         report["tuned-ttl"] = tuned_report["fixed-ttl"]
-        reports[split] = report
+        lru_report = run(split, "lru-score", "break-even-gdsf", eviction="lru")
+        report["break-even-lru"] = lru_report["break-even-gdsf"]
+        return split, report
+    with ThreadPoolExecutor(max_workers=min(a.jobs,2)) as pool:
+        reports.update(pool.map(evaluation, ("holdout", "generalization")))
     root = Path(__file__).resolve().parents[1]
     source_files = sorted(set(root.glob("internal/sim/*.go")) | set(root.glob("internal/control/replay_v2*.go"))
                           | set(root.glob("cmd/agentcloud-sim/*.go")) | {Path(__file__).resolve(),
@@ -91,6 +109,12 @@ def main():
                                 "evaluation replay updates histories causally; frozen parameters use no held-out labels",
                                 "same-collection opencode family holdout; independent event-source generalization remains pending"],
                    results=reports, commands=commands)
+    summary.update(observation_mode="native" if a.native_observations else "c1",
+                   harness_overhead=False, jobs=a.jobs,
+                   environment_model_sha256=sha(a.environment_model) if a.environment_model else None)
+    if gate:
+        summary.update(phase="C2", qualification="Tier-1 passed for exploratory algorithm development; Tier-2 pending",
+                       qualification_sha256=sha(a.qualification))
     save(a.output / "c1-summary.json", summary)
     print(json.dumps({"status": "complete", "tuned_ttl_ms": tuned, "research_status": "exploratory",
                       "summary": str(a.output / "c1-summary.json")}))

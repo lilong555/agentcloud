@@ -46,6 +46,9 @@ func main() {
 	conditionOrder := flag.Bool("condition-initial-order", false, "retrospective calibration only: use observed initial order from environment model")
 	queueScope := flag.String("queue-scope", "request_to_admit", "capacity_wait excludes snapshot readiness; request_to_admit preserves legacy DES scope")
 	concurrencyModel := flag.String("concurrency-model", "band", "exact, band, or derived linear interpolation for concurrency 2/3")
+	parkInactive := flag.Bool("park-inactive-ticks", false, "park periodic ticks while every Actor is ineligible for a policy decision")
+	discardEvaluations := flag.Bool("discard-evaluations", false, "retain evaluation count and actions without serializing every KEEP evaluation")
+	maxEvents := flag.Int("max-events", 2000000, "maximum processed events per run")
 	gc := flag.Float64("gc-ms", -1, "snapshot GC delay; c1=1000, native=30000 ms when omitted")
 	training := flag.Bool("training-history", true, "use frozen training history; native defaults to cold history")
 	terminal := flag.Bool("terminal-checkpoint", false, "checkpoint resident Actors at trace termination; native defaults true")
@@ -165,6 +168,7 @@ func main() {
 		}
 	}
 	cfg := sim.Config{ObservationMode: *observationMode, HistoryMode: *historyMode, IdleMode: *idleMode, IdleTTLMS: *idleTTL, SchedulerIntervalMS: *interval,
+		ParkInactiveTicks: *parkInactive, DiscardEvaluations: *discardEvaluations, MaxEvents: *maxEvents,
 		Environment: environment, HarnessEnabled: *harnessEnabled, QueueScope: *queueScope, ConcurrencyModel: *concurrencyModel,
 		TrainingHistory: *training, TerminalCheckpoint: *terminal, Slots: *slots, WorkloadBytes: *workload << 20, ReservationBytes: *reservation << 20,
 		DiskBudgetBytes: float64(*disk << 20), StableMS: *stable, MinimumResidenceMS: *minimum, InitialReadyMS: *initialReady, GCMS: *gc, SnapshotKeep: 2, AllowConcurrencyBands: true}

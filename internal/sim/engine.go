@@ -11,6 +11,8 @@ import (
 )
 
 type Config struct {
+	ParkInactiveTicks     bool         `json:"park_inactive_ticks"`
+	DiscardEvaluations    bool         `json:"discard_evaluations"`
 	QueueScope            string       `json:"queue_scope"`
 	ConcurrencyModel      string       `json:"concurrency_model"`
 	Environment           *Environment `json:"environment,omitempty"`
@@ -81,6 +83,8 @@ type ServiceStage struct {
 	End     float64 `json:"end_ms"`
 }
 type Result struct {
+	ProcessedEvents        int               `json:"processed_events"`
+	EvaluationCount        int               `json:"policy_evaluations"`
 	Admissions             []AdmissionResult `json:"admissions"`
 	ServiceStages          []ServiceStage    `json:"service_stages"`
 	ResearchStatus         string            `json:"research_status"`
@@ -169,6 +173,7 @@ type engine struct {
 	samples                         []WaitSample
 	result                          Result
 	schedulerTick                   bool
+	schedulerPending                bool
 }
 
 func Run(t Trace, costs Costs, cfg Config, p OnlinePolicy, history []WaitSample) (Result, error) {
@@ -329,6 +334,7 @@ func run(t Trace, costs Costs, cfg Config, p OnlinePolicy, history []WaitSample)
 	}
 	if cfg.SchedulerIntervalMS > 0 {
 		e.push(cfg.SchedulerIntervalMS, "scheduler", 0, 0, 0, 0)
+		e.schedulerPending = true
 	}
 	steps := 0
 	for len(e.heap) > 0 {
@@ -354,10 +360,26 @@ func run(t Trace, costs Costs, cfg Config, p OnlinePolicy, history []WaitSample)
 		if err := e.admit(); err != nil {
 			return e.result, err
 		}
+		// Parked ticks retain the original global polling grid, including work
+		// that becomes eligible exactly on a previously idle grid boundary.
+		if cfg.ParkInactiveTicks && cfg.SchedulerIntervalMS > 0 && e.now >= cfg.SchedulerIntervalMS &&
+			e.now == math.Round(e.now/cfg.SchedulerIntervalMS)*cfg.SchedulerIntervalMS {
+			e.schedulerTick = true
+		}
 		if err := e.decide(); err != nil {
 			return e.result, err
 		}
-		if e.schedulerTick {
+		if cfg.ParkInactiveTicks && cfg.SchedulerIntervalMS > 0 {
+			if !e.schedulerPending {
+				for _, a := range e.actors {
+					if a.waiting && a.ready && a.resident && !a.checkpointing && !a.finished {
+						e.push((math.Floor(e.now/cfg.SchedulerIntervalMS)+1)*cfg.SchedulerIntervalMS, "scheduler", 0, 0, 0, 0)
+						e.schedulerPending = true
+						break
+					}
+				}
+			}
+		} else if e.schedulerTick {
 			for _, a := range e.actors {
 				if !a.finished {
 					e.push(e.now+cfg.SchedulerIntervalMS, "scheduler", 0, 0, 0, 0)
@@ -369,6 +391,7 @@ func run(t Trace, costs Costs, cfg Config, p OnlinePolicy, history []WaitSample)
 			return e.result, fmt.Errorf("capacity conservation violated")
 		}
 	}
+	e.result.ProcessedEvents = steps
 	e.result.ReservedGBSeconds = e.occupiedMS * float64(cfg.ReservationBytes) / 1e12
 	var initial, resume, e2e []float64
 	for _, a := range e.actors {
@@ -405,6 +428,7 @@ func (e *engine) push(at float64, kind string, s, n, g int, value float64) {
 func (e *engine) handle(x scheduled) error {
 	if x.kind == "scheduler" {
 		e.schedulerTick = true
+		e.schedulerPending = false
 		return nil
 	}
 	if x.kind == "gc" {
@@ -811,10 +835,11 @@ func (e *engine) decide() error {
 			InitialQueue: initN, ResumeQueue: resumeN, InitialOldestMS: initAge, ResumeOldestMS: resumeAge, Slots: e.cfg.Slots, Occupied: e.occupied,
 			SwitchCostMS: c.SnapshotCost + c.Resume + c.Journal, SnapshotMS: c.SnapshotCost, ResumeMS: c.Resume, JournalMS: c.Journal, Samples: samples}
 		d := e.policy.Decide(o)
+		e.result.EvaluationCount++
 		if d.Error != "" {
 			return fmt.Errorf("policy: %s", d.Error)
 		}
-		if e.cfg.ObservationMode == "native" {
+		if e.cfg.ObservationMode == "native" && !e.cfg.DiscardEvaluations {
 			action := "KEEP"
 			if d.Suspend {
 				action = "SUSPEND"
