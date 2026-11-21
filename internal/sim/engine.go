@@ -11,6 +11,7 @@ import (
 )
 
 type Config struct {
+	FullEventScan         bool         `json:"full_event_scan,omitempty"`
 	ParkInactiveTicks     bool         `json:"park_inactive_ticks"`
 	DiscardEvaluations    bool         `json:"discard_evaluations"`
 	QueueScope            string       `json:"queue_scope"`
@@ -137,6 +138,8 @@ func (h *eventHeap) Push(x any)   { *h = append(*h, x.(scheduled)) }
 func (h *eventHeap) Pop() any     { a := *h; v := a[len(a)-1]; *h = a[:len(a)-1]; return v }
 
 type actor struct {
+	serial                                                           bool
+	cursor                                                           int
 	setupDone, harnessBusy                                           bool
 	proofDone                                                        []bool
 	eligibleAt                                                       float64
@@ -326,8 +329,12 @@ func run(t Trace, costs Costs, cfg Config, p OnlinePolicy, history []WaitSample)
 	for _, s := range t.Sessions {
 		a := &actor{epoch: 1, source: s, states: make([]int, len(s.Events)), proofDone: make([]bool, len(s.Events)), readyTimes: make([]float64, len(s.Events)), startTimes: make([]float64, len(s.Events)), endTimes: make([]float64, len(s.Events)), index: map[string]int{}}
 		a.result = SessionResult{ID: s.ID, Arrival: s.Arrival}
+		a.serial = !cfg.FullEventScan
 		for i, n := range s.Events {
 			a.index[n.ID] = i
+			if i == 0 && len(n.Parents) != 0 || i > 0 && (len(n.Parents) != 1 || n.Parents[0] != s.Events[i-1].ID) {
+				a.serial = false
+			}
 		}
 		e.actors = append(e.actors, a)
 		e.push(s.Arrival, "arrival", len(e.actors)-1, 0, 0, 0)
@@ -470,6 +477,9 @@ func (e *engine) handle(x scheduled) error {
 		a.proofDone[x.event], a.harnessBusy = true, false
 	case "node":
 		a.states[x.event] = 3
+		if a.serial {
+			a.cursor = x.event + 1
+		}
 		a.endTimes[x.event] = e.now
 		n := a.source.Events[x.event]
 		e.observeEvent(a, x.event, true)
@@ -519,7 +529,9 @@ func (e *engine) enqueue(i int, kind string) {
 
 func (e *engine) actorState(a *actor) ActorState {
 	safe, running := !a.harnessBusy, false
-	for j, n := range a.source.Events {
+	lo, hi := a.eventBounds()
+	for j := lo; j < hi; j++ {
+		n := a.source.Events[j]
 		if a.states[j] == 2 {
 			running = true
 			if n.Kind == "active" || n.Safe == nil || !*n.Safe {
@@ -554,7 +566,9 @@ func (e *engine) advance() error {
 			continue
 		}
 		need, running, allDone := false, false, true
-		for j, n := range a.source.Events {
+		lo, hi := a.eventBounds()
+		for j := lo; j < hi; j++ {
+			n := a.source.Events[j]
 			if a.states[j] == 3 {
 				continue
 			}
@@ -646,7 +660,8 @@ func (e *engine) advance() error {
 		}
 		safe := running && !need && !a.harnessBusy
 		event := ""
-		for j, n := range a.source.Events {
+		for j := lo; j < hi; j++ {
+			n := a.source.Events[j]
 			if a.states[j] == 2 {
 				if n.Kind == "active" || n.Safe == nil || !*n.Safe {
 					safe = false
@@ -813,7 +828,9 @@ func (e *engine) decide() error {
 		}
 		phase := "model_wait"
 		phaseStart, event := a.waitStarted, a.currentWait
-		for j, n := range a.source.Events {
+		lo, hi := a.eventBounds()
+		for j := lo; j < hi; j++ {
+			n := a.source.Events[j]
 			if a.states[j] == 2 {
 				phase = n.Kind
 				phaseStart, event = a.startTimes[j], n.ID
@@ -942,4 +959,11 @@ func Quantile(v []float64, p float64) float64 {
 	lo := int(pos)
 	hi := min(lo+1, len(v)-1)
 	return v[lo] + (v[hi]-v[lo])*(pos-float64(lo))
+}
+
+func (a *actor) eventBounds() (int, int) {
+	if a.serial {
+		return a.cursor, min(a.cursor+1, len(a.source.Events))
+	}
+	return 0, len(a.source.Events)
 }

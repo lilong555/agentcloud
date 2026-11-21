@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Summarize the three CPU baseline groups under an explicit B-level L0 scenario."""
 import argparse
+import csv
 from concurrent.futures import ThreadPoolExecutor
 import json
 import math
@@ -109,6 +110,19 @@ def main():
                    'Oracle uses two sessions and five topological events; its restricted feasible objective and relaxed lower bound are separate'],
         cases=rows)
     save(args.output/'summary.json',summary)
+    flat=[]
+    for case in rows:
+        if case['status']!='complete':
+            continue
+        for split,values in case['results'].items():
+            for policy,metrics in values['rows'].items():
+                flat.append(dict(case=case['case'],split=split,policy=policy,
+                    pareto=policy in values['pareto_frontier'],tuned_ttl_ms=case['tuned_ttl_ms'],**metrics))
+    if flat:
+        with (args.output/'pareto.csv').open('w',newline='') as stream:
+            writer=csv.DictWriter(stream,fieldnames=list(flat[0]))
+            writer.writeheader()
+            writer.writerows(flat)
     print(json.dumps(dict(status=summary['status'],cases=len(rows),complete=sum(r['status']=='complete' for r in rows))))
     if summary['status']!='complete': raise SystemExit(1)
 

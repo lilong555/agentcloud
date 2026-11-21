@@ -51,6 +51,17 @@ func TestParkedTicksMatchPeriodicPoliciesAndGlobalPhase(t *testing.T) {
 			if !reflect.DeepEqual(old, parked) {
 				t.Fatalf("seed=%d policy=%s periodic=%+v parked=%+v", seed, policy, old.Sessions, parked.Sessions)
 			}
+			cfg.FullEventScan = true
+			full, err := Run(trace, costs(), cfg, p(), nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			full.Config.FullEventScan = false
+			full.ProcessedEvents = 0
+			if !reflect.DeepEqual(full, parked) {
+				t.Fatalf("serial cursor differs from full DAG traversal: %d/%s", seed, policy)
+			}
+			cfg.FullEventScan = false
 			cfg.DiscardEvaluations = true
 			compact, err := Run(trace, costs(), cfg, p(), nil)
 			if err != nil {

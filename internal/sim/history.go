@@ -75,7 +75,9 @@ func (e *engine) waitSamples(subject *actor, phase, event string) []policy.Survi
 		if e.historyKey(a.source.Tenant, a.source.Profile, phase) != group {
 			continue
 		}
-		for j, n := range a.source.Events {
+		lo, hi := a.eventBounds()
+		for j := lo; j < hi; j++ {
+			n := a.source.Events[j]
 			if a.states[j] != 2 || n.Kind != phase || a == subject && n.ID == event {
 				continue
 			}
