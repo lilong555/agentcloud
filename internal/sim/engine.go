@@ -11,24 +11,29 @@ import (
 )
 
 type Config struct {
-	ObservationMode       string  `json:"observation_mode"`
-	HistoryMode           string  `json:"history_mode"`
-	IdleMode              string  `json:"idle_mode"`
-	IdleTTLMS             float64 `json:"idle_ttl_ms"`
-	SchedulerIntervalMS   float64 `json:"scheduler_interval_ms"`
-	TrainingHistory       bool    `json:"training_history"`
-	TerminalCheckpoint    bool    `json:"terminal_checkpoint"`
-	Slots                 int     `json:"slots"`
-	WorkloadBytes         int64   `json:"workload_bytes"`
-	ReservationBytes      int64   `json:"reservation_bytes"`
-	DiskBudgetBytes       float64 `json:"disk_budget_bytes"`
-	StableMS              float64 `json:"stable_ms"`
-	MinimumResidenceMS    float64 `json:"minimum_residence_ms"`
-	InitialReadyMS        float64 `json:"initial_ready_ms"`
-	GCMS                  float64 `json:"gc_ms"`
-	SnapshotKeep          int     `json:"snapshot_keep"`
-	AllowConcurrencyBands bool    `json:"allow_concurrency_bands"`
-	MaxEvents             int     `json:"max_events"`
+	QueueScope            string       `json:"queue_scope"`
+	ConcurrencyModel      string       `json:"concurrency_model"`
+	Environment           *Environment `json:"environment,omitempty"`
+	HarnessEnabled        bool         `json:"harness_overhead_enabled"`
+	InitialOrder          []string     `json:"conditioned_initial_order,omitempty"`
+	ObservationMode       string       `json:"observation_mode"`
+	HistoryMode           string       `json:"history_mode"`
+	IdleMode              string       `json:"idle_mode"`
+	IdleTTLMS             float64      `json:"idle_ttl_ms"`
+	SchedulerIntervalMS   float64      `json:"scheduler_interval_ms"`
+	TrainingHistory       bool         `json:"training_history"`
+	TerminalCheckpoint    bool         `json:"terminal_checkpoint"`
+	Slots                 int          `json:"slots"`
+	WorkloadBytes         int64        `json:"workload_bytes"`
+	ReservationBytes      int64        `json:"reservation_bytes"`
+	DiskBudgetBytes       float64      `json:"disk_budget_bytes"`
+	StableMS              float64      `json:"stable_ms"`
+	MinimumResidenceMS    float64      `json:"minimum_residence_ms"`
+	InitialReadyMS        float64      `json:"initial_ready_ms"`
+	GCMS                  float64      `json:"gc_ms"`
+	SnapshotKeep          int          `json:"snapshot_keep"`
+	AllowConcurrencyBands bool         `json:"allow_concurrency_bands"`
+	MaxEvents             int          `json:"max_events"`
 }
 type Decision struct {
 	At       float64                         `json:"at_ms"`
@@ -50,14 +55,34 @@ type EventResult struct {
 	End     float64 `json:"end_ms"`
 }
 type SessionResult struct {
-	ID           string    `json:"session_id"`
-	Arrival      float64   `json:"arrival_ms"`
-	Ready        float64   `json:"initial_ready_ms"`
-	Finish       float64   `json:"finish_ms"`
-	InitialQueue float64   `json:"initial_queue_ms"`
-	ResumeQueues []float64 `json:"resume_queue_ms"`
+	ID            string    `json:"session_id"`
+	Arrival       float64   `json:"arrival_ms"`
+	Ready         float64   `json:"initial_ready_ms"`
+	Finish        float64   `json:"finish_ms"`
+	InitialQueue  float64   `json:"initial_queue_ms"`
+	ResumeQueues  []float64 `json:"resume_queue_ms"`
+	SnapshotWaits []float64 `json:"snapshot_readiness_wait_ms"`
+}
+type AdmissionResult struct {
+	Session      string  `json:"session_id"`
+	Kind         string  `json:"kind"`
+	Requested    float64 `json:"requested_ms"`
+	Eligible     float64 `json:"snapshot_ready_for_admission_ms"`
+	Attempt      float64 `json:"successful_attempt_ms"`
+	Ready        float64 `json:"actor_ready_ms"`
+	CapacityWait float64 `json:"capacity_wait_ms"`
+	SnapshotWait float64 `json:"snapshot_readiness_wait_ms"`
+}
+type ServiceStage struct {
+	Session string  `json:"session_id"`
+	Event   string  `json:"event_id,omitempty"`
+	Kind    string  `json:"kind"`
+	Start   float64 `json:"start_ms"`
+	End     float64 `json:"end_ms"`
 }
 type Result struct {
+	Admissions             []AdmissionResult `json:"admissions"`
+	ServiceStages          []ServiceStage    `json:"service_stages"`
 	ResearchStatus         string            `json:"research_status"`
 	StrategyAxes           map[string]string `json:"strategy_axes"`
 	Status                 string            `json:"status"`
@@ -108,6 +133,9 @@ func (h *eventHeap) Push(x any)   { *h = append(*h, x.(scheduled)) }
 func (h *eventHeap) Pop() any     { a := *h; v := a[len(a)-1]; *h = a[:len(a)-1]; return v }
 
 type actor struct {
+	setupDone, harnessBusy                                           bool
+	proofDone                                                        []bool
+	eligibleAt                                                       float64
 	epoch                                                            uint64
 	accesses                                                         int
 	lastAccess                                                       float64
@@ -155,6 +183,54 @@ func Run(t Trace, costs Costs, cfg Config, p OnlinePolicy, history []WaitSample)
 func run(t Trace, costs Costs, cfg Config, p OnlinePolicy, history []WaitSample) (Result, error) {
 	if err := t.Validate(); err != nil {
 		return Result{}, err
+	}
+	if cfg.QueueScope == "" {
+		cfg.QueueScope = "request_to_admit"
+	}
+	if cfg.ConcurrencyModel == "" {
+		cfg.ConcurrencyModel = "exact"
+		if cfg.AllowConcurrencyBands {
+			cfg.ConcurrencyModel = "band"
+		}
+	}
+	if cfg.QueueScope != "request_to_admit" && cfg.QueueScope != "capacity_wait" {
+		return Result{}, fmt.Errorf("invalid queue scope")
+	}
+	if cfg.ConcurrencyModel != "exact" && cfg.ConcurrencyModel != "band" && cfg.ConcurrencyModel != "linear" {
+		return Result{}, fmt.Errorf("invalid concurrency model")
+	}
+	if cfg.Environment != nil {
+		if err := cfg.Environment.Validate(); err != nil {
+			return Result{}, err
+		}
+		cfg.InitialReadyMS = cfg.Environment.InitialMS
+	} else if cfg.HarnessEnabled {
+		return Result{}, fmt.Errorf("harness overhead requires a sourced environment model")
+	}
+	if len(cfg.InitialOrder) > 0 {
+		if len(cfg.InitialOrder) != len(t.Sessions) {
+			return Result{}, fmt.Errorf("conditioned order requires every session")
+		}
+		positions := map[string]int{}
+		for i, id := range cfg.InitialOrder {
+			if _, exists := positions[id]; exists {
+				return Result{}, fmt.Errorf("duplicate conditioned order identity")
+			}
+			positions[id] = i
+		}
+		t.Sessions = append([]Session(nil), t.Sessions...)
+		for _, s := range t.Sessions {
+			if _, exists := positions[s.ID]; !exists {
+				return Result{}, fmt.Errorf("conditioned order identity missing: %s", s.ID)
+			}
+		}
+		sort.SliceStable(t.Sessions, func(i, j int) bool {
+			a, b := t.Sessions[i], t.Sessions[j]
+			if a.Arrival == b.Arrival {
+				return positions[a.ID] < positions[b.ID]
+			}
+			return a.Arrival < b.Arrival
+		})
 	}
 	if cfg.ObservationMode == "" {
 		cfg.ObservationMode = "c1"
@@ -216,8 +292,14 @@ func run(t Trace, costs Costs, cfg Config, p OnlinePolicy, history []WaitSample)
 			"periodic scheduler ticks start at the configured interval after replay time zero; simulated service durations remain cost-table P50",
 			"journal measurements are emitted at simulated initial/lifecycle commits; coordinator per-request commit frequency and RPC overhead require conditioned replay")
 	}
-	if cfg.AllowConcurrencyBands {
+	if cfg.ConcurrencyModel == "band" {
 		e.result.Assumptions = append(e.result.Assumptions, "explicit band model: concurrency 2/3 uses measured coordinate 4; concurrency above 4 is rejected")
+	}
+	if cfg.ConcurrencyModel == "linear" {
+		e.result.Assumptions = append(e.result.Assumptions, "concurrency 2/3 is linear interpolation between measured 1/4 endpoints; interpolation is derived, not directly measured; no extrapolation")
+	}
+	if len(cfg.InitialOrder) > 0 {
+		e.result.Assumptions = append(e.result.Assumptions, "retrospective initial dispatch order conditions simultaneous arrivals on observed placement; this run is calibration, not an independent forecast")
 	}
 	if b, ok := p.(Baseline); ok {
 		e.result.Policy = b.Name
@@ -237,7 +319,7 @@ func run(t Trace, costs Costs, cfg Config, p OnlinePolicy, history []WaitSample)
 		}
 	}
 	for _, s := range t.Sessions {
-		a := &actor{epoch: 1, source: s, states: make([]int, len(s.Events)), readyTimes: make([]float64, len(s.Events)), startTimes: make([]float64, len(s.Events)), endTimes: make([]float64, len(s.Events)), index: map[string]int{}}
+		a := &actor{epoch: 1, source: s, states: make([]int, len(s.Events)), proofDone: make([]bool, len(s.Events)), readyTimes: make([]float64, len(s.Events)), startTimes: make([]float64, len(s.Events)), endTimes: make([]float64, len(s.Events)), index: map[string]int{}}
 		a.result = SessionResult{ID: s.ID, Arrival: s.Arrival}
 		for i, n := range s.Events {
 			a.index[n.ID] = i
@@ -351,7 +433,17 @@ func (e *engine) handle(x scheduled) error {
 		if x.event == 0 {
 			a.initialReady = true
 			a.result.Ready = e.now
+			a.setupDone = true
+			if h := e.harness(); h.SetupMS > 0 {
+				a.setupDone, a.harnessBusy = false, true
+				e.stage(a, "", "harness_setup", h.SetupMS)
+				e.push(e.now+h.SetupMS, "setup_done", x.session, 0, 0, 0)
+			}
 		}
+	case "setup_done":
+		a.setupDone, a.harnessBusy = true, false
+	case "proof_done":
+		a.proofDone[x.event], a.harnessBusy = true, false
 	case "node":
 		a.states[x.event] = 3
 		a.endTimes[x.event] = e.now
@@ -366,12 +458,14 @@ func (e *engine) handle(x scheduled) error {
 			e.retainHistory()
 		}
 	case "release":
+		e.result.ServiceStages = append(e.result.ServiceStages, ServiceStage{Session: a.source.ID, Kind: "slot_release", Start: e.now, End: e.now})
 		if a.resident {
 			a.resident = false
 			a.ready = false
 			e.occupied--
 		}
 	case "durable":
+		e.result.ServiceStages = append(e.result.ServiceStages, ServiceStage{Session: a.source.ID, Kind: "snapshot_ready", Start: e.now, End: e.now})
 		a.snapshotReady = true
 	case "checkpoint_done":
 		a.checkpointing = false
@@ -392,6 +486,7 @@ func (e *engine) enqueue(i int, kind string) {
 	}
 	a.queued = kind
 	a.queueAt = e.now
+	a.eligibleAt = e.now
 	if kind == "resume" && e.cfg.ObservationMode == "native" && a.returnDemand {
 		a.queueAt = a.returnAt
 	}
@@ -399,7 +494,7 @@ func (e *engine) enqueue(i int, kind string) {
 }
 
 func (e *engine) actorState(a *actor) ActorState {
-	safe, running := true, false
+	safe, running := !a.harnessBusy, false
 	for j, n := range a.source.Events {
 		if a.states[j] == 2 {
 			running = true
@@ -423,6 +518,15 @@ func (e *engine) observeEvent(a *actor, j int, completed bool) {
 func (e *engine) advance() error {
 	for i, a := range e.actors {
 		if !a.arrived || a.finished {
+			continue
+		}
+		if a.harnessBusy || a.initialReady && !a.setupDone {
+			if a.waiting {
+				e.finishWait(a, true)
+			}
+			if observer, ok := e.policy.(StateObserver); ok {
+				observer.Observe(e.actorState(a))
+			}
 			continue
 		}
 		need, running, allDone := false, false, true
@@ -452,6 +556,15 @@ func (e *engine) advance() error {
 				need = true
 				continue
 			}
+			if n.Kind == "model_wait" && !a.proofDone[j] && e.harness().ModelProofMS > 0 {
+				a.harnessBusy = true
+				if a.waiting {
+					e.finishWait(a, true)
+				}
+				e.stage(a, n.ID, "harness_model_proof", e.harness().ModelProofMS)
+				e.push(e.now+e.harness().ModelProofMS, "proof_done", i, j, 0, 0)
+				break
+			}
 			a.states[j] = 2
 			if n.Kind != "user_idle" {
 				a.accesses++
@@ -467,7 +580,12 @@ func (e *engine) advance() error {
 			a.startTimes[j] = e.now
 			e.observeEvent(a, j, false)
 			running = true
-			e.push(e.now+*n.Duration, "node", i, j, 0, 0)
+			duration := *n.Duration
+			if n.Kind == "active" && e.harness().ActiveExtraMS > 0 {
+				e.result.ServiceStages = append(e.result.ServiceStages, ServiceStage{a.source.ID, n.ID, "harness_active_extra", e.now + duration, e.now + duration + e.harness().ActiveExtraMS})
+				duration += e.harness().ActiveExtraMS
+			}
+			e.push(e.now+duration, "node", i, j, 0, 0)
 		}
 		if allDone && !a.checkpointing {
 			if e.cfg.TerminalCheckpoint && a.resident {
@@ -502,7 +620,7 @@ func (e *engine) advance() error {
 		if need && !a.resident && !a.checkpointing && a.snapshotReady {
 			e.enqueue(i, "resume")
 		}
-		safe := running && !need
+		safe := running && !need && !a.harnessBusy
 		event := ""
 		for j, n := range a.source.Events {
 			if a.states[j] == 2 {
@@ -543,7 +661,7 @@ func (e *engine) cost(a *actor, concurrency int) (LifecycleCost, error) {
 	if concurrency < 1 {
 		concurrency = 1
 	}
-	if e.cfg.AllowConcurrencyBands && (concurrency == 2 || concurrency == 3) {
+	if e.cfg.ConcurrencyModel == "band" && (concurrency == 2 || concurrency == 3) {
 		concurrency = 4
 	}
 	bytes := e.cfg.WorkloadBytes
@@ -551,6 +669,9 @@ func (e *engine) cost(a *actor, concurrency int) (LifecycleCost, error) {
 		bytes = *a.source.Workload
 	}
 	c, err := e.costs.Lookup(bytes, concurrency)
+	if e.cfg.ConcurrencyModel == "linear" {
+		c, err = e.costs.Interpolate(bytes, concurrency)
+	}
 	if err == nil {
 		e.result.ConcurrencyCoordinates[concurrency]++
 	}
@@ -581,6 +702,8 @@ func (e *engine) admit() error {
 		e.result.MaxOccupied = max(e.result.MaxOccupied, e.occupied)
 		if kind == "initial" {
 			a.result.InitialQueue = e.now - a.queueAt
+			e.result.Admissions = append(e.result.Admissions, AdmissionResult{a.source.ID, kind, a.queueAt, a.eligibleAt, e.now, e.now + e.cfg.InitialReadyMS, e.now - a.eligibleAt, 0})
+			e.stage(a, "", "initial_activation", e.cfg.InitialReadyMS)
 			e.push(e.now+e.cfg.InitialReadyMS, "ready", i, 0, 0, 0)
 			if e.cfg.ObservationMode == "native" {
 				c, err := e.cost(a, 1)
@@ -590,13 +713,20 @@ func (e *engine) admit() error {
 				e.push(e.now+e.cfg.InitialReadyMS+c.Journal, "metric:journal_commit_ms", i, 0, 0, c.Journal)
 			}
 		} else {
-			a.result.ResumeQueues = append(a.result.ResumeQueues, e.now-a.queueAt)
+			wait := e.now - a.queueAt
+			if e.cfg.QueueScope == "capacity_wait" {
+				wait = e.now - a.eligibleAt
+			}
+			a.result.ResumeQueues = append(a.result.ResumeQueues, wait)
+			a.result.SnapshotWaits = append(a.result.SnapshotWaits, a.eligibleAt-a.queueAt)
 			c, err := e.cost(a, waveIO)
 			if err != nil {
 				return err
 			}
 			e.io++
 			e.result.Restores++
+			e.result.Admissions = append(e.result.Admissions, AdmissionResult{a.source.ID, kind, a.queueAt, a.eligibleAt, e.now, e.now + c.Resume, e.now - a.eligibleAt, a.eligibleAt - a.queueAt})
+			e.stage(a, "", "resume", c.Resume)
 			e.push(e.now+c.Resume, "ready", i, 1, 0, 0)
 			if e.cfg.ObservationMode == "native" {
 				e.push(e.now+c.Resume, "metric:resume_ready_ms", i, 0, 0, c.Resume)
@@ -610,6 +740,17 @@ func (e *engine) admit() error {
 		}
 	}
 	return nil
+}
+
+func (e *engine) harness() HarnessOverhead {
+	if e.cfg.HarnessEnabled && e.cfg.Environment != nil {
+		return e.cfg.Environment.Harness
+	}
+	return HarnessOverhead{}
+}
+
+func (e *engine) stage(a *actor, event, kind string, duration float64) {
+	e.result.ServiceStages = append(e.result.ServiceStages, ServiceStage{a.source.ID, event, kind, e.now, e.now + duration})
 }
 
 func (e *engine) decide() error {

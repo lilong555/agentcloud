@@ -38,7 +38,7 @@ def model_rows(plan, trial_id):
 
 
 class Arrivals:
-    mode = 'synthetic-calibration-burst'
+    mode = 'synthetic-calibration-arrivals'
 
     def __init__(self, plan):
         self.document = plan
@@ -48,7 +48,7 @@ class Arrivals:
         # Only the root is open-loop. All subsequent nodes follow actual completion.
         for row in rows:
             if row['round'] == 0:
-                row['arrival_at'] = started
+                row['arrival_at'] = started + self.document['sessions'][row['workspace_index']]['arrival_ms']/1000
 
 
 class CalibrationTrial(Trial):
@@ -191,6 +191,10 @@ class CalibrationTrial(Trial):
         with ThreadPoolExecutor(max_workers=1) as executor:
             entry['executor'] = executor
             try:
+                entry['planned_arrival_at'] = self.started + entry['source']['arrival_ms']/1000
+                while time.time() < entry['planned_arrival_at']:
+                    self.guard()
+                    time.sleep(min(.05, max(0, entry['planned_arrival_at']-time.time())))
                 entry['client_arrival_at'] = time.time()
                 self.create_and_install(entry)
                 entry['setup_ready_at'] = time.time()
@@ -260,6 +264,7 @@ class CalibrationTrial(Trial):
             report['post_measurement_retirement'] = self.retirement_records
             report['calibration_sessions'] = [dict(
                 session_id=e['source']['session_id'], live_session_id=e['id'], tenant=e['tenant'],
+                planned_arrival_at=e.get('planned_arrival_at'),
                 client_arrival_at=e.get('client_arrival_at'), setup_ready_at=e.get('setup_ready_at'),
                 workload_completed_at=e.get('workload_completed_at'), released_at=e.get('released_at'),
                 status=e.get('status')) for e in self.sessions]
@@ -293,6 +298,7 @@ def prepare(args, plan):
         github_run_id=os.getenv('GITHUB_RUN_ID'), host=host_metadata(),
         github_run_attempt=os.getenv('GITHUB_RUN_ATTEMPT'),
         trace_sha256=sha(args.plan), cost_sha256=plan['physical_cost_sha256'],
+        environment_model_sha256=plan.get('environment_model_sha256'),
         config_path=str(args.plan), order=[])
     for i, policy in enumerate(policies):
         item = dict(seed=7301, policy=policy, order=i, concurrency=len(plan['sessions']),
@@ -327,6 +333,7 @@ def summarize(args, plan, schedule):
             cleanup_success=r.get('cleanup_success'))
     result = dict(schema_version=1, research_status='exploratory', trace_sha256=sha(args.plan),
         cost_sha256=plan['physical_cost_sha256'], policies=reports,
+        environment_model_sha256=plan.get('environment_model_sha256'),
         queue_scope='PG WAITING_CAPACITY residence; DES queue comparison includes retry/placement modeling error',
         source_commit=schedule['source_commit'], github_run_id=schedule['github_run_id'])
     atomic_json(args.output_dir / 'native-summary.json', result)
@@ -336,6 +343,7 @@ def summarize(args, plan, schedule):
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--plan', type=Path, required=True)
+    p.add_argument('--environment-model', type=Path, default=ROOT / 'bench/configs/prev3-environment.json')
     p.add_argument('--schedule', type=Path, default=Path('artifacts/prev3-calibration/schedule.json'))
     p.add_argument('--output-dir', type=Path, default=ROOT / 'docs/evidence/scale')
     p.add_argument('--client-dir', type=Path, default=ROOT / 'artifacts/substrate/client')
@@ -347,6 +355,9 @@ def main():
     p.add_argument('--execute-trial')
     args = p.parse_args()
     plan = json.loads(args.plan.read_text())
+    if plan.get('environment_model_sha256'):
+        if not args.environment_model.is_file() or sha(args.environment_model) != plan['environment_model_sha256']:
+            p.error('environment model differs from the frozen plan')
     if args.plan_only:
         if args.schedule.exists():
             p.error('schedule already exists')
@@ -368,6 +379,7 @@ def main():
         return 0 if result['status'] == 'passed' else 1
     for item in schedule['order']:
         command = [os.sys.executable, '-m', 'bench.prev3_calibration', '--plan', str(args.plan),
+                   '--environment-model', str(args.environment_model),
                    '--schedule', str(args.schedule), '--output-dir', str(args.output_dir),
                    '--execute-trial', item['trial_id']]
         process = subprocess.Popen(command, env=dict(os.environ, **{PROCESS_OWNER_ENV: item['trial_id']}))

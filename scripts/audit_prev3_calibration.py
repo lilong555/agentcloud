@@ -70,6 +70,37 @@ def audit_nodes(plan, report):
         overhead_scope='client node entry through completion includes admission, proof, polling and control RPC; derived wall-clock intervals')
 
 
+def audit_arrivals(plan, report, states):
+    """Verify the planned stagger and actual first-wave membership independently."""
+    if not plan['scenario'].get('arrival_spacing_ms'):
+        return dict(status='descriptive', reason='historical simultaneous-arrival slice')
+    rows=report.get('calibration_sessions', [])
+    ordered=sorted(plan['sessions'], key=lambda s:(s['arrival_ms'],s['session_id']))
+    source={r['live_session_id']:r['session_id'] for r in rows}
+    errors=[]
+    slips=[]
+    for row in rows:
+        planned,actual=row.get('planned_arrival_at'),row.get('client_arrival_at')
+        if planned is None or actual is None or actual<planned:
+            errors.append('missing_or_early_arrival:'+row['session_id'])
+        else: slips.append((actual-planned)*1000)
+    actual_order=[r['session_id'] for r in sorted(rows,key=lambda r:r.get('client_arrival_at') or 0)]
+    expected_order=[s['session_id'] for s in ordered]
+    if actual_order!=expected_order: errors.append('client_arrival_order')
+    first=[]
+    for state in states:
+        for demand in state.get('admissions',{}).values():
+            if demand.get('kind')=='initial_admission' and demand.get('status')=='READY' and demand.get('capacity_wait_ms')==0:
+                first.append(source.get(state['session_id']))
+    expected_first=expected_order[:plan['scenario']['slots']]
+    if set(first)!=set(expected_first): errors.append('initial_placement_membership')
+    return dict(status='failed' if errors else 'passed',errors=errors,
+                planned_order=expected_order,actual_client_order=actual_order,
+                expected_first_wave=expected_first,observed_first_wave=first,
+                client_dispatch_lateness_ms=distribution(slips),
+                scope='stagger is open-loop; successful zero-capacity-wait admissions identify first-wave placement; no runner permit')
+
+
 def audit(root):
     inventory = json.loads((root/'inventory.json').read_text())
     errors = []
@@ -90,6 +121,7 @@ def audit(root):
         folder = root/'trials'/item['trial_id']
         report = json.loads((folder/'result.json').read_text())
         nodes = audit_nodes(plan, report)
+        arrivals = audit_arrivals(plan, report, json.loads((folder/'final-state.json').read_text()))
         quality = audit_capture(folder/'research', admission_mode='native', require_capacity=True)
         failures = []
         for field in ('cleanup_success', 'ephemeral_postgres_database_released'):
@@ -112,6 +144,8 @@ def audit(root):
             failures.append('post_measurement_retirement')
         if quality['status'] != 'passed' or nodes['status'] != 'passed':
             failures.append('event_qualification')
+        if arrivals['status'] == 'failed':
+            failures.append('arrival_or_placement_order')
         measurements = defaultdict(list)
         capture = folder/'research/coordinator.jsonl'
         if capture.exists():
@@ -125,7 +159,7 @@ def audit(root):
         trials.append(dict(trial_id=item['trial_id'], policy=item['policy'],
             status='failed' if failures else 'passed', failures=failures,
             original_error=report.get('error'), original_validation_errors=report.get('validation_errors'),
-            nodes=nodes, coordinator_quality=quality,
+            nodes=nodes, arrivals=arrivals, coordinator_quality=quality,
             post_measurement_retirement_requests=len(retirement),
             resource_coverage_fraction=metrics.get('resource_coverage_fraction'),
             resource_transition_uncertainty_gbs=metrics.get('resource_transition_uncertainty_estimate_gb_s'),

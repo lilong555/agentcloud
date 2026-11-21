@@ -41,6 +41,11 @@ func main() {
 	ttlPoll := flag.Float64("ttl-poll-ms", 100, "native FixedTTL driver polling interval")
 	reservation := flag.Int64("reservation-mib", 512, "Actor reserved memory per occupied slot")
 	initialReady := flag.Float64("initial-ready-ms", 500, "initial provisioning service time")
+	environmentPath := flag.String("environment-model", "", "sourced system and optional Harness phase timings")
+	harnessEnabled := flag.Bool("harness-overhead", false, "enable measured setup/proof/active Harness phases for runtime calibration")
+	conditionOrder := flag.Bool("condition-initial-order", false, "retrospective calibration only: use observed initial order from environment model")
+	queueScope := flag.String("queue-scope", "request_to_admit", "capacity_wait excludes snapshot readiness; request_to_admit preserves legacy DES scope")
+	concurrencyModel := flag.String("concurrency-model", "band", "exact, band, or derived linear interpolation for concurrency 2/3")
 	gc := flag.Float64("gc-ms", -1, "snapshot GC delay; c1=1000, native=30000 ms when omitted")
 	training := flag.Bool("training-history", true, "use frozen training history; native defaults to cold history")
 	terminal := flag.Bool("terminal-checkpoint", false, "checkpoint resident Actors at trace termination; native defaults true")
@@ -89,6 +94,19 @@ func main() {
 	}
 	if err := sim.ReadJSON(*costPath, &costs); err != nil {
 		fail(err)
+	}
+	var environment *sim.Environment
+	if *environmentPath != "" {
+		environment = &sim.Environment{}
+		if err := sim.ReadJSON(*environmentPath, environment); err != nil {
+			fail(err)
+		}
+		if err := environment.Validate(); err != nil {
+			fail(err)
+		}
+	}
+	if *conditionOrder && (environment == nil || len(environment.InitialOrder) == 0) {
+		fail(fmt.Errorf("conditioned replay requires observed initial orders"))
 	}
 	history := sim.TrainingHistory(full)
 	if !*training {
@@ -147,6 +165,7 @@ func main() {
 		}
 	}
 	cfg := sim.Config{ObservationMode: *observationMode, HistoryMode: *historyMode, IdleMode: *idleMode, IdleTTLMS: *idleTTL, SchedulerIntervalMS: *interval,
+		Environment: environment, HarnessEnabled: *harnessEnabled, QueueScope: *queueScope, ConcurrencyModel: *concurrencyModel,
 		TrainingHistory: *training, TerminalCheckpoint: *terminal, Slots: *slots, WorkloadBytes: *workload << 20, ReservationBytes: *reservation << 20,
 		DiskBudgetBytes: float64(*disk << 20), StableMS: *stable, MinimumResidenceMS: *minimum, InitialReadyMS: *initialReady, GCMS: *gc, SnapshotKeep: 2, AllowConcurrencyBands: true}
 	if err := os.MkdirAll(*out, 0700); err != nil {
@@ -167,6 +186,12 @@ func main() {
 		}
 		var online sim.OnlinePolicy = sim.Baseline{Name: name, TTL: *ttl, Eviction: *eviction}
 		policyConfig := cfg
+		if *conditionOrder {
+			policyConfig.InitialOrder = environment.InitialOrder[name]
+			if len(policyConfig.InitialOrder) == 0 {
+				fail(fmt.Errorf("missing observed initial order for %s", name))
+			}
+		}
 		if *observationMode == "native" && (name == "ttl2" || name == "ttl15" || name == "fixed-ttl") {
 			if *ttlPoll <= 0 {
 				fail(fmt.Errorf("native TTL polling interval must be positive"))

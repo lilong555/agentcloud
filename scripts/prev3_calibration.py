@@ -32,9 +32,10 @@ TOLERANCES = {
 }
 
 
-def prepare(trace, trace_sha, costs_sha, count=8, model_limit=5):
+def prepare(trace, trace_sha, costs_sha, count=8, model_limit=5, *, exclude_families=(), arrival_spacing_ms=0):
     """Bounded system calibration slice, selected without policy outcome labels."""
-    if trace.get('schema_version') != 1 or count < 1 or model_limit < 2:
+    if (trace.get('schema_version') != 1 or count < 1 or model_limit < 2
+            or not math.isfinite(arrival_spacing_ms) or arrival_spacing_ms < 0):
         raise ValueError('invalid calibration selection')
     population = Counter()
     eligible = []
@@ -44,6 +45,9 @@ def prepare(trace, trace_sha, costs_sha, count=8, model_limit=5):
             population['outside_validation'] += 1
             continue
         population['validation_sessions'] += 1
+        if source.get('family_id') in exclude_families:
+            population['excluded_calibration_family'] += 1
+            continue
         events, models, reason = [], 0, None
         for event in source['events']:
             if event.get('parents', []) != ([events[-1]['id']] if events else []):
@@ -82,14 +86,14 @@ def prepare(trace, trace_sha, costs_sha, count=8, model_limit=5):
     for source, events in eligible[:count]:
         tenant = tenants.setdefault(source['tenant_id'], 'tenant-' + chr(97 + len(tenants)))
         row = copy.deepcopy(source)
-        row.update(events=events, source_arrival_ms=source['arrival_ms'], arrival_ms=0,
+        row.update(events=events, source_arrival_ms=source['arrival_ms'], arrival_ms=len(sessions)*arrival_spacing_ms,
                    source_tenant_id=source['tenant_id'], tenant_id=tenant, profile='L0',
                    workload_bytes=16 << 20, arrival_kind='synthetic_capacity_sweep',
                    termination='synthetic end at selected model-prefix completion')
         sessions.append(row)
     population['selected_sessions'] = len(sessions)
     population['eligible_unselected'] = len(eligible) - len(sessions)
-    return dict(schema_version=1, semantics_version='1.1', research_status='exploratory',
+    result = dict(schema_version=1, semantics_version='1.1', research_status='exploratory',
         trace_id='freeinference-validation-native-calibration-v1',
         source_trace_sha256=trace_sha, physical_cost_sha256=costs_sha,
         selection=dict(split='validation', ordering='arrival_ms,session_id', sessions=count,
@@ -114,6 +118,13 @@ def prepare(trace, trace_sha, costs_sha, count=8, model_limit=5):
             'Native uses cold Coordinator history and actual tenant equivalence; the experiment is system calibration on validation only',
             'Same input and physical cost table are frozen before paired TTL2/v2 execution; no performance qualification from this slice',
         ])
+    if arrival_spacing_ms:
+        result['scenario'].update(arrival_rule='deterministic synthetic stagger in frozen source arrival order',
+                                  arrival_spacing_ms=arrival_spacing_ms)
+    if exclude_families:
+        result['selection']['excluded_calibration_families'] = sorted(exclude_families)
+        result['trace_id'] = 'freeinference-validation-native-calibration-independent-v1'
+    return result
 
 
 def compare(native, simulated, tolerances):
@@ -124,6 +135,8 @@ def compare(native, simulated, tolerances):
         raise ValueError('Native/DES trace identity differs')
     if native.get('cost_sha256') != simulated.get('cost_sha256'):
         raise ValueError('Native/DES frozen cost identity differs')
+    if native.get('environment_model_sha256') and native['environment_model_sha256'] != simulated.get('environment_model_sha256'):
+        raise ValueError('Native/DES frozen environment identity differs')
     rows = []
     for name in ('ttl2', 'v2'):
         n, s = native['policies'][name], simulated['policies'][name]
@@ -171,6 +184,9 @@ def main():
     freeze.add_argument('--trace', type=Path, required=True)
     freeze.add_argument('--costs', type=Path, required=True)
     freeze.add_argument('--output', type=Path, required=True)
+    freeze.add_argument('--exclude-plan', type=Path)
+    freeze.add_argument('--arrival-spacing-ms', type=float, default=0)
+    freeze.add_argument('--environment-model', type=Path)
     check = sub.add_parser('compare')
     check.add_argument('--native', type=Path, required=True)
     check.add_argument('--simulated', type=Path, required=True)
@@ -178,7 +194,18 @@ def main():
     check.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     if args.command == 'prepare':
-        result = prepare(json.loads(args.trace.read_text()), sha(args.trace), sha(args.costs))
+        previous = json.loads(args.exclude_plan.read_text()) if args.exclude_plan else None
+        families = {s['family_id'] for s in previous['sessions']} if previous else set()
+        result = prepare(json.loads(args.trace.read_text()), sha(args.trace), sha(args.costs),
+            exclude_families=families, arrival_spacing_ms=args.arrival_spacing_ms)
+        if args.exclude_plan:
+            result['selection']['excluded_plan_sha256'] = sha(args.exclude_plan)
+        if args.environment_model:
+            result['environment_model_sha256'] = sha(args.environment_model)
+            environment = json.loads(args.environment_model.read_text())
+            result['scenario'].update(initial_ready_ms=environment['initial_ready_ms'],
+                initial_ready_evidence='B: pooled initial ResumeActor RPC mean from calibration 44738531417',
+                harness_overhead=True, concurrency_model='linear', queue_scope='capacity_wait')
     else:
         native, simulated = json.loads(args.native.read_text()), json.loads(args.simulated.read_text())
         if native.get('trace_sha256') != sha(args.plan):

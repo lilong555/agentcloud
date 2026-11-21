@@ -6,7 +6,16 @@ on:
       - '.github/workflows/prev3-calibration.yml'
       - 'bench/prev3_calibration.py'
       - 'bench/configs/prev3-calibration-plan.json'
+      - 'bench/configs/prev3-calibration-independent.json'
   workflow_dispatch:
+    inputs:
+      plan:
+        description: Frozen validation calibration input
+        type: choice
+        options:
+          - bench/configs/prev3-calibration-independent.json
+          - bench/configs/prev3-calibration-plan.json
+        default: bench/configs/prev3-calibration-independent.json
 permissions:
   contents: read
   actions: read
@@ -31,6 +40,7 @@ jobs:
       GOFLAGS: '-p=2'
       CUDA_VISIBLE_DEVICES: ''
       LIFECYCLE_KV_WHEEL_RUN_ID: '43012181604'
+      CALIBRATION_PLAN: ${{ inputs.plan || 'bench/configs/prev3-calibration-independent.json' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -40,7 +50,8 @@ jobs:
       - name: Validate and freeze the paired validation slice
         run: |
           python3 -m unittest discover -s tests/tooling -p test_prev3_calibration.py -v
-          python3 -m bench.prev3_calibration --plan bench/configs/prev3-calibration-plan.json --plan-only
+          python3 -m unittest discover -s tests/tooling -p test_prev3_alignment.py -v
+          python3 -m bench.prev3_calibration --plan "$CALIBRATION_PLAN" --plan-only
       - name: Restore locked sources
         run: python3 scripts/upstream.py --fetch substrate dynamo
       - name: Verify the native wheel source run
@@ -78,7 +89,7 @@ jobs:
           python3 scripts/ci_substrate_access.py --schedule artifacts/prev3-calibration/schedule.json --job-minutes 90 --workflow-source "$GITHUB_SHA"
       - name: Run the paired Native calibration
         timeout-minutes: 30
-        run: .venv-dynamo/bin/python -u -m bench.prev3_calibration --plan bench/configs/prev3-calibration-plan.json
+        run: .venv-dynamo/bin/python -u -m bench.prev3_calibration --plan "$CALIBRATION_PLAN"
       - name: Collect runtime provenance
         if: always()
         run: python3 scripts/ci_live_collect.py
@@ -97,7 +108,10 @@ jobs:
           import hashlib,json,os,shutil
           from pathlib import Path
           out=Path('artifacts/prev3-calibration/evidence');out.mkdir(parents=True,exist_ok=True)
-          for path in (Path('bench/configs/prev3-calibration-plan.json'),Path('artifacts/prev3-calibration/schedule.json'),Path('docs/evidence/scale/native-summary.json'),Path('docs/evidence/ci-live-runtime.json'),Path('docs/evidence/ci-live-cleanup.json')):
+          shutil.copy2(os.environ['CALIBRATION_PLAN'],out/'prev3-calibration-plan.json')
+          model=Path('bench/configs/prev3-environment.json')
+          if model.exists(): shutil.copy2(model,out/model.name)
+          for path in (Path('artifacts/prev3-calibration/schedule.json'),Path('docs/evidence/scale/native-summary.json'),Path('docs/evidence/ci-live-runtime.json'),Path('docs/evidence/ci-live-cleanup.json')):
               if path.exists(): shutil.copy2(path,out/path.name)
           schedule=Path('artifacts/prev3-calibration/schedule.json')
           if schedule.exists():

@@ -96,7 +96,7 @@ python3 scripts/run_prev3_c1.py --binary BIN/agentcloud-sim \
 
 本次运行的输入摘要、测量表、测试回执与资格状态见 [pre-v3 证据](evidence/pre-v3/README.md)。
 
-最新 [Native／DES 校准证据](evidence/pre-v3/c2/README.md)已取得完整 TTL2／v2 实机配对。两组源节点、RAM、PG 连续性和资源释放验收通过；冻结预测的排队与 GB·s 误差超出容忍，C2 状态为 `calibration_required`。秒级首次激活、工作集初始化与工具校验占槽是下一次模型接入项。
+最新 [Native／DES 校准证据](evidence/pre-v3/c2/README.md)已取得完整 TTL2／v2 实机配对。两组源节点、RAM、PG 连续性和资源释放验收通过；原冻结预测的排队与 GB·s 误差超出容忍，C2 状态为 `calibration_required`。[阶段校准](evidence/pre-v3/c2/alignment/README.md)已接入首次激活及可开关的 setup／RAM proof／active 额外占槽，观测顺序条件复算通过 9/10 项；新 validation 切片已冻结独立前向预测。
 
 ## Native／DES 配对校准
 
@@ -121,7 +121,9 @@ DES 的 Native 观测模式直接调用生产 `serverEstimateLocked()`、`waitHi
 
 逐项采用两种容忍中的较大值，阈值在实机执行前冻结。这是集成校准阈值；用于正式算法判优时，误差还需小于待证明的收益。缺测、完成分母缺失与误差超限均进入 `calibration_required`。策略差值落在容忍范围内时，排序标为 `unresolved_within_tolerance`。所有结果保持 exploratory，Tier-1/Tier-2 分别验收。
 
-配对摘要中的 P95 统一采用 nearest-rank，与 PG 准入摘要一致；原始 DES 输出继续保留插值分位数。Native 容量等待统计 `WAITING_CAPACITY` 区间，DES 恢复队列从 ReturnDemand 开始，包含快照可恢复前的等待；对账同时保留此口径差异。离线预测输出记录执行时刻、输入与二进制 SHA，独立目录保护已保存的预测。
+配对摘要中的 P95 统一采用 nearest-rank，与 PG 准入摘要一致；原始 DES 输出继续保留插值分位数。Native 容量等待统计 `WAITING_CAPACITY` 区间。历史 DES 的 `request_to_admit` 包含快照可恢复前的等待；阶段校准使用 `capacity_wait`，将快照就绪等待、容量等待和成功启动／恢复服务分别输出。后者仍采用连续容量等待近似，拒绝 RPC 与唤醒延迟接受实机误差验收。离线预测输出记录执行时刻、输入、环境、二进制与源码 SHA，独立目录保护已保存的预测。
+
+`agentcloud-sim --environment-model MODEL.json` 载入有来源的首次激活与 Harness 阶段。`--harness-overhead` 仅在运行时校准中显式启用，算法评估默认关闭。`--concurrency-model linear` 将并发 2/3 作为实测 1/4 的派生插值；缺测与外推继续报错。`--condition-initial-order` 仅用于已有实机结果的条件复算，独立预测按冻结到达顺序运行。
 
 ```bash
 # cannlab：生成输入；完整真实轨迹留在 Git 外。
