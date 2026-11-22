@@ -49,6 +49,12 @@ def update_indexes(root=ROOT):
         path.write_text(json.dumps(report, indent=2) + '\n')
 
 
+def staged_bytes_match(root, path):
+    result = subprocess.run(['git', 'show', ':' + str(path.relative_to(root))],
+                            cwd=root, capture_output=True)
+    return result.returncode != 0 or hashlib.sha256(result.stdout).hexdigest() == sha(path)
+
+
 def check_links(root, documents):
     errors, count = [], 0
     for name in documents:
@@ -93,6 +99,8 @@ def inspect(root=ROOT):
             if (not target.is_file() or target.stat().st_size != item['bytes']
                     or sha(target) != item['sha256']):
                 errors.append(name + ': stale evidence index ' + item['path'])
+            if target.is_file() and target.suffix == '.csv' and not staged_bytes_match(root, target):
+                errors.append(name + ': Git line conversion changed archived CSV bytes ' + item['path'])
     count, link_errors = check_links(root, DOCUMENTS)
     errors.extend(link_errors)
     base = manifest['production_reference_commit']

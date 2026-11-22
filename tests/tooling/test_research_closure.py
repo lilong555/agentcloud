@@ -1,11 +1,25 @@
 from pathlib import Path
+import subprocess
 import tempfile
 import unittest
 
-from scripts.audit_research_closure import check_links
+from scripts.audit_research_closure import check_links, staged_bytes_match
 
 
 class ResearchClosureTests(unittest.TestCase):
+    def test_git_line_conversion_is_detected_before_delivery(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            subprocess.run(['git', 'init', '-q', str(root)], check=True)
+            (root / '.gitattributes').write_text('*.csv text\n')
+            path = root / 'sample.csv'
+            path.write_bytes(b'a,b\r\n1,2\r\n')
+            subprocess.run(['git', 'add', '.'], cwd=root, check=True, capture_output=True)
+            self.assertFalse(staged_bytes_match(root, path))
+            (root / '.gitattributes').write_text('*.csv -text\n')
+            subprocess.run(['git', 'add', '--renormalize', '.'], cwd=root, check=True)
+            self.assertTrue(staged_bytes_match(root, path))
+
     def test_links_resolve_files_headings_and_explicit_anchors(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
