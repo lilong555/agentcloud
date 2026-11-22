@@ -1,5 +1,7 @@
 # 控制面容量准入与实验观测
 
+**调度研究状态：`CONCLUDED / FROZEN`。** Native 状态机与生产 v2 保持既有行为。[统一收敛结论](SCHEDULING_RESEARCH_CONCLUSION.md)记录 `44714066930` 的去噪对照、真实 MEMORY 重启专项与保留的预算失败；本文的历史对照继续使用原提交和原始分母。
+
 AgentCloud 的首次启动和快照恢复共享持久容量等待机制。物理容量由 Substrate 的放置结果与 `ResourceExhausted` 回执决定；Coordinator 记录需求、核验 Actor 身份并重试。`scheduler_v2.go` 的休眠决策公式保持既有实现。
 
 ## 状态与幂等性

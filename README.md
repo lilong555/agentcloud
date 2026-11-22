@@ -8,9 +8,9 @@ Go 协调器通过 PostgreSQL 保存请求、回执和恢复 manifest；Substrat
 
 **在线 KV 联合策略：**`agentcloud-v2-joint` 读取官方 KVIndexer 的当前前缀驻留与首次损失统计，将 SUSPEND 和 KEEP 的预期重算成本差额计入生命周期切换成本；`cache_reselect` 将前缀命中、prefill／decode 负载和原子容量预留共同用于 Worker 选择。Hard affinity 保持目标，Off／Soft 提供候选空间。观测过期、事件缺口或支持不足时回退到基础成本；未知等待保留两秒释放期限。[机制、动作条件与实验身份](docs/JOINT_KV_SCHEDULING.md) · [原生缓存路由合同](integrations/dynamo/CACHE_ROUTING.md)
 
-源码 `609a58d9` 的 [CI 43178102644](docs/evidence/ci-run-43178102644.json)记录 **162 个 Go 顶层测试通过、零跳过，含 11 个真实 PostgreSQL 测试**；独立 DeerFlow 为 **20/20、零跳过**，CI tooling 为 262 项。当前[本地契约](docs/evidence/local-contract.json)通过 167 个 Go 顶层测试，含真实 PostgreSQL，具名 Go 测试零跳过；tooling 为 309 通过／5 项 DuckDB 依赖测试跳过，这 5 项已在研究 venv 的 AgentLogs 12/12 专项测试中覆盖；runtime 为 58 通过／四个 DeerFlow 专用环境模块跳过。
+当前工程回归见[收尾验收回执](docs/evidence/research-closure/2026-11-22/validation.json)，统一记录 Go `-race`、PostgreSQL、Python、DuckDB 依赖项与 DeerFlow 的执行身份和分母。[契约报告](docs/evidence/local-contract.json)与其具名日志配套保存。历史源码 `609a58d9` 的 [CI 43178102644](docs/evidence/ci-run-43178102644.json)保留 **162 个 Go 顶层／零跳过、11 个真实 PostgreSQL 测试、DeerFlow 20/20 与 tooling 262 项**的原始范围。
 
-当前联合冒烟 [43178192157](docs/evidence/joint-kv/43178192157/summary.json)完成 **5/5 策略、120/120 请求**，四组路由与全部 trial 清理通过；五策略共 56 次恢复。joint 的 110 个预测差额全部为零，24 次应用、非零成本应用为 0；测量与工作流源码均为 `609a58d9`。
+联合冒烟 [43178192157](docs/evidence/joint-kv/43178192157/summary.json)完成 **5/5 策略、120/120 请求**，四组路由与全部 trial 清理通过；五策略共 56 次恢复。joint 的 110 个预测差额全部为零，24 次应用、非零成本应用为 0；测量与工作流源码均为 `609a58d9`。
 
 独立 [N64／7303 回归 43180786047](docs/evidence/joint-kv/43180786047/summary.json)完成 **5/5 策略、1,905/1,905 请求**，全部 RAM／Token 验证与清理通过。单种子 joint−cache 的交互 P95 增加 **35.6974 s**、Actor 预留增加 **33.2212 GB·s**；独立种子数为 1，区间状态为 `exploratory_seed_units_insufficient`。[五策略原始指标与单种子比较](docs/EXPERIMENTS.md#n64-7303-independent-regression)保留独立源码与原始分母。
 
@@ -44,7 +44,7 @@ flowchart LR
 
 准入恢复契约已在源码 `7d39f654` 验证：明确 423／`admission_closed` 后保留业务身份，在有限次数与期限内恢复；12 项准入测试与独立源码审查通过。[CI 43175566019](docs/evidence/ci-run-43175566019.json)已通过。已归档冒烟 [43175601451](https://github.com/lilong555/agentcloud/actions/runs/43175601451)在首个 `off-assigned` 原生路由预检报告 `RuntimeError: worker-1-native-events`；后三组路由与五个预创建 trial 均为 `NOT_STARTED`，120 条请求均为 `NOT_OFFERED`，生命周期策略启动数为 0；Kind 准备与串行策略步骤跳过。路由进程全部结束、剩余 RSS 为 0，工作流 `Stop containers` 通过。[执行语义与原文](docs/evidence/joint-kv/43175601451/preflight/execution.json)保留完整分母。失败检查的事件 batch、sequence gaps 与 errors 均为空；[Observer 启动审查](docs/evidence/joint-kv/43175601451/review/observer-startup.json)确认异步重连与订阅就绪竞态最符合现有原文。N64／7303 的独立 Run `43180786047` 完成 5/5 trial、1,905/1,905 请求，全部清理成功；首轮 50 trial 保留原身份与失败分母。[实现与失败原文](docs/EXPERIMENTS.md#首轮全量完成率与准入竞争)
 
-当前交付源码 `609a58d9081b3340ab57f99b2c249be24871d376` 的 [Observer](experiments/dynamo/lifecycle_kv_mocker.py#L95)记录 socket 初始化的 `ready` 和真实 `EVENT_HANDSHAKE_SUCCEEDED` 的 `connected`；[Stack](experiments/dynamo/lifecycle_kv_mocker.py#L255)在 Mocker PUB 启动后等待连接握手，再开始推理。快照保留握手历史、连接状态与 `first_sequence`，缺少初始 batch 的序列计入 gap。[真实本地 ZMQ 两项测试](tests/dynamo/test_event_transport.py)在 5.278 s 内通过：20 次晚启动 PUB 均从 sequence 0 观察首事件，另验证初始 gap 与断连清除状态；30 项相关 tooling 通过；[原始失败、源码审查与本地执行记录](docs/evidence/joint-kv/43175601451/review/observer-startup.json)保留各自验证范围。
+Observer 交付源码 `609a58d9081b3340ab57f99b2c249be24871d376` 的 [Observer](experiments/dynamo/lifecycle_kv_mocker.py#L95)记录 socket 初始化的 `ready` 和真实 `EVENT_HANDSHAKE_SUCCEEDED` 的 `connected`；[Stack](experiments/dynamo/lifecycle_kv_mocker.py#L255)在 Mocker PUB 启动后等待连接握手，再开始推理。快照保留握手历史、连接状态与 `first_sequence`，缺少初始 batch 的序列计入 gap。[真实本地 ZMQ 两项测试](tests/dynamo/test_event_transport.py)在 5.278 s 内通过：20 次晚启动 PUB 均从 sequence 0 观察首事件，另验证初始 gap 与断连清除状态；30 项相关 tooling 通过；[原始失败、源码审查与本地执行记录](docs/evidence/joint-kv/43175601451/review/observer-startup.json)保留各自验证范围。
 
 源码 `609a58d9` 的 [CI 43178102644](docs/evidence/ci-run-43178102644.json)为 `passed`：162 个 Go 顶层／零跳过，含 11 个真实 PostgreSQL 测试；262 项 tooling 通过，runtime 为 58 通过／四模块跳过，独立 DeerFlow 为 20/20／零跳过，两个 job 均 success。[原始日志计数](docs/evidence/live-runs/43178102644/test-counts.json)保留具名测试和计数来源。
 
