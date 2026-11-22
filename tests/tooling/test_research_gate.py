@@ -78,6 +78,8 @@ class ResearchGateTests(unittest.TestCase):
     def test_current_registry_preserves_pending_gates(self):
         report=inspect()
         self.assertEqual(report['status'],'passed')
+        self.assertEqual(report['research_lifecycle']['status'],'CONCLUDED')
+        self.assertEqual(report['research_lifecycle']['execution_state'],'FROZEN')
         self.assertEqual(set(report['active_dataset_ids']),ACTIVE_DATASETS)
         self.assertFalse(report['dataset_roles_frozen'])
         self.assertFalse(report['simulation_admitted'])

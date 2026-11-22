@@ -248,6 +248,7 @@ def inspect(root=ROOT):
         simulation_pending.append('active_dataset_roles')
     pending = sorted(name for name, gate in gates.items() if gate['status'] != 'qualified')
     return dict(schema_version=1, status='passed', scope='registry_and_evidence_integrity',
+        research_lifecycle=readiness.get('research_lifecycle', {}),
         simulation_admitted=not simulation_pending,
         scheduling_comparison_admitted=not pending and not simulation_pending,
         remaining_simulation_gates=simulation_pending, remaining_gates=sorted(pending + simulation_pending),

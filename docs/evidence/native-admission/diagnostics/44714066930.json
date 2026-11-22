@@ -1,0 +1,1503 @@
+{
+  "schema_version": 1,
+  "scope": "native_admission_descriptive_attribution",
+  "github_run_id": "44714066930",
+  "source_commit": "ea58d2549bb11474a12d342bd224c4d47226d487",
+  "analysis_source": {
+    "path": "bench/admission_diagnostics.py",
+    "sha256": "b92e1f35ca5b01ac43d2fd417b423c9cb07c242730919ada2aecc280a82dc22e"
+  },
+  "source_uncompressed_sha256": {
+    "admission-native.json": "089cd22378ab83502c32a047cf314772c6a8b43e76357d8bf64f0e40c00dc2d3",
+    "scale/scale-7101-8-static-2-3be500f1598f/result.json": "24cbd55a37a0e22e4c8532cf3913efe42c07271f36b3515093f797189c0f22ce",
+    "scale/scale-7101-8-static-2-3be500f1598f/research/coordinator.jsonl": "1d0f399103512aee668478653fc90f97bfe3e0d3be0443e54fac642f540fe5f1",
+    "scale/scale-7101-8-static-2-3be500f1598f/events.jsonl": "bd70076e4f804d3507a45615b6c8e4dae25e645987bac67d6c5105c78910489a",
+    "scale/scale-7101-8-agentcloud-v2-96232e7be014/result.json": "8743fe97e094b782077ecfa24c3149ca6e579935ce7b8921bbbc7998496bdc17",
+    "scale/scale-7101-8-agentcloud-v2-96232e7be014/research/coordinator.jsonl": "f191e29c43519940adab3332553cb366e617d612239a67650c548b8acf87e09b",
+    "scale/scale-7101-8-agentcloud-v2-96232e7be014/events.jsonl": "d39fad50e48478a7ffa9c7a580b5534c593ab2ace14ae866cdfb57415f30c6eb"
+  },
+  "status": "measured_with_sampling_uncertainty",
+  "causal_performance_claim": false,
+  "clock_error_bound_seconds": null,
+  "capacity_method": "stable adjacent complete fleet snapshots, actual Worker resource dimensions and assignments; max gap 0.5 seconds",
+  "unknown_semantics": "sample transitions, incomplete fleet or gaps; cross-producer wall-clock error remains uncalibrated",
+  "control_semantics": "receive-to-Ready minus capacity intervals minus measured RPC durations; includes identity reads, attach, journal, dispatch and processing",
+  "trials": [
+    {
+      "trial_id": "scale-7101-8-static-2-3be500f1598f",
+      "policy": "static-2",
+      "totals": {
+        "initial_admission": {
+          "demands": 8,
+          "attempts": 13,
+          "received_to_ready_seconds": 62.500323489,
+          "capacity_wait_seconds": 39.892900304,
+          "rpc_seconds": 21.019092163999996,
+          "control_and_attach_seconds": 1.5883310210000015,
+          "sampled_full_seconds": 37.629826068878174,
+          "sampled_free_backoff_seconds": 0.0,
+          "sampled_free_eligible_seconds": 0.39826393127441406,
+          "sampling_unknown_seconds": 1.8648102283477783
+        },
+        "resume_admission": {
+          "demands": 8,
+          "attempts": 13,
+          "received_to_ready_seconds": 30.053208180000002,
+          "capacity_wait_seconds": 25.057699383000003,
+          "rpc_seconds": 2.936612325,
+          "control_and_attach_seconds": 2.058896472,
+          "sampled_full_seconds": 23.1099910736084,
+          "sampled_free_backoff_seconds": 0.0,
+          "sampled_free_eligible_seconds": 0.2583577632904053,
+          "sampling_unknown_seconds": 1.6893503665924072
+        }
+      },
+      "demands": [
+        {
+          "tenant_id": "tenant-a",
+          "session_id": "scale-7101-8-static-2-3be500f1598f-w0",
+          "admission_id": "initial",
+          "kind": "initial_admission",
+          "attempts": 1,
+          "received_to_ready_seconds": 2.8827896689999997,
+          "capacity_wait_seconds": 0,
+          "rpc_seconds": 2.7422755129999996,
+          "control_and_attach_seconds": 0.14051415600000006,
+          "sampled_full_seconds": 0,
+          "sampled_free_backoff_seconds": 0,
+          "sampled_free_eligible_seconds": 0,
+          "sampling_unknown_seconds": 0,
+          "waits": []
+        },
+        {
+          "tenant_id": "tenant-d",
+          "session_id": "scale-7101-8-static-2-3be500f1598f-w3",
+          "admission_id": "initial",
+          "kind": "initial_admission",
+          "attempts": 3,
+          "received_to_ready_seconds": 12.620048849000002,
+          "capacity_wait_seconds": 9.63004762,
+          "rpc_seconds": 2.7425772220000004,
+          "control_and_attach_seconds": 0.247424007000002,
+          "sampled_full_seconds": 9.303727149963379,
+          "sampled_free_backoff_seconds": 0.0,
+          "sampled_free_eligible_seconds": 0.09956598281860352,
+          "sampling_unknown_seconds": 0.22675442695617676,
+          "waits": [
+            {
+              "start_at": "2026-11-20T10:02:45.764974438Z",
+              "seconds": 4.5406311189999995,
+              "sampled_full_seconds": 4.540631055831909,
+              "sampled_free_backoff_seconds": 0.0,
+              "sampled_free_eligible_seconds": 0.0,
+              "sampling_unknown_seconds": 0.0
+            },
+            {
+              "start_at": "2026-11-20T10:02:50.324077871Z",
+              "seconds": 5.089416501,
+              "sampled_full_seconds": 4.76309609413147,
+              "sampled_free_backoff_seconds": 0.0,
+              "sampled_free_eligible_seconds": 0.09956598281860352,
+              "sampling_unknown_seconds": 0.22675442695617676
+            }
+          ]
+        },
+        {
+          "tenant_id": "tenant-b",
+          "session_id": "scale-7101-8-static-2-3be500f1598f-w1",
+          "admission_id": "initial",
+          "kind": "initial_admission",
+          "attempts": 1,
+          "received_to_ready_seconds": 2.69961481,
+          "capacity_wait_seconds": 0,
+          "rpc_seconds": 2.625340401,
+          "control_and_attach_seconds": 0.07427440900000004,
+          "sampled_full_seconds": 0,
+          "sampled_free_backoff_seconds": 0,
+          "sampled_free_eligible_seconds": 0,
+          "sampling_unknown_seconds": 0,
+          "waits": []
+        },
+        {
+          "tenant_id": "tenant-c",
+          "session_id": "scale-7101-8-static-2-3be500f1598f-w2",
+          "admission_id": "initial",
+          "kind": "initial_admission",
+          "attempts": 1,
+          "received_to_ready_seconds": 2.531695069,
+          "capacity_wait_seconds": 0,
+          "rpc_seconds": 2.393528548,
+          "control_and_attach_seconds": 0.13816652100000004,
+          "sampled_full_seconds": 0,
+          "sampled_free_backoff_seconds": 0,
+          "sampled_free_eligible_seconds": 0,
+          "sampling_unknown_seconds": 0,
+          "waits": []
+        },
+        {
+          "tenant_id": "tenant-b",
+          "session_id": "scale-7101-8-static-2-3be500f1598f-w4",
+          "admission_id": "initial",
+          "kind": "initial_admission",
+          "attempts": 2,
+          "received_to_ready_seconds": 12.575789778,
+          "capacity_wait_seconds": 9.756279374,
+          "rpc_seconds": 2.61269692,
+          "control_and_attach_seconds": 0.20681348400000088,
+          "sampled_full_seconds": 9.41150188446045,
+          "sampled_free_backoff_seconds": 0.0,
+          "sampled_free_eligible_seconds": 0.09956598281860352,
+          "sampling_unknown_seconds": 0.24521160125732422,
+          "waits": [
+            {
+              "start_at": "2026-11-20T10:02:45.675626297Z",
+              "seconds": 9.756279374,
+              "sampled_full_seconds": 9.41150188446045,
+              "sampled_free_backoff_seconds": 0.0,
+              "sampled_free_eligible_seconds": 0.09956598281860352,
+              "sampling_unknown_seconds": 0.24521160125732422
+            }
+          ]
+        },
+        {
+          "tenant_id": "tenant-d",
+          "session_id": "scale-7101-8-static-2-3be500f1598f-w6",
+          "admission_id": "initial",
+          "kind": "initial_admission",
+          "attempts": 1,
+          "received_to_ready_seconds": 2.853904835,
+          "capacity_wait_seconds": 0,
+          "rpc_seconds": 2.7088755159999995,
+          "control_and_attach_seconds": 0.14502931900000027,
+          "sampled_full_seconds": 0,
+          "sampled_free_backoff_seconds": 0,
+          "sampled_free_eligible_seconds": 0,
+          "sampling_unknown_seconds": 0,
+          "waits": []
+        },
+        {
+          "tenant_id": "tenant-c",
+          "session_id": "scale-7101-8-static-2-3be500f1598f-w5",
+          "admission_id": "initial",
+          "kind": "initial_admission",
+          "attempts": 2,
+          "received_to_ready_seconds": 13.082637113999999,
+          "capacity_wait_seconds": 10.17528397,
+          "rpc_seconds": 2.624184133,
+          "control_and_attach_seconds": 0.28316901099999825,
+          "sampled_full_seconds": 9.505912065505981,
+          "sampled_free_backoff_seconds": 0.0,
+          "sampled_free_eligible_seconds": 0.09956598281860352,
+          "sampling_unknown_seconds": 0.5698058605194092,
+          "waits": [
+            {
+              "start_at": "2026-11-20T10:02:45.736737394Z",
+              "seconds": 10.17528397,
+              "sampled_full_seconds": 9.505912065505981,
+              "sampled_free_backoff_seconds": 0.0,
+              "sampled_free_eligible_seconds": 0.09956598281860352,
+              "sampling_unknown_seconds": 0.5698058605194092
+            }
+          ]
+        },
+        {
+          "tenant_id": "tenant-a",
+          "session_id": "scale-7101-8-static-2-3be500f1598f-w7",
+          "admission_id": "initial",
+          "kind": "initial_admission",
+          "attempts": 2,
+          "received_to_ready_seconds": 13.253843365,
+          "capacity_wait_seconds": 10.33128934,
+          "rpc_seconds": 2.5696139110000003,
+          "control_and_attach_seconds": 0.3529401139999999,
+          "sampled_full_seconds": 9.408684968948364,
+          "sampled_free_backoff_seconds": 0.0,
+          "sampled_free_eligible_seconds": 0.09956598281860352,
+          "sampling_unknown_seconds": 0.8230383396148682,
+          "waits": [
+            {
+              "start_at": "2026-11-20T10:02:45.833964505Z",
+              "seconds": 10.33128934,
+              "sampled_full_seconds": 9.408684968948364,
+              "sampled_free_backoff_seconds": 0.0,
+              "sampled_free_eligible_seconds": 0.09956598281860352,
+              "sampling_unknown_seconds": 0.8230383396148682
+            }
+          ]
+        },
+        {
+          "tenant_id": "tenant-a",
+          "session_id": "scale-7101-8-static-2-3be500f1598f-w0",
+          "admission_id": "resume-return-1",
+          "kind": "resume_admission",
+          "attempts": 3,
+          "received_to_ready_seconds": 6.251653879,
+          "capacity_wait_seconds": 5.764383102,
+          "rpc_seconds": 0.172419286,
+          "control_and_attach_seconds": 0.314851491,
+          "sampled_full_seconds": 5.641337156295776,
+          "sampled_free_backoff_seconds": 0.0,
+          "sampled_free_eligible_seconds": 0.0,
+          "sampling_unknown_seconds": 0.1230459213256836,
+          "waits": [
+            {
+              "start_at": "2026-11-20T10:02:59.187251206Z",
+              "seconds": 2.12243786,
+              "sampled_full_seconds": 2.1224379539489746,
+              "sampled_free_backoff_seconds": 0.0,
+              "sampled_free_eligible_seconds": 0.0,
+              "sampling_unknown_seconds": 0.0
+            },
+            {
+              "start_at": "2026-11-20T10:03:01.376227689Z",
+              "seconds": 3.641945242,
+              "sampled_full_seconds": 3.5188992023468018,
+              "sampled_free_backoff_seconds": 0.0,
+              "sampled_free_eligible_seconds": 0.0,
+              "sampling_unknown_seconds": 0.1230459213256836
+            }
+          ]
+        },
+        {
+          "tenant_id": "tenant-c",
+          "session_id": "scale-7101-8-static-2-3be500f1598f-w2",
+          "admission_id": "resume-return-1",
+          "kind": "resume_admission",
+          "attempts": 2,
+          "received_to_ready_seconds": 6.964873624,
+          "capacity_wait_seconds": 6.169229148,
+          "rpc_seconds": 0.240025378,
+          "control_and_attach_seconds": 0.5556190979999996,
+          "sampled_full_seconds": 5.840076923370361,
+          "sampled_free_backoff_seconds": 0.0,
+          "sampled_free_eligible_seconds": 0.0,
+          "sampling_unknown_seconds": 0.32915210723876953,
+          "waits": [
+            {
+              "start_at": "2026-11-20T10:02:59.451332637Z",
+              "seconds": 6.169229148,
+              "sampled_full_seconds": 5.840076923370361,
+              "sampled_free_backoff_seconds": 0.0,
+              "sampled_free_eligible_seconds": 0.0,
+              "sampling_unknown_seconds": 0.32915210723876953
+            }
+          ]
+        },
+        {
+          "tenant_id": "tenant-d",
+          "session_id": "scale-7101-8-static-2-3be500f1598f-w6",
+          "admission_id": "resume-return-1",
+          "kind": "resume_admission",
+          "attempts": 2,
+          "received_to_ready_seconds": 7.27542315,
+          "capacity_wait_seconds": 6.392092946,
+          "rpc_seconds": 0.640862318,
+          "control_and_attach_seconds": 0.2424678859999999,
+          "sampled_full_seconds": 5.8440680503845215,
+          "sampled_free_backoff_seconds": 0.0,
+          "sampled_free_eligible_seconds": 0.025607824325561523,
+          "sampling_unknown_seconds": 0.5224170684814453,
+          "waits": [
+            {
+              "start_at": "2026-11-20T10:02:59.447341455Z",
+              "seconds": 6.392092946,
+              "sampled_full_seconds": 5.8440680503845215,
+              "sampled_free_backoff_seconds": 0.0,
+              "sampled_free_eligible_seconds": 0.025607824325561523,
+              "sampling_unknown_seconds": 0.5224170684814453
+            }
+          ]
+        },
+        {
+          "tenant_id": "tenant-b",
+          "session_id": "scale-7101-8-static-2-3be500f1598f-w1",
+          "admission_id": "resume-return-1",
+          "kind": "resume_admission",
+          "attempts": 2,
+          "received_to_ready_seconds": 7.127300718000001,
+          "capacity_wait_seconds": 6.731994187000001,
+          "rpc_seconds": 0.275910783,
+          "control_and_attach_seconds": 0.11939574800000013,
+          "sampled_full_seconds": 5.784508943557739,
+          "sampled_free_backoff_seconds": 0.0,
+          "sampled_free_eligible_seconds": 0.23274993896484375,
+          "sampling_unknown_seconds": 0.7147352695465088,
+          "waits": [
+            {
+              "start_at": "2026-11-20T10:02:59.810852426Z",
+              "seconds": 6.731994187000001,
+              "sampled_full_seconds": 5.784508943557739,
+              "sampled_free_backoff_seconds": 0.0,
+              "sampled_free_eligible_seconds": 0.23274993896484375,
+              "sampling_unknown_seconds": 0.7147352695465088
+            }
+          ]
+        },
+        {
+          "tenant_id": "tenant-b",
+          "session_id": "scale-7101-8-static-2-3be500f1598f-w4",
+          "admission_id": "resume-return-1",
+          "kind": "resume_admission",
+          "attempts": 1,
+          "received_to_ready_seconds": 0.650849232,
+          "capacity_wait_seconds": 0,
+          "rpc_seconds": 0.401151849,
+          "control_and_attach_seconds": 0.249697383,
+          "sampled_full_seconds": 0,
+          "sampled_free_backoff_seconds": 0,
+          "sampled_free_eligible_seconds": 0,
+          "sampling_unknown_seconds": 0,
+          "waits": []
+        },
+        {
+          "tenant_id": "tenant-d",
+          "session_id": "scale-7101-8-static-2-3be500f1598f-w3",
+          "admission_id": "resume-return-1",
+          "kind": "resume_admission",
+          "attempts": 1,
+          "received_to_ready_seconds": 0.59523305,
+          "capacity_wait_seconds": 0,
+          "rpc_seconds": 0.336731628,
+          "control_and_attach_seconds": 0.25850142200000004,
+          "sampled_full_seconds": 0,
+          "sampled_free_backoff_seconds": 0,
+          "sampled_free_eligible_seconds": 0,
+          "sampling_unknown_seconds": 0,
+          "waits": []
+        },
+        {
+          "tenant_id": "tenant-a",
+          "session_id": "scale-7101-8-static-2-3be500f1598f-w7",
+          "admission_id": "resume-return-1",
+          "kind": "resume_admission",
+          "attempts": 1,
+          "received_to_ready_seconds": 0.405327483,
+          "capacity_wait_seconds": 0,
+          "rpc_seconds": 0.246134091,
+          "control_and_attach_seconds": 0.159193392,
+          "sampled_full_seconds": 0,
+          "sampled_free_backoff_seconds": 0,
+          "sampled_free_eligible_seconds": 0,
+          "sampling_unknown_seconds": 0,
+          "waits": []
+        },
+        {
+          "tenant_id": "tenant-c",
+          "session_id": "scale-7101-8-static-2-3be500f1598f-w5",
+          "admission_id": "resume-return-1",
+          "kind": "resume_admission",
+          "attempts": 1,
+          "received_to_ready_seconds": 0.7825470440000001,
+          "capacity_wait_seconds": 0,
+          "rpc_seconds": 0.623376992,
+          "control_and_attach_seconds": 0.15917005200000012,
+          "sampled_full_seconds": 0,
+          "sampled_free_backoff_seconds": 0,
+          "sampled_free_eligible_seconds": 0,
+          "sampling_unknown_seconds": 0,
+          "waits": []
+        }
+      ],
+      "event_wake": {
+        "release_to_eligible_attempt_ms": {
+          "samples": 8,
+          "p95": 153.73763149999996,
+          "max": 179.727711
+        },
+        "eligible_attempts": 10,
+        "fallback_attempts": 2,
+        "fallback_attempt_fraction": 0.2,
+        "unknown_retry_trigger_attempts": 0,
+        "eligible_wait_ms_by_tenant": {
+          "tenant-a": {
+            "samples": 2,
+            "p95": 101.73937955,
+            "max": 105.441535
+          },
+          "tenant-b": {
+            "samples": 2,
+            "p95": 19.4884385,
+            "max": 19.975634
+          },
+          "tenant-c": {
+            "samples": 2,
+            "p95": 70.48057795,
+            "max": 73.676341
+          },
+          "tenant-d": {
+            "samples": 2,
+            "p95": 171.04336159999997,
+            "max": 179.686953
+          }
+        },
+        "samples": [
+          {
+            "release_sequence": 202,
+            "tenant_id": "tenant-d",
+            "session_id": "scale-7101-8-static-2-3be500f1598f-w3",
+            "admission_kind": "initial_admission",
+            "release_to_attempt_ms": 179.727711,
+            "notified_to_attempt_ms": 179.686953,
+            "estimated_journal_overlap_ms": 178.117426,
+            "residual_elapsed_ms": 1.6102850000000046,
+            "commit_receipts": [
+              {
+                "observation_sequence": 282,
+                "operation_id": "idle-0",
+                "session_id": "scale-7101-8-static-2-3be500f1598f-w0",
+                "commit_ms": 71.133704,
+                "overlap_ms": 71.133704
+              },
+              {
+                "observation_sequence": 283,
+                "operation_id": "signal",
+                "session_id": "scale-7101-8-static-2-3be500f1598f-w2",
+                "commit_ms": 106.983722,
+                "overlap_ms": 106.983722
+              }
+            ]
+          },
+          {
+            "release_sequence": 206,
+            "tenant_id": "tenant-b",
+            "session_id": "scale-7101-8-static-2-3be500f1598f-w4",
+            "admission_kind": "initial_admission",
+            "release_to_attempt_ms": 10.256018,
+            "notified_to_attempt_ms": 10.231724,
+            "estimated_journal_overlap_ms": 5.585317,
+            "residual_elapsed_ms": 4.670700999999999,
+            "commit_receipts": [
+              {
+                "observation_sequence": 286,
+                "operation_id": "idle-0",
+                "session_id": "scale-7101-8-static-2-3be500f1598f-w2",
+                "commit_ms": 2.530096,
+                "overlap_ms": 2.530096
+              },
+              {
+                "observation_sequence": 288,
+                "operation_id": "signal",
+                "session_id": "scale-7101-8-static-2-3be500f1598f-w2",
+                "commit_ms": 1.969469,
+                "overlap_ms": 1.969469
+              },
+              {
+                "observation_sequence": 289,
+                "operation_id": "signal",
+                "session_id": "scale-7101-8-static-2-3be500f1598f-w4",
+                "commit_ms": 1.085752,
+                "overlap_ms": 1.085752
+              }
+            ]
+          },
+          {
+            "release_sequence": 221,
+            "tenant_id": "tenant-c",
+            "session_id": "scale-7101-8-static-2-3be500f1598f-w5",
+            "admission_kind": "initial_admission",
+            "release_to_attempt_ms": 9.802043,
+            "notified_to_attempt_ms": 9.76108,
+            "estimated_journal_overlap_ms": 9.434688,
+            "residual_elapsed_ms": 0.3673549999999999,
+            "commit_receipts": [
+              {
+                "observation_sequence": 309,
+                "operation_id": "idle-0",
+                "session_id": "scale-7101-8-static-2-3be500f1598f-w6",
+                "commit_ms": 9.434688,
+                "overlap_ms": 9.434688
+              }
+            ]
+          },
+          {
+            "release_sequence": 226,
+            "tenant_id": "tenant-a",
+            "session_id": "scale-7101-8-static-2-3be500f1598f-w7",
+            "admission_kind": "initial_admission",
+            "release_to_attempt_ms": 32.16006,
+            "notified_to_attempt_ms": 31.398426,
+            "estimated_journal_overlap_ms": 28.688787,
+            "residual_elapsed_ms": 3.471273,
+            "commit_receipts": [
+              {
+                "observation_sequence": 313,
+                "operation_id": "idle-0",
+                "session_id": "scale-7101-8-static-2-3be500f1598f-w1",
+                "commit_ms": 28.688787,
+                "overlap_ms": 28.688787
+              }
+            ]
+          },
+          {
+            "release_sequence": 424,
+            "tenant_id": "tenant-a",
+            "session_id": "scale-7101-8-static-2-3be500f1598f-w0",
+            "admission_kind": "resume_admission",
+            "release_to_attempt_ms": 105.470341,
+            "notified_to_attempt_ms": 105.441535,
+            "estimated_journal_overlap_ms": 99.836544,
+            "residual_elapsed_ms": 5.633797000000001,
+            "commit_receipts": [
+              {
+                "observation_sequence": 634,
+                "operation_id": "idle-0",
+                "session_id": "scale-7101-8-static-2-3be500f1598f-w4",
+                "commit_ms": 99.836544,
+                "overlap_ms": 99.836544
+              }
+            ]
+          },
+          {
+            "release_sequence": 447,
+            "tenant_id": "tenant-c",
+            "session_id": "scale-7101-8-static-2-3be500f1598f-w2",
+            "admission_kind": "resume_admission",
+            "release_to_attempt_ms": 73.707379,
+            "notified_to_attempt_ms": 73.676341,
+            "estimated_journal_overlap_ms": 70.721981,
+            "residual_elapsed_ms": 2.9853980000000035,
+            "commit_receipts": [
+              {
+                "observation_sequence": 679,
+                "operation_id": "idle-0",
+                "session_id": "scale-7101-8-static-2-3be500f1598f-w3",
+                "commit_ms": 70.721981,
+                "overlap_ms": 70.721981
+              }
+            ]
+          },
+          {
+            "release_sequence": 456,
+            "tenant_id": "tenant-d",
+            "session_id": "scale-7101-8-static-2-3be500f1598f-w6",
+            "admission_kind": "resume_admission",
+            "release_to_attempt_ms": 6.852979,
+            "notified_to_attempt_ms": 6.815125,
+            "estimated_journal_overlap_ms": 3.625057,
+            "residual_elapsed_ms": 3.2279220000000004,
+            "commit_receipts": [
+              {
+                "observation_sequence": 688,
+                "operation_id": "idle-0",
+                "session_id": "scale-7101-8-static-2-3be500f1598f-w7",
+                "commit_ms": 3.625057,
+                "overlap_ms": 3.625057
+              }
+            ]
+          },
+          {
+            "release_sequence": 472,
+            "tenant_id": "tenant-b",
+            "session_id": "scale-7101-8-static-2-3be500f1598f-w1",
+            "admission_kind": "resume_admission",
+            "release_to_attempt_ms": 20.003492,
+            "notified_to_attempt_ms": 19.975634,
+            "estimated_journal_overlap_ms": 13.563362,
+            "residual_elapsed_ms": 6.440130000000002,
+            "commit_receipts": [
+              {
+                "observation_sequence": 709,
+                "operation_id": "idle-0",
+                "session_id": "scale-7101-8-static-2-3be500f1598f-w5",
+                "commit_ms": 3.800573,
+                "overlap_ms": 3.800573
+              },
+              {
+                "observation_sequence": 711,
+                "operation_id": "scale-7101-8-static-2-3be500f1598f-w0-r1",
+                "session_id": "scale-7101-8-static-2-3be500f1598f-w0",
+                "commit_ms": 4.821385,
+                "overlap_ms": 4.821385
+              },
+              {
+                "observation_sequence": 713,
+                "operation_id": "scale-7101-8-static-2-3be500f1598f-w2-r0",
+                "session_id": "scale-7101-8-static-2-3be500f1598f-w2",
+                "commit_ms": 1.08657,
+                "overlap_ms": 1.08657
+              },
+              {
+                "observation_sequence": 714,
+                "operation_id": "work-1",
+                "session_id": "scale-7101-8-static-2-3be500f1598f-w2",
+                "commit_ms": 2.315649,
+                "overlap_ms": 2.315649
+              },
+              {
+                "observation_sequence": 715,
+                "operation_id": "signal",
+                "session_id": "scale-7101-8-static-2-3be500f1598f-w2",
+                "commit_ms": 1.539185,
+                "overlap_ms": 1.539185
+              }
+            ]
+          }
+        ],
+        "pending_notifications": 0,
+        "eligibility": "durable release notification; Substrate decides physical placement",
+        "attempt_denominator": "all capacity retries (attempt_count > 1)",
+        "journal_overlap_method": "derived union of [observation monotonic time - journal_commit_ms, observation monotonic time], clipped to release-to-attempt; includes serialization, database commit and lock reacquisition, with observation timestamp offset; not a storage-device latency measurement"
+      },
+      "release_opportunities": [
+        {
+          "release_sequence": 202,
+          "waiting_demands": 4,
+          "next_attempt_delay_seconds": 0.179727711,
+          "oldest_attempt_delay_seconds": 0.179727711,
+          "oldest_served_first": true
+        },
+        {
+          "release_sequence": 206,
+          "waiting_demands": 3,
+          "next_attempt_delay_seconds": 0.010256018,
+          "oldest_attempt_delay_seconds": 0.010256018,
+          "oldest_served_first": true
+        },
+        {
+          "release_sequence": 221,
+          "waiting_demands": 2,
+          "next_attempt_delay_seconds": 0.009802043,
+          "oldest_attempt_delay_seconds": 0.009802043,
+          "oldest_served_first": true
+        },
+        {
+          "release_sequence": 226,
+          "waiting_demands": 1,
+          "next_attempt_delay_seconds": 0.03216006,
+          "oldest_attempt_delay_seconds": 0.03216006,
+          "oldest_served_first": true
+        },
+        {
+          "release_sequence": 424,
+          "waiting_demands": 4,
+          "next_attempt_delay_seconds": 0.105470341,
+          "oldest_attempt_delay_seconds": 0.105470341,
+          "oldest_served_first": true
+        },
+        {
+          "release_sequence": 447,
+          "waiting_demands": 3,
+          "next_attempt_delay_seconds": 0.073707379,
+          "oldest_attempt_delay_seconds": 0.073707379,
+          "oldest_served_first": true
+        },
+        {
+          "release_sequence": 456,
+          "waiting_demands": 2,
+          "next_attempt_delay_seconds": 0.006852979,
+          "oldest_attempt_delay_seconds": 0.006852979,
+          "oldest_served_first": true
+        },
+        {
+          "release_sequence": 472,
+          "waiting_demands": 1,
+          "next_attempt_delay_seconds": 0.020003492,
+          "oldest_attempt_delay_seconds": 0.020003492,
+          "oldest_served_first": true
+        }
+      ],
+      "release_to_next_attempt_p95_seconds": 0.15373763149999997,
+      "later_request_decomposition": [
+        {
+          "session_id": "scale-7101-8-static-2-3be500f1598f-w0",
+          "ttft_seconds": 7.697866201400757,
+          "arrival_to_demand_seconds": 0.11075901985168457,
+          "demand_to_ready_seconds": 6.2516560554504395,
+          "ready_to_first_token_seconds": 1.3354511260986328,
+          "client_receipt_lag_seconds": 0.06539368629455566
+        },
+        {
+          "session_id": "scale-7101-8-static-2-3be500f1598f-w1",
+          "ttft_seconds": 9.588052988052368,
+          "arrival_to_demand_seconds": 0.2098860740661621,
+          "demand_to_ready_seconds": 7.1273040771484375,
+          "ready_to_first_token_seconds": 2.2508628368377686,
+          "client_receipt_lag_seconds": 0.07657098770141602
+        },
+        {
+          "session_id": "scale-7101-8-static-2-3be500f1598f-w2",
+          "ttft_seconds": 8.991666793823242,
+          "arrival_to_demand_seconds": 0.4230790138244629,
+          "demand_to_ready_seconds": 6.964876890182495,
+          "ready_to_first_token_seconds": 1.6037108898162842,
+          "client_receipt_lag_seconds": 0.027733564376831055
+        },
+        {
+          "session_id": "scale-7101-8-static-2-3be500f1598f-w3",
+          "ttft_seconds": 1.9323129653930664,
+          "arrival_to_demand_seconds": 0.21297097206115723,
+          "demand_to_ready_seconds": 0.59523606300354,
+          "ready_to_first_token_seconds": 1.1241059303283691,
+          "client_receipt_lag_seconds": 0.09355282783508301
+        },
+        {
+          "session_id": "scale-7101-8-static-2-3be500f1598f-w4",
+          "ttft_seconds": 2.058786153793335,
+          "arrival_to_demand_seconds": 0.2721519470214844,
+          "demand_to_ready_seconds": 0.650853157043457,
+          "ready_to_first_token_seconds": 1.1357810497283936,
+          "client_receipt_lag_seconds": 0.04093217849731445
+        },
+        {
+          "session_id": "scale-7101-8-static-2-3be500f1598f-w5",
+          "ttft_seconds": 4.202540874481201,
+          "arrival_to_demand_seconds": 1.5460309982299805,
+          "demand_to_ready_seconds": 0.7825498580932617,
+          "ready_to_first_token_seconds": 1.873960018157959,
+          "client_receipt_lag_seconds": 0.04226517677307129
+        },
+        {
+          "session_id": "scale-7101-8-static-2-3be500f1598f-w6",
+          "ttft_seconds": 8.6947660446167,
+          "arrival_to_demand_seconds": 0.10082006454467773,
+          "demand_to_ready_seconds": 7.275426864624023,
+          "ready_to_first_token_seconds": 1.318519115447998,
+          "client_receipt_lag_seconds": 0.023100614547729492
+        },
+        {
+          "session_id": "scale-7101-8-static-2-3be500f1598f-w7",
+          "ttft_seconds": 2.5170388221740723,
+          "arrival_to_demand_seconds": 0.9475958347320557,
+          "demand_to_ready_seconds": 0.405332088470459,
+          "ready_to_first_token_seconds": 1.1641108989715576,
+          "client_receipt_lag_seconds": 0.05556321144104004
+        }
+      ]
+    },
+    {
+      "trial_id": "scale-7101-8-agentcloud-v2-96232e7be014",
+      "policy": "agentcloud-v2",
+      "totals": {
+        "initial_admission": {
+          "demands": 8,
+          "attempts": 13,
+          "received_to_ready_seconds": 63.668916542,
+          "capacity_wait_seconds": 39.880594878000004,
+          "rpc_seconds": 21.791787959,
+          "control_and_attach_seconds": 1.9965337049999978,
+          "sampled_full_seconds": 38.041165351867676,
+          "sampled_free_backoff_seconds": 0.0,
+          "sampled_free_eligible_seconds": 0.8011429309844971,
+          "sampling_unknown_seconds": 1.0382866859436035
+        },
+        "resume_admission": {
+          "demands": 8,
+          "attempts": 13,
+          "received_to_ready_seconds": 33.932962257,
+          "capacity_wait_seconds": 25.973925526000002,
+          "rpc_seconds": 2.508662702,
+          "control_and_attach_seconds": 5.450374028999999,
+          "sampled_full_seconds": 23.713687658309937,
+          "sampled_free_backoff_seconds": 0.0,
+          "sampled_free_eligible_seconds": 0.6221263408660889,
+          "sampling_unknown_seconds": 1.6381115913391113
+        }
+      },
+      "demands": [
+        {
+          "tenant_id": "tenant-a",
+          "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w0",
+          "admission_id": "initial",
+          "kind": "initial_admission",
+          "attempts": 1,
+          "received_to_ready_seconds": 2.656552259,
+          "capacity_wait_seconds": 0,
+          "rpc_seconds": 2.5225936289999997,
+          "control_and_attach_seconds": 0.1339586300000004,
+          "sampled_full_seconds": 0,
+          "sampled_free_backoff_seconds": 0,
+          "sampled_free_eligible_seconds": 0,
+          "sampling_unknown_seconds": 0,
+          "waits": []
+        },
+        {
+          "tenant_id": "tenant-c",
+          "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w2",
+          "admission_id": "initial",
+          "kind": "initial_admission",
+          "attempts": 1,
+          "received_to_ready_seconds": 2.770530137,
+          "capacity_wait_seconds": 0,
+          "rpc_seconds": 2.6277382069999997,
+          "control_and_attach_seconds": 0.14279193000000046,
+          "sampled_full_seconds": 0,
+          "sampled_free_backoff_seconds": 0,
+          "sampled_free_eligible_seconds": 0,
+          "sampling_unknown_seconds": 0,
+          "waits": []
+        },
+        {
+          "tenant_id": "tenant-b",
+          "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w1",
+          "admission_id": "initial",
+          "kind": "initial_admission",
+          "attempts": 1,
+          "received_to_ready_seconds": 2.907831308,
+          "capacity_wait_seconds": 0,
+          "rpc_seconds": 2.814354272,
+          "control_and_attach_seconds": 0.0934770359999999,
+          "sampled_full_seconds": 0,
+          "sampled_free_backoff_seconds": 0,
+          "sampled_free_eligible_seconds": 0,
+          "sampling_unknown_seconds": 0,
+          "waits": []
+        },
+        {
+          "tenant_id": "tenant-d",
+          "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w3",
+          "admission_id": "initial",
+          "kind": "initial_admission",
+          "attempts": 1,
+          "received_to_ready_seconds": 2.784733896,
+          "capacity_wait_seconds": 0,
+          "rpc_seconds": 2.671153517,
+          "control_and_attach_seconds": 0.11358037900000006,
+          "sampled_full_seconds": 0,
+          "sampled_free_backoff_seconds": 0,
+          "sampled_free_eligible_seconds": 0,
+          "sampling_unknown_seconds": 0,
+          "waits": []
+        },
+        {
+          "tenant_id": "tenant-b",
+          "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w4",
+          "admission_id": "initial",
+          "kind": "initial_admission",
+          "attempts": 3,
+          "received_to_ready_seconds": 12.712598201999999,
+          "capacity_wait_seconds": 9.527500532000001,
+          "rpc_seconds": 2.6600709850000004,
+          "control_and_attach_seconds": 0.5250266849999972,
+          "sampled_full_seconds": 9.240952730178833,
+          "sampled_free_backoff_seconds": 0.0,
+          "sampled_free_eligible_seconds": 0.18839478492736816,
+          "sampling_unknown_seconds": 0.09815311431884766,
+          "waits": [
+            {
+              "start_at": "2026-11-20T10:03:20.145786207Z",
+              "seconds": 4.429078781,
+              "sampled_full_seconds": 4.429078817367554,
+              "sampled_free_backoff_seconds": 0.0,
+              "sampled_free_eligible_seconds": 0.0,
+              "sampling_unknown_seconds": 0.0
+            },
+            {
+              "start_at": "2026-11-20T10:03:24.646652422Z",
+              "seconds": 5.098421751,
+              "sampled_full_seconds": 4.811873912811279,
+              "sampled_free_backoff_seconds": 0.0,
+              "sampled_free_eligible_seconds": 0.18839478492736816,
+              "sampling_unknown_seconds": 0.09815311431884766
+            }
+          ]
+        },
+        {
+          "tenant_id": "tenant-a",
+          "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w7",
+          "admission_id": "initial",
+          "kind": "initial_admission",
+          "attempts": 2,
+          "received_to_ready_seconds": 13.273086587,
+          "capacity_wait_seconds": 10.158308289,
+          "rpc_seconds": 2.92285452,
+          "control_and_attach_seconds": 0.19192377799999916,
+          "sampled_full_seconds": 9.629615783691406,
+          "sampled_free_backoff_seconds": 0.0,
+          "sampled_free_eligible_seconds": 0.21096110343933105,
+          "sampling_unknown_seconds": 0.3177313804626465,
+          "waits": [
+            {
+              "start_at": "2026-11-20T10:03:20.15569218Z",
+              "seconds": 10.158308289,
+              "sampled_full_seconds": 9.629615783691406,
+              "sampled_free_backoff_seconds": 0.0,
+              "sampled_free_eligible_seconds": 0.21096110343933105,
+              "sampling_unknown_seconds": 0.3177313804626465
+            }
+          ]
+        },
+        {
+          "tenant_id": "tenant-c",
+          "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w5",
+          "admission_id": "initial",
+          "kind": "initial_admission",
+          "attempts": 2,
+          "received_to_ready_seconds": 12.840237094,
+          "capacity_wait_seconds": 9.581533925,
+          "rpc_seconds": 2.9438973219999998,
+          "control_and_attach_seconds": 0.3148058470000006,
+          "sampled_full_seconds": 9.29255485534668,
+          "sampled_free_backoff_seconds": 0.0,
+          "sampled_free_eligible_seconds": 0.1908259391784668,
+          "sampling_unknown_seconds": 0.09815311431884766,
+          "waits": [
+            {
+              "start_at": "2026-11-20T10:03:20.165971467Z",
+              "seconds": 9.581533925,
+              "sampled_full_seconds": 9.29255485534668,
+              "sampled_free_backoff_seconds": 0.0,
+              "sampled_free_eligible_seconds": 0.1908259391784668,
+              "sampling_unknown_seconds": 0.09815311431884766
+            }
+          ]
+        },
+        {
+          "tenant_id": "tenant-d",
+          "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w6",
+          "admission_id": "initial",
+          "kind": "initial_admission",
+          "attempts": 2,
+          "received_to_ready_seconds": 13.723347059,
+          "capacity_wait_seconds": 10.613252132,
+          "rpc_seconds": 2.6291255070000004,
+          "control_and_attach_seconds": 0.4809694200000001,
+          "sampled_full_seconds": 9.878041982650757,
+          "sampled_free_backoff_seconds": 0.0,
+          "sampled_free_eligible_seconds": 0.21096110343933105,
+          "sampling_unknown_seconds": 0.5242490768432617,
+          "waits": [
+            {
+              "start_at": "2026-11-20T10:03:20.143323922Z",
+              "seconds": 10.613252132,
+              "sampled_full_seconds": 9.878041982650757,
+              "sampled_free_backoff_seconds": 0.0,
+              "sampled_free_eligible_seconds": 0.21096110343933105,
+              "sampling_unknown_seconds": 0.5242490768432617
+            }
+          ]
+        },
+        {
+          "tenant_id": "tenant-d",
+          "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w3",
+          "admission_id": "resume-return-1",
+          "kind": "resume_admission",
+          "attempts": 3,
+          "received_to_ready_seconds": 6.519873024000001,
+          "capacity_wait_seconds": 6.039539091,
+          "rpc_seconds": 0.26475786100000004,
+          "control_and_attach_seconds": 0.21557607200000067,
+          "sampled_full_seconds": 5.863413095474243,
+          "sampled_free_backoff_seconds": 0.0,
+          "sampled_free_eligible_seconds": 0.07700705528259277,
+          "sampling_unknown_seconds": 0.09911894798278809,
+          "waits": [
+            {
+              "start_at": "2026-11-20T10:03:33.430769518Z",
+              "seconds": 2.395920046,
+              "sampled_full_seconds": 2.3959200382232666,
+              "sampled_free_backoff_seconds": 0.0,
+              "sampled_free_eligible_seconds": 0.0,
+              "sampling_unknown_seconds": 0.0
+            },
+            {
+              "start_at": "2026-11-20T10:03:35.889859397Z",
+              "seconds": 3.6436190450000003,
+              "sampled_full_seconds": 3.4674930572509766,
+              "sampled_free_backoff_seconds": 0.0,
+              "sampled_free_eligible_seconds": 0.07700705528259277,
+              "sampling_unknown_seconds": 0.09911894798278809
+            }
+          ]
+        },
+        {
+          "tenant_id": "tenant-a",
+          "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w0",
+          "admission_id": "resume-return-1",
+          "kind": "resume_admission",
+          "attempts": 2,
+          "received_to_ready_seconds": 7.876165147,
+          "capacity_wait_seconds": 6.939720064,
+          "rpc_seconds": 0.292561759,
+          "control_and_attach_seconds": 0.6438833239999997,
+          "sampled_full_seconds": 6.50011420249939,
+          "sampled_free_backoff_seconds": 0.0,
+          "sampled_free_eligible_seconds": 0.13238120079040527,
+          "sampling_unknown_seconds": 0.30722475051879883,
+          "waits": [
+            {
+              "start_at": "2026-11-20T10:03:33.456939548Z",
+              "seconds": 6.939720064,
+              "sampled_full_seconds": 6.50011420249939,
+              "sampled_free_backoff_seconds": 0.0,
+              "sampled_free_eligible_seconds": 0.13238120079040527,
+              "sampling_unknown_seconds": 0.30722475051879883
+            }
+          ]
+        },
+        {
+          "tenant_id": "tenant-c",
+          "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w2",
+          "admission_id": "resume-return-1",
+          "kind": "resume_admission",
+          "attempts": 2,
+          "received_to_ready_seconds": 7.640873867,
+          "capacity_wait_seconds": 6.248070543,
+          "rpc_seconds": 0.525255406,
+          "control_and_attach_seconds": 0.867547918,
+          "sampled_full_seconds": 5.609279155731201,
+          "sampled_free_backoff_seconds": 0.0,
+          "sampled_free_eligible_seconds": 0.19219112396240234,
+          "sampling_unknown_seconds": 0.44660019874572754,
+          "waits": [
+            {
+              "start_at": "2026-11-20T10:03:34.347774361Z",
+              "seconds": 6.248070543,
+              "sampled_full_seconds": 5.609279155731201,
+              "sampled_free_backoff_seconds": 0.0,
+              "sampled_free_eligible_seconds": 0.19219112396240234,
+              "sampling_unknown_seconds": 0.44660019874572754
+            }
+          ]
+        },
+        {
+          "tenant_id": "tenant-b",
+          "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w1",
+          "admission_id": "resume-return-1",
+          "kind": "resume_admission",
+          "attempts": 2,
+          "received_to_ready_seconds": 7.489301322999999,
+          "capacity_wait_seconds": 6.746595828,
+          "rpc_seconds": 0.36181236,
+          "control_and_attach_seconds": 0.38089313499999916,
+          "sampled_full_seconds": 5.7408812046051025,
+          "sampled_free_backoff_seconds": 0.0,
+          "sampled_free_eligible_seconds": 0.22054696083068848,
+          "sampling_unknown_seconds": 0.7851676940917969,
+          "waits": [
+            {
+              "start_at": "2026-11-20T10:03:34.35140715Z",
+              "seconds": 6.746595828,
+              "sampled_full_seconds": 5.7408812046051025,
+              "sampled_free_backoff_seconds": 0.0,
+              "sampled_free_eligible_seconds": 0.22054696083068848,
+              "sampling_unknown_seconds": 0.7851676940917969
+            }
+          ]
+        },
+        {
+          "tenant_id": "tenant-b",
+          "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w4",
+          "admission_id": "resume-return-1",
+          "kind": "resume_admission",
+          "attempts": 1,
+          "received_to_ready_seconds": 0.736609064,
+          "capacity_wait_seconds": 0,
+          "rpc_seconds": 0.354754926,
+          "control_and_attach_seconds": 0.381854138,
+          "sampled_full_seconds": 0,
+          "sampled_free_backoff_seconds": 0,
+          "sampled_free_eligible_seconds": 0,
+          "sampling_unknown_seconds": 0,
+          "waits": []
+        },
+        {
+          "tenant_id": "tenant-a",
+          "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w7",
+          "admission_id": "resume-return-1",
+          "kind": "resume_admission",
+          "attempts": 1,
+          "received_to_ready_seconds": 0.46094417800000004,
+          "capacity_wait_seconds": 0,
+          "rpc_seconds": 0.194030091,
+          "control_and_attach_seconds": 0.2669140870000001,
+          "sampled_full_seconds": 0,
+          "sampled_free_backoff_seconds": 0,
+          "sampled_free_eligible_seconds": 0,
+          "sampling_unknown_seconds": 0,
+          "waits": []
+        },
+        {
+          "tenant_id": "tenant-c",
+          "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w5",
+          "admission_id": "resume-return-1",
+          "kind": "resume_admission",
+          "attempts": 1,
+          "received_to_ready_seconds": 1.206049258,
+          "capacity_wait_seconds": 0,
+          "rpc_seconds": 0.28528252,
+          "control_and_attach_seconds": 0.920766738,
+          "sampled_full_seconds": 0,
+          "sampled_free_backoff_seconds": 0,
+          "sampled_free_eligible_seconds": 0,
+          "sampling_unknown_seconds": 0,
+          "waits": []
+        },
+        {
+          "tenant_id": "tenant-d",
+          "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w6",
+          "admission_id": "resume-return-1",
+          "kind": "resume_admission",
+          "attempts": 1,
+          "received_to_ready_seconds": 2.003146396,
+          "capacity_wait_seconds": 0,
+          "rpc_seconds": 0.230207779,
+          "control_and_attach_seconds": 1.7729386169999999,
+          "sampled_full_seconds": 0,
+          "sampled_free_backoff_seconds": 0,
+          "sampled_free_eligible_seconds": 0,
+          "sampling_unknown_seconds": 0,
+          "waits": []
+        }
+      ],
+      "event_wake": {
+        "release_to_eligible_attempt_ms": {
+          "samples": 8,
+          "p95": 133.26348469999994,
+          "max": 172.327635
+        },
+        "eligible_attempts": 10,
+        "fallback_attempts": 2,
+        "fallback_attempt_fraction": 0.2,
+        "unknown_retry_trigger_attempts": 0,
+        "eligible_wait_ms_by_tenant": {
+          "tenant-a": {
+            "samples": 2,
+            "p95": 54.361327149999994,
+            "max": 56.614737
+          },
+          "tenant-b": {
+            "samples": 2,
+            "p95": 165.53059894999998,
+            "max": 172.291736
+          },
+          "tenant-c": {
+            "samples": 2,
+            "p95": 21.680087649999997,
+            "max": 22.531005
+          },
+          "tenant-d": {
+            "samples": 2,
+            "p95": 58.1606045,
+            "max": 60.68669
+          }
+        },
+        "samples": [
+          {
+            "release_sequence": 247,
+            "tenant_id": "tenant-b",
+            "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w4",
+            "admission_kind": "initial_admission",
+            "release_to_attempt_ms": 172.327635,
+            "notified_to_attempt_ms": 172.291736,
+            "estimated_journal_overlap_ms": 169.828771,
+            "residual_elapsed_ms": 2.4988639999999975,
+            "commit_receipts": [
+              {
+                "observation_sequence": 318,
+                "operation_id": "auto-6a89cb01c963a69a68c3a87e02db91dd",
+                "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w3",
+                "commit_ms": 89.321771,
+                "overlap_ms": 89.321771
+              },
+              {
+                "observation_sequence": 319,
+                "operation_id": "signal",
+                "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w1",
+                "commit_ms": 78.19613,
+                "overlap_ms": 78.19613
+              },
+              {
+                "observation_sequence": 321,
+                "operation_id": "auto-42a54f164e376f3b519f4b696e0250f1",
+                "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w0",
+                "commit_ms": 2.31087,
+                "overlap_ms": 2.31087
+              }
+            ]
+          },
+          {
+            "release_sequence": 249,
+            "tenant_id": "tenant-c",
+            "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w5",
+            "admission_kind": "initial_admission",
+            "release_to_attempt_ms": 5.548651,
+            "notified_to_attempt_ms": 5.512658,
+            "estimated_journal_overlap_ms": 2.31087,
+            "residual_elapsed_ms": 3.2377810000000005,
+            "commit_receipts": [
+              {
+                "observation_sequence": 321,
+                "operation_id": "auto-42a54f164e376f3b519f4b696e0250f1",
+                "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w0",
+                "commit_ms": 2.31087,
+                "overlap_ms": 2.31087
+              }
+            ]
+          },
+          {
+            "release_sequence": 275,
+            "tenant_id": "tenant-a",
+            "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w7",
+            "admission_kind": "initial_admission",
+            "release_to_attempt_ms": 56.662797,
+            "notified_to_attempt_ms": 56.614737,
+            "estimated_journal_overlap_ms": 54.585876,
+            "residual_elapsed_ms": 2.0769209999999987,
+            "commit_receipts": [
+              {
+                "observation_sequence": 356,
+                "operation_id": "auto-f7cce260619f4c0540d63f76fa52caea",
+                "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w2",
+                "commit_ms": 54.585876,
+                "overlap_ms": 54.585876
+              }
+            ]
+          },
+          {
+            "release_sequence": 280,
+            "tenant_id": "tenant-d",
+            "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w6",
+            "admission_kind": "initial_admission",
+            "release_to_attempt_ms": 60.715777,
+            "notified_to_attempt_ms": 60.68669,
+            "estimated_journal_overlap_ms": 56.834029,
+            "residual_elapsed_ms": 3.8817480000000018,
+            "commit_receipts": [
+              {
+                "observation_sequence": 358,
+                "operation_id": "auto-97c731526314ab98c1b142dc8163705b",
+                "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w1",
+                "commit_ms": 56.834029,
+                "overlap_ms": 56.834029
+              }
+            ]
+          },
+          {
+            "release_sequence": 519,
+            "tenant_id": "tenant-d",
+            "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w3",
+            "admission_kind": "resume_admission",
+            "release_to_attempt_ms": 10.314083,
+            "notified_to_attempt_ms": 10.16498,
+            "estimated_journal_overlap_ms": 3.369385,
+            "residual_elapsed_ms": 6.944698000000001,
+            "commit_receipts": [
+              {
+                "observation_sequence": 713,
+                "operation_id": "auto-02018a1462e72aff881b59d8ece9d830",
+                "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w4",
+                "commit_ms": 3.369385,
+                "overlap_ms": 3.369385
+              }
+            ]
+          },
+          {
+            "release_sequence": 559,
+            "tenant_id": "tenant-a",
+            "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w0",
+            "admission_kind": "resume_admission",
+            "release_to_attempt_ms": 11.581613,
+            "notified_to_attempt_ms": 11.54654,
+            "estimated_journal_overlap_ms": 8.547104,
+            "residual_elapsed_ms": 3.0345090000000017,
+            "commit_receipts": [
+              {
+                "observation_sequence": 776,
+                "operation_id": "auto-9314c1bccdca50fcb7bd9c0fd01ccb94",
+                "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w7",
+                "commit_ms": 8.547104,
+                "overlap_ms": 8.547104
+              }
+            ]
+          },
+          {
+            "release_sequence": 567,
+            "tenant_id": "tenant-c",
+            "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w2",
+            "admission_kind": "resume_admission",
+            "release_to_attempt_ms": 22.567737,
+            "notified_to_attempt_ms": 22.531005,
+            "estimated_journal_overlap_ms": 18.572633,
+            "residual_elapsed_ms": 3.9951040000000013,
+            "commit_receipts": [
+              {
+                "observation_sequence": 783,
+                "operation_id": "auto-5f12bc23cd45b4d7935714894863bbbd",
+                "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w5",
+                "commit_ms": 18.572633,
+                "overlap_ms": 18.572633
+              }
+            ]
+          },
+          {
+            "release_sequence": 576,
+            "tenant_id": "tenant-b",
+            "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w1",
+            "admission_kind": "resume_admission",
+            "release_to_attempt_ms": 37.114876,
+            "notified_to_attempt_ms": 37.068995,
+            "estimated_journal_overlap_ms": 33.487335,
+            "residual_elapsed_ms": 3.627541000000001,
+            "commit_receipts": [
+              {
+                "observation_sequence": 792,
+                "operation_id": "auto-e80baba45b90ef2fecd49f396ea5b29b",
+                "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w6",
+                "commit_ms": 33.487335,
+                "overlap_ms": 33.487335
+              }
+            ]
+          }
+        ],
+        "pending_notifications": 0,
+        "eligibility": "durable release notification; Substrate decides physical placement",
+        "attempt_denominator": "all capacity retries (attempt_count > 1)",
+        "journal_overlap_method": "derived union of [observation monotonic time - journal_commit_ms, observation monotonic time], clipped to release-to-attempt; includes serialization, database commit and lock reacquisition, with observation timestamp offset; not a storage-device latency measurement"
+      },
+      "release_opportunities": [
+        {
+          "release_sequence": 247,
+          "waiting_demands": 4,
+          "next_attempt_delay_seconds": 0.172327635,
+          "oldest_attempt_delay_seconds": 0.172327635,
+          "oldest_served_first": true
+        },
+        {
+          "release_sequence": 249,
+          "waiting_demands": 4,
+          "next_attempt_delay_seconds": 0.003112494,
+          "oldest_attempt_delay_seconds": 0.003112494,
+          "oldest_served_first": true
+        },
+        {
+          "release_sequence": 275,
+          "waiting_demands": 2,
+          "next_attempt_delay_seconds": 0.056662797,
+          "oldest_attempt_delay_seconds": 0.056662797,
+          "oldest_served_first": true
+        },
+        {
+          "release_sequence": 280,
+          "waiting_demands": 1,
+          "next_attempt_delay_seconds": 0.060715777,
+          "oldest_attempt_delay_seconds": 0.060715777,
+          "oldest_served_first": true
+        },
+        {
+          "release_sequence": 519,
+          "waiting_demands": 4,
+          "next_attempt_delay_seconds": 0.010314083,
+          "oldest_attempt_delay_seconds": 0.010314083,
+          "oldest_served_first": true
+        },
+        {
+          "release_sequence": 559,
+          "waiting_demands": 3,
+          "next_attempt_delay_seconds": 0.011581613,
+          "oldest_attempt_delay_seconds": 0.011581613,
+          "oldest_served_first": true
+        },
+        {
+          "release_sequence": 567,
+          "waiting_demands": 2,
+          "next_attempt_delay_seconds": 0.022567737,
+          "oldest_attempt_delay_seconds": 0.022567737,
+          "oldest_served_first": true
+        },
+        {
+          "release_sequence": 576,
+          "waiting_demands": 1,
+          "next_attempt_delay_seconds": 0.037114876,
+          "oldest_attempt_delay_seconds": 0.037114876,
+          "oldest_served_first": true
+        }
+      ],
+      "release_to_next_attempt_p95_seconds": 0.13326348469999993,
+      "later_request_decomposition": [
+        {
+          "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w0",
+          "ttft_seconds": 9.250767946243286,
+          "arrival_to_demand_seconds": 0.14156413078308105,
+          "demand_to_ready_seconds": 7.8761680126190186,
+          "ready_to_first_token_seconds": 1.2330358028411865,
+          "client_receipt_lag_seconds": 0.04013657569885254
+        },
+        {
+          "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w1",
+          "ttft_seconds": 9.664241075515747,
+          "arrival_to_demand_seconds": 0.10134506225585938,
+          "demand_to_ready_seconds": 7.489303112030029,
+          "ready_to_first_token_seconds": 2.0735929012298584,
+          "client_receipt_lag_seconds": 0.058135271072387695
+        },
+        {
+          "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w2",
+          "ttft_seconds": 9.18113899230957,
+          "arrival_to_demand_seconds": 0.06736898422241211,
+          "demand_to_ready_seconds": 7.64087700843811,
+          "ready_to_first_token_seconds": 1.4728929996490479,
+          "client_receipt_lag_seconds": 0.031780242919921875
+        },
+        {
+          "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w3",
+          "ttft_seconds": 8.176604986190796,
+          "arrival_to_demand_seconds": 0.23314309120178223,
+          "demand_to_ready_seconds": 6.519876003265381,
+          "ready_to_first_token_seconds": 1.4235858917236328,
+          "client_receipt_lag_seconds": 0.11084580421447754
+        },
+        {
+          "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w4",
+          "ttft_seconds": 2.149247884750366,
+          "arrival_to_demand_seconds": 0.12261486053466797,
+          "demand_to_ready_seconds": 0.73661208152771,
+          "ready_to_first_token_seconds": 1.2900209426879883,
+          "client_receipt_lag_seconds": 0.049849748611450195
+        },
+        {
+          "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w5",
+          "ttft_seconds": 3.039777994155884,
+          "arrival_to_demand_seconds": 0.06514215469360352,
+          "demand_to_ready_seconds": 1.2060527801513672,
+          "ready_to_first_token_seconds": 1.768583059310913,
+          "client_receipt_lag_seconds": 0.041219234466552734
+        },
+        {
+          "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w6",
+          "ttft_seconds": 3.5559189319610596,
+          "arrival_to_demand_seconds": 0.11392593383789062,
+          "demand_to_ready_seconds": 2.0031509399414062,
+          "ready_to_first_token_seconds": 1.4388420581817627,
+          "client_receipt_lag_seconds": 0.05393719673156738
+        },
+        {
+          "session_id": "scale-7101-8-agentcloud-v2-96232e7be014-w7",
+          "ttft_seconds": 2.2611801624298096,
+          "arrival_to_demand_seconds": 0.1331930160522461,
+          "demand_to_ready_seconds": 0.46094799041748047,
+          "ready_to_first_token_seconds": 1.667039155960083,
+          "client_receipt_lag_seconds": 0.09404206275939941
+        }
+      ]
+    }
+  ],
+  "queue_noise_budget": {
+    "status": "failed",
+    "acceptance_limits": {
+      "release_to_eligible_attempt_p95_ms": 100,
+      "release_to_eligible_attempt_max_ms": 250,
+      "fallback_attempt_fraction": 0.5,
+      "eligible_wait_max_ms": 250
+    },
+    "trials": [
+      {
+        "trial_id": "scale-7101-8-static-2-3be500f1598f",
+        "policy": "static-2",
+        "status": "failed",
+        "violations": [
+          "release_latency_p95"
+        ]
+      },
+      {
+        "trial_id": "scale-7101-8-agentcloud-v2-96232e7be014",
+        "policy": "agentcloud-v2",
+        "status": "failed",
+        "violations": [
+          "release_latency_p95"
+        ]
+      }
+    ],
+    "scope": "queue_noise_budget_only; restart and capture integrity are separate receipts"
+  },
+  "frozen_readiness_sha256": "5f6894ebd58fa52f2ad404023825c68466054f5239748130882a1523578e57d0"
+}

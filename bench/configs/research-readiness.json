@@ -1,5 +1,14 @@
 {
   "schema_version": 1,
+  "research_lifecycle": {
+    "status": "CONCLUDED",
+    "execution_state": "FROZEN",
+    "as_of": "2026-11-22",
+    "v3_implemented": false,
+    "conclusion": "docs/SCHEDULING_RESEARCH_CONCLUSION.md",
+    "reason": "Background-process lifecycle semantics and personal cluster/GPU resource ROI",
+    "historical_gate_scope": "Preserve original qualified/partial/pending outcomes; exploratory N8/16MiB L0 Tier-1 is recorded separately in pre-v3 qualification."
+  },
   "as_of": "2026-11-20",
   "purpose": "algorithm_comparison",
   "gates": {
@@ -32,6 +41,18 @@
         {
           "evidence": "docs/evidence/native-admission/44696576156/summary.json",
           "sha256": "eea9aaa21405d52b18d5be6d09ca2506f8dd741e269abdfe8fc26fc093380959"
+        },
+        {
+          "evidence": "docs/evidence/native-admission/44714066930/artifact.json",
+          "sha256": "36728d7788e75dc8266b835e9730d6a8f05fc09fddc6b09384f1d84bc9baf7ff"
+        },
+        {
+          "evidence": "docs/evidence/native-admission/44714066930/summary.json",
+          "sha256": "cfdeb998fa58f6443a801ab7f8d2713526a0066aca71caf92623d78bb33ca0f2"
+        },
+        {
+          "evidence": "docs/evidence/native-admission/44714066930/memory-restart/result.json",
+          "sha256": "9a7c0678ad410ff1eb3cdefeca222f1f64c734ae9bf6a7e4f7daf544aa0263d6"
         }
       ]
     },
@@ -66,17 +87,35 @@
       "status": "pending",
       "requirement": "Real Substrate MEMORY measurements for every frozen heap/concurrency coordinate: sample counts, checkpoint/resume p50 and p95, physical RSS, memory charge, physical snapshot write bytes and filesystem used-space watermark. Each metric identifies its collector and raw-table column; independent raw and fitted tables have verified SHA256, and the fitted table cites its raw source hash.",
       "target_coordinates": [
-        {"heap_mib": 16, "concurrency": 1},
-        {"heap_mib": 16, "concurrency": 4},
-        {"heap_mib": 64, "concurrency": 1},
-        {"heap_mib": 64, "concurrency": 4},
-        {"heap_mib": 128, "concurrency": 1},
-        {"heap_mib": 128, "concurrency": 4}
+        {
+          "heap_mib": 16,
+          "concurrency": 1
+        },
+        {
+          "heap_mib": 16,
+          "concurrency": 4
+        },
+        {
+          "heap_mib": 64,
+          "concurrency": 1
+        },
+        {
+          "heap_mib": 64,
+          "concurrency": 4
+        },
+        {
+          "heap_mib": 128,
+          "concurrency": 1
+        },
+        {
+          "heap_mib": 128,
+          "concurrency": 4
+        }
       ],
       "evidence": []
     },
     "native_queue_without_polling_noise": {
-      "status": "pending",
+      "status": "partial",
       "requirement": "Native admission wakes from capacity-release events with bounded fallback retry. Independently qualify measured release-to-eligible-attempt p95/max latency, fallback-attempt fraction, and bounded eligible wait by tenant against budgets frozen before the new runtime validation.",
       "acceptance_limits": {
         "release_to_eligible_attempt_p95_ms": 100,
@@ -84,7 +123,24 @@
         "fallback_attempt_fraction": 0.5,
         "eligible_wait_max_ms": 250
       },
-      "evidence": []
+      "evidence": [
+        {
+          "evidence": "docs/evidence/native-admission/44714066930/artifact.json",
+          "sha256": "36728d7788e75dc8266b835e9730d6a8f05fc09fddc6b09384f1d84bc9baf7ff"
+        },
+        {
+          "evidence": "docs/evidence/native-admission/44714066930/summary.json",
+          "sha256": "cfdeb998fa58f6443a801ab7f8d2713526a0066aca71caf92623d78bb33ca0f2"
+        },
+        {
+          "evidence": "docs/evidence/native-admission/44714066930/memory-restart/result.json",
+          "sha256": "9a7c0678ad410ff1eb3cdefeca222f1f64c734ae9bf6a7e4f7daf544aa0263d6"
+        },
+        {
+          "evidence": "docs/evidence/native-admission/diagnostics/44714066930.json",
+          "sha256": "89ed191e98b13317894d51d579caae0eb6a5c1cc40285ec238f5e7d24b3f9ad8"
+        }
+      ]
     }
   }
 }

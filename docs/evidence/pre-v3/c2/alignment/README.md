@@ -12,7 +12,7 @@
 
 独立运行使用无观测顺序的模型；预测先于实机存档在 `../independent-forecast.json`，包含输入、成本、环境、二进制和源码摘要。Harness 层在校准时显式启用，算法场景默认关闭。实际首批分配由 `audit_arrivals()` 验证，50 ms 错峰的效果通过原始回执确认。
 
-完整制品位于 `cannlab:/mnt/workspace/agentcloud-prev3-20261120/c2-alignment/`。独立实机完成后，按冻结预测验收；Tier-1 结果由独立验收决定，Tier-2 的开销、多种子与真实 MEMORY 重启另行记录。
+完整制品位于 `cannlab:/mnt/workspace/agentcloud-prev3-20261120/c2-alignment/`。独立实机与 500 ms 到达复验的数值检查均为 10/10，通过的到达协议复验放行 Tier-1；50 ms 样本中的首批竞态仍保留失败回执。Tier-2 的开销、多种子与真实 MEMORY 重启另行记录。
 
 ```bash
 python3 -m scripts.fit_prev3_environment --evidence RAW/evidence --output DERIVED

@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "run_id": "cannlab-20261120",
+  "verdict": "No-Go",
+  "scope": "current cannlab development container as formal Native Substrate gVisor MEMORY experiment base",
+  "offline_use": "data processing, simulation and bounded native ARM builds after dependencies are available",
+  "environment": {
+    "ssh_alias": "cannlab",
+    "hostname": "fab827f22fb54974bddb2917d8179e4d",
+    "architecture": "aarch64",
+    "page_size_bytes": 4096,
+    "visible_cpu_count": 16,
+    "cgroup_v1_cpu_quota_equivalent_cores": 13,
+    "cgroup_memory_limit_bytes": 107374182400,
+    "advertised_memory_gb": 32,
+    "resource_reservation_guarantee": "not_verified",
+    "cgroup_version": 1
+  },
+  "primary_blocker": "Substrate worker initialization and actor accounting require delegated cgroup v2; current CPU/memory controllers use v1",
+  "gvisor_smoke": {
+    "status": "blocked_at_download",
+    "startup_executed": false,
+    "checkpoint_executed": false,
+    "restore_executed": false,
+    "attempt_logs": [
+      "gvisor.jsonl",
+      "gvisor-segmented.jsonl"
+    ]
+  },
+  "native_static_c_smoke": "passed_AArch64_ELF_183",
+  "io_payload_bytes": 303562752,
+  "io": [
+    {
+      "base": "/tmp",
+      "sequential": {
+        "bytes": 100663296,
+        "elapsed_s": 0.12096876301802695,
+        "mib_per_second_including_fdatasync": 793.5933013193987,
+        "final_fdatasync_ms": 33.12893304973841
+      },
+      "fsync_ms": {
+        "n": 128,
+        "p50": 0.9337740484625101,
+        "p95": 1.301763718947768,
+        "maximum": 1.9035390578210354
+      },
+      "cleanup_passed": true
+    },
+    {
+      "base": "/home/developer",
+      "sequential": {
+        "bytes": 100663296,
+        "elapsed_s": 0.18429659795947373,
+        "mib_per_second_including_fdatasync": 520.8994689153736,
+        "final_fdatasync_ms": 98.56035094708204
+      },
+      "fsync_ms": {
+        "n": 128,
+        "p50": 0.8758378680795431,
+        "p95": 1.503643917385488,
+        "maximum": 2.92922998778522
+      },
+      "cleanup_passed": true
+    },
+    {
+      "base": "/mnt/workspace",
+      "sequential": {
+        "bytes": 100663296,
+        "elapsed_s": 0.1802898549940437,
+        "mib_per_second_including_fdatasync": 532.4758844759822,
+        "final_fdatasync_ms": 95.47311789356172
+      },
+      "fsync_ms": {
+        "n": 128,
+        "p50": 0.7849660469219089,
+        "p95": 1.2681845109909757,
+        "maximum": 5.236197961494327
+      },
+      "cleanup_passed": true
+    }
+  ],
+  "remote_cleanup": {
+    "name": "final_cleanup",
+    "owned_paths": [
+      "/tmp/agentcloud-probe-nua7uc4u",
+      "/home/developer/agentcloud-probe-4m582igw",
+      "/mnt/workspace/agentcloud-probe-pheera1r",
+      "/mnt/workspace/agentcloud-probe-gvisor-9s1n9tb9",
+      "/mnt/workspace/agentcloud-probe-gvisor-gx7phhy8",
+      "/mnt/workspace/agentcloud-probe-elf-9sdvu8y8"
+    ],
+    "remaining_paths": [],
+    "remaining_mounts": [],
+    "remaining_processes": [],
+    "cleanup_passed": true,
+    "at": "2026-11-20T10:37:56.374604+00:00"
+  },
+  "not_measured": [
+    "ARM runsc systrap startup and MEMORY checkpoint/restore",
+    "kind and Substrate worker startup",
+    "native Dynamo CPU custom-policy/KVIndexer wheel build and dual-Mocker route test",
+    "container image layer pulls and pinned Docker Hub digest architectures",
+    "sustained I/O and concurrent PostgreSQL/snapshot interference",
+    "dedicated capacity and long-duration performance variance",
+    "GitHub Actions comparable 4KiB fsync latency",
+    "cross-architecture application throughput"
+  ],
+  "local_control_plane": "stopped"
+}

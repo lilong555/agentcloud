@@ -40,4 +40,4 @@ python3 -m bench.research_events <events.jsonl> --output artifacts/event-audit.j
 
 [`public_trace_live.py`](../bench/public_trace_live.py#L305)以源时间偏移作为触发下界，后继模型等待 pending 模型与已到期工具；工具分支在源偏移到达后进入线程池。完整父模型完成依赖应由明确 DAG 表达。`request_rows` 从完整窗口预知终止轮并发送 FINAL，实验配置应登记 `terminal_turn_source=full_trace_oracle`，并用非末轮继续执行／显式终止作为敏感性对照。
 
-当前源码审计提供具体待验收路径；既有实机结果仍按其冻结协议解释。下一步用父模型额外延迟、工具并行 join、恢复排队和相同历史／不同未来的干预确认实际 runner 行为。`make research-audit` 的成功只涵盖其回执列明的离线检查。
+研究已 `CONCLUDED / FROZEN`，完整契约作为长期规范保存；结论与复核入口见[统一收敛结论](SCHEDULING_RESEARCH_CONCLUSION.md)。既有实机结果采用其冻结协议。父模型延迟、工具 join、恢复排队和未来分叉的验收覆盖以对应测试回执为准；`make research-audit` 覆盖其列明的离线检查。

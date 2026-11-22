@@ -1,0 +1,227 @@
+{
+  "recorded_at": "2026-11-20T10:41:00.099978+00:00",
+  "agentcloud_commit": "ea58d2549bb11474a12d342bd224c4d47226d487",
+  "tracked_dirty_diff_sha256": "1220dfe5150e4852512162eaab5474e06ad617fba51044baf8b21417877f08f9",
+  "substrate_commit": "94e0a26ac90151886a76410568aaac2664a54d90",
+  "substrate_tracked_dirty": "M api/ateapi/v1/ateapi.pb.go\n M api/ateapi/v1/ateapi.proto\n M api/ateapi/v1/ateapi_grpc.pb.go\n M cmd/ateapi/internal/apivalidation/actor.go\n M cmd/ateapi/internal/apivalidation/actor_test.go\n M cmd/ateapi/internal/apivalidation/tag_test.go\n M cmd/ateapi/internal/apivalidation/zz_generated.validation.go\n M cmd/ateapi/internal/authz/registry.go\n M cmd/ateapi/internal/authz/registry_test.go\n M cmd/ateapi/internal/controlapi/actor.go\n M cmd/ateapi/internal/controlapi/tag.go\n M cmd/ateapi/internal/controlapi/workflow.go\n M cmd/ateapi/internal/controlapi/workflow_resume.go\n M cmd/ateapi/internal/controlapi/workflow_resume_test.go\n M cmd/ateapi/internal/controlapi/workflow_suspend.go\n M cmd/ateapi/internal/controlapi/workflow_tag.go\n M cmd/ateapi/internal/controlapi/workflow_tag_test.go\n M cmd/ateapi/internal/store/atepg/actor.go\n M cmd/ateapi/internal/store/storetest/storetest.go\n M cmd/atelet/lifecycle_test.go\n M cmd/atelet/main.go\n M cmd/ateworker-gvisor/main.go\n M cmd/ateworker-microvm/restore.go\n M docs/reference/api-guide.md\n M internal/proto/ateletpb/atelet.pb.go\n M internal/proto/ateletpb/atelet.proto\n M internal/proto/ateworkerpb/ateworker.pb.go\n M internal/proto/ateworkerpb/ateworker.proto",
+  "dynamo_commit": "c5680e573b86623df3b6b017a408373aeba93469",
+  "scope": "read-only compatibility assessment; no worker build executed on cannlab",
+  "sources": [
+    {
+      "path": "upstream/substrate/internal/ateworker/cgroup/cgroup.go",
+      "sha256": "02ccad437c007e196ed1d1d76839f047a6a89354d5d7a801afc3651b3672afb2",
+      "excerpts": [
+        {
+          "first_line": 58,
+          "last_line": 75,
+          "text": "func Delegate(ctx context.Context) error {\n\treturn delegate(ctx, \"/proc/self/cgroup\", Root)\n}\n\nfunc delegate(ctx context.Context, procSelfCgroup, root string) error {\n\tleaf := root + \"/\" + workerLeaf\n\n\t// Outside a private cgroup namespace, as in a privileged pod, /sys/fs/cgroup\n\t// is the host's root: it holds unmovable kernel threads and must not be\n\t// carved up. /proc/self/cgroup reads \"0::/\" only at a namespace root.\n\tif path, err := cgroupPath(procSelfCgroup); err != nil {\n\t\treturn fmt.Errorf(\"while detecting cgroup namespace: %w\", err)\n\t} else if path != \"/\" {\n\t\treturn fmt.Errorf(\"worker needs a private cgroup namespace (cgroup path %q, want /): workers must run unprivileged\", path)\n\t}\n\n\tif err := os.Mkdir(leaf, 0o755); err != nil && !os.IsExist(err) {\n\t\t// The runtime bind-mounts /sys/fs/cgroup read-only; clear the flag with a"
+        },
+        {
+          "first_line": 111,
+          "last_line": 132,
+          "text": "// cgroupPath returns the cgroup v2 path from a /proc/<pid>/cgroup file\n// (\"0::<path>\"). It is relative to the namespace root, so it reads exactly \"/\"\n// only when /sys/fs/cgroup is the namespace's own (pod-scoped) cgroup. A privileged\n// worker inheriting the host cgroup namespace instead sees its full host path\n// (for example \"/kubepods.slice/.../cri-containerd-<id>.scope\").\nfunc cgroupPath(procCgroup string) (string, error) {\n\tb, err := os.ReadFile(procCgroup)\n\tif err != nil {\n\t\treturn \"\", fmt.Errorf(\"while reading %q: %w\", procCgroup, err)\n\t}\n\treturn parseCgroupPath(string(b))\n}\n\n// parseCgroupPath parses the contents of /proc/self/cgroup.\nfunc parseCgroupPath(procSelfCgroup string) (string, error) {\n\tfor _, line := range strings.Split(strings.TrimSpace(procSelfCgroup), \"\\n\") {\n\t\tif path, ok := strings.CutPrefix(line, \"0::\"); ok {\n\t\t\treturn path, nil\n\t\t}\n\t}\n\treturn \"\", fmt.Errorf(\"no cgroup v2 (0::) entry in /proc/self/cgroup\")\n}"
+        }
+      ]
+    },
+    {
+      "path": "upstream/substrate/internal/ateworker/cgroup/actor.go",
+      "sha256": "955d4523f66696ce86ac6b62af6bca25a8773c3b6b9bf71cd4c1a48d72fa596d",
+      "excerpts": [
+        {
+          "first_line": 91,
+          "last_line": 103,
+          "text": "// cpuMax renders a cgroup v2 cpu.max value for a limit in millicores.\nfunc cpuMax(milliCPU int64) string {\n\tif milliCPU <= 0 {\n\t\treturn fmt.Sprintf(\"max %d\", cpuPeriodUS)\n\t}\n\treturn fmt.Sprintf(\"%d %d\", max(milliCPU*cpuPeriodUS/1000, cpuMinQuotaUS), cpuPeriodUS)\n}\n\n// SysProcAttr starts a process directly inside the leaf.\nfunc (l *ActorLeaf) SysProcAttr() *syscall.SysProcAttr {\n\treturn &syscall.SysProcAttr{UseCgroupFD: true, CgroupFD: int(l.dir.Fd())}\n}\n"
+        }
+      ]
+    },
+    {
+      "path": "upstream/substrate/cmd/ateworker-gvisor/main.go",
+      "sha256": "ecdd5339350d7a369f862c00e87fc2b12f19b691a961014b1b09088fc09cf3ed",
+      "excerpts": [
+        {
+          "first_line": 236,
+          "last_line": 242,
+          "text": "\n\t// Prepare the pod cgroup so runsc can create per-actor-container leaves under\n\t// it with real accounting.\n\tif err := cgroup.Delegate(ctx); err != nil {\n\t\treturn fmt.Errorf(\"while setting up cgroup delegation: %w\", err)\n\t}\n\tremoveStaleCheckpointCgroups(ctx, defaultCgroupRoot)"
+        }
+      ]
+    },
+    {
+      "path": "upstream/substrate/cmd/ateworker-gvisor/internal/cgroupstats/cgroupstats.go",
+      "sha256": "f39a8670a5e6535d061f00b926cff8516d2f8f26302e96c5a505e83ddd1182fb",
+      "excerpts": [
+        {
+          "first_line": 90,
+          "last_line": 101,
+          "text": "// controller was not delegated. Failing the sample for any of them would mean\n// reporting no memory numbers because the node could not report CPU.\n// memory.events and cgroup.events are optional in the same way.\nfunc Read(dir string) (Sample, error) {\n\tcurrent, ok, err := readUint(filepath.Join(dir, \"memory.current\"))\n\tif err != nil {\n\t\treturn Sample{}, err\n\t}\n\tif !ok {\n\t\treturn Sample{}, fmt.Errorf(\"reading %q: %w\", filepath.Join(dir, \"memory.current\"), fs.ErrNotExist)\n\t}\n"
+        }
+      ]
+    },
+    {
+      "path": "upstream/substrate/.ko.yaml",
+      "sha256": "d376693e7ed05a2a8b159e849e8450b90638fc9beab353807fde347cefeb884e",
+      "excerpts": [
+        {
+          "first_line": 15,
+          "last_line": 19,
+          "text": "defaultBaseImage: gcr.io/distroless/static-debian13:nonroot@sha256:18f4cc26c9ffa7f20a359298be7deadac5c607c8e03a02b8119f1a5fc2f82c99\n\ndefaultPlatforms:\n  - linux/amd64\n  - linux/arm64"
+        }
+      ]
+    },
+    {
+      "path": "upstream/substrate/.github/workflows/release.yaml",
+      "sha256": "1768f33abd84f48175f36e49d64316dd6aef017d9d67d04a2655d8d97e090482",
+      "excerpts": [
+        {
+          "first_line": 64,
+          "last_line": 68,
+          "text": "    env:\n      VERSION: ${{ inputs.tag || github.ref_name }}\n      KO_DOCKER_REPO: ghcr.io/agent-substrate/substrate\n      KO_DEFAULTPLATFORMS: linux/amd64,linux/arm64\n      # inputs.overwrite is empty on a tag push; this makes the value explicit."
+        }
+      ]
+    },
+    {
+      "path": "scripts/bootstrap.py",
+      "sha256": "b7b0893eb62e5afcb1689dba6da271ab51d80ce6faa66097fc698fa6968f3c53",
+      "excerpts": [
+        {
+          "first_line": 17,
+          "last_line": 20,
+          "text": "URL = f\"https://dl.google.com/go/{VERSION}.linux-amd64.tar.gz\"\n\n\ndef install(destination: Path, workers: int) -> Path:"
+        },
+        {
+          "first_line": 83,
+          "last_line": 87,
+          "text": "    install(args.destination.expanduser().resolve(), args.workers)\n\n\nif __name__ == \"__main__\":\n    main()"
+        }
+      ]
+    },
+    {
+      "path": "deploy/substrate/setup.sh",
+      "sha256": "2efbc7ac2a3ac9e632acc79da46256fabb566aa262ce85f65367df87a5c57f05",
+      "excerpts": [
+        {
+          "first_line": 33,
+          "last_line": 36,
+          "text": "[[ \"$(uname -m)\" == x86_64 ]] || { echo 'This deployment uses linux/amd64 images.' >&2; exit 1; }\npython3 -c 'import sys; assert sys.version_info >= (3, 10), \"Python 3.10+ required\"'\ndocker info >/dev/null\ndocker buildx version"
+        },
+        {
+          "first_line": 52,
+          "last_line": 55,
+          "text": "    download_dir=\"$(mktemp -d)\"\n    curl -fsSL \"https://dl.k8s.io/release/$kubectl_version/bin/linux/amd64/kubectl\" -o \"$download_dir/kubectl\"\n    curl -fsSL \"https://dl.k8s.io/release/$kubectl_version/bin/linux/amd64/kubectl.sha256\" -o \"$download_dir/kubectl.sha256\"\n    (cd \"$download_dir\"; printf '%s  kubectl\\n' \"$(cat kubectl.sha256)\" | sha256sum --check)"
+        }
+      ]
+    },
+    {
+      "path": "deploy/substrate/build-worker.sh",
+      "sha256": "65b9cab7e5e807683e31da6079ccd2be0735005279b5850c5ad976ef175f98d7",
+      "excerpts": [
+        {
+          "first_line": 9,
+          "last_line": 9,
+          "text": "export KO_DEFAULTPLATFORMS=linux/amd64"
+        },
+        {
+          "first_line": 18,
+          "last_line": 20,
+          "text": "docker buildx build --load --platform linux/amd64 --build-arg \"BASE_WORKER_IMAGE=$(cat \"$project_root/artifacts/substrate/worker-base-image.txt\")\" --tag localhost:5001/agentcloud-worker:ptrace \"$build_dir\"\ndocker push localhost:5001/agentcloud-worker:ptrace\ndocker inspect localhost:5001/agentcloud-worker:ptrace --format '{{index .RepoDigests 0}}' > \"$project_root/artifacts/substrate/worker-image.txt\""
+        }
+      ]
+    },
+    {
+      "path": "deploy/substrate/build-runtime.sh",
+      "sha256": "d122818464a7f3a2e66c7824a8947af214fe2637d9144ae088da95a24defcdf1",
+      "excerpts": [
+        {
+          "first_line": 10,
+          "last_line": 10,
+          "text": "docker buildx build --load --platform linux/amd64 --tag localhost:5001/agentcloud-tools:local \"$build_dir\""
+        }
+      ]
+    },
+    {
+      "path": "deploy/substrate/install.sh",
+      "sha256": "08309f8b4f20259421cb0a0257f3dde88be7da7146f011200ffb1d5b850fd528",
+      "excerpts": [
+        {
+          "first_line": 12,
+          "last_line": 12,
+          "text": "export KO_DEFAULTPLATFORMS=linux/amd64"
+        }
+      ]
+    },
+    {
+      "path": "deploy/substrate/stage-worker.py",
+      "sha256": "9a745042588fa5084a6f6ac6caaac40e266b2d29fcbdda8c295a60c2a7221c65",
+      "excerpts": [
+        {
+          "first_line": 1,
+          "last_line": 10,
+          "text": "#!/usr/bin/env python3\n\"\"\"Configure the task worker's official runsc ptrace platform.\"\"\"\nimport json\nimport sys\nfrom pathlib import Path\n\nsource, destination = map(Path, sys.argv[1:])\nconfig = json.loads(source.read_text())\nconfig[\"globalFlags\"].append(\"--platform=ptrace\")\ndestination.write_text(json.dumps(config, indent=2) + \"\\n\")"
+        }
+      ]
+    },
+    {
+      "path": "deploy/substrate/create-cluster.sh",
+      "sha256": "87ca903d8a0fe291b7f331ee8d018513e2ca3bf15ad0aab7f64544d47886768e",
+      "excerpts": [
+        {
+          "first_line": 4,
+          "last_line": 10,
+          "text": "export PATH=\"${AGENTCLOUD_GO_ROOT:-$HOME/.local/share/agentcloud/go}/bin:$HOME/.local/bin:$PATH\"\nexport DOCKER_CONFIG=\"${DOCKER_CONFIG:-$project_root/artifacts/docker-client}\"\nexport KUBECONFIG=\"${KUBECONFIG:-$project_root/artifacts/substrate/kubeconfig}\"\nexport KIND_CLUSTER_NAME=agentcloud\nexport GOMAXPROCS=\"${GOMAXPROCS:-2}\"\nexport GOFLAGS=\"${GOFLAGS:--p=2}\"\nmkdir -p \"$(dirname \"$KUBECONFIG\")\" \"$DOCKER_CONFIG\""
+        }
+      ]
+    },
+    {
+      "path": "experiments/dynamo/build_cpu.py",
+      "sha256": "a0ef4a4ced1710388362c691e3071525273cfe01163a164cea0854e5bdb52de7",
+      "excerpts": [
+        {
+          "first_line": 37,
+          "last_line": 37,
+          "text": "            if relative.is_absolute() or '..' in relative.parts:raise RuntimeError('invalid protoc archive path')"
+        },
+        {
+          "first_line": 42,
+          "last_line": 46,
+          "text": "    env=os.environ.copy();env.update(VIRTUAL_ENV=str(VENV),PATH=os.pathsep.join([str(VENV/'bin'),str(Path(cargo).parent),str(Path(uv).parent),env.get('PATH','')]),PROTOC=str(protoc),CARGO_TARGET_DIR=str(UPSTREAM/'target'),CARGO_BUILD_JOBS=os.getenv('CARGO_BUILD_JOBS','2'),CARGO_PROFILE_DEV_DEBUG='0',CARGO_INCREMENTAL='0')\n    command=[str(VENV/'bin/maturin'),'develop','--locked','--manifest-path','lib/bindings/python/Cargo.toml','--no-default-features','--features','custom-policy','--uv']\n    stamp=dt.datetime.now(dt.timezone.utc).strftime('%Y%m%dT%H%M%S%fZ');logdir=ROOT/'docs/evidence/logs'/('dynamo-cpu-build-'+stamp);logdir.mkdir(parents=True,exist_ok=True)\n    start=time.monotonic()\n    with (logdir/'build.log').open('w') as log:result=subprocess.run(command,cwd=UPSTREAM,env=env,stdout=log,stderr=subprocess.STDOUT)"
+        }
+      ]
+    },
+    {
+      "path": "experiments/dynamo/kv_events_build.py",
+      "sha256": "073e74e64f109acb24a622cb61d4c32074fbea8fe0353fb93bb674a856a0594c",
+      "excerpts": [
+        {
+          "first_line": 20,
+          "last_line": 21,
+          "text": "\n"
+        },
+        {
+          "first_line": 50,
+          "last_line": 50,
+          "text": "        url = \"https://github.com/protocolbuffers/protobuf/releases/download/v30.2/protoc-30.2-linux-x86_64.zip\""
+        },
+        {
+          "first_line": 58,
+          "last_line": 75,
+          "text": "            archive.extractall(tools_dir)\n        protoc.chmod(0o755)\n    if digest(protoc) != PROTOC_SHA:\n        raise ValueError(\"protoc digest mismatch\")\n    build_env = output / \"build-env\"\n    subprocess.run([\"uv\", \"venv\", \"--python\", \"3.12\", str(build_env)], check=True)\n    python = build_env / \"bin/python\"\n    subprocess.run([\"uv\", \"pip\", \"install\", \"--python\", str(python),\n                    \"maturin[patchelf]==1.16.0\", \"pydantic==2.13.5\", \"uvloop==0.23.0\"], check=True)\n    env = os.environ.copy()\n    env.update(VIRTUAL_ENV=str(build_env), PROTOC=str(protoc), CARGO_INCREMENTAL=\"0\",\n               CARGO_PROFILE_DEV_DEBUG=\"0\", CARGO_BUILD_JOBS=os.environ.get(\"CARGO_BUILD_JOBS\", \"4\"),\n               CARGO_TARGET_DIR=str(ROOT / \"artifacts/kv-event-target\"))\n    command = [str(build_env / \"bin/maturin\"), \"build\", \"--locked\", \"--interpreter\", str(python),\n               \"--manifest-path\", \"lib/bindings/python/Cargo.toml\", \"--no-default-features\",\n               \"--features\", \",\".join(FEATURES), \"--out\", str(output)]\n    subprocess.run(command, cwd=UPSTREAM, env=env, check=True)\n    wheels = list(output.glob(\"*.whl\"))"
+        }
+      ]
+    },
+    {
+      "path": ".github/workflows/native-admission.yml",
+      "sha256": "0a89713cb6be15b126b07362ee23b6ac64481c96c48ff3c90aec67301d9bb108",
+      "excerpts": [
+        {
+          "first_line": 26,
+          "last_line": 27,
+          "text": "      LIFECYCLE_KV_WHEEL_RUN_ID: '43012181604'\n    steps:"
+        },
+        {
+          "first_line": 51,
+          "last_line": 61,
+          "text": "          assert run['id']==43012181604 and run['conclusion']=='success'\n          assert run['path']=='.github/workflows/kv-event-wheel.yml'\n          PY\n      - uses: actions/download-artifact@v4\n        with:\n          name: kv-event-wheel\n          path: artifacts/kv-event-wheel\n          run-id: '43012181604'\n          github-token: ${{ github.token }}\n      - name: Verify provenance and install Dynamo CPU runtime\n        run: |"
+        }
+      ]
+    }
+  ]
+}

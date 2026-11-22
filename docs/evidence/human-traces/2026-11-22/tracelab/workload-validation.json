@@ -1,0 +1,3429 @@
+{
+  "schema_version": 2,
+  "contract": "agentcloud-human-relative-v2",
+  "pool": "tracelab",
+  "status": "passed_for_observed_relative_timeline",
+  "simulator_admission": false,
+  "relative_timeline_admission": true,
+  "checks": {
+    "source_hashes": true,
+    "complete_scan": true,
+    "composite_wall_conservation": true,
+    "no_tool_double_count": true,
+    "session_split_disjoint": true,
+    "user_split_disjoint": true,
+    "filtering_denominator": true,
+    "observed_multi_user_core": true,
+    "concentration": true,
+    "timestamp_endpoint": true,
+    "temporal_split_coverage": true,
+    "publisher_counts": true
+  },
+  "blockers": [],
+  "simulator_admission_scope": "execution-location and actor-residency mapping pending; timeline qualification is independent",
+  "pilot_quality_passed": true,
+  "policy": {
+    "max_unknown_fraction": 0.05,
+    "minimum_user_turns": 2,
+    "concentration_limit": 0.2,
+    "hour_unknown_quarantine": 3600,
+    "seed": 22026,
+    "no_duration_truncation": true
+  },
+  "funnel": {
+    "total_sessions": 8058,
+    "single_or_zero_user_turns": 4966,
+    "multi_user_sessions": 3092,
+    "preconcentration_candidates": 353,
+    "eligible_sessions": 352,
+    "quarantined_sessions": 7706,
+    "disjoint_primary_exclusions": {
+      "fewer_than_two_observed_user_turns": 4959,
+      "process_end_unknown": 1920,
+      "model_without_input_boundary": 571,
+      "missing_tool_boundary": 185,
+      "left_boundary_precedes_first_user": 34,
+      "empty_timeline": 7,
+      "hour_scale_unknown_gap": 18,
+      "unknown_fraction_above_threshold": 7,
+      "missing_process_root": 4,
+      "tool_work_concentration_above_20_percent": 1
+    },
+    "overlapping_reason_counts": {
+      "fewer_than_two_observed_user_turns": 4966,
+      "process_end_unknown": 6402,
+      "left_boundary_precedes_first_user": 123,
+      "unresolved_observed_parent": 45,
+      "model_without_input_boundary": 1283,
+      "unknown_fraction_above_threshold": 1009,
+      "missing_tool_boundary": 292,
+      "process_terminal_source_ambiguous": 10,
+      "empty_timeline": 7,
+      "hour_scale_unknown_gap": 19,
+      "missing_process_root": 7
+    }
+  },
+  "all_sessions": {
+    "sessions": 8058,
+    "users": 52,
+    "split": {
+      "train": 3132,
+      "holdout": 3816,
+      "val": 1110
+    },
+    "harness": {
+      "claude": 5319,
+      "codex": 2739
+    },
+    "distributions": {
+      "user_turns": {
+        "n": 8058,
+        "p50": 1,
+        "p90": 19,
+        "p95": 41,
+        "p99": 179
+      },
+      "model_calls": {
+        "n": 8058,
+        "p50": 16,
+        "p90": 146,
+        "p95": 305,
+        "p99": 1138
+      },
+      "tool_calls": {
+        "n": 8058,
+        "p50": 23,
+        "p90": 149,
+        "p95": 306,
+        "p99": 1265
+      },
+      "session_seconds": {
+        "n": 8058,
+        "p50": 265.34,
+        "p90": 16973.822,
+        "p95": 73234.31,
+        "p99": 629207.667
+      },
+      "turn_seconds": {
+        "n": 83412,
+        "p50": 26.321,
+        "p90": 331.942,
+        "p95": 635.022,
+        "p99": 2410.827
+      }
+    },
+    "total_session_seconds": 217248305.298,
+    "state_seconds": {
+      "model_wait": 6856710.391,
+      "tool_exec": 11049004.836,
+      "user_idle": 197419937.734,
+      "unknown_gap": 1956182.253
+    },
+    "state_fractions": {
+      "model_wait": 0.03156162890014094,
+      "tool_exec": 0.05085887699259175,
+      "user_idle": 0.9087294718511089,
+      "unknown_gap": 0.009004361393368295
+    },
+    "wall_state_seconds": {
+      "background_possible": 1689005.864,
+      "background_possible_and_user_idle": 194921240.215,
+      "model_and_background_possible": 6521237.004,
+      "model_and_tool": 4122.762,
+      "model_and_tool_and_background_possible": 29407.154,
+      "model_wait": 301943.471,
+      "tool_and_background_possible": 10749006.92,
+      "tool_exec": 266468.0,
+      "unknown_gap": 267176.389,
+      "user_idle": 2498697.519
+    },
+    "wall_state_fractions": {
+      "background_possible": 0.007774541033510879,
+      "background_possible_and_user_idle": 0.8972278975784234,
+      "model_and_background_possible": 0.030017435556308734,
+      "model_and_tool": 1.897718831152583e-05,
+      "model_and_tool_and_background_possible": 0.00013536194889834534,
+      "model_wait": 0.0013898542066223415,
+      "tool_and_background_possible": 0.04947797822982123,
+      "tool_exec": 0.001226559625560647,
+      "unknown_gap": 0.0012298203598574153,
+      "user_idle": 0.011501574272685491
+    },
+    "concurrency_seconds": {
+      "background_possible": 213909897.157,
+      "model_and_background_possible": 6550644.158,
+      "model_and_tool": 33529.916,
+      "parallel_tool_rpc": 386127.577,
+      "user_idle_and_background_possible": 194921240.215
+    },
+    "process_terminal_counts": {
+      "process_end_unknown": 445659,
+      "observed": 36395
+    },
+    "interrupted_or_overlapping_user_messages": 1039,
+    "source_flags": {
+      "process_end_unknown": 445659,
+      "source_event_order_reversal": 148480,
+      "unresolved_observed_parent": 45,
+      "model_without_input_boundary": 155980,
+      "missing_tool_boundary": 769,
+      "process_terminal_source_ambiguous": 28,
+      "missing_process_root": 487
+    },
+    "endpoint_overlap_seconds": {},
+    "top20_tool_exec": [
+      {
+        "duration_seconds": 440697.891,
+        "session_id": "62d155ac09bcc1b48bba34c1",
+        "start_ns": "160409070000000",
+        "end_ns": "601106961000000",
+        "split": "train",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 1,
+            "process_end_unknown": 167
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "ExitPlanMode"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 154088.912,
+        "session_id": "f0ab3ed8df4afe9b280390ea",
+        "start_ns": "349274620000000",
+        "end_ns": "503363532000000",
+        "split": "holdout",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 4,
+            "process_end_unknown": 340
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Bash"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 154088.912,
+        "session_id": "86a79e354b75b93ecd97507a",
+        "start_ns": "349274620000000",
+        "end_ns": "503363532000000",
+        "split": "holdout",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 4,
+            "process_end_unknown": 340
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Bash"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 154088.912,
+        "session_id": "2bef97bd9faedc2b20d8b788",
+        "start_ns": "349274620000000",
+        "end_ns": "503363532000000",
+        "split": "holdout",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 6,
+            "missing_tool_boundary": 1,
+            "process_end_unknown": 1032
+          },
+          "quarantine_reasons": [
+            "missing_tool_boundary",
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Bash"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 137577.741,
+        "session_id": "87f2ec51ed3a3e24e6161118",
+        "start_ns": "301100457000000",
+        "end_ns": "438678198000000",
+        "split": "train",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 1,
+            "process_end_unknown": 159
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Bash"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 130381.021,
+        "session_id": "c7eb20753822c8a1844a7e64",
+        "start_ns": "444838000000",
+        "end_ns": "130825859000000",
+        "split": "train",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 35
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "AskUserQuestion"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 121666.617,
+        "session_id": "3302b33756482949635c9185",
+        "start_ns": "517177000000",
+        "end_ns": "122183794000000",
+        "split": "val",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 67
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "AskUserQuestion"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 104090.724,
+        "session_id": "0bcb20eca1d1abb265ecd3fe",
+        "start_ns": "236411538000000",
+        "end_ns": "340502262000000",
+        "split": "train",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 33
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Bash"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 92320.597,
+        "session_id": "7017e34e5b708b58a6360fdd",
+        "start_ns": "822156000000",
+        "end_ns": "93142753000000",
+        "split": "train",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 1,
+            "process_end_unknown": 13
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "ExitPlanMode"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 89534.662,
+        "session_id": "80701cf15b1a439ce29cf46d",
+        "start_ns": "631148191000000",
+        "end_ns": "720682853000000",
+        "split": "train",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "missing_tool_boundary": 2,
+            "process_end_unknown": 427
+          },
+          "quarantine_reasons": [
+            "missing_tool_boundary",
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "AskUserQuestion"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 84579.777,
+        "session_id": "0d983c65f9bd351f1658984d",
+        "start_ns": "224525186000000",
+        "end_ns": "309104963000000",
+        "split": "val",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "model_without_input_boundary": 1,
+            "process_end_unknown": 1963
+          },
+          "quarantine_reasons": [
+            "model_without_input_boundary",
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "AskUserQuestion"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 84098.823,
+        "session_id": "fbba22c41fdbad57724ff553",
+        "start_ns": "350322369000000",
+        "end_ns": "434421192000000",
+        "split": "val",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 1,
+            "process_end_unknown": 1543
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "AskUserQuestion"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 83363.792,
+        "session_id": "7ca810c62857f70d1c24bff6",
+        "start_ns": "91726467000000",
+        "end_ns": "175090259000000",
+        "split": "val",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 295
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "AskUserQuestion"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 74051.216,
+        "session_id": "b61edf99f5e68b5a4bf7e17a",
+        "start_ns": "147895831000000",
+        "end_ns": "221947047000000",
+        "split": "val",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 514
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "AskUserQuestion"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 70040.218,
+        "session_id": "7ca810c62857f70d1c24bff6",
+        "start_ns": "6068830000000",
+        "end_ns": "76109048000000",
+        "split": "val",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 295
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "AskUserQuestion"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 66602.816,
+        "session_id": "fbba22c41fdbad57724ff553",
+        "start_ns": "40806167000000",
+        "end_ns": "107408983000000",
+        "split": "val",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 1,
+            "process_end_unknown": 1543
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "AskUserQuestion"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 64840.444,
+        "session_id": "4cd11d09f38023f283466bb9",
+        "start_ns": "16789000000",
+        "end_ns": "64857233000000",
+        "split": "train",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 34
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Agent"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 56126.742,
+        "session_id": "d2d8a02c733ca92126f38b83",
+        "start_ns": "34270777000000",
+        "end_ns": "90397519000000",
+        "split": "val",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 5,
+            "missing_tool_boundary": 1,
+            "process_end_unknown": 399
+          },
+          "quarantine_reasons": [
+            "missing_tool_boundary",
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "AskUserQuestion"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 51353.198,
+        "session_id": "d7ffa85568b0f2d9a6466033",
+        "start_ns": "55140041000000",
+        "end_ns": "106493239000000",
+        "split": "train",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 123
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Bash"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 49892.368,
+        "session_id": "2523c76b26eaea19b0c63dbd",
+        "start_ns": "136588000000",
+        "end_ns": "50028956000000",
+        "split": "val",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 38
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "AskUserQuestion"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      }
+    ],
+    "top20_unknown_gap": [
+      {
+        "duration_seconds": 72430.616,
+        "session_id": "5bf37281428f4eab0bdb0039",
+        "start_ns": "0",
+        "end_ns": "72430616000000",
+        "split": "val",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 1,
+            "process_end_unknown": 7
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 70238.446,
+        "session_id": "d0a5077dc4878580c1537519",
+        "start_ns": "6588595000000",
+        "end_ns": "76827041000000",
+        "split": "train",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 61,
+            "model_without_input_boundary": 61,
+            "process_end_unknown": 84
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "model_without_input_boundary",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 62576.251,
+        "session_id": "0a771736f7c4fb3f156fbe5a",
+        "start_ns": "5032992000000",
+        "end_ns": "67609243000000",
+        "split": "train",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 28,
+            "model_without_input_boundary": 28,
+            "process_end_unknown": 8
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "model_without_input_boundary",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 14,
+          "tool_names": [
+            "apply_patch",
+            "update_plan"
+          ],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 54767.892,
+        "session_id": "8874eba2a0533dc05e1e6644",
+        "start_ns": "0",
+        "end_ns": "54767892000000",
+        "split": "train",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 46
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 46671.588,
+        "session_id": "588e2f67dfc79e1b837be374",
+        "start_ns": "0",
+        "end_ns": "46671588000000",
+        "split": "train",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 1115
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 23691.268,
+        "session_id": "9496dcdc4d713c984bc0ad95",
+        "start_ns": "0",
+        "end_ns": "23691268000000",
+        "split": "train",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 69
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 16599.336,
+        "session_id": "88612260126d423a66c623e6",
+        "start_ns": "5384202000000",
+        "end_ns": "21983538000000",
+        "split": "val",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 121,
+            "model_without_input_boundary": 120,
+            "process_end_unknown": 155
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "model_without_input_boundary",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 14432.051,
+        "session_id": "d20647dabc2589250adf74da",
+        "start_ns": "117575000000",
+        "end_ns": "14549626000000",
+        "split": "val",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 7,
+            "model_without_input_boundary": 7,
+            "process_end_unknown": 14
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "model_without_input_boundary",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 2,
+          "tool_names": [
+            "update_plan"
+          ],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 9665.927,
+        "session_id": "88612260126d423a66c623e6",
+        "start_ns": "450134649000000",
+        "end_ns": "459800576000000",
+        "split": "val",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 121,
+            "model_without_input_boundary": 120,
+            "process_end_unknown": 155
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "model_without_input_boundary",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 9533.934,
+        "session_id": "53dea4ef3b64792972f6fbd6",
+        "start_ns": "0",
+        "end_ns": "9533934000000",
+        "split": "val",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 14,
+            "model_without_input_boundary": 14,
+            "process_end_unknown": 10
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "model_without_input_boundary",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 9483.055,
+        "session_id": "15f7935e7af65ae9149eff9d",
+        "start_ns": "99084000000",
+        "end_ns": "9582139000000",
+        "split": "val",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 70,
+            "model_without_input_boundary": 70,
+            "process_end_unknown": 66
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "model_without_input_boundary",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "update_plan"
+          ],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 8088.635,
+        "session_id": "826fa379ca22bb40a1300c0e",
+        "start_ns": "400589265000000",
+        "end_ns": "408677900000000",
+        "split": "holdout",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 21296,
+            "model_without_input_boundary": 21335,
+            "missing_process_root": 455,
+            "process_end_unknown": 19479
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "missing_process_root",
+            "model_without_input_boundary",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 6110.141,
+        "session_id": "88612260126d423a66c623e6",
+        "start_ns": "28314581000000",
+        "end_ns": "34424722000000",
+        "split": "val",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 121,
+            "model_without_input_boundary": 120,
+            "process_end_unknown": 155
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "model_without_input_boundary",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 3,
+          "tool_names": [
+            "apply_patch",
+            "update_plan"
+          ],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 5957.744,
+        "session_id": "29d9dc159650a0a98e6dfc05",
+        "start_ns": "0",
+        "end_ns": "5957744000000",
+        "split": "train",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 3,
+            "process_end_unknown": 57
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 5485.912,
+        "session_id": "88612260126d423a66c623e6",
+        "start_ns": "22056884000000",
+        "end_ns": "27542796000000",
+        "split": "val",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 121,
+            "model_without_input_boundary": 120,
+            "process_end_unknown": 155
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "model_without_input_boundary",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 5268.882,
+        "session_id": "fa941a1cdd4bc779f484dfdb",
+        "start_ns": "492164495000000",
+        "end_ns": "497433377000000",
+        "split": "holdout",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "model_without_input_boundary": 1,
+            "missing_tool_boundary": 1,
+            "process_end_unknown": 740
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "missing_tool_boundary",
+            "model_without_input_boundary",
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 5048.986,
+        "session_id": "0d8391c5068f2419c19c3d7f",
+        "start_ns": "0",
+        "end_ns": "5048986000000",
+        "split": "train",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 26
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 5027.409,
+        "session_id": "0a771736f7c4fb3f156fbe5a",
+        "start_ns": "5583000000",
+        "end_ns": "5032992000000",
+        "split": "train",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 28,
+            "model_without_input_boundary": 28,
+            "process_end_unknown": 8
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "model_without_input_boundary",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 2,
+          "tool_names": [
+            "apply_patch"
+          ],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 4832.761,
+        "session_id": "7cb24f63357207731291884e",
+        "start_ns": "56839000000",
+        "end_ns": "4889600000000",
+        "split": "holdout",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 22,
+            "model_without_input_boundary": 22,
+            "process_end_unknown": 35
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "model_without_input_boundary",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 4525.447,
+        "session_id": "8d1d096e7788d6da44319001",
+        "start_ns": "0",
+        "end_ns": "4525447000000",
+        "split": "train",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 86,
+            "model_without_input_boundary": 4,
+            "missing_tool_boundary": 4,
+            "process_end_unknown": 4786
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "missing_tool_boundary",
+            "model_without_input_boundary",
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      }
+    ],
+    "largest_tool_work_share": {
+      "session_id": "62d155ac09bcc1b48bba34c1",
+      "split": "train",
+      "fraction": 0.04261845550702771
+    }
+  },
+  "multi_user_sessions": {
+    "sessions": 3092,
+    "users": 50,
+    "split": {
+      "train": 1135,
+      "holdout": 1439,
+      "val": 518
+    },
+    "harness": {
+      "claude": 1524,
+      "codex": 1568
+    },
+    "distributions": {
+      "user_turns": {
+        "n": 3092,
+        "p50": 8,
+        "p90": 52,
+        "p95": 104,
+        "p99": 328
+      },
+      "model_calls": {
+        "n": 3092,
+        "p50": 49,
+        "p90": 409,
+        "p95": 699,
+        "p99": 2222
+      },
+      "tool_calls": {
+        "n": 3092,
+        "p50": 52,
+        "p90": 412,
+        "p95": 780,
+        "p99": 2333
+      },
+      "session_seconds": {
+        "n": 3092,
+        "p50": 3640.993,
+        "p90": 97253.245,
+        "p95": 310360.278,
+        "p99": 1537831.656
+      },
+      "turn_seconds": {
+        "n": 78529,
+        "p50": 23.136,
+        "p90": 311.585,
+        "p95": 606.915,
+        "p99": 2380.742
+      }
+    },
+    "total_session_seconds": 215730996.457,
+    "state_seconds": {
+      "model_wait": 6096392.513,
+      "tool_exec": 10441769.048,
+      "user_idle": 197419937.734,
+      "unknown_gap": 1799278.109
+    },
+    "state_fractions": {
+      "model_wait": 0.028259233087143076,
+      "tool_exec": 0.04840180233479466,
+      "user_idle": 0.9151208726435851,
+      "unknown_gap": 0.008340378242116154
+    },
+    "wall_state_seconds": {
+      "background_possible": 1532859.241,
+      "background_possible_and_user_idle": 194921240.215,
+      "model_and_background_possible": 5865043.926,
+      "model_and_tool": 1169.229,
+      "model_and_tool_and_background_possible": 25211.718,
+      "model_wait": 204967.64,
+      "tool_and_background_possible": 10230655.739,
+      "tool_exec": 184732.362,
+      "unknown_gap": 266418.868,
+      "user_idle": 2498697.519
+    },
+    "wall_state_fractions": {
+      "background_possible": 0.007105419555717544,
+      "background_possible_and_user_idle": 0.9035384039207929,
+      "model_and_background_possible": 0.027186839268918104,
+      "model_and_tool": 5.419847028023409e-06,
+      "model_and_tool_and_background_possible": 0.00011686646061093617,
+      "model_wait": 0.0009501075105860118,
+      "tool_and_background_possible": 0.04742320717477054,
+      "tool_exec": 0.0008563088523851568,
+      "unknown_gap": 0.0012349586863986105,
+      "user_idle": 0.011582468722792212
+    },
+    "concurrency_seconds": {
+      "background_possible": 212575010.839,
+      "model_and_background_possible": 5890255.644,
+      "model_and_tool": 26380.947,
+      "parallel_tool_rpc": 323722.069,
+      "user_idle_and_background_possible": 194921240.215
+    },
+    "process_terminal_counts": {
+      "process_end_unknown": 374898,
+      "observed": 35919
+    },
+    "interrupted_or_overlapping_user_messages": 1038,
+    "source_flags": {
+      "process_end_unknown": 374898,
+      "source_event_order_reversal": 137016,
+      "model_without_input_boundary": 144369,
+      "missing_tool_boundary": 623,
+      "process_terminal_source_ambiguous": 28,
+      "missing_process_root": 485,
+      "unresolved_observed_parent": 1
+    },
+    "endpoint_overlap_seconds": {},
+    "top20_tool_exec": [
+      {
+        "duration_seconds": 440697.891,
+        "session_id": "62d155ac09bcc1b48bba34c1",
+        "start_ns": "160409070000000",
+        "end_ns": "601106961000000",
+        "split": "train",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 1,
+            "process_end_unknown": 167
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "ExitPlanMode"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 154088.912,
+        "session_id": "f0ab3ed8df4afe9b280390ea",
+        "start_ns": "349274620000000",
+        "end_ns": "503363532000000",
+        "split": "holdout",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 4,
+            "process_end_unknown": 340
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Bash"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 154088.912,
+        "session_id": "86a79e354b75b93ecd97507a",
+        "start_ns": "349274620000000",
+        "end_ns": "503363532000000",
+        "split": "holdout",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 4,
+            "process_end_unknown": 340
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Bash"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 154088.912,
+        "session_id": "2bef97bd9faedc2b20d8b788",
+        "start_ns": "349274620000000",
+        "end_ns": "503363532000000",
+        "split": "holdout",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 6,
+            "missing_tool_boundary": 1,
+            "process_end_unknown": 1032
+          },
+          "quarantine_reasons": [
+            "missing_tool_boundary",
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Bash"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 137577.741,
+        "session_id": "87f2ec51ed3a3e24e6161118",
+        "start_ns": "301100457000000",
+        "end_ns": "438678198000000",
+        "split": "train",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 1,
+            "process_end_unknown": 159
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Bash"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 130381.021,
+        "session_id": "c7eb20753822c8a1844a7e64",
+        "start_ns": "444838000000",
+        "end_ns": "130825859000000",
+        "split": "train",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 35
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "AskUserQuestion"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 121666.617,
+        "session_id": "3302b33756482949635c9185",
+        "start_ns": "517177000000",
+        "end_ns": "122183794000000",
+        "split": "val",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 67
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "AskUserQuestion"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 104090.724,
+        "session_id": "0bcb20eca1d1abb265ecd3fe",
+        "start_ns": "236411538000000",
+        "end_ns": "340502262000000",
+        "split": "train",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 33
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Bash"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 92320.597,
+        "session_id": "7017e34e5b708b58a6360fdd",
+        "start_ns": "822156000000",
+        "end_ns": "93142753000000",
+        "split": "train",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 1,
+            "process_end_unknown": 13
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "ExitPlanMode"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 89534.662,
+        "session_id": "80701cf15b1a439ce29cf46d",
+        "start_ns": "631148191000000",
+        "end_ns": "720682853000000",
+        "split": "train",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "missing_tool_boundary": 2,
+            "process_end_unknown": 427
+          },
+          "quarantine_reasons": [
+            "missing_tool_boundary",
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "AskUserQuestion"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 84579.777,
+        "session_id": "0d983c65f9bd351f1658984d",
+        "start_ns": "224525186000000",
+        "end_ns": "309104963000000",
+        "split": "val",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "model_without_input_boundary": 1,
+            "process_end_unknown": 1963
+          },
+          "quarantine_reasons": [
+            "model_without_input_boundary",
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "AskUserQuestion"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 84098.823,
+        "session_id": "fbba22c41fdbad57724ff553",
+        "start_ns": "350322369000000",
+        "end_ns": "434421192000000",
+        "split": "val",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 1,
+            "process_end_unknown": 1543
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "AskUserQuestion"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 83363.792,
+        "session_id": "7ca810c62857f70d1c24bff6",
+        "start_ns": "91726467000000",
+        "end_ns": "175090259000000",
+        "split": "val",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 295
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "AskUserQuestion"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 74051.216,
+        "session_id": "b61edf99f5e68b5a4bf7e17a",
+        "start_ns": "147895831000000",
+        "end_ns": "221947047000000",
+        "split": "val",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 514
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "AskUserQuestion"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 70040.218,
+        "session_id": "7ca810c62857f70d1c24bff6",
+        "start_ns": "6068830000000",
+        "end_ns": "76109048000000",
+        "split": "val",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 295
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "AskUserQuestion"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 66602.816,
+        "session_id": "fbba22c41fdbad57724ff553",
+        "start_ns": "40806167000000",
+        "end_ns": "107408983000000",
+        "split": "val",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 1,
+            "process_end_unknown": 1543
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "AskUserQuestion"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 64840.444,
+        "session_id": "4cd11d09f38023f283466bb9",
+        "start_ns": "16789000000",
+        "end_ns": "64857233000000",
+        "split": "train",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 34
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Agent"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 56126.742,
+        "session_id": "d2d8a02c733ca92126f38b83",
+        "start_ns": "34270777000000",
+        "end_ns": "90397519000000",
+        "split": "val",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 5,
+            "missing_tool_boundary": 1,
+            "process_end_unknown": 399
+          },
+          "quarantine_reasons": [
+            "missing_tool_boundary",
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "AskUserQuestion"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 51353.198,
+        "session_id": "d7ffa85568b0f2d9a6466033",
+        "start_ns": "55140041000000",
+        "end_ns": "106493239000000",
+        "split": "train",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 123
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Bash"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 49892.368,
+        "session_id": "2523c76b26eaea19b0c63dbd",
+        "start_ns": "136588000000",
+        "end_ns": "50028956000000",
+        "split": "val",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 38
+          },
+          "quarantine_reasons": [
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "AskUserQuestion"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      }
+    ],
+    "top20_unknown_gap": [
+      {
+        "duration_seconds": 72430.616,
+        "session_id": "5bf37281428f4eab0bdb0039",
+        "start_ns": "0",
+        "end_ns": "72430616000000",
+        "split": "val",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 1,
+            "process_end_unknown": 7
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 70238.446,
+        "session_id": "d0a5077dc4878580c1537519",
+        "start_ns": "6588595000000",
+        "end_ns": "76827041000000",
+        "split": "train",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 61,
+            "model_without_input_boundary": 61,
+            "process_end_unknown": 84
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "model_without_input_boundary",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 62576.251,
+        "session_id": "0a771736f7c4fb3f156fbe5a",
+        "start_ns": "5032992000000",
+        "end_ns": "67609243000000",
+        "split": "train",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 28,
+            "model_without_input_boundary": 28,
+            "process_end_unknown": 8
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "model_without_input_boundary",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 14,
+          "tool_names": [
+            "apply_patch",
+            "update_plan"
+          ],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 54767.892,
+        "session_id": "8874eba2a0533dc05e1e6644",
+        "start_ns": "0",
+        "end_ns": "54767892000000",
+        "split": "train",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 46
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 46671.588,
+        "session_id": "588e2f67dfc79e1b837be374",
+        "start_ns": "0",
+        "end_ns": "46671588000000",
+        "split": "train",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 1115
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 23691.268,
+        "session_id": "9496dcdc4d713c984bc0ad95",
+        "start_ns": "0",
+        "end_ns": "23691268000000",
+        "split": "train",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 69
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 16599.336,
+        "session_id": "88612260126d423a66c623e6",
+        "start_ns": "5384202000000",
+        "end_ns": "21983538000000",
+        "split": "val",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 121,
+            "model_without_input_boundary": 120,
+            "process_end_unknown": 155
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "model_without_input_boundary",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 14432.051,
+        "session_id": "d20647dabc2589250adf74da",
+        "start_ns": "117575000000",
+        "end_ns": "14549626000000",
+        "split": "val",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 7,
+            "model_without_input_boundary": 7,
+            "process_end_unknown": 14
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "model_without_input_boundary",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 2,
+          "tool_names": [
+            "update_plan"
+          ],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 9665.927,
+        "session_id": "88612260126d423a66c623e6",
+        "start_ns": "450134649000000",
+        "end_ns": "459800576000000",
+        "split": "val",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 121,
+            "model_without_input_boundary": 120,
+            "process_end_unknown": 155
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "model_without_input_boundary",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 9533.934,
+        "session_id": "53dea4ef3b64792972f6fbd6",
+        "start_ns": "0",
+        "end_ns": "9533934000000",
+        "split": "val",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 14,
+            "model_without_input_boundary": 14,
+            "process_end_unknown": 10
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "model_without_input_boundary",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 9483.055,
+        "session_id": "15f7935e7af65ae9149eff9d",
+        "start_ns": "99084000000",
+        "end_ns": "9582139000000",
+        "split": "val",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 70,
+            "model_without_input_boundary": 70,
+            "process_end_unknown": 66
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "model_without_input_boundary",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "update_plan"
+          ],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 8088.635,
+        "session_id": "826fa379ca22bb40a1300c0e",
+        "start_ns": "400589265000000",
+        "end_ns": "408677900000000",
+        "split": "holdout",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 21296,
+            "model_without_input_boundary": 21335,
+            "missing_process_root": 455,
+            "process_end_unknown": 19479
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "missing_process_root",
+            "model_without_input_boundary",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 6110.141,
+        "session_id": "88612260126d423a66c623e6",
+        "start_ns": "28314581000000",
+        "end_ns": "34424722000000",
+        "split": "val",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 121,
+            "model_without_input_boundary": 120,
+            "process_end_unknown": 155
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "model_without_input_boundary",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 3,
+          "tool_names": [
+            "apply_patch",
+            "update_plan"
+          ],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 5957.744,
+        "session_id": "29d9dc159650a0a98e6dfc05",
+        "start_ns": "0",
+        "end_ns": "5957744000000",
+        "split": "train",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 3,
+            "process_end_unknown": 57
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 5485.912,
+        "session_id": "88612260126d423a66c623e6",
+        "start_ns": "22056884000000",
+        "end_ns": "27542796000000",
+        "split": "val",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 121,
+            "model_without_input_boundary": 120,
+            "process_end_unknown": 155
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "model_without_input_boundary",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 5268.882,
+        "session_id": "fa941a1cdd4bc779f484dfdb",
+        "start_ns": "492164495000000",
+        "end_ns": "497433377000000",
+        "split": "holdout",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "model_without_input_boundary": 1,
+            "missing_tool_boundary": 1,
+            "process_end_unknown": 740
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "missing_tool_boundary",
+            "model_without_input_boundary",
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 5048.986,
+        "session_id": "0d8391c5068f2419c19c3d7f",
+        "start_ns": "0",
+        "end_ns": "5048986000000",
+        "split": "train",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "process_end_unknown": 26
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 5027.409,
+        "session_id": "0a771736f7c4fb3f156fbe5a",
+        "start_ns": "5583000000",
+        "end_ns": "5032992000000",
+        "split": "train",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 28,
+            "model_without_input_boundary": 28,
+            "process_end_unknown": 8
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "model_without_input_boundary",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 2,
+          "tool_names": [
+            "apply_patch"
+          ],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 4832.761,
+        "session_id": "7cb24f63357207731291884e",
+        "start_ns": "56839000000",
+        "end_ns": "4889600000000",
+        "split": "holdout",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 22,
+            "model_without_input_boundary": 22,
+            "process_end_unknown": 35
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "model_without_input_boundary",
+            "process_end_unknown",
+            "unknown_fraction_above_threshold"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 4525.447,
+        "session_id": "8d1d096e7788d6da44319001",
+        "start_ns": "0",
+        "end_ns": "4525447000000",
+        "split": "train",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": true,
+        "requires_review": true,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 86,
+            "model_without_input_boundary": 4,
+            "missing_tool_boundary": 4,
+            "process_end_unknown": 4786
+          },
+          "quarantine_reasons": [
+            "hour_scale_unknown_gap",
+            "missing_tool_boundary",
+            "model_without_input_boundary",
+            "process_end_unknown"
+          ],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      }
+    ],
+    "largest_tool_work_share": {
+      "session_id": "62d155ac09bcc1b48bba34c1",
+      "split": "train",
+      "fraction": 0.04509691019168766
+    }
+  },
+  "eligible_sessions": {
+    "sessions": 352,
+    "users": 24,
+    "split": {
+      "holdout": 252,
+      "val": 48,
+      "train": 52
+    },
+    "harness": {
+      "codex": 283,
+      "claude": 69
+    },
+    "distributions": {
+      "user_turns": {
+        "n": 352,
+        "p50": 9,
+        "p90": 75,
+        "p95": 136,
+        "p99": 254
+      },
+      "model_calls": {
+        "n": 352,
+        "p50": 10,
+        "p90": 75,
+        "p95": 136,
+        "p99": 254
+      },
+      "tool_calls": {
+        "n": 352,
+        "p50": 0,
+        "p90": 5,
+        "p95": 12,
+        "p99": 24
+      },
+      "session_seconds": {
+        "n": 352,
+        "p50": 921.404,
+        "p90": 12212.718,
+        "p95": 23878.795,
+        "p99": 101237.901
+      },
+      "turn_seconds": {
+        "n": 10549,
+        "p50": 3.465,
+        "p90": 6.182,
+        "p95": 8.138,
+        "p99": 40.61
+      }
+    },
+    "total_session_seconds": 2068068.165,
+    "state_seconds": {
+      "model_wait": 129672.151,
+      "tool_exec": 6082.172,
+      "user_idle": 1932173.259,
+      "unknown_gap": 215.969
+    },
+    "state_fractions": {
+      "model_wait": 0.06270206814000254,
+      "tool_exec": 0.0029409920344671036,
+      "user_idle": 0.9342889618921241,
+      "unknown_gap": 0.00010443031020691719
+    },
+    "wall_state_seconds": {
+      "model_and_tool": 75.386,
+      "model_wait": 129596.765,
+      "tool_exec": 6006.786,
+      "unknown_gap": 215.969,
+      "user_idle": 1932173.259
+    },
+    "wall_state_fractions": {
+      "model_and_tool": 3.6452376800645735e-05,
+      "model_wait": 0.06266561576320188,
+      "tool_exec": 0.002904539657666458,
+      "unknown_gap": 0.00010443031020691719,
+      "user_idle": 0.9342889618921241
+    },
+    "concurrency_seconds": {
+      "model_and_tool": 75.386,
+      "parallel_tool_rpc": 1196.707
+    },
+    "process_terminal_counts": {
+      "observed": 99
+    },
+    "interrupted_or_overlapping_user_messages": 9,
+    "source_flags": {
+      "source_event_order_reversal": 13
+    },
+    "endpoint_overlap_seconds": {},
+    "top20_tool_exec": [
+      {
+        "duration_seconds": 926.804,
+        "session_id": "ad7fc7c994b79d3a5fa61a77",
+        "start_ns": "107384000000",
+        "end_ns": "1034188000000",
+        "split": "val",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Edit"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 863.511,
+        "session_id": "083c013c0e7cf2bdb47f6b06",
+        "start_ns": "45055000000",
+        "end_ns": "908566000000",
+        "split": "holdout",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 3,
+          "tool_names": [
+            "custom_tool_3"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 386.687,
+        "session_id": "0b8ff5bb80dd61d994a9a8fe",
+        "start_ns": "279752000000",
+        "end_ns": "666439000000",
+        "split": "train",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "ExitPlanMode"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 264.71,
+        "session_id": "af35c21f4492b16407174ff1",
+        "start_ns": "47209000000",
+        "end_ns": "311919000000",
+        "split": "train",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Edit"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 263.059,
+        "session_id": "9be10698e0476bb0820e6424",
+        "start_ns": "20292000000",
+        "end_ns": "283351000000",
+        "split": "val",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 1
+          },
+          "quarantine_reasons": [],
+          "overlapping_operations": 6,
+          "tool_names": [
+            "Agent"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 253.015,
+        "session_id": "aae6df41db6a3ab12110fff8",
+        "start_ns": "127562000000",
+        "end_ns": "380577000000",
+        "split": "val",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "ExitPlanMode"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 214.103,
+        "session_id": "0b8ff5bb80dd61d994a9a8fe",
+        "start_ns": "7354000000",
+        "end_ns": "221457000000",
+        "split": "train",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Agent"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 197.229,
+        "session_id": "af35c21f4492b16407174ff1",
+        "start_ns": "315302000000",
+        "end_ns": "512531000000",
+        "split": "train",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Edit"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 188.971,
+        "session_id": "fc147e6e4f84349233c6c5a6",
+        "start_ns": "606132000000",
+        "end_ns": "795103000000",
+        "split": "holdout",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Edit"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 186.034,
+        "session_id": "3010a5138fbfa398aa034140",
+        "start_ns": "2286285000000",
+        "end_ns": "2472319000000",
+        "split": "holdout",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Agent"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 130.299,
+        "session_id": "5921a08398d787189ba7608d",
+        "start_ns": "58851000000",
+        "end_ns": "189150000000",
+        "split": "train",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {
+            "source_event_order_reversal": 1
+          },
+          "quarantine_reasons": [],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "WebFetch"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 93.272,
+        "session_id": "3010a5138fbfa398aa034140",
+        "start_ns": "2088877000000",
+        "end_ns": "2182149000000",
+        "split": "holdout",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Agent"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 84.063,
+        "session_id": "62ad67c003e82ee4b3dc86de",
+        "start_ns": "7677000000",
+        "end_ns": "91740000000",
+        "split": "train",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Agent"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 77.862,
+        "session_id": "fc147e6e4f84349233c6c5a6",
+        "start_ns": "33614000000",
+        "end_ns": "111476000000",
+        "split": "holdout",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Edit"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 75.781,
+        "session_id": "11b0479550ff337294fb1942",
+        "start_ns": "1419429000000",
+        "end_ns": "1495210000000",
+        "split": "val",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Agent"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 75.781,
+        "session_id": "0182ed4ae7b011f2c40a5549",
+        "start_ns": "1419429000000",
+        "end_ns": "1495210000000",
+        "split": "val",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Agent"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 72.709,
+        "session_id": "c7c0f729ac04d226583b24c3",
+        "start_ns": "6686000000",
+        "end_ns": "79395000000",
+        "split": "train",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Agent"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 70.358,
+        "session_id": "07c8d9d1d2ffdd2b03b6fcc5",
+        "start_ns": "506699000000",
+        "end_ns": "577057000000",
+        "split": "holdout",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "ExitPlanMode"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 69.42,
+        "session_id": "07c8d9d1d2ffdd2b03b6fcc5",
+        "start_ns": "309677000000",
+        "end_ns": "379097000000",
+        "split": "holdout",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "AskUserQuestion"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      },
+      {
+        "duration_seconds": 67.378,
+        "session_id": "7995375dd896e3b4407029fe",
+        "start_ns": "298985000000",
+        "end_ns": "366363000000",
+        "split": "val",
+        "evidence": "direct invocation/batch envelope union",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 1,
+          "tool_names": [
+            "Agent"
+          ],
+          "interpretation": "directly bounded tool RPC union; duration alone is a review warning"
+        }
+      }
+    ],
+    "top20_unknown_gap": [
+      {
+        "duration_seconds": 116.383,
+        "session_id": "2b8b7b0fcbf60431ca353e38",
+        "start_ns": "0",
+        "end_ns": "116383000000",
+        "split": "val",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 36.059,
+        "session_id": "083c013c0e7cf2bdb47f6b06",
+        "start_ns": "0",
+        "end_ns": "36059000000",
+        "split": "holdout",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 26.933,
+        "session_id": "07c8d9d1d2ffdd2b03b6fcc5",
+        "start_ns": "0",
+        "end_ns": "26933000000",
+        "split": "holdout",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 15.099,
+        "session_id": "706f0f81752c35996f6afa4e",
+        "start_ns": "0",
+        "end_ns": "15099000000",
+        "split": "val",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 10.209,
+        "session_id": "c68da7307e4277b5333bf369",
+        "start_ns": "0",
+        "end_ns": "10209000000",
+        "split": "val",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 2.524,
+        "session_id": "260b3e0426cfde90a13c7b6d",
+        "start_ns": "0",
+        "end_ns": "2524000000",
+        "split": "val",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 2.091,
+        "session_id": "5ed20ac9e4bddc9c1b823a50",
+        "start_ns": "108638111000000",
+        "end_ns": "108640202000000",
+        "split": "holdout",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 1.425,
+        "session_id": "5b80d92617895841c6ae7f34",
+        "start_ns": "3601135000000",
+        "end_ns": "3602560000000",
+        "split": "val",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 0.495,
+        "session_id": "1e97099382ed657596f1108d",
+        "start_ns": "22105000000",
+        "end_ns": "22600000000",
+        "split": "holdout",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 0.212,
+        "session_id": "f2bf5ca0d2f9b8ad9ff3ae76",
+        "start_ns": "5203460000000",
+        "end_ns": "5203672000000",
+        "split": "holdout",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 0.16,
+        "session_id": "173f78ae4c069e88313fe7bb",
+        "start_ns": "114045851000000",
+        "end_ns": "114046011000000",
+        "split": "holdout",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 0.14,
+        "session_id": "b81801d671dab0b0c71acd47",
+        "start_ns": "30164782000000",
+        "end_ns": "30164922000000",
+        "split": "holdout",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 0.123,
+        "session_id": "5eb2f1e26f2664c1e1a762ec",
+        "start_ns": "10979277000000",
+        "end_ns": "10979400000000",
+        "split": "holdout",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 0.08,
+        "session_id": "533a20e41bb8edfa1a46fbb6",
+        "start_ns": "37662405000000",
+        "end_ns": "37662485000000",
+        "split": "holdout",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 0.073,
+        "session_id": "b5f2c014288d2b39e7efa6d9",
+        "start_ns": "233485000000",
+        "end_ns": "233558000000",
+        "split": "holdout",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 0.068,
+        "session_id": "3531d07e06ce69a454e91ba5",
+        "start_ns": "84675000000",
+        "end_ns": "84743000000",
+        "split": "holdout",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 0.066,
+        "session_id": "7a1ab529dc9550ff5fb7dc9c",
+        "start_ns": "59315000000",
+        "end_ns": "59381000000",
+        "split": "holdout",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 0.065,
+        "session_id": "f4fc6c718bd2c89372d4993f",
+        "start_ns": "0",
+        "end_ns": "65000000",
+        "split": "val",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 0.064,
+        "session_id": "9d776ed9bfe63183cf2c33da",
+        "start_ns": "43605000000",
+        "end_ns": "43669000000",
+        "split": "holdout",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      },
+      {
+        "duration_seconds": 0.063,
+        "session_id": "f7871f029aead1749b51033b",
+        "start_ns": "12189148000000",
+        "end_ns": "12189211000000",
+        "split": "train",
+        "evidence": "unattributed interval; no invented execution",
+        "hour_scale": false,
+        "requires_review": false,
+        "inspection": {
+          "source_flags": {},
+          "quarantine_reasons": [],
+          "overlapping_operations": 0,
+          "tool_names": [],
+          "interpretation": "source silence with no observed model/tool boundary; retained as unknown, never tool work"
+        }
+      }
+    ],
+    "largest_tool_work_share": {
+      "session_id": "083c013c0e7cf2bdb47f6b06",
+      "split": "holdout",
+      "fraction": 0.15660145750564108
+    }
+  },
+  "source_scan": {
+    "source_rounds": 665453,
+    "source_tools": 743819
+  },
+  "partition_scan": {
+    "partition_manifests": [],
+    "shards": 0
+  },
+  "capacity_ledger": {
+    "f_tool_rpc": 0.0029409920344671036,
+    "f_actor_required": null,
+    "background_observed_seconds": 0.0,
+    "background_possible_seconds": 0.0,
+    "target_window_concentration": [
+      {
+        "split": "train",
+        "window_size": 32,
+        "offset": 0,
+        "sessions": 32,
+        "complete_window": true,
+        "maximum_tool_work_fraction": 0.33533120827464713,
+        "concentration_passed": false,
+        "session_ids_sha256": "2d2783b98ad17e48ae6d2bd1"
+      },
+      {
+        "split": "train",
+        "window_size": 32,
+        "offset": 32,
+        "sessions": 20,
+        "complete_window": false,
+        "maximum_tool_work_fraction": 0.36036388858743096,
+        "concentration_passed": false,
+        "session_ids_sha256": "5b497b91c10a2e9e5558701f"
+      },
+      {
+        "split": "train",
+        "window_size": 64,
+        "offset": 0,
+        "sessions": 52,
+        "complete_window": false,
+        "maximum_tool_work_fraction": 0.3006055559871765,
+        "concentration_passed": false,
+        "session_ids_sha256": "b08e54e2afd35fa771202330"
+      },
+      {
+        "split": "val",
+        "window_size": 32,
+        "offset": 0,
+        "sessions": 32,
+        "complete_window": true,
+        "maximum_tool_work_fraction": 0.42175322828374767,
+        "concentration_passed": false,
+        "session_ids_sha256": "eeea8f13ab52656ee87197b0"
+      },
+      {
+        "split": "val",
+        "window_size": 32,
+        "offset": 32,
+        "sessions": 16,
+        "complete_window": false,
+        "maximum_tool_work_fraction": 0.7245503132587743,
+        "concentration_passed": false,
+        "session_ids_sha256": "938c6d1eb005dcce09a5f2de"
+      },
+      {
+        "split": "val",
+        "window_size": 64,
+        "offset": 0,
+        "sessions": 48,
+        "complete_window": false,
+        "maximum_tool_work_fraction": 0.48037653183671186,
+        "concentration_passed": false,
+        "session_ids_sha256": "e43755cd2a36b40c6e5f4978"
+      },
+      {
+        "split": "holdout",
+        "window_size": 32,
+        "offset": 0,
+        "sessions": 32,
+        "complete_window": true,
+        "maximum_tool_work_fraction": 0.8005212548778345,
+        "concentration_passed": false,
+        "session_ids_sha256": "742e04a712bc804fb1ea84b6"
+      },
+      {
+        "split": "holdout",
+        "window_size": 32,
+        "offset": 32,
+        "sessions": 32,
+        "complete_window": true,
+        "maximum_tool_work_fraction": 0.9995262370566991,
+        "concentration_passed": false,
+        "session_ids_sha256": "c216ba1cd5733b55e62bea84"
+      },
+      {
+        "split": "holdout",
+        "window_size": 32,
+        "offset": 64,
+        "sessions": 32,
+        "complete_window": true,
+        "maximum_tool_work_fraction": 0.5386038030737171,
+        "concentration_passed": false,
+        "session_ids_sha256": "38803d4ce33d48f13db9f261"
+      },
+      {
+        "split": "holdout",
+        "window_size": 32,
+        "offset": 96,
+        "sessions": 32,
+        "complete_window": true,
+        "maximum_tool_work_fraction": 0,
+        "concentration_passed": true,
+        "session_ids_sha256": "b3fff82ec9b921feec949ffa"
+      },
+      {
+        "split": "holdout",
+        "window_size": 32,
+        "offset": 128,
+        "sessions": 32,
+        "complete_window": true,
+        "maximum_tool_work_fraction": 0.9549192811452939,
+        "concentration_passed": false,
+        "session_ids_sha256": "2174340f1794cf7218d59609"
+      },
+      {
+        "split": "holdout",
+        "window_size": 32,
+        "offset": 160,
+        "sessions": 32,
+        "complete_window": true,
+        "maximum_tool_work_fraction": 0.8519480519480519,
+        "concentration_passed": false,
+        "session_ids_sha256": "000795ce97eeaa37ca645863"
+      },
+      {
+        "split": "holdout",
+        "window_size": 32,
+        "offset": 192,
+        "sessions": 32,
+        "complete_window": true,
+        "maximum_tool_work_fraction": 1.0,
+        "concentration_passed": false,
+        "session_ids_sha256": "65baf61dc02da508290635f5"
+      },
+      {
+        "split": "holdout",
+        "window_size": 32,
+        "offset": 224,
+        "sessions": 28,
+        "complete_window": false,
+        "maximum_tool_work_fraction": 0.9795416316232128,
+        "concentration_passed": false,
+        "session_ids_sha256": "58fd93ecb3e7b60917d4c5e7"
+      },
+      {
+        "split": "holdout",
+        "window_size": 64,
+        "offset": 0,
+        "sessions": 64,
+        "complete_window": true,
+        "maximum_tool_work_fraction": 0.6358358389096871,
+        "concentration_passed": false,
+        "session_ids_sha256": "6cc61d2e0273b2313149d842"
+      },
+      {
+        "split": "holdout",
+        "window_size": 64,
+        "offset": 64,
+        "sessions": 64,
+        "complete_window": true,
+        "maximum_tool_work_fraction": 0.5386038030737171,
+        "concentration_passed": false,
+        "session_ids_sha256": "52edb33899f59de0deead530"
+      },
+      {
+        "split": "holdout",
+        "window_size": 64,
+        "offset": 128,
+        "sessions": 64,
+        "complete_window": true,
+        "maximum_tool_work_fraction": 0.5605220811728947,
+        "concentration_passed": false,
+        "session_ids_sha256": "4346776a928df06f03e001e9"
+      },
+      {
+        "split": "holdout",
+        "window_size": 64,
+        "offset": 192,
+        "sessions": 60,
+        "complete_window": false,
+        "maximum_tool_work_fraction": 0.8612478226575081,
+        "concentration_passed": false,
+        "session_ids_sha256": "71d4bbdf79f01e20d0cb163a"
+      }
+    ],
+    "actor_capacity_status": "pending_execution_location_mapping",
+    "scope": "time-weighted tool RPC union; nominal scenario assumes one slot per in-flight RPC; independent session phases",
+    "formula": "nominal_rpc_slots = max(1, ceil(concurrent_sessions * f_tool_rpc / target_rho))",
+    "rho_above_one": "explicit overload stress",
+    "rows": [
+      {
+        "concurrent_sessions": 8,
+        "target_rho": 0.5,
+        "nominal_rpc_slots": 1,
+        "actor_required_slots": null
+      },
+      {
+        "concurrent_sessions": 8,
+        "target_rho": 0.8,
+        "nominal_rpc_slots": 1,
+        "actor_required_slots": null
+      },
+      {
+        "concurrent_sessions": 8,
+        "target_rho": 1.0,
+        "nominal_rpc_slots": 1,
+        "actor_required_slots": null
+      },
+      {
+        "concurrent_sessions": 8,
+        "target_rho": 1.2,
+        "nominal_rpc_slots": 1,
+        "actor_required_slots": null
+      },
+      {
+        "concurrent_sessions": 32,
+        "target_rho": 0.5,
+        "nominal_rpc_slots": 1,
+        "actor_required_slots": null
+      },
+      {
+        "concurrent_sessions": 32,
+        "target_rho": 0.8,
+        "nominal_rpc_slots": 1,
+        "actor_required_slots": null
+      },
+      {
+        "concurrent_sessions": 32,
+        "target_rho": 1.0,
+        "nominal_rpc_slots": 1,
+        "actor_required_slots": null
+      },
+      {
+        "concurrent_sessions": 32,
+        "target_rho": 1.2,
+        "nominal_rpc_slots": 1,
+        "actor_required_slots": null
+      },
+      {
+        "concurrent_sessions": 64,
+        "target_rho": 0.5,
+        "nominal_rpc_slots": 1,
+        "actor_required_slots": null
+      },
+      {
+        "concurrent_sessions": 64,
+        "target_rho": 0.8,
+        "nominal_rpc_slots": 1,
+        "actor_required_slots": null
+      },
+      {
+        "concurrent_sessions": 64,
+        "target_rho": 1.0,
+        "nominal_rpc_slots": 1,
+        "actor_required_slots": null
+      },
+      {
+        "concurrent_sessions": 64,
+        "target_rho": 1.2,
+        "nominal_rpc_slots": 1,
+        "actor_required_slots": null
+      },
+      {
+        "concurrent_sessions": 128,
+        "target_rho": 0.5,
+        "nominal_rpc_slots": 1,
+        "actor_required_slots": null
+      },
+      {
+        "concurrent_sessions": 128,
+        "target_rho": 0.8,
+        "nominal_rpc_slots": 1,
+        "actor_required_slots": null
+      },
+      {
+        "concurrent_sessions": 128,
+        "target_rho": 1.0,
+        "nominal_rpc_slots": 1,
+        "actor_required_slots": null
+      },
+      {
+        "concurrent_sessions": 128,
+        "target_rho": 1.2,
+        "nominal_rpc_slots": 1,
+        "actor_required_slots": null
+      }
+    ]
+  },
+  "license": "CC-BY-4.0",
+  "attribution": "UW SyFI Lab and TraceLab contributors",
+  "split_method": "seeded whole-user hash 60/20/20; user field is publisher pseudonym",
+  "semantics": [
+    "Model, RPC, process and human channels retain independent overlaps. Base label durations are unions; their sum may exceed wall time.",
+    "Mutually exclusive composite wall states conserve the session horizon, including model_and_tool and possible-background combinations.",
+    "User idle is inferred before an explicit user input; unresolved background work remains an independent overlay.",
+    "Process terminal time requires a timed native terminal observation. Aggregate finished/exit-code fields retain unknown timing.",
+    "Execution location, actor residency and safe suspension require a separate mapping. Actor-safe idle remains null.",
+    "Tool intervals use wrapper/batch invocation-to-result unions; nested child durations are retained as raw events.",
+    "Model durations in TraceLab are observed input-to-output client spans.",
+    "Copilot uses the publisher start-plus-duration convention provisionally; endpoint and causal joins remain unverified.",
+    "Busy-time user inputs retain overlap markers. Source endpoints have unknown right censoring; no cleaner truncation.",
+    "Absolute source timestamps are absent from normalized session events; source partition date is split metadata only.",
+    "User-role inputs are directly observed; sanitized metadata does not independently attest authorship of every message.",
+    "Nominal RPC slots are an explicit what-if proxy; measured actor-required capacity awaits mapping."
+  ]
+}

@@ -1,5 +1,7 @@
 # 原生研究观测与验收
 
+**研究状态：`CONCLUDED / FROZEN`。** [收敛结论](SCHEDULING_RESEARCH_CONCLUSION.md)列明已验证范围与留存条件。本文保存观测接口及历史验收规范；Native `44714066930` 的 MEMORY 重启专项已通过，最终大工作集高竞争、多种子及开销终审保留未完成状态。
+
 AgentCloud 的核心观测集固定为 PostgreSQL 中与控制状态同时提交的 Coordinator 事件：首次启动、恢复需求、Substrate RPC、容量拒绝、等待进出、Ready、资源释放与对应 Worker 采样。Runner FIFO 以 `legacy_runner_admission` 来源保留历史对照。调度研究采用 [Tier-1 仿真与 Tier-2 实机两级资格](SCHEDULING_RESEARCH_PATH.md)，由[注册表](../bench/configs/research-readiness.json)管理。固定准入语义对照使用独立运行入口，详见[控制面容量准入](NATIVE_ADMISSION.md)。
 
 ## 采集与证据
@@ -53,9 +55,9 @@ python3 -m bench.research_gate
 | 资格 | 已具备 | 后续验收 |
 | --- | --- | --- |
 | 数据用途 | AgentLogs 全量会话人口、来源冻结、任务家族及分母 | 适用于在线挂起的模型／工具等待、安全点、独立时间与家族留出 |
-| 原生完整观测 | PG 准入事务流、真实 MEMORY 容量／RPC／Ready／释放闭合、受控 PG／gRPC 进程重启验收 | 目标运行时重启、跨源时钟／恢复身份及采集开销 |
-| 物理成本 | 历史 MEMORY／存储证据独立封存 | 工作集、并发和存储分层的 RSS／charge／设备 I/O 与留出校准 |
-| 闭环因果 | 离线依赖检查与干预测试 | live runner 完整 DAG、恢复排队传播、FINAL 先验敏感性 |
+| 原生完整观测 | PG 准入事务流、MEMORY 容量／RPC／Ready／释放闭合及 `44714066930` SIGKILL 重启专项 | 最终大工作集高竞争重启、跨源时钟／恢复身份及采集开销 |
+| 物理成本 | 六格阶段测量与独立补采 RSS／charge，[原始口径](evidence/pre-v3/memory/README.md)保留 | Quiesce／RetainTag 独立时钟、独占设备写量、尾部重复与目标范围校准 |
+| 闭环因果 | 同源 v2 DES、差分／干预测试和 N=8／16 MiB 独立 10/10 校准 | 完整后台生命周期、独立事件源与大工作集高竞争迁移 |
 | 在线来源 | 部分决策快照与序列 | 每个输入的 producer／available_at／consumer／watermark，以及恢复 runtime 身份 |
 | 统计设计 | 原始失败与配对身份保留 | 主指标、误差容忍、独立统计单元、留出和调参预算冻结 |
 

@@ -1,11 +1,18 @@
 {
   "schema_version": 1,
+  "research_lifecycle": {
+    "status": "CONCLUDED",
+    "execution_state": "FROZEN",
+    "as_of": "2026-11-22",
+    "v3_implemented": false,
+    "reason": "Public process-lifecycle evidence and personal experiment-resource ROI"
+  },
   "research_status": "exploratory",
-  "status": "calibration_required",
-  "tier1": "pending",
+  "status": "tier1_passed",
+  "tier1": "passed",
   "tier2": "pending",
   "v3_started": false,
-  "native_execution": {
+  "historical_native_execution": {
     "status": "passed",
     "run_id": 44738531417,
     "sessions_per_policy": 8,
@@ -16,7 +23,7 @@
     "post_measurement_retirement_per_policy": 8,
     "coverage_fraction_per_policy": 1.0
   },
-  "forecast_comparison": {
+  "historical_forecast_comparison": {
     "status": "calibration_required",
     "numerical_checks": 10,
     "passed": 3,
@@ -27,22 +34,67 @@
     ],
     "input_and_thresholds_unchanged": true
   },
+  "independent_validation": {
+    "run_id": 44872350361,
+    "numerical_checks_passed": 10,
+    "numerical_checks_failed": 0,
+    "calibration_family_overlap": 0,
+    "arrival_spacing_ms": 50,
+    "placement_order": "one first-wave member differs; retained as protocol failure"
+  },
+  "ordered_arrival_replication": {
+    "run_id": 44873875604,
+    "source_commit": "ec48eba4889971ed7a556546dff7a1600cf81f10",
+    "kind": "same validation slice; only arrival spacing changes; phase parameters and tolerances remain frozen",
+    "arrival_spacing_ms": 500,
+    "numerical_checks_passed": 10,
+    "numerical_checks_failed": 0,
+    "native_audit": "passed",
+    "arrival_audit": "passed for both policies",
+    "first_wave_equal": true,
+    "sessions_per_policy": 8,
+    "models_per_policy": 40,
+    "nodes_per_policy": 72,
+    "resource_coverage_fraction": 1.0,
+    "ranking_status": "all policy differences unresolved within preregistered tolerance"
+  },
+  "scope": "L0 CPU MEMORY simulation development using conservative B-level serial Agent traces; final performance claims require Tier-2",
+  "environment_model_sha256": "d53f0b1d2246ae7fe7076d680a13c1c9b31907cc8a01b739855aa3ebc62d515b",
+  "cost_sha256": "810bf6a8c795e6d1e4579e4128247f91ab2783fce9115a740af65cd63261906b",
+  "physical_cost_coverage": "16/64/128 MiB x concurrency 1/4; 2/3 use disclosed linear interpolation; broader end-to-end transfer remains exploratory",
   "engineering": {
-    "native_commit_ci": 44738531411,
-    "diagnostics_commit_ci": 44740119448,
-    "local_control_plane_started": false,
-    "offline_execution": "cannlab only"
+    "calibration_ci": 44872353777,
+    "matrix_ci": 44874661173,
+    "latest_des_ci": 44876917816,
+    "latest_des_go_race_top_level_passed": 207,
+    "offline_execution": "cannlab only",
+    "physical_execution": "GitHub Actions ubuntu-24.04 x86 only",
+    "production_v2_behavior_changed": false,
+    "harness_overhead": "enabled in calibration; disabled in baseline matrix"
   },
   "trace_semantics": "B: observed model durations and request gaps; tool boundaries unknown; safety/arrival/prefix termination are explicit scenarios",
-  "next_required": [
-    "Model initial activation, workload setup and proof/tool occupancy explicitly",
-    "Align Native/DES queue endpoints and simultaneous-arrival ordering",
-    "Validate transfer of measured concurrency bands and mixed checkpoint/resume costs",
-    "Freeze calibrated parameters and evaluate an independent Native slice"
+  "reopen_prerequisites": [
+    "Explicit owner authorization and sufficient cluster experiment budget",
+    "Qualified human interaction traces with process identities, terminal timestamps and execution location",
+    "Independent evaluation cohorts and target working-set high-contention calibration with capture overhead"
   ],
+  "baseline_matrix": {
+    "status": "complete_and_audited",
+    "source_commit": "56b0a2b54850eb8561eb984d269f93b615e885ee",
+    "configurations": 18,
+    "validation_ttl_points": 126,
+    "online_results": 216,
+    "oracle_slices": 36,
+    "unique_holdout_sessions": 64,
+    "unique_generalization_sessions": 64,
+    "artifact_qualification_is_frozen_at_run_start": true,
+    "current_receipt": "docs/evidence/pre-v3/baselines/audit.json"
+  },
   "limits": [
-    "Single paired validation slice with descriptive quantiles",
-    "Independent policy benefit and multi-seed tail statistics remain pending",
-    "Controlled VOLUMES restart CI and genuine MEMORY execution have separate evidence scopes"
+    "Calibration covers N=8, 4 slots, 16 MiB; stable P95/P99 and policy benefits require multiseed evidence",
+    "Continuous capacity waiting approximates individual retry RPC and wake timing",
+    "Simulated snapshot inventory and physical device write traffic have separate scopes",
+    "Same-source opencode generalization and the small training population require explicit reporting",
+    "Controlled VOLUMES restart CI and true MEMORY execution have separate evidence scopes; final MEMORY crash/restart and overhead tests remain Tier-2"
   ]
 }

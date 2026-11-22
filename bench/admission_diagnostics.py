@@ -14,7 +14,36 @@ import re
 from pathlib import Path
 
 
-def wake_metrics(events):
+def commit_overlap(release, attempt, observations):
+    """Estimate overlap from completed commit durations on the same process clock."""
+    clocks = [row['evidence_clock'] for row in (release, attempt)]
+    start, end = [int(clock['monotonic_ns']) for clock in clocks]
+    spans, receipts = [], []
+    for observation in observations:
+        clock = observation.get('evidence_clock', {})
+        if (observation.get('metric') != 'journal_commit_ms'
+                or clock.get('clock_domain_id') != clocks[0]['clock_domain_id']):
+            continue
+        finished = int(clock['monotonic_ns'])
+        duration = observation['value'] * 1e6
+        a, b = max(start, finished-duration), min(end, finished)
+        if b > a:
+            spans.append((a, b))
+            receipts.append(dict(observation_sequence=observation['sequence'],
+                operation_id=observation.get('operation_id'),session_id=observation.get('session_id'),
+                commit_ms=observation['value'],overlap_ms=(b-a)/1e6))
+    merged = []
+    for a, b in sorted(spans):
+        if merged and a <= merged[-1][1]:
+            merged[-1][1] = max(b, merged[-1][1])
+        else:
+            merged.append([a, b])
+    overlap = sum(b-a for a,b in merged)/1e6
+    return dict(estimated_journal_overlap_ms=overlap,
+        residual_elapsed_ms=max(0.,(end-start)/1e6-overlap),commit_receipts=receipts)
+
+
+def wake_metrics(events, observations=None):
     releases, pending, samples = {}, {}, []
     fallback = retries = unknown = 0
     for e in sorted(events, key=lambda row: row['sequence']):
@@ -47,9 +76,12 @@ def wake_metrics(events):
                       for clock in clocks[:2]]
             if min(delays) < 0:
                 raise ValueError('negative wake latency')
-            samples.append(dict(release_sequence=seq, tenant_id=d['tenant_id'],
+            sample = dict(release_sequence=seq, tenant_id=d['tenant_id'],
                 session_id=d['session_id'], admission_kind=d['kind'],
-                release_to_attempt_ms=delays[0], notified_to_attempt_ms=delays[1]))
+                release_to_attempt_ms=delays[0], notified_to_attempt_ms=delays[1])
+            if observations is not None:
+                sample.update(commit_overlap(release,e,observations))
+            samples.append(sample)
     by_tenant = {}
     for tenant in sorted({row['tenant_id'] for row in samples}):
         values = [row['notified_to_attempt_ms'] for row in samples if row['tenant_id'] == tenant]
@@ -63,7 +95,8 @@ def wake_metrics(events):
         eligible_wait_ms_by_tenant=by_tenant, samples=samples,
         pending_notifications=len(pending),
         eligibility='durable release notification; Substrate decides physical placement',
-        attempt_denominator='all capacity retries (attempt_count > 1)')
+        attempt_denominator='all capacity retries (attempt_count > 1)',
+        journal_overlap_method='derived union of [observation monotonic time - journal_commit_ms, observation monotonic time], clipped to release-to-attempt; includes serialization, database commit and lock reacquisition, with observation timestamp offset; not a storage-device latency measurement')
 
 
 def read_bytes(path):
@@ -184,6 +217,7 @@ def trial_diagnostics(folder):
     result = json.loads(read_bytes(folder/'result.json'))
     records = [json.loads(x) for x in read_bytes(folder/'research/coordinator.jsonl').splitlines()]
     events = [r['payload'] for r in records if r.get('stream') == 'events']
+    observations = [r['payload'] for r in records if r.get('stream') == 'observations']
     domains = {e['evidence_clock']['clock_domain_id'] for e in events}
     if len(domains) != 1:
         raise ValueError('latency attribution requires one Coordinator clock domain')
@@ -286,7 +320,7 @@ def trial_diagnostics(folder):
             ready_to_first_token_seconds=instant(row['server_first_token_at'])-instant(ready['at']),
             client_receipt_lag_seconds=row['first_token_observed_at']-instant(row['server_first_token_at'])))
     return dict(trial_id=result['trial_id'],policy=result['policy'],totals=totals,demands=demands,
-        event_wake=wake_metrics(events),
+        event_wake=wake_metrics(events, observations),
         release_opportunities=opportunities,release_to_next_attempt_p95_seconds=percentile([
             x['next_attempt_delay_seconds'] for x in opportunities]),later_request_decomposition=later)
 
@@ -299,6 +333,8 @@ def analyze(root):
             ('result.json','research/coordinator.jsonl','events.jsonl')]
     return dict(schema_version=1,scope='native_admission_descriptive_attribution',
         github_run_id=schedule['github_run_id'],source_commit=schedule['source_commit'],
+        analysis_source=dict(path='bench/admission_diagnostics.py',
+            sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest()),
         source_uncompressed_sha256={p:hashlib.sha256(read_bytes(root/p)).hexdigest() for p in sources},
         status='measured_with_sampling_uncertainty',causal_performance_claim=False,
         clock_error_bound_seconds=None,

@@ -1,10 +1,22 @@
 import unittest
 from pathlib import Path
 
-from bench.admission_diagnostics import analyze, check_wake_budget, partition_wait, wake_metrics
+from bench.admission_diagnostics import analyze, check_wake_budget, commit_overlap, partition_wait, wake_metrics
 
 
 class AdmissionDiagnosticsTests(unittest.TestCase):
+    def test_commit_overlap_clips_unions_and_keeps_clock_domains(self):
+        def row(ms, domain='one', **values):
+            return dict(evidence_clock=dict(clock_domain_id=domain,monotonic_ns=str(ms*1000000)),**values)
+        observations=[row(7,sequence=1,metric='journal_commit_ms',value=5),
+            row(9,sequence=2,metric='journal_commit_ms',value=3),
+            row(11,sequence=3,metric='journal_commit_ms',value=1),
+            row(9,'other',sequence=4,metric='journal_commit_ms',value=100)]
+        got=commit_overlap(row(4),row(10),observations)
+        self.assertEqual(got['estimated_journal_overlap_ms'],5)
+        self.assertEqual(got['residual_elapsed_ms'],1)
+        self.assertEqual([r['observation_sequence'] for r in got['commit_receipts']],[1,2])
+
     def test_notification_latency_and_fallback_denominator(self):
         def event(seq, kind, ms, **fields):
             return dict(sequence=seq,kind='admission.'+kind,

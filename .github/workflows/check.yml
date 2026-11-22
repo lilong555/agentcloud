@@ -50,6 +50,10 @@ jobs:
           python3 -m bench.research_gate
       - name: Audit archived evidence
         run: make evidence-audit
+      - name: Audit frozen research delivery and local document links
+        run: |
+          git fetch --no-tags --depth=1 origin 56b0a2b54850eb8561eb984d269f93b615e885ee
+          python3 scripts/audit_research_closure.py
       - name: Build service
         run: go build -o bin/agentcloud ./cmd/agentcloud
       - name: Verify native capture with isolated PostgreSQL and coordinator restart

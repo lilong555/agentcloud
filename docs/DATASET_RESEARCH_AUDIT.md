@@ -1,6 +1,6 @@
 # Agent 调度数据集审计
 
-活动研究数据源固定为 AgentLogs 和 FreeInference，事件资格通过后冻结一个主数据集和一个独立泛化验证集。AgentCloud 的 MEMORY、安全点、准入排队和物理成本由原生测量提供。下表保留既有来源审计，历史证据用于复核已经发布的结果。
+**调度研究状态：`CONCLUDED / FROZEN`（2026-11-22）。** [统一结论](SCHEDULING_RESEARCH_CONCLUSION.md)与[TraceLab／Copilot 全量及首日审计](evidence/human-traces/2026-11-22/README.md)记录最终数据资格。AgentLogs 定位为元数据到达参考，FreeInference 保存 B 级辅助结果；后台进程终态和 Actor 映射缺口促成本阶段主动收敛。下表与后续正文保存 2026-11-20 的历史审计身份，Alibaba 2017 的新增处理已结束。
 
 本审计固定日期 2026-11-20。[来源清单](evidence/research/2026-11-20/sources/github-sources.json)、[全量下载清单](evidence/research/2026-11-20/agentlogs-population-inputs.json)、[全量元数据统计](evidence/research/2026-11-20/agentlogs-population-audit.json)及[原研究附件](research/2026-11-20/package_manifest.json)提供版本与证据入口。
 

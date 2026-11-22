@@ -1,6 +1,26 @@
 # Native / DES 校准证据
 
-真实 Native 采集与清理验收通过，DES 校准结果为 **`calibration_required`**。当前资格保持 `exploratory`，Tier-1、Tier-2 均待验收。
+**`CONCLUDED / FROZEN`，2026-11-22。** [统一结论](../../../SCHEDULING_RESEARCH_CONCLUSION.md)汇总收尾范围。限定输入下的 Tier-1 历史通过结果与 Tier-2 未完成状态同时保留，v3 未实现。
+
+**Tier-1 已通过，Tier-2 待验收，研究输出保持 `exploratory`。** [独立 validation](44872350361/README.md)与到达协议复验使用冻结参数，数值误差均为 10/10 通过。50 ms 运行的首批分配竞态单独保留；500 ms 复验的两组首批一致，采集、到达、RAM、PG 连续性、资源释放与清理全部通过。资格见 [qualification.json](qualification.json)。
+
+最新真实运行：[44873875604](https://github.com/lilong555/agentcloud/actions/runs/44873875604)，固定提交 `ec48eba4889971ed7a556546dff7a1600cf81f10`，GitHub Actions `ubuntu-24.04` x86 gVisor MEMORY + Dynamo CPU Mocker。它复用独立切片，仅将到达间隔从 50 ms 改为 500 ms；模型参数、成本表与容忍阈值保持冻结。两组各 8 会话、40 模型调用、72 节点，4 槽、16 MiB 工作集、512 MiB reservation。
+
+| 指标 | TTL2 实机 | TTL2 事前预测 | v2 实机 | v2 事前预测 |
+|---|---:|---:|---:|---:|
+| 首次容量等待 P95，秒 | 19.372 | 19.311 | 19.711 | 19.582 |
+| 恢复容量等待 P95，秒 | 14.850 | 14.850 | 14.821 | 17.288 |
+| Actor 预留 GB·s | 128.927 | 136.401 | 127.691 | 135.145 |
+| 总完成时间，秒 | 77.794 | 80.293 | 78.088 | 79.553 |
+| 恢复次数 | 17 | 17 | 17 | 17 |
+
+首次等待误差为 0.061／0.129 秒，恢复等待误差为 0.0003／2.468 秒，GB·s 误差约 5.8%，完成时间误差约 3.2%／1.9%。各项均在预注册容忍内。组间差异均属于 `unresolved_within_tolerance`，本结果用于校准资格，策略收益由后续留出统计验收。
+
+阶段定义、首批 RPC 审计与预定消融见 [阶段校准](alignment/README.md)。Harness 层默认关闭，校准显式启用；物理成本与它分别存储。并发 2/3 使用实测 1/4 档的派生线性插值。Tier-1 的适用范围为 B 级保守串行轨迹下的 L0 CPU MEMORY 仿真研发；更大工作集、混合并发和最终性能结论保留校准与 Tier-2 检查。
+
+校准后的[基线矩阵](../baselines/README.md)已完成 18/18 配置、126/126 TTL 点、216/216 在线结果及 36/36 Oracle 切片。原始结果、冻结选择和约束审计通过，快照库存与物理设备写量采用独立口径。当前 DES 版本 `56b0a2b` 的 CI 通过 207 个 Go 顶层测试（`-race`）；train／validation 负责后续机制诊断与算法迭代。
+
+## 原始校准样本
 
 [实机运行 44738531417](https://github.com/lilong555/agentcloud/actions/runs/44738531417) 固定提交 `d9231a77ec0f1759f3788b3baf37466b4d974443`，使用 GitHub Actions `ubuntu-24.04`、x86 gVisor MEMORY 与 Dynamo CPU Mocker。TTL2／v2 各执行同一份 validation 切片：8 个会话、38 次模型调用、29 段 active gap、1 段 user idle，4 个实际放置位、16 MiB 工作集、512 MiB reservation。源输入为 B 级，gap 全段活跃和同时到达均为明确场景设定。
 
@@ -32,7 +52,7 @@
 
 模型代理对源时长下界的额外延迟 P95 为 1.141／0.995 ms；节点 ready → PG 恢复请求的差值 P95 为 1.762／4.104 ms。后者采用跨组件墙钟估计，校时误差未测。主要遗漏集中在秒级启动与工具阶段，当前证据支持优先补齐这些状态。Worker assignment 的全部观测均确认 512 MiB reservation；实际资源积分的采样转移不确定性估计分别为 3.630／2.812 GB·s。
 
-下一次校准需显式建模首次激活、工作集 setup 与校验工具占槽，统一两端排队端点及同刻到达顺序，并处理 MEMORY 并发档位与混合 C/R 的迁移误差。新参数应从校准数据冻结，再用独立实机切片检验；[原预测](forecast/des-summary.json)和本次结果保持原样。
+该轮缺口已由[阶段对齐](alignment/README.md)补入首次激活、setup／RAM proof／active 开销、排队端点与有序到达，独立复验 10/10 通过。更大工作集及混合 C/R 迁移仍属未完成验收；[原预测](forecast/des-summary.json)和原失败结果保持原样。
 
 预测执行于 `2026-11-20T12:40:38Z`，早于本次实机配对；[13 个源码摘要](forecast/source-verification.json)与实机提交一致。[计划](../../../../bench/configs/prev3-calibration-plan.json) SHA256 为 `79e5dfa1c9ff14eb970d542fc78d6e21090abf9250c49541d1979944e3ae93c9`，成本表 SHA256 为 `810bf6a8c795e6d1e4579e4128247f91ab2783fce9115a740af65cd63261906b`。
 

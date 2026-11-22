@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "as_of": "2026-11-20",
+  "purpose": "algorithm_comparison",
+  "gates": {
+    "dataset_use_case_qualification": {
+      "status": "partial",
+      "requirement": "Qualified tool/model waits and safety semantics, family-isolated temporal splits, complete selection denominators for the intended scheduling workload.",
+      "evidence": [
+        {
+          "evidence": "docs/evidence/research/2026-11-20/agentlogs-population-audit.json",
+          "sha256": "bd9d1d0b37d3016fd4f2f0603aabc58d710e3d90768aee73ee7edf94ac5e51b2"
+        }
+      ]
+    },
+    "native_capture_integrity": {
+      "status": "partial",
+      "requirement": "Complete PostgreSQL Coordinator admission demand, capacity-rejection/retry, CreateActor/ResumeActor RPC, ready and release chains; restart recovery, runtime receipts and cross-producer identities on the target MEMORY runtime, with measured capture overhead. Historical FairSlots captures retain their legacy runner-admission scope.",
+      "evidence": [
+        {
+          "evidence": "docs/evidence/research/2026-11-20/native-capture-local/manifest.json",
+          "sha256": "47ca9817f5d403e0b439e0991ad1751c5989e5d5e70dad00a356bd893d2f71f4"
+        },
+        {
+          "evidence": "docs/evidence/native-admission/local/manifest.json",
+          "sha256": "7e4535540127a091f18d75cb01c998ad348d3ec1e2869cfd65e282ae5204dcf2"
+        },
+        {
+          "evidence": "docs/evidence/native-admission/44696576156/artifact.json",
+          "sha256": "676346c2f41a36650f0fc5f1007b2bef3e7f58c9d13faefa0a436713137006f7"
+        },
+        {
+          "evidence": "docs/evidence/native-admission/44696576156/summary.json",
+          "sha256": "eea9aaa21405d52b18d5be6d09ca2506f8dd741e269abdfe8fc26fc093380959"
+        }
+      ]
+    },
+    "physical_cost_calibration": {
+      "status": "pending",
+      "requirement": "Target-environment MEMORY lifecycle, RSS/charge and device I/O, failures and concurrency; held-out calibration error against frozen tolerance.",
+      "evidence": []
+    },
+    "closed_loop_DAG_validation": {
+      "status": "pending",
+      "requirement": "Live-runner parent delay, joins, restore queue propagation, terminal-turn sensitivity and runtime calibration.",
+      "evidence": []
+    },
+    "complete_online_feature_lineage": {
+      "status": "pending",
+      "requirement": "Each deployed decision input has producer, available_at, consumer, source frontier and training cutoff; restored runtime identity is issued externally.",
+      "evidence": []
+    },
+    "independent_statistical_design": {
+      "status": "pending",
+      "requirement": "Frozen primary metrics, complete planned/offered denominators, family/time holdout, paired runner units across multiple independent seeds, failure treatment and calibration tolerance.",
+      "evidence": []
+    }
+  },
+  "tier1_gates": {
+    "event_distribution_and_family_time_split": {
+      "status": "pending",
+      "requirement": "Event-level wait and tool distributions for AgentLogs and FreeInference, with family-isolated temporal splits and frozen source hashes; freeze primary and independent-validation roles after event qualification.",
+      "evidence": []
+    },
+    "stratified_memory_costs": {
+      "status": "pending",
+      "requirement": "Real Substrate MEMORY measurements for every frozen heap/concurrency coordinate: sample counts, checkpoint/resume p50 and p95, physical RSS, memory charge, physical snapshot write bytes and filesystem used-space watermark. Each metric identifies its collector and raw-table column; independent raw and fitted tables have verified SHA256, and the fitted table cites its raw source hash.",
+      "target_coordinates": [
+        {"heap_mib": 16, "concurrency": 1},
+        {"heap_mib": 16, "concurrency": 4},
+        {"heap_mib": 64, "concurrency": 1},
+        {"heap_mib": 64, "concurrency": 4},
+        {"heap_mib": 128, "concurrency": 1},
+        {"heap_mib": 128, "concurrency": 4}
+      ],
+      "evidence": []
+    },
+    "native_queue_without_polling_noise": {
+      "status": "pending",
+      "requirement": "Native admission wakes from capacity-release events with bounded fallback retry. Independently qualify measured release-to-eligible-attempt p95/max latency, fallback-attempt fraction, and bounded eligible wait by tenant against budgets frozen before the new runtime validation.",
+      "acceptance_limits": {
+        "release_to_eligible_attempt_p95_ms": 100,
+        "release_to_eligible_attempt_max_ms": 250,
+        "fallback_attempt_fraction": 0.5,
+        "eligible_wait_max_ms": 250
+      },
+      "evidence": []
+    }
+  }
+}

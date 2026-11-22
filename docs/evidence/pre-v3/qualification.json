@@ -1,7 +1,16 @@
 {
   "schema_version": 1,
+  "research_lifecycle": {
+    "status": "CONCLUDED",
+    "execution_state": "FROZEN",
+    "as_of": "2026-11-22",
+    "v3_implemented": false,
+    "reason": "Public process-lifecycle evidence and personal experiment-resource ROI",
+    "reopen_prerequisites": "docs/SCHEDULING_RESEARCH_CONCLUSION.md"
+  },
   "semantics_version": "1.1",
   "implementation_commit": "8dbd80b5fb082d94455acb628b08889063926cd6",
+  "current_des_commit": "56b0a2b54850eb8561eb984d269f93b615e885ee",
   "research_status": "exploratory",
   "A": {
     "status": "passed_for_B_and_C_semantics",
@@ -80,16 +89,13 @@
     ],
     "tuning_split": "validation",
     "controller_stateful_differential": "passed",
-    "native_state_stream_calibration": "pending",
+    "native_state_stream_calibration": "passed_on_independent_N8_16MiB_slice",
     "oracle": "restricted_binary_enumeration_and_relaxed_lower_bound"
   },
   "tier1": {
-    "status": "pending",
-    "remaining": [
-      "qualification of B-level active/safe-window assumptions for intended scheduling claim",
-      "physical metric coverage and cost-model uncertainty",
-      "paired Native control-state and latency calibration"
-    ]
+    "status": "passed",
+    "scope": "Exploratory L0 CPU MEMORY algorithm development with explicit conservative B-level safe-window assumptions",
+    "evidence": "docs/evidence/pre-v3/c2/44873875604/comparison.json"
   },
   "tier2": {
     "status": "pending",
@@ -97,16 +103,31 @@
       "collection overhead pairing",
       "multi-seed held-out inference",
       "latest MEMORY crash/restart continuity",
-      "pre-registered simulator/runtime error tolerance"
+      "64/128 MiB high-contention end-to-end paired calibration",
+      "simulator error smaller than any final claimed policy benefit"
     ]
   },
   "C2": {
-    "status": "pending",
+    "status": "passed_for_Tier1_scope",
+    "native_run": "44873875604",
+    "numerical_checks_passed": 10,
+    "numerical_checks_total": 10,
     "remaining": [
-      "qualified causal windows or explicit conservative B-level scenarios",
-      "Native observation frequency, tenant/profile mapping and measured cost feedback",
-      "paired queue, restore count, reservation integral and completion-time validation"
+      "broader working-set and mixed-concurrency transfer calibration",
+      "independent complete causal event-source qualification"
     ]
+  },
+  "baseline_matrix": {
+    "status": "complete_and_audited",
+    "configurations": 18,
+    "validation_ttl_points": 126,
+    "online_results": 216,
+    "oracle_slices": 36,
+    "unique_holdout_sessions": 64,
+    "unique_generalization_sessions": 64,
+    "policy_replay_reserved_holdout_sessions": 469,
+    "policy_replay_reserved_generalization_sessions": 47,
+    "mechanism_development_splits": ["train", "validation"]
   },
   "environment": {
     "physical": "GitHub Actions ubuntu-24.04 x86_64 gVisor MEMORY + native Dynamo CPU Mocker",
@@ -118,5 +139,5 @@
     "new_v3_algorithm": false,
     "gpu_joint_primary_baseline": false
   },
-  "verification_run": "44731926110"
+  "verification_run": "44876917816"
 }

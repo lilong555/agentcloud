@@ -2,7 +2,7 @@
 
 AgentCloud 已具备可运行的动作条件化 KV 成本模型、真实 MEMORY 生命周期及双 Mocker 联合实验。当前最清晰的研究问题是首次准入等待、异构恢复成本和快照 I/O；现有联合 Gate 2 显示资源开销增加，调度收益需要更完整的观测与独立负载验证。
 
-**当前执行范围：Native 排队归因、核心观测集与两源事件资格。** [依赖路径](SCHEDULING_RESEARCH_PATH.md)固定五个阶段；[资格注册](../bench/configs/research-readiness.json)将仿真研发 Tier-1 与最终实机 Tier-2 分开。核心事务事件与 Worker 采样构成当前观测范围，完整契约保留为长期规范。
+**研究状态：`CONCLUDED / FROZEN`（2026-11-22）。** [统一收敛结论](SCHEDULING_RESEARCH_CONCLUSION.md)汇总 Native、物理成本、限定范围校准与公开数据审计。本文保存已有公式、负面结果和验收条件；[历史路径](SCHEDULING_RESEARCH_PATH.md)与[资格注册](../bench/configs/research-readiness.json)保留范围和未完成项，生产 v2 行为保持既有实现。
 
 证据入口：[最终 Checklist](FINAL_RELEASE_CHECKLIST.md) · [数据集审计](DATASET_RESEARCH_AUDIT.md) · [事件契约与检查器](RESEARCH_EVENT_CONTRACT.md) · [完整外部研究报告](research/2026-11-20/AgentCloud_Research_Audit_2026-11-20.html)。外部报告固定源码 `d9ed974d22a0d56cc36f4507f7236128c842bc49`；当前联合实测固定源码 `609a58d9081b3340ab57f99b2c249be24871d376`。每组结果使用自身的源码、环境和请求分母。
 

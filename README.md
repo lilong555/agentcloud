@@ -1,5 +1,7 @@
 # AgentCloud
 
+**调度研究状态：`CONCLUDED / FROZEN`（2026-11-22）。** Native 准入、生产 v2、真实 MEMORY 测量与限定范围校准 DES 已交付。公开轨迹的后台进程生命周期证据与个人实验预算促成本阶段主动收敛，v3 未实现。[统一收敛结论](docs/SCHEDULING_RESEARCH_CONCLUSION.md) · [收尾交付与回归](docs/evidence/research-closure/2026-11-22/README.md)
+
 **64 个有状态 Agent 共享 4 个 gVisor Warm 槽位，实现 16× 沙箱超卖。** AgentCloud 在模型等待期间回收沙箱，在交互返回时恢复内存状态，并把工具副作用、恢复成本和首次准入尾延迟纳入同一条可对账的执行链路。
 
 Go 协调器通过 PostgreSQL 保存请求、回执和恢复 manifest；Substrate 执行带 UID／epoch 围栏的 MEMORY 快照；Dynamo 原生 Rust 扩展连接 Program 准入、执行反馈和会话回收。上游交付包含 **38 个 Substrate 文件＋16 个 Dynamo 文件、2＋3 组补丁**，完整文件与补丁均可还原到相同 Git tree。
@@ -27,7 +29,7 @@ flowchart LR
 
 [最终 Checklist 与 Top 12](docs/FINAL_RELEASE_CHECKLIST.md) · [三分钟答辩与源码](docs/INTERVIEW_DEFENSE.md) · [验收状态](docs/STATUS.md) · [证据与源码索引](docs/evidence/validation-index.json) · [上游贡献](docs/UPSTREAM_PRS.md)
 
-[调度研究证据与验收条件](docs/SCHEDULING_RESEARCH_EVIDENCE.md)汇总动作条件化 KV 公式、强基线负面结果与下一轮测量门槛；[数据集审计](docs/DATASET_RESEARCH_AUDIT.md)覆盖 AgentLogs、Alibaba、FreeInference 和 TraceLab；[研究事件契约](docs/RESEARCH_EVENT_CONTRACT.md)提供可运行的时序、来源与因果检查。正式 Gate 2 的 50 份原始结果、14,400 请求及八组配对均值已离线复核。 当前优先完善数据与观测：AgentLogs 正式发布的 635,886 个 Session 已全量扫描；[原生观测](docs/RESEARCH_OBSERVABILITY.md)覆盖事务事件、准入队列与协调器重启验收，算法对照由研究资格闸门控制。
+[调度研究结论](docs/SCHEDULING_RESEARCH_CONCLUSION.md)统一列明已验证工程、受限探索与负面结果；[数据集审计](docs/DATASET_RESEARCH_AUDIT.md)和[人类交互审计](docs/evidence/human-traces/2026-11-22/README.md)保存各来源的独立口径；[研究事件契约](docs/RESEARCH_EVENT_CONTRACT.md)提供时序、来源与因果检查。正式 Gate 2 的 50 份原始结果、14,400 请求及八组配对均值已离线复核。[原生观测](docs/RESEARCH_OBSERVABILITY.md)、六格 MEMORY 成本与[校准／基线证据](docs/evidence/pre-v3/README.md)随本阶段冻结，后续研究以重新授权和新增合格证据为前提。
 
 | P2 GPU 与 Token 成本速览 | 已验证结果 | 证据范围 |
 | --- | --- | --- |

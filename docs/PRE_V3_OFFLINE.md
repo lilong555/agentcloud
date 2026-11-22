@@ -1,5 +1,7 @@
 # AgentCloud 离线调度实验台
 
+**研究状态：`CONCLUDED / FROZEN`（2026-11-22）。** 本文为已交付实验台的接口与复现说明。[统一结论](SCHEDULING_RESEARCH_CONCLUSION.md)记录数据边界、资源 ROI 和结束决定；所有下载及实机命令仅作历史复现参考，本阶段执行范围为测试与封存证据审计。
+
 实验台的 C1 阶段用于验证数据、状态机和策略接线，所有输出带 `research_status: exploratory`。正式物理测量使用 GitHub Actions `ubuntu-24.04` 的 x86 gVisor MEMORY；cannlab 负责离线处理与仿真。生产 `scheduler_v2.go` 保持原有决策逻辑。
 
 ## 输入与证据
@@ -96,7 +98,7 @@ python3 scripts/run_prev3_c1.py --binary BIN/agentcloud-sim \
 
 本次运行的输入摘要、测量表、测试回执与资格状态见 [pre-v3 证据](evidence/pre-v3/README.md)。
 
-最新 [Native／DES 校准证据](evidence/pre-v3/c2/README.md)已取得完整 TTL2／v2 实机配对。两组源节点、RAM、PG 连续性和资源释放验收通过；原冻结预测的排队与 GB·s 误差超出容忍，C2 状态为 `calibration_required`。[阶段校准](evidence/pre-v3/c2/alignment/README.md)已接入首次激活及可开关的 setup／RAM proof／active 额外占槽，观测顺序条件复算通过 9/10 项；新 validation 切片已冻结独立前向预测。
+最新 [Native／DES 校准证据](evidence/pre-v3/c2/README.md)已通过 Tier-1。独立 validation 数值检查为 10/10；50 ms 到达的首批分配竞态原样保留，500 ms 协议复验的数值和采集／到达审计全部通过。[阶段校准](evidence/pre-v3/c2/alignment/README.md)接入首次激活及可开关的 setup／RAM proof／active 额外占槽。全部模型参数和阈值在实机前冻结，Tier-2 的开销、多种子和真实 MEMORY 重启验收单列。
 
 ## Native／DES 配对校准
 
@@ -124,6 +126,24 @@ DES 的 Native 观测模式直接调用生产 `serverEstimateLocked()`、`waitHi
 配对摘要中的 P95 统一采用 nearest-rank，与 PG 准入摘要一致；原始 DES 输出继续保留插值分位数。Native 容量等待统计 `WAITING_CAPACITY` 区间。历史 DES 的 `request_to_admit` 包含快照可恢复前的等待；阶段校准使用 `capacity_wait`，将快照就绪等待、容量等待和成功启动／恢复服务分别输出。后者仍采用连续容量等待近似，拒绝 RPC 与唤醒延迟接受实机误差验收。离线预测输出记录执行时刻、输入、环境、二进制与源码 SHA，独立目录保护已保存的预测。
 
 `agentcloud-sim --environment-model MODEL.json` 载入有来源的首次激活与 Harness 阶段。`--harness-overhead` 仅在运行时校准中显式启用，算法评估默认关闭。`--concurrency-model linear` 将并发 2/3 作为实测 1/4 的派生插值；缺测与外推继续报错。`--condition-initial-order` 仅用于已有实机结果的条件复算，独立预测按冻结到达顺序运行。
+
+`--park-inactive-ticks` 在所有 Actor 都无可评估动作时暂停空轮询，并在原全局时间网格恢复。36 组随机实例及冻结输入逐事件差分验证准入、动作、Episode 和资源结果一致。`--discard-evaluations` 仅压缩逐次 KEEP 输出，保留评估计数与实际动作。
+
+串行请求链用当前事件游标替代全链扫描；分支／汇合 DAG 保留通用遍历。全扫描与游标路径在随机实例、冻结校准切片及完整 validation 轨迹上做差分。生产 v2 的决策方法保持同源调用。
+
+Tier-1 通过后，`scripts.prev3_pareto` 在 cannlab 以最多 13 个单核进程运行 18 个工作集／并发压力配置。每个配置先完成 validation 的 7 点 TTL 扫描并冻结选择，再运行 holdout 和同源 opencode 泛化切片；LRU 作为 Break-even 的评分开关，小规模 Oracle 单列。输入包含实测六格成本，Harness 默认关闭。输出为 `summary.json` 与 `pareto.csv`，物理设备写量保持 null，快照分配库存单独报告。
+
+该[基线矩阵](evidence/pre-v3/baselines/README.md)已完成 18/18 配置和 216/216 在线结果。`scripts.audit_prev3_matrix` 检查原始分母、冻结输入／源码、TTL 选择、来源会话／事件、容量与库存约束，提供同切片 Oracle 比较。完整 CSV 与图表已归档。已使用的留出与泛化来源各 64 条，其余 469／47 条连同原切分身份保留。本阶段未进行后续算法开发；旧保守 gap 负载的异常集中度与小时级排队按探索结果封存。
+
+算法矩阵在选定轨迹终点直接释放 Actor，随后回收库存，终点身份保持合成终止。Native 校准的末端快照协议单列；它在库存预算用满时可能与“完成后 GC”形成循环等待，专项测试保留该触发条件。该条件用于评测协议诊断。
+
+```bash
+python3 -m scripts.prev3_pareto --binary BIN/agentcloud-sim \
+  --trace RESULTS/freeinference/trace.json --costs COSTS.json \
+  --arrivals RESULTS/agentlogs/pressure-configs.json \
+  --environment-model bench/configs/prev3-environment.json \
+  --qualification docs/evidence/pre-v3/c2/qualification.json --output RESULTS/matrix --jobs 13
+```
 
 ```bash
 # cannlab：生成输入；完整真实轨迹留在 Git 外。
